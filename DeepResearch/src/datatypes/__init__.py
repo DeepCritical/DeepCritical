@@ -183,6 +183,7 @@ from .tool_specs import (
 )
 
 from .tools import (
+    ToolMetadata,
     ExecutionResult,
     ToolRunner,
     MockToolRunner,
@@ -219,6 +220,7 @@ __all__ = [
     "ToolCategory",
     "ToolInput",
     "ToolOutput",
+    "ToolMetadata",
     # Bioinformatics types
     "EvidenceCode",
     "GOTerm",
