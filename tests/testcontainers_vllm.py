@@ -12,62 +12,15 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from testcontainers.vllm import VLLMContainer
 from omegaconf import DictConfig
 
-# Try to import VLLM container, but handle gracefully if not available
-try:
-    from testcontainers.core.container import DockerContainer
-
-    class VLLMContainer(DockerContainer):
-        """Custom VLLM container implementation using testcontainers core."""
-
-        def __init__(
-            self,
-            image: str = "vllm/vllm-openai:latest",
-            model: str = "microsoft/DialoGPT-medium",
-            host_port: int = 8000,
-            container_port: int = 8000,
-            **kwargs
-        ):
-            super().__init__(image, **kwargs)
-            self.model = model
-            self.host_port = host_port
-            self.container_port = container_port
-
-            # Configure container
-            self.with_exposed_ports(self.container_port)
-            self.with_env("VLLM_MODEL", model)
-            self.with_env("VLLM_HOST", "0.0.0.0")
-            self.with_env("VLLM_PORT", str(container_port))
-
-        def get_connection_url(self) -> str:
-            """Get the connection URL for the VLLM server."""
-            try:
-                host = self.get_container_host_ip()
-                port = self.get_exposed_port(self.container_port)
-                return f"http://{host}:{port}"
-            except Exception:
-                # Return a mock URL if container is not actually running
-                return f"http://localhost:{self.container_port}"
-
-    VLLM_AVAILABLE = True
-
-except ImportError:
-    VLLM_AVAILABLE = False
-    # Create a mock VLLMContainer for when testcontainers is not available
-    class VLLMContainer:
-        def __init__(self, *args, **kwargs):
-            raise ImportError("testcontainers is not available. Please install it with: pip install testcontainers")
-
 # Set up logging for test artifacts
-log_dir = Path('test_artifacts')
-log_dir.mkdir(exist_ok=True)
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(log_dir / 'vllm_prompt_tests.log'),
+        logging.FileHandler('test_artifacts/vllm_prompt_tests.log'),
         logging.StreamHandler()
     ]
 )
@@ -94,10 +47,6 @@ class VLLMPromptTester:
             max_tokens: Override max tokens from config
             temperature: Override temperature from config
         """
-        # Check if VLLM is available
-        if not VLLM_AVAILABLE:
-            logger.warning("VLLM container not available, using mock mode for testing")
-
         # Use provided config or create default
         if config is None:
             from hydra import compose, initialize_config_dir
@@ -113,7 +62,6 @@ class VLLMPromptTester:
                     config = self._create_default_config()
 
         self.config = config
-        self.vllm_available = VLLM_AVAILABLE
 
         # Extract configuration values with overrides
         vllm_config = config.get("vllm_tests", {})
@@ -144,7 +92,7 @@ class VLLMPromptTester:
         self.retry_failed_prompts = error_config.get("retry_failed_prompts", True)
         self.max_retries_per_prompt = error_config.get("max_retries_per_prompt", 2)
 
-        logger.info(f"VLLMPromptTester initialized with model: {self.model_name}, VLLM available: {self.vllm_available}")
+        logger.info(f"VLLMPromptTester initialized with model: {self.model_name}")
 
     def _create_default_config(self) -> DictConfig:
         """Create default configuration when Hydra config is not available."""
@@ -201,10 +149,6 @@ class VLLMPromptTester:
 
     def start_container(self):
         """Start VLLM container with configuration-based settings."""
-        if not self.vllm_available:
-            logger.info("VLLM container not available, using mock mode")
-            return
-
         logger.info(f"Starting VLLM container with model: {self.model_name}")
 
         # Get container configuration from config
@@ -281,52 +225,6 @@ class VLLMPromptTester:
 
         total_time = time.time() - start_time
         raise TimeoutError(f"VLLM container not ready after {total_time:.1f} seconds (timeout: {timeout}s)")
-
-    def _validate_prompt_structure(self, prompt: str, prompt_name: str):
-        """Validate that a prompt has proper structure using configuration."""
-        # Check for basic prompt structure
-        if not isinstance(prompt, str):
-            raise ValueError(f"Prompt {prompt_name} is not a string")
-
-        if not prompt.strip():
-            raise ValueError(f"Prompt {prompt_name} is empty")
-
-        # Check for common prompt patterns if validation is strict
-        validation_config = self.config.get("testing", {}).get("validation", {})
-        if validation_config.get("validate_prompt_structure", True):
-            # Check for instructions or role definition
-            has_instructions = any(
-                pattern in prompt.lower()
-                for pattern in ["you are", "your role", "please", "instructions:", "task:"]
-            )
-
-            # Most prompts should have some form of instructions
-            if not has_instructions and len(prompt) > 50:
-                logger.warning(f"Prompt {prompt_name} might be missing clear instructions")
-
-    def _validate_response_structure(self, response: str, prompt_name: str):
-        """Validate that a response has proper structure using configuration."""
-        # Check for basic response structure
-        if not isinstance(response, str):
-            raise ValueError(f"Response for prompt {prompt_name} is not a string")
-
-        validation_config = self.config.get("testing", {}).get("validation", {})
-        assertions_config = self.config.get("testing", {}).get("assertions", {})
-
-        # Check minimum response length
-        min_length = assertions_config.get("min_response_length", 10)
-        if len(response.strip()) < min_length:
-            logger.warning(f"Response for prompt {prompt_name} is shorter than expected: {len(response)} chars")
-
-        # Check for empty response
-        if not response.strip():
-            raise ValueError(f"Empty response for prompt {prompt_name}")
-
-        # Check for response quality indicators
-        if validation_config.get("validate_response_content", True):
-            # Check for coherent response (basic heuristic)
-            if len(response.split()) < 3 and len(response) > 20:
-                logger.warning(f"Response for prompt {prompt_name} might be too short or fragmented")
 
     def test_prompt(
         self,
@@ -432,13 +330,8 @@ class VLLMPromptTester:
         return result
 
     def _generate_response(self, prompt: str, **kwargs) -> str:
-        """Generate response using VLLM or mock response when not available."""
+        """Generate response using VLLM."""
         import requests
-
-        if not self.vllm_available:
-            # Return mock response when VLLM is not available
-            logger.info("VLLM not available, returning mock response")
-            return self._generate_mock_response(prompt)
 
         if not self.container:
             raise RuntimeError("VLLM container not started")
@@ -467,31 +360,6 @@ class VLLMPromptTester:
 
         result = response.json()
         return result["choices"][0]["text"].strip()
-
-    def _generate_mock_response(self, prompt: str) -> str:
-        """Generate a mock response for testing when VLLM is not available."""
-        import random
-
-        # Simple mock responses based on prompt content
-        prompt_lower = prompt.lower()
-
-        if "hello" in prompt_lower or "hi" in prompt_lower:
-            return "Hello! I'm a mock AI assistant. How can I help you today?"
-        elif "what is" in prompt_lower:
-            return "Based on the mock analysis, this appears to be a question about something. The mock system suggests that the answer involves understanding the fundamental concepts and applying them in practice."
-        elif "how" in prompt_lower:
-            return "This is a mock response to a 'how' question. The mock system suggests following these steps: 1) Understand the problem, 2) Gather information, 3) Apply the solution, 4) Verify the results."
-        elif "why" in prompt_lower:
-            return "This is a mock response to a 'why' question. The mock reasoning suggests that this happens because of underlying principles and mechanisms that can be explained through careful analysis."
-        else:
-            # Generic mock response
-            responses = [
-                "This is a mock response generated for testing purposes. The system is working correctly but using simulated data.",
-                "Mock AI response: I understand your query and I'm processing it with mock data. The result suggests a comprehensive approach is needed.",
-                "Testing mode: This response is generated as a placeholder. In a real scenario, this would contain actual AI-generated content based on the prompt.",
-                "Mock analysis complete. The system has processed your request and generated this placeholder response for testing validation."
-            ]
-            return random.choice(responses)
 
     def _parse_reasoning(self, response: str) -> Dict[str, Any]:
         """Parse reasoning and tool calls from response.
@@ -557,6 +425,52 @@ class VLLMPromptTester:
 
         return reasoning_data
 
+    def _validate_prompt_structure(self, prompt: str, prompt_name: str):
+        """Validate that a prompt has proper structure using configuration."""
+        # Check for basic prompt structure
+        if not isinstance(prompt, str):
+            raise ValueError(f"Prompt {prompt_name} is not a string")
+
+        if not prompt.strip():
+            raise ValueError(f"Prompt {prompt_name} is empty")
+
+        # Check for common prompt patterns if validation is strict
+        validation_config = self.config.get("testing", {}).get("validation", {})
+        if validation_config.get("validate_prompt_structure", True):
+            # Check for instructions or role definition
+            has_instructions = any(
+                pattern in prompt.lower()
+                for pattern in ["you are", "your role", "please", "instructions:", "task:"]
+            )
+
+            # Most prompts should have some form of instructions
+            if not has_instructions and len(prompt) > 50:
+                logger.warning(f"Prompt {prompt_name} might be missing clear instructions")
+
+    def _validate_response_structure(self, response: str, prompt_name: str):
+        """Validate that a response has proper structure using configuration."""
+        # Check for basic response structure
+        if not isinstance(response, str):
+            raise ValueError(f"Response for prompt {prompt_name} is not a string")
+
+        validation_config = self.config.get("testing", {}).get("validation", {})
+        assertions_config = self.config.get("testing", {}).get("assertions", {})
+
+        # Check minimum response length
+        min_length = assertions_config.get("min_response_length", 10)
+        if len(response.strip()) < min_length:
+            logger.warning(f"Response for prompt {prompt_name} is shorter than expected: {len(response)} chars")
+
+        # Check for empty response
+        if not response.strip():
+            raise ValueError(f"Empty response for prompt {prompt_name}")
+
+        # Check for response quality indicators
+        if validation_config.get("validate_response_content", True):
+            # Check for coherent response (basic heuristic)
+            if len(response.split()) < 3 and len(response) > 20:
+                logger.warning(f"Response for prompt {prompt_name} might be too short or fragmented")
+
     def _save_artifact(self, result: Dict[str, Any]):
         """Save test result as artifact."""
         timestamp = int(result.get("timestamp", time.time()))
@@ -569,42 +483,8 @@ class VLLMPromptTester:
 
         logger.info(f"Saved artifact: {artifact_path}")
 
-    def batch_test_prompts(
-        self,
-        prompts: List[Tuple[str, str, Dict[str, Any]]],
-        **generation_kwargs
-    ) -> List[Dict[str, Any]]:
-        """Test multiple prompts in batch.
-
-        Args:
-            prompts: List of (prompt_name, prompt_template, dummy_data) tuples
-            **generation_kwargs: Additional generation parameters
-
-        Returns:
-            List of test results
-        """
-        results = []
-
-        for prompt_name, prompt_template, dummy_data in prompts:
-            result = self.test_prompt(
-                prompt_template,
-                prompt_name,
-                dummy_data,
-                **generation_kwargs
-            )
-            results.append(result)
-
-        return results
-
     def get_container_info(self) -> Dict[str, Any]:
         """Get information about the VLLM container."""
-        if not self.vllm_available:
-            return {
-                "status": "mock_mode",
-                "model": self.model_name,
-                "note": "VLLM container not available, using mock responses"
-            }
-
         if not self.container:
             return {"status": "not_started"}
 
@@ -880,6 +760,7 @@ def get_all_prompts_with_modules() -> List[Tuple[str, str, str]]:
         List of (module_name, prompt_name, prompt_content) tuples
     """
     import importlib
+    from pathlib import Path
 
     prompts_dir = Path("DeepResearch/src/prompts")
     all_prompts = []
@@ -906,16 +787,6 @@ def get_all_prompts_with_modules() -> List[Tuple[str, str, str]]:
                 if isinstance(attr, dict) and attr_name.endswith("_PROMPTS"):
                     # Extract prompts from dictionary
                     for prompt_key, prompt_value in attr.items():
-                        if isinstance(prompt_value, str):
-                            all_prompts.append((module_name, f"{attr_name}.{prompt_key}", prompt_value))
-
-                elif isinstance(attr, str) and ("PROMPT" in attr_name or "SYSTEM" in attr_name):
-                    # Individual prompt strings
-                    all_prompts.append((module_name, attr_name, attr))
-
-                elif hasattr(attr, "PROMPTS") and isinstance(attr.PROMPTS, dict):
-                    # Classes with PROMPTS attribute
-                    for prompt_key, prompt_value in attr.PROMPTS.items():
                         if isinstance(prompt_value, str):
                             all_prompts.append((module_name, f"{attr_name}.{prompt_key}", prompt_value))
 

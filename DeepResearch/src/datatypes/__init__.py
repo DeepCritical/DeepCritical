@@ -83,6 +83,19 @@ from .workflow_orchestration import (
     BreakConditionCheck,
     OrchestrationResult,
 )
+from .workflow_patterns import (
+    InteractionPattern,
+    MessageType,
+    AgentInteractionMode,
+    InteractionMessage,
+    AgentInteractionState,
+    WorkflowOrchestrator,
+    InteractionConfig,
+    AgentInteractionRequest,
+    AgentInteractionResponse,
+    create_interaction_state,
+    create_workflow_orchestrator,
+)
 
 from .orchestrator import (
     Orchestrator,
@@ -254,6 +267,18 @@ __all__ = [
     "SubgraphSpawnRequest",
     "BreakConditionCheck",
     "OrchestrationResult",
+    # Workflow pattern types
+    "InteractionPattern",
+    "MessageType",
+    "AgentInteractionMode",
+    "InteractionMessage",
+    "AgentInteractionState",
+    "WorkflowOrchestrator",
+    "InteractionConfig",
+    "AgentInteractionRequest",
+    "AgentInteractionResponse",
+    "create_interaction_state",
+    "create_workflow_orchestrator",
     "WorkflowStep",
     "WorkflowDAG",
     "ExecutionContext",

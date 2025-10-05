@@ -74,3 +74,6 @@ reporting:
   enable_performance_reports: false  # Disabled for speed
   report_interval_minutes: 1
   include_detailed_metrics: false
+
+
+

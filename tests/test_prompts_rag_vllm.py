@@ -24,3 +24,6 @@ class TestRAGPromptsVLLM(VLLMPromptTestBase):
 
         self.assert_prompt_test_success(results, min_success_rate=0.8)
         assert len(results) > 0, "No prompts were tested from rag module"
+
+
+
