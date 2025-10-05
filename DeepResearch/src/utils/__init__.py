@@ -8,7 +8,6 @@ from .execution_status import ExecutionStatus
 from .tool_registry import (
     ToolRegistry,
     ToolRunner,
-    ToolMetadata,
     ExecutionResult,
     registry,
 )
@@ -34,7 +33,6 @@ __all__ = [
     "ExecutionStatus",
     "ToolRegistry",
     "ToolRunner",
-    "ToolMetadata",
     "ToolSpec",
     "ToolCategory",
     "ToolInput",

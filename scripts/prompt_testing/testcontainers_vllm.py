@@ -96,7 +96,7 @@ class VLLMPromptTester:
         """
         # Check if VLLM is available
         if not VLLM_AVAILABLE:
-            logger.warning("VLLM container not available, using mock mode for testing")
+            logger.warning("testcontainers not available, using mock mode for testing")
 
         # Use provided config or create default
         if config is None:
@@ -114,6 +114,9 @@ class VLLMPromptTester:
 
         self.config = config
         self.vllm_available = VLLM_AVAILABLE
+
+        # Also check if Docker is actually available for runtime
+        self.docker_available = self._check_docker_availability()
 
         # Extract configuration values with overrides
         vllm_config = config.get("vllm_tests", {})
@@ -144,7 +147,18 @@ class VLLMPromptTester:
         self.retry_failed_prompts = error_config.get("retry_failed_prompts", True)
         self.max_retries_per_prompt = error_config.get("max_retries_per_prompt", 2)
 
-        logger.info(f"VLLMPromptTester initialized with model: {self.model_name}, VLLM available: {self.vllm_available}")
+        logger.info(f"VLLMPromptTester initialized with model: {self.model_name}, VLLM available: {self.vllm_available}, Docker available: {self.docker_available}")
+
+    def _check_docker_availability(self) -> bool:
+        """Check if Docker is available and running."""
+        try:
+            import docker
+            client = docker.from_env()
+            # Try to ping the Docker daemon
+            client.ping()
+            return True
+        except Exception:
+            return False
 
     def _create_default_config(self) -> DictConfig:
         """Create default configuration when Hydra config is not available."""
@@ -201,8 +215,11 @@ class VLLMPromptTester:
 
     def start_container(self):
         """Start VLLM container with configuration-based settings."""
-        if not self.vllm_available:
-            logger.info("VLLM container not available, using mock mode")
+        if not self.vllm_available or not self.docker_available:
+            if not self.vllm_available:
+                logger.info("testcontainers not available, using mock mode")
+            else:
+                logger.info("Docker not available, using mock mode")
             return
 
         logger.info(f"Starting VLLM container with model: {self.model_name}")
@@ -598,11 +615,12 @@ class VLLMPromptTester:
 
     def get_container_info(self) -> Dict[str, Any]:
         """Get information about the VLLM container."""
-        if not self.vllm_available:
+        if not self.vllm_available or not self.docker_available:
+            reason = "testcontainers not available" if not self.vllm_available else "Docker not available"
             return {
                 "status": "mock_mode",
                 "model": self.model_name,
-                "note": "VLLM container not available, using mock responses"
+                "note": f"{reason}, using mock responses"
             }
 
         if not self.container:

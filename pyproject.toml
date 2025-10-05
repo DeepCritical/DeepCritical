@@ -17,7 +17,7 @@ dependencies = [
   "pydantic-ai>=0.0.16",
   "pydantic-graph>=0.2.0",
   "python-dateutil>=2.9.0.post0",
-  "testcontainers>=4.8.0",
+  "testcontainers",
   "trafilatura>=2.0.0",
 ]
 
@@ -38,6 +38,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["DeepResearch"]
+
+[tool.uv.sources]
+testcontainers = { git = "https://github.com/testcontainers/testcontainers-python.git", rev = "main" }
 
 [dependency-groups]
 dev = [

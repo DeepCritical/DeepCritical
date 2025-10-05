@@ -7,7 +7,7 @@ These tests are optional and disabled in CI by default.
 
 import pytest
 
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 
 class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
@@ -169,7 +169,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
 
         # Test validation
         try:
-            invalid_template = PromptTemplate(
+            PromptTemplate(
                 name="",
                 template="",
                 variables=[],
@@ -191,8 +191,8 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
         assert isinstance(manager.templates, dict)
 
         # Test template registration and retrieval
-        template = PromptManager().templates.get("test_template")
         # Template might not exist, but the manager should work
+        PromptManager().templates.get("test_template")  # Just test that it doesn't crash
 
         # Test system prompt generation (basic functionality)
         system_prompt = manager.get_system_prompt(["base_agent"])

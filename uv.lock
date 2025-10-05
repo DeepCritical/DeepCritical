@@ -717,7 +717,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6.0" },
-    { name = "testcontainers", specifier = ">=4.8.0" },
+    { name = "testcontainers", git = "https://github.com/testcontainers/testcontainers-python.git?rev=main" },
     { name = "trafilatura", specifier = ">=2.0.0" },
 ]
 provides-extras = ["dev"]
@@ -3414,17 +3414,13 @@ wheels = [
 [[package]]
 name = "testcontainers"
 version = "4.13.1"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/testcontainers/testcontainers-python.git?rev=main#bb646e903236a1df72bc38dbb47d1dba95527198" }
 dependencies = [
     { name = "docker" },
     { name = "python-dotenv" },
     { name = "typing-extensions" },
     { name = "urllib3" },
     { name = "wrapt" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/52/ce/4fd72abe8372cc8c737c62da9dadcdfb6921b57ad8932f7a0feb605e5bf5/testcontainers-4.13.1.tar.gz", hash = "sha256:4a6c5b2faa3e8afb91dff18b389a14b485f3e430157727b58e65d30c8dcde3f3", size = 77955, upload-time = "2025-09-24T22:47:47.2Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/30/f0660686920e09680b8afb0d2738580223dbef087a9bd92f3f14163c2fa6/testcontainers-4.13.1-py3-none-any.whl", hash = "sha256:10e6013a215eba673a0bcc153c8809d6f1c53c245e0a236e3877807652af4952", size = 123995, upload-time = "2025-09-24T22:47:45.44Z" },
 ]
 
 [[package]]

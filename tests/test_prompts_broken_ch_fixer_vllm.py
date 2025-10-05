@@ -7,7 +7,7 @@ These tests are optional and disabled in CI by default.
 
 import pytest
 
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 
 class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
@@ -107,7 +107,7 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.broken_ch_fixer import BROKEN_CH_FIXER_PROMPTS
 
         # Create dummy text with "broken" characters (represented by �)
-        dummy_text = "This is a test document with br�ken charact�rs that need to be fixed."
+        # Note: This would be used for testing the prompt template with realistic data
 
         fix_prompt = BROKEN_CH_FIXER_PROMPTS["fix_broken_characters"]
 

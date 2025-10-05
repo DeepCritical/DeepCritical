@@ -7,7 +7,7 @@ These tests are optional and disabled in CI by default.
 
 import pytest
 
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 
 class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
@@ -108,14 +108,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.error_analyzer import ERROR_ANALYZER_PROMPTS
 
         # Create a realistic error sequence for testing
-        error_sequence = """
-        Step 1: User asked about quantum computing
-        Step 2: Performed web search for "quantum computing basics"
-        Step 3: Found 10 results but none seemed relevant
-        Step 4: Tried different search terms but still no good results
-        Step 5: Attempted to synthesize answer but lacked sufficient information
-        Step 6: Final answer was too generic and unhelpful
-        """
+        # Note: This would be used for testing the prompt template with realistic data
 
         analyze_prompt = ERROR_ANALYZER_PROMPTS["analyze_error"]
 

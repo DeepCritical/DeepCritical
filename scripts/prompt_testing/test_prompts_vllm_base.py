@@ -25,10 +25,6 @@ class VLLMPromptTestBase:
     @pytest.fixture(scope="class")
     def vllm_tester(self):
         """VLLM tester fixture for the test class with Hydra configuration."""
-        # Skip VLLM tests in CI by default
-        if self._is_ci_environment():
-            pytest.skip("VLLM tests disabled in CI environment")
-
         # Load Hydra configuration for VLLM tests
         config = self._load_vllm_test_config()
 
@@ -36,6 +32,10 @@ class VLLMPromptTestBase:
         vllm_config = config.get("vllm_tests", {})
         if not vllm_config.get("enabled", True):
             pytest.skip("VLLM tests disabled in configuration")
+
+        # Skip VLLM tests in CI by default unless explicitly enabled
+        if self._is_ci_environment() and not vllm_config.get("run_in_ci", False):
+            pytest.skip("VLLM tests disabled in CI environment")
 
         # Extract model and performance configuration
         model_config = config.get("model", {})

@@ -1,0 +1,55 @@
+# Fast model configuration for VLLM tests
+# Optimized for speed with smaller model
+
+# Model settings
+model:
+  name: "microsoft/DialoGPT-small"
+  type: "conversational"
+  capabilities:
+    - text_generation
+    - conversation
+    - basic_reasoning
+  limitations:
+    max_context_length: 512
+    max_tokens_per_request: 128
+    supports_function_calling: false
+    supports_system_messages: true
+
+# Container configuration
+container:
+  image: "vllm/vllm-openai:latest"
+  auto_remove: true
+  detach: true
+  resources:
+    cpu_limit: 1
+    memory_limit: "2g"
+    gpu_count: 1
+
+# Server configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  max_batch_size: 4
+  max_queue_size: 8
+  timeout_seconds: 30
+
+# Generation parameters optimized for speed
+generation:
+  temperature: 0.5
+  top_p: 0.8
+  top_k: -1
+  max_tokens: 128
+  min_tokens: 1
+  repetition_penalty: 1.0
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  do_sample: true
+  use_cache: true
+
+# Alternative models
+alternative_models:
+  tiny_model:
+    name: "microsoft/DialoGPT-small"
+    max_tokens: 64
+    temperature: 0.3

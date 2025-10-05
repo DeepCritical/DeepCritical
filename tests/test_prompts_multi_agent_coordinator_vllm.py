@@ -6,7 +6,7 @@ These tests are optional and disabled in CI by default.
 """
 
 import pytest
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 class TestMultiAgentCoordinatorPromptsVLLM(VLLMPromptTestBase):
     """Test multi_agent_coordinator.py prompts with VLLM."""

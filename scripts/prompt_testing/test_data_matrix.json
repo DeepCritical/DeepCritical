@@ -1,0 +1,109 @@
+{
+  "test_scenarios": {
+    "baseline": {
+      "description": "Standard test scenario with realistic data",
+      "question": "What is machine learning and how does it work?",
+      "expected_response_length": 150,
+      "expected_confidence": 0.8
+    },
+    "technical": {
+      "description": "Technical question requiring detailed explanation",
+      "question": "Explain the backpropagation algorithm in neural networks",
+      "expected_response_length": 300,
+      "expected_confidence": 0.9
+    },
+    "creative": {
+      "description": "Creative question requiring synthesis",
+      "question": "Design a research framework for studying consciousness in AI systems",
+      "expected_response_length": 400,
+      "expected_confidence": 0.7
+    },
+    "analytical": {
+      "description": "Analytical question requiring reasoning",
+      "question": "Compare and contrast supervised vs unsupervised learning approaches",
+      "expected_response_length": 250,
+      "expected_confidence": 0.85
+    },
+    "bioinformatics": {
+      "description": "Bioinformatics-specific question",
+      "question": "Analyze the functional role of TP53 gene in cancer development",
+      "expected_response_length": 350,
+      "expected_confidence": 0.85
+    },
+    "code_execution": {
+      "description": "Code execution and analysis question",
+      "question": "Write a Python function to implement a neural network from scratch",
+      "expected_response_length": 400,
+      "expected_confidence": 0.8
+    }
+  },
+  "dummy_data_variants": {
+    "simple": {
+      "query": "What is X?",
+      "context": "Basic context information",
+      "code": "print('Hello')",
+      "text": "Sample text content",
+      "question": "What is machine learning?",
+      "answer": "Machine learning is AI",
+      "task": "Complete this task"
+    },
+    "complex": {
+      "query": "Analyze the complex relationship between quantum mechanics and consciousness in biological systems",
+      "context": "This analysis examines the intersection of quantum biology and consciousness studies, focusing on microtubule-based quantum computation theories and their implications for understanding subjective experience in neural systems.",
+      "code": "import numpy as np; state = np.random.rand(2**10) + 1j * np.random.rand(2**10); state = state / np.linalg.norm(state); print(f'Quantum state norm: {np.linalg.norm(state)}')",
+      "text": "This is a comprehensive text sample for testing purposes, containing multiple sentences and demonstrating various linguistic patterns that might be encountered in real-world applications of natural language processing systems, including complex grammatical structures, technical terminology, and diverse semantic content.",
+      "question": "What is the fundamental nature of consciousness and how does it relate to quantum mechanics in biological systems?",
+      "answer": "Consciousness may involve quantum processes in microtubules",
+      "task": "Design a comprehensive research framework for studying consciousness in AI systems"
+    },
+    "minimal": {
+      "query": "Test query",
+      "context": "Test context",
+      "code": "x = 1",
+      "text": "Test text",
+      "question": "Test question",
+      "answer": "Test answer",
+      "task": "Test task"
+    },
+    "bioinformatics": {
+      "query": "Analyze the functional role of TP53 gene",
+      "context": "TP53 is a tumor suppressor gene involved in cell cycle regulation and DNA repair",
+      "code": "from Bio import SeqIO; print('Analyzing TP53 sequence')",
+      "text": "The TP53 gene encodes a protein that regulates cell division and prevents cancer development",
+      "question": "What is the function of TP53 in cancer?",
+      "answer": "TP53 acts as a tumor suppressor by repairing DNA damage",
+      "task": "Analyze TP53 mutations in cancer samples"
+    }
+  },
+  "performance_targets": {
+    "execution_time_per_prompt": 30,
+    "memory_usage_mb": 2048,
+    "success_rate": 0.8,
+    "reasoning_detection_rate": 0.3,
+    "quality_score": 0.75
+  },
+  "quality_metrics": {
+    "coherence_threshold": 0.7,
+    "relevance_threshold": 0.8,
+    "informativeness_threshold": 0.75,
+    "correctness_threshold": 0.8,
+    "completeness_threshold": 0.7
+  },
+  "generation_parameters": {
+    "temperature_variants": [0.1, 0.3, 0.5, 0.7, 0.9, 1.0],
+    "top_p_variants": [0.5, 0.7, 0.8, 0.9, 0.95],
+    "max_tokens_variants": [128, 256, 512, 1024],
+    "frequency_penalty_variants": [0.0, 0.1, 0.2],
+    "presence_penalty_variants": [0.0, 0.1, 0.2]
+  },
+  "model_variants": {
+    "small": "microsoft/DialoGPT-small",
+    "medium": "microsoft/DialoGPT-medium",
+    "large": "microsoft/DialoGPT-large"
+  },
+  "test_modules_priority": {
+    "high": ["agents", "evaluator", "code_exec"],
+    "medium": ["bioinformatics_agents", "search_agent", "finalizer"],
+    "low": ["broken_ch_fixer", "deep_agent_prompts", "error_analyzer", "multi_agent_coordinator", "orchestrator", "planner", "query_rewriter", "rag", "reducer", "research_planner", "serp_cluster", "vllm_agent", "workflow_orchestrator"]
+  }
+}

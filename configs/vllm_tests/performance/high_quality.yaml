@@ -1,0 +1,99 @@
+# High quality performance configuration for VLLM tests
+# Optimized for quality with extended resource allocation
+
+# Performance targets
+targets:
+  max_execution_time_per_module: 600  # 10 minutes
+  max_execution_time_per_prompt: 60    # 1 minute
+  max_container_startup_time: 300     # 5 minutes
+
+# Resource allocation
+resources:
+  container:
+    cpu_cores: 4
+    memory_gb: 8
+    gpu_memory_gb: 16
+
+  system:
+    max_concurrent_containers: 1
+    max_memory_usage_mb: 8192
+    max_cpu_usage_percent: 90
+
+# Execution optimization
+execution:
+  enable_batching: true
+  max_batch_size: 8
+  batch_timeout_seconds: 10
+
+  enable_caching: true
+  cache_ttl_seconds: 7200  # 2 hours
+  max_cache_size_mb: 1024
+
+  request_timeout_seconds: 120
+  retry_failed_requests: true
+  max_retries: 3
+
+# Monitoring
+monitoring:
+  track_execution_times: true
+  track_memory_usage: true
+  track_container_metrics: true
+  track_network_latency: true
+
+  alerts:
+    execution_time_exceeded: 600
+    memory_usage_exceeded: 4096
+    error_rate_threshold: 0.05
+
+# Adaptive performance
+adaptive:
+  enabled: true
+  adjustment_interval_seconds: 120
+  performance_history_window: 20
+
+  rules:
+    slow_execution:
+      condition: "avg_execution_time > 90"
+      action: "reduce_batch_size"
+      target_batch_size: 4
+
+    high_memory_usage:
+      condition: "memory_usage > 6000"
+      action: "increase_gc_frequency"
+      gc_interval_seconds: 60
+
+# Performance testing
+testing:
+  enable_load_testing: true
+  load_test_duration_seconds: 600
+  load_test_concurrent_users: 3
+
+  enable_stress_testing: false  # Disabled for quality focus
+
+# Optimization strategies
+optimization:
+  memory:
+    enable_gc_optimization: true
+    gc_threshold_mb: 2048
+    enable_memory_pooling: true
+
+  cpu:
+    enable_thread_optimization: true
+    max_worker_threads: 8
+
+  network:
+    enable_connection_pooling: true
+    max_connections: 20
+
+# Performance reporting
+reporting:
+  enable_performance_reports: true
+  report_interval_minutes: 2
+  include_detailed_metrics: true
+
+  formats:
+    - json
+    - html
+    - csv
+
+  retention_days: 14

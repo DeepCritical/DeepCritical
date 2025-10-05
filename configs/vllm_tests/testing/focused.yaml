@@ -1,0 +1,83 @@
+# Focused testing configuration for VLLM tests
+# Optimized for specific modules and reduced scope
+
+# Testing scope and coverage
+scope:
+  test_all_modules: false
+  modules_to_test: ["agents", "evaluator", "code_exec"]
+  modules_to_skip: []
+
+  test_all_prompts: false
+  min_prompts_per_module: 2
+  max_prompts_per_module: 8
+
+  test_data_variants: 2
+  enable_edge_case_testing: true
+  enable_boundary_testing: true
+
+# Test execution strategy
+execution:
+  test_order: "module_priority"
+  group_by_module: true
+  enable_parallel_modules: false
+
+  isolate_module_tests: true
+  reset_container_between_modules: false
+  cleanup_between_tests: false
+
+  test_timeout_seconds: 450  # 7.5 minutes
+  prompt_timeout_seconds: 45   # 45 seconds
+  retry_timeout_seconds: 20
+
+# Test validation
+validation:
+  validate_prompt_structure: true
+  validate_response_structure: true
+  validate_response_content: true
+
+# Test data generation
+data_generation:
+  strategy: "realistic"
+  use_context_aware_data: true
+  enable_data_variants: true
+
+# Test assertion configuration
+assertions:
+  min_success_rate: 0.85  # Higher threshold for focused testing
+  min_reasoning_detection_rate: 0.4
+
+  min_response_length: 20
+  max_response_length: 800
+
+# Test reporting
+reporting:
+  enable_detailed_reports: true
+  enable_module_summaries: true
+  enable_global_summary: true
+
+# Test failure handling
+failure_handling:
+  continue_on_module_failure: false  # Stop on module failure for focused testing
+  continue_on_prompt_failure: true
+  max_consecutive_failures: 3
+
+  retry_failed_prompts: true
+  max_retries_per_prompt: 2
+  retry_delay_seconds: 2
+
+# Test optimization
+optimization:
+  enable_adaptive_testing: false
+  prioritize_fast_tests: false
+  prioritize_important_modules: true
+
+# Development and debugging
+development:
+  debug_mode: false
+  verbose_logging: true  # Enable for focused testing
+  enable_prompt_inspection: true
+  enable_response_inspection: true
+
+  mock_vllm_responses: false
+  use_smaller_models: false
+  reduce_test_data: false

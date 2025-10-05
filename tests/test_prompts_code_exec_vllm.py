@@ -7,7 +7,7 @@ These tests are optional and disabled in CI by default.
 
 import pytest
 
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 
 class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
@@ -108,7 +108,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.code_exec import CODE_EXEC_PROMPTS
 
         # Use a simple Python code snippet as dummy data
-        python_code = "print('Hello, World!')\nprint(2 + 2)"
+        # Note: This would be used for testing the prompt template with realistic data
 
         execute_prompt = CODE_EXEC_PROMPTS["execute_code"]
 
@@ -136,7 +136,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.code_exec import CODE_EXEC_PROMPTS
 
         # Use mathematical code as dummy data
-        math_code = "import math\nprint(math.sqrt(16))\nprint(math.pi)"
+        # Note: This would be used for testing the prompt template with realistic data
 
         execute_prompt = CODE_EXEC_PROMPTS["execute_code"]
 

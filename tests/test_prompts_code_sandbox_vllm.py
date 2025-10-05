@@ -7,7 +7,7 @@ These tests are optional and disabled in CI by default.
 
 import pytest
 
-from tests.test_prompts_vllm_base import VLLMPromptTestBase
+from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 
 class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
@@ -108,7 +108,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.code_sandbox import CODE_SANDBOX_PROMPTS
 
         # Use realistic available variables for JavaScript code generation
-        available_vars = "numbers (Array<number>), threshold (number)"
+        # Note: This would be used for testing the prompt template with realistic data
 
         generate_prompt = CODE_SANDBOX_PROMPTS["generate_code"]
 
@@ -136,7 +136,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.code_sandbox import CODE_SANDBOX_PROMPTS
 
         # Test with a mathematical problem scenario
-        available_vars = "x (number), y (number), operation (string)"
+        # Note: This would be used for testing the prompt template with realistic data
 
         generate_prompt = CODE_SANDBOX_PROMPTS["generate_code"]
 

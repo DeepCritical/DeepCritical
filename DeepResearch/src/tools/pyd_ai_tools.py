@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from typing import Any, Dict
-
-# Import base classes for the registry
-from .base import registry
 
 # Import the tool runners and utilities from utils
 from ..utils.pydantic_ai_utils import (

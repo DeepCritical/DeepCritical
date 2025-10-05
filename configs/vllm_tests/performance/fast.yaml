@@ -1,0 +1,76 @@
+# Fast performance configuration for VLLM tests
+# Optimized for speed with reduced resource usage
+
+# Performance targets
+targets:
+  max_execution_time_per_module: 180  # 3 minutes
+  max_execution_time_per_prompt: 15    # 15 seconds
+  max_container_startup_time: 60      # 1 minute
+
+# Resource allocation
+resources:
+  container:
+    cpu_cores: 1
+    memory_gb: 2
+    gpu_memory_gb: 4
+
+  system:
+    max_concurrent_containers: 1
+    max_memory_usage_mb: 2048
+    max_cpu_usage_percent: 60
+
+# Execution optimization
+execution:
+  enable_batching: true
+  max_batch_size: 2
+  batch_timeout_seconds: 2
+
+  enable_caching: true
+  cache_ttl_seconds: 1800  # 30 minutes
+  max_cache_size_mb: 256
+
+  request_timeout_seconds: 30
+  retry_failed_requests: true
+  max_retries: 1
+
+# Monitoring
+monitoring:
+  track_execution_times: true
+  track_memory_usage: true
+  track_container_metrics: false  # Reduced monitoring for speed
+  track_network_latency: false
+
+  alerts:
+    execution_time_exceeded: 180
+    memory_usage_exceeded: 1024
+    error_rate_threshold: 0.2
+
+# Adaptive performance
+adaptive:
+  enabled: false  # Disabled for consistent fast performance
+
+# Performance testing
+testing:
+  enable_load_testing: false
+  enable_stress_testing: false
+
+# Optimization strategies
+optimization:
+  memory:
+    enable_gc_optimization: true
+    gc_threshold_mb: 512
+    enable_memory_pooling: false
+
+  cpu:
+    enable_thread_optimization: false  # Reduced complexity for speed
+    max_worker_threads: 2
+
+  network:
+    enable_connection_pooling: true
+    max_connections: 5
+
+# Performance reporting
+reporting:
+  enable_performance_reports: false  # Disabled for speed
+  report_interval_minutes: 1
+  include_detailed_metrics: false

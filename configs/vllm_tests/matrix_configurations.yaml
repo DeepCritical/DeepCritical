@@ -1,0 +1,248 @@
+# VLLM Test Matrix Configurations
+# Comprehensive configuration for running battery of VLLM tests
+
+# Test matrix definitions
+test_matrix:
+  # Basic configurations
+  baseline:
+    description: "Standard test configuration with realistic data"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "data_generation.strategy=realistic"
+
+  fast:
+    description: "Fast execution with minimal data"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "data_generation.strategy=minimal"
+      - "model.generation.max_tokens=128"
+      - "performance.max_execution_time_per_module=180"
+
+  quality:
+    description: "High-quality comprehensive testing"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "data_generation.strategy=comprehensive"
+      - "model.generation.max_tokens=512"
+      - "performance.max_execution_time_per_module=600"
+
+  # Performance-focused configurations
+  perf_fast:
+    description: "Performance-focused fast configuration"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.max_tokens=128"
+      - "model.generation.temperature=0.3"
+      - "performance.max_execution_time_per_module=180"
+
+  perf_balanced:
+    description: "Performance-focused balanced configuration"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.max_tokens=256"
+      - "model.generation.temperature=0.7"
+      - "performance.max_execution_time_per_module=300"
+
+  perf_thorough:
+    description: "Performance-focused thorough configuration"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.max_tokens=512"
+      - "model.generation.temperature=0.8"
+      - "performance.max_execution_time_per_module=600"
+
+  # Model variations
+  model_small:
+    description: "Small model configuration"
+    config_overrides:
+      - "model=fast_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+
+  model_medium:
+    description: "Medium model configuration"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+
+  model_large:
+    description: "Large model configuration"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.max_tokens=512"
+
+  # Generation parameter variations
+  temp_low:
+    description: "Low temperature generation"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.temperature=0.1"
+
+  temp_high:
+    description: "High temperature generation"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.temperature=1.0"
+
+  topp_low:
+    description: "Low top-p generation"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.top_p=0.5"
+
+  topp_high:
+    description: "High top-p generation"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "model.generation.top_p=0.95"
+
+  # Testing strategy variations
+  test_minimal:
+    description: "Minimal test scope"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "testing.scope.test_all_modules=false"
+      - "testing.scope.modules_to_test=agents,code_exec"
+
+  test_comprehensive:
+    description: "Comprehensive test scope"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+
+  test_focused:
+    description: "Focused test scope"
+    config_overrides:
+      - "model=local_model"
+      - "performance=balanced"
+      - "testing=comprehensive"
+      - "testing.scope.max_prompts_per_module=5"
+
+# Test execution configuration
+execution:
+  # Matrix execution settings
+  run_full_matrix: true
+  run_specific_configs: false
+  configs_to_run: []
+
+  # Module selection
+  test_all_modules: true
+  modules_to_test: []
+  modules_to_skip: []
+
+  # Output configuration
+  output_base_dir: "test_artifacts/vllm_matrix"
+  enable_timestamp_in_dir: true
+  save_individual_results: true
+  save_module_summaries: true
+  save_global_summary: true
+
+# Performance monitoring
+performance_monitoring:
+  # Execution time tracking
+  track_total_execution_time: true
+  track_per_module_time: true
+  track_per_prompt_time: true
+
+  # Resource usage tracking
+  track_memory_usage: true
+  track_cpu_usage: true
+  track_container_metrics: true
+
+  # Performance alerts
+  enable_performance_alerts: true
+  slow_execution_threshold: 300  # seconds
+  high_memory_threshold: 2048    # MB
+
+# Quality assessment
+quality_assessment:
+  # Response quality evaluation
+  enable_response_quality_scoring: true
+  quality_scoring_method: "composite"
+
+  # Quality dimensions
+  quality_dimensions:
+    - coherence
+    - relevance
+    - informativeness
+    - correctness
+
+  # Quality thresholds
+  quality_thresholds:
+    coherence: 0.7
+    relevance: 0.8
+    informativeness: 0.75
+    correctness: 0.8
+
+# Error handling
+error_handling:
+  # Error tolerance
+  continue_on_config_failure: true
+  continue_on_module_failure: true
+  max_consecutive_failures: 5
+
+  # Error recovery
+  enable_error_recovery: true
+  retry_failed_configs: true
+  max_retries_per_config: 2
+
+  # Error reporting
+  save_error_details: true
+  include_stack_traces: true
+  include_environment_info: true
+
+# Integration settings
+integration:
+  # Test data integration
+  test_data_file: "scripts/prompt_testing/test_data_matrix.json"
+  enable_custom_test_data: true
+
+  # Configuration integration
+  enable_config_validation: true
+  validate_config_completeness: true
+
+  # Reporting integration
+  enable_external_reporting: false
+  external_reporting_endpoints: []
+
+# Advanced features
+advanced:
+  # Matrix analysis
+  enable_matrix_analysis: true
+  compare_configurations: true
+  identify_optimal_configurations: true
+
+  # Learning and optimization
+  enable_adaptive_matrix: false
+  learn_from_results: false
+  optimize_future_runs: false
+
+  # Parallel execution (disabled for single instance)
+  enable_parallel_matrix: false
+  max_parallel_configs: 1

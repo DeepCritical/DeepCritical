@@ -9,7 +9,6 @@ from ..datatypes.tools import (
     ExecutionResult,
     ToolRunner,
     MockToolRunner,
-    ToolMetadata,
 )
 from ..datatypes.tool_specs import ToolSpec, ToolCategory
 

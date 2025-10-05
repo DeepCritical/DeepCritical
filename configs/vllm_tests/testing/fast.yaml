@@ -1,0 +1,83 @@
+# Fast testing configuration for VLLM tests
+# Optimized for speed with reduced test scope
+
+# Testing scope and coverage
+scope:
+  test_all_modules: false
+  modules_to_test: ["agents", "code_exec", "evaluator"]
+  modules_to_skip: ["bioinformatics_agents", "deep_agent_prompts", "error_analyzer"]
+
+  test_all_prompts: false
+  min_prompts_per_module: 1
+  max_prompts_per_module: 3
+
+  test_data_variants: 1
+  enable_edge_case_testing: false
+  enable_boundary_testing: false
+
+# Test execution strategy
+execution:
+  test_order: "module_priority"
+  group_by_module: true
+  enable_parallel_modules: false
+
+  isolate_module_tests: true
+  reset_container_between_modules: false
+  cleanup_between_tests: false
+
+  test_timeout_seconds: 300  # 5 minutes
+  prompt_timeout_seconds: 15   # 15 seconds
+  retry_timeout_seconds: 10
+
+# Test validation
+validation:
+  validate_prompt_structure: false  # Disabled for speed
+  validate_response_structure: false
+  validate_response_content: false
+
+# Test data generation
+data_generation:
+  strategy: "minimal"
+  use_context_aware_data: false
+  enable_data_variants: false
+
+# Test assertion configuration
+assertions:
+  min_success_rate: 0.7  # Lower threshold for speed
+  min_reasoning_detection_rate: 0.2
+
+  min_response_length: 5
+  max_response_length: 500
+
+# Test reporting
+reporting:
+  enable_detailed_reports: false
+  enable_module_summaries: true
+  enable_global_summary: true
+
+# Test failure handling
+failure_handling:
+  continue_on_module_failure: true
+  continue_on_prompt_failure: true
+  max_consecutive_failures: 10
+
+  retry_failed_prompts: true
+  max_retries_per_prompt: 1
+  retry_delay_seconds: 1
+
+# Test optimization
+optimization:
+  enable_adaptive_testing: false
+  prioritize_fast_tests: true
+  prioritize_important_modules: true
+
+# Development and debugging
+development:
+  debug_mode: false
+  verbose_logging: false
+  enable_prompt_inspection: false
+  enable_response_inspection: false
+
+  mock_vllm_responses: false
+  use_smaller_models: true
+  reduce_test_data: true
