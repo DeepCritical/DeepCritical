@@ -14,6 +14,7 @@ from .tool_registry import (
 
 # Import tool specs from datatypes for backward compatibility
 from ..datatypes.tool_specs import ToolSpec, ToolCategory, ToolInput, ToolOutput
+from ..datatypes import tool_specs
 from .analytics import AnalyticsEngine
 from .deepsearch_utils import (
     SearchContext,
@@ -47,4 +48,5 @@ __all__ = [
     "create_search_context",
     "create_search_orchestrator",
     "create_deep_search_evaluator",
+    "tool_specs",
 ]
