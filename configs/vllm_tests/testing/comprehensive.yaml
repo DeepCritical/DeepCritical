@@ -1,0 +1,211 @@
+# Comprehensive testing configuration for VLLM tests
+# Full testing suite with detailed validation and analysis
+
+# Testing scope and coverage
+scope:
+  # Module coverage
+  test_all_modules: true
+  modules_to_test: []  # Empty means test all available modules
+  modules_to_skip: []  # Modules to skip during testing
+
+  # Prompt coverage
+  test_all_prompts: true
+  min_prompts_per_module: 1
+  max_prompts_per_module: 50
+
+  # Test data coverage
+  test_data_variants: 3  # Number of dummy data variants per prompt
+  enable_edge_case_testing: true
+  enable_boundary_testing: true
+
+# Test execution strategy
+execution:
+  # Test ordering and grouping
+  test_order: "module_priority"  # module_priority, alphabetical, random
+  group_by_module: true
+  enable_parallel_modules: false  # Single instance optimization
+
+  # Test isolation
+  isolate_module_tests: true
+  reset_container_between_modules: false  # Single instance optimization
+  cleanup_between_tests: false
+
+  # Test timing
+  test_timeout_seconds: 600  # 10 minutes per module
+  prompt_timeout_seconds: 60   # 1 minute per prompt
+  retry_timeout_seconds: 30    # 30 seconds for retries
+
+# Test validation and quality assurance
+validation:
+  # Prompt validation
+  validate_prompt_structure: true
+  validate_prompt_placeholders: true
+  validate_prompt_formatting: true
+
+  # Response validation
+  validate_response_structure: true
+  validate_response_content: true
+  validate_response_quality: true
+
+  # Reasoning validation
+  validate_reasoning_structure: true
+  validate_reasoning_logic: false  # Enable for advanced testing
+
+# Test data generation
+data_generation:
+  # Dummy data strategy
+  strategy: "realistic"  # realistic, minimal, comprehensive
+  use_context_aware_data: true
+  enable_data_variants: true
+
+  # Data quality
+  ensure_data_relevance: true
+  enable_data_validation: true
+  max_data_generation_attempts: 3
+
+# Test assertion configuration
+assertions:
+  # Success criteria
+  min_success_rate: 0.8  # 80% minimum success rate
+  min_reasoning_detection_rate: 0.3  # 30% minimum reasoning detection
+
+  # Quality thresholds
+  min_response_length: 10  # Minimum characters in response
+  max_response_length: 1000  # Maximum characters in response
+  min_confidence_score: 0.5  # Minimum confidence for reasoning
+
+  # Performance thresholds
+  max_execution_time_per_prompt: 30  # seconds
+  max_memory_usage_per_test: 512   # MB
+
+# Test reporting and analysis
+reporting:
+  # Report generation
+  enable_detailed_reports: true
+  enable_module_summaries: true
+  enable_global_summary: true
+
+  # Report content
+  include_execution_metrics: true
+  include_performance_metrics: true
+  include_quality_metrics: true
+  include_error_analysis: true
+
+  # Report formats
+  formats:
+    - json
+    - markdown
+    - html
+
+# Test failure handling
+failure_handling:
+  # Failure tolerance
+  continue_on_module_failure: true
+  continue_on_prompt_failure: true
+  max_consecutive_failures: 5
+
+  # Failure analysis
+  enable_failure_analysis: true
+  analyze_failure_patterns: true
+  suggest_failure_fixes: true
+
+  # Recovery strategies
+  retry_failed_prompts: true
+  max_retries_per_prompt: 2
+  retry_delay_seconds: 2
+
+# Test optimization
+optimization:
+  # Adaptive testing
+  enable_adaptive_testing: false  # Disable for consistent results
+  adapt_based_on_performance: false
+  adapt_based_on_results: false
+
+  # Test selection optimization
+  enable_test_selection_optimization: false
+  prioritize_fast_tests: true
+  prioritize_important_modules: true
+
+# Advanced testing features
+advanced:
+  # Reasoning analysis
+  enable_reasoning_analysis: true
+  reasoning_analysis_depth: "basic"  # basic, intermediate, advanced
+
+  # Response quality assessment
+  enable_response_quality_assessment: true
+  quality_assessment_criteria:
+    - coherence
+    - relevance
+    - informativeness
+    - correctness
+
+  # Prompt effectiveness metrics
+  enable_prompt_effectiveness_metrics: true
+  effectiveness_metrics:
+    - response_rate
+    - reasoning_rate
+    - quality_score
+    - consistency_score
+
+# Development and debugging
+development:
+  # Debug settings
+  debug_mode: false
+  verbose_logging: false
+  enable_prompt_inspection: false
+  enable_response_inspection: false
+
+  # Test aids
+  enable_mock_responses: false
+  enable_dry_run_mode: false
+  enable_step_by_step_execution: false
+
+# Integration testing
+integration:
+  # Cross-module testing
+  enable_cross_module_testing: false
+  cross_module_dependencies: []
+
+  # Workflow integration testing
+  enable_workflow_integration_testing: false
+  test_end_to_end_workflows: false
+
+  # Multi-agent testing
+  enable_multi_agent_testing: false
+  test_agent_interactions: false
+
+# Performance testing
+performance:
+  # Load testing
+  enable_load_testing: false
+  load_test_concurrent_prompts: 5
+  load_test_duration_seconds: 300
+
+  # Stress testing
+  enable_stress_testing: false
+  stress_test_memory_mb: 2048
+  stress_test_prompts: 100
+
+  # Benchmarking
+  enable_benchmarking: false
+  benchmark_against_baseline: false
+  baseline_model: null
+
+# Quality assurance testing
+quality_assurance:
+  # Comprehensive quality checks
+  enable_comprehensive_qa: false
+  qa_check_interval: 10  # Check every 10 prompts
+
+  # Quality gates
+  enable_quality_gates: false
+  quality_gate_thresholds:
+    success_rate: 0.9
+    reasoning_rate: 0.5
+    quality_score: 7.0
+
+  # Regression testing
+  enable_regression_testing: false
+  compare_against_previous_runs: false
+  regression_tolerance: 0.1

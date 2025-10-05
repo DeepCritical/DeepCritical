@@ -1,0 +1,137 @@
+# Balanced performance configuration for VLLM tests
+# Optimized for reliability and moderate speed
+
+# Performance targets
+targets:
+  # Execution time targets
+  max_execution_time_per_module: 300  # seconds
+  max_execution_time_per_prompt: 30   # seconds
+  max_container_startup_time: 120     # seconds
+
+  # Memory usage targets
+  max_memory_usage_mb: 2048  # MB
+  max_gpu_memory_usage: 0.9  # 90% of available GPU memory
+
+  # Throughput targets
+  min_prompts_per_minute: 2   # Minimum prompts processed per minute
+  target_prompts_per_minute: 5 # Target prompts processed per minute
+
+# Resource allocation
+resources:
+  # Container resources
+  container:
+    cpu_cores: 2
+    memory_gb: 4
+    gpu_memory_gb: 8
+
+  # System resources
+  system:
+    max_concurrent_containers: 1  # Single instance optimization
+    max_memory_usage_mb: 4096     # 4GB system limit
+    max_cpu_usage_percent: 80     # 80% CPU limit
+
+# Execution optimization
+execution:
+  # Batching and parallelization
+  enable_batching: true
+  max_batch_size: 4
+  batch_timeout_seconds: 5
+
+  # Caching configuration
+  enable_caching: true
+  cache_ttl_seconds: 3600  # 1 hour
+  max_cache_size_mb: 512   # 512MB cache
+
+  # Request optimization
+  enable_request_coalescing: true
+  request_timeout_seconds: 60
+  retry_failed_requests: true
+  max_retries: 2
+
+# Monitoring and metrics
+monitoring:
+  # Performance tracking
+  track_execution_times: true
+  track_memory_usage: true
+  track_container_metrics: true
+  track_network_latency: true
+
+  # Alert thresholds
+  alerts:
+    execution_time_exceeded: 300  # seconds
+    memory_usage_exceeded: 2048   # MB
+    error_rate_threshold: 0.1     # 10%
+
+# Adaptive performance
+adaptive:
+  # Dynamic adjustment based on performance
+  enabled: false
+  adjustment_interval_seconds: 60
+  performance_history_window: 10
+
+  # Adjustment rules
+  rules:
+    slow_execution:
+      condition: "avg_execution_time > 45"
+      action: "reduce_batch_size"
+      target_batch_size: 2
+
+    high_memory_usage:
+      condition: "memory_usage > 1800"
+      action: "increase_gc_frequency"
+      gc_interval_seconds: 30
+
+    low_throughput:
+      condition: "prompts_per_minute < 2"
+      action: "optimize_container_config"
+      restart_container: false
+
+# Performance testing
+testing:
+  # Load testing configuration
+  enable_load_testing: false
+  load_test_duration_seconds: 300
+  load_test_concurrent_users: 5
+
+  # Stress testing configuration
+  enable_stress_testing: false
+  stress_test_memory_mb: 4096
+  stress_test_duration_seconds: 600
+
+# Optimization strategies
+optimization:
+  # Memory optimization
+  memory:
+    enable_gc_optimization: true
+    gc_threshold_mb: 1024  # Trigger GC at 1GB
+    enable_memory_pooling: false
+
+  # CPU optimization
+  cpu:
+    enable_thread_optimization: true
+    max_worker_threads: 4
+    enable_async_processing: true
+
+  # Network optimization
+  network:
+    enable_connection_pooling: true
+    max_connections: 10
+    connection_timeout_seconds: 30
+    enable_keepalive: true
+
+# Performance reporting
+reporting:
+  # Report generation
+  enable_performance_reports: true
+  report_interval_minutes: 5
+  include_detailed_metrics: true
+
+  # Report formats
+  formats:
+    - json
+    - csv
+    - html
+
+  # Report retention
+  retention_days: 7
+  max_reports_per_day: 24

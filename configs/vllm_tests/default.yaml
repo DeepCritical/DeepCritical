@@ -1,0 +1,158 @@
+# Default VLLM test configuration
+# This configuration defines the VLLM testing system and its parameters
+
+defaults:
+  - _self_
+  - model: local_model
+  - performance: balanced
+  - testing: comprehensive
+  - output: structured
+
+# Main VLLM test settings
+vllm_tests:
+  # Test execution settings
+  enabled: true
+  run_in_ci: false  # Disable in CI by default
+  require_manual_confirmation: false
+
+  # Test discovery and execution
+  test_modules:
+    - agents
+    - bioinformatics_agents
+    - broken_ch_fixer
+    - code_exec
+    - code_sandbox
+    - deep_agent_prompts
+    - error_analyzer
+    - evaluator
+    - finalizer
+    - multi_agent_coordinator
+    - orchestrator
+    - planner
+    - query_rewriter
+    - rag
+    - reducer
+    - research_planner
+    - search_agent
+    - serp_cluster
+    - vllm_agent
+    - workflow_orchestrator
+    - agent
+
+  # Test execution strategy
+  execution_strategy: sequential  # sequential, parallel, adaptive
+  max_concurrent_tests: 1  # Keep at 1 for single VLLM instance
+  enable_module_batching: true
+  module_batch_size: 3
+
+  # Test filtering
+  skip_empty_modules: true
+  skip_modules_with_errors: false
+  retry_failed_modules: true
+  max_retries_per_module: 2
+
+  # Test data generation
+  use_realistic_dummy_data: true
+  enable_prompt_validation: true
+  enable_response_validation: true
+
+# Artifact and logging configuration
+artifacts:
+  enabled: true
+  base_directory: "test_artifacts/vllm_tests"
+  save_individual_results: true
+  save_module_summaries: true
+  save_global_summary: true
+  save_performance_metrics: true
+
+  # Artifact retention
+  retention_days: 7
+  enable_compression: true
+  max_artifact_size_mb: 100
+
+# Logging configuration
+logging:
+  enabled: true
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  enable_file_logging: true
+  log_directory: "test_artifacts/vllm_tests/logs"
+  max_log_size_mb: 10
+  backup_count: 5
+
+# Performance monitoring
+monitoring:
+  enabled: true
+  track_execution_times: true
+  track_memory_usage: true
+  track_container_metrics: true
+  enable_performance_alerts: true
+
+  # Performance thresholds
+  max_execution_time_per_module: 300  # seconds
+  max_memory_usage_mb: 2048  # MB
+  min_success_rate: 0.8  # 80%
+
+# Error handling and recovery
+error_handling:
+  graceful_degradation: true
+  continue_on_module_failure: true
+  enable_detailed_error_reporting: true
+  save_error_artifacts: true
+
+  # Recovery strategies
+  retry_failed_prompts: true
+  max_retries_per_prompt: 2
+  retry_delay_seconds: 1
+  enable_fallback_dummy_data: true
+
+# Integration settings
+integration:
+  # Hydra integration
+  enable_hydra_config_override: true
+  config_search_paths: ["configs/vllm_tests", "configs"]
+
+  # Pytest integration
+  pytest_markers: ["vllm", "optional"]
+  pytest_timeout: 600  # seconds
+
+  # CI/CD integration
+  ci_skip_markers: ["vllm", "optional"]
+  ci_timeout_multiplier: 2.0
+
+# Development and debugging
+development:
+  debug_mode: false
+  verbose_output: false
+  enable_prompt_inspection: false
+  enable_response_inspection: false
+  enable_container_logs: false
+
+  # Testing aids
+  mock_vllm_responses: false
+  use_smaller_models: false
+  reduce_test_data: false
+
+# Advanced features
+advanced_features:
+  enable_reasoning_analysis: true
+  enable_response_quality_assessment: true
+  enable_prompt_effectiveness_metrics: true
+  enable_cross_module_analysis: true
+
+  # Learning and optimization
+  enable_adaptive_testing: false
+  enable_test_optimization: false
+  enable_model_selection: false
+
+# Model and container configuration (inherited from model config)
+# See configs/vllm_tests/model/ for detailed model configurations
+
+# Performance configuration (inherited from performance config)
+# See configs/vllm_tests/performance/ for detailed performance settings
+
+# Testing configuration (inherited from testing config)
+# See configs/vllm_tests/testing/ for detailed testing parameters
+
+# Output configuration (inherited from output config)
+# See configs/vllm_tests/output/ for detailed output settings

@@ -1,0 +1,149 @@
+# Local VLLM model configuration for testing
+# Optimized for testing performance and reliability
+
+# Model settings
+model:
+  # Primary model for testing
+  name: "microsoft/DialoGPT-medium"
+  type: "conversational"  # conversational, instructional, code, analysis
+
+  # Model capabilities
+  capabilities:
+    - text_generation
+    - conversation
+    - basic_reasoning
+    - prompt_following
+
+  # Model limitations for testing
+  limitations:
+    max_context_length: 1024
+    max_tokens_per_request: 256
+    supports_function_calling: false
+    supports_system_messages: true
+
+# Container configuration
+container:
+  # Container image and settings
+  image: "vllm/vllm-openai:latest"
+  auto_remove: true
+  detach: true
+
+  # Resource allocation
+  resources:
+    cpu_limit: 2  # CPU cores
+    memory_limit: "4g"  # Memory limit
+    gpu_count: 1  # GPU count (if available)
+
+  # Environment variables
+  environment:
+    VLLM_MODEL: "${model.name}"
+    VLLM_HOST: "0.0.0.0"
+    VLLM_PORT: "8000"
+    VLLM_MAX_TOKENS: "256"
+    VLLM_TEMPERATURE: "0.7"
+    VLLM_TOP_P: "0.9"
+
+# Server configuration
+server:
+  # Server settings
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+
+  # Performance settings
+  max_batch_size: 8
+  max_queue_size: 16
+  timeout_seconds: 60
+
+  # Health check configuration
+  health_check:
+    enabled: true
+    interval_seconds: 10
+    timeout_seconds: 5
+    max_retries: 3
+    endpoint: "/health"
+
+# Generation parameters optimized for testing
+generation:
+  # Basic generation settings
+  temperature: 0.7
+  top_p: 0.9
+  top_k: -1  # No limit
+  repetition_penalty: 1.0
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+  # Token limits
+  max_tokens: 256
+  min_tokens: 1
+
+  # Generation control
+  do_sample: true
+  use_cache: true
+  pad_token_id: null
+  eos_token_id: null
+
+# Alternative models for different test scenarios
+alternative_models:
+  # Fast model for quick tests
+  fast_model:
+    name: "microsoft/DialoGPT-small"
+    max_tokens: 128
+    temperature: 0.5
+
+  # High-quality model for comprehensive tests
+  quality_model:
+    name: "microsoft/DialoGPT-large"
+    max_tokens: 512
+    temperature: 0.8
+
+  # Code-focused model for code-related prompts
+  code_model:
+    name: "microsoft/DialoGPT-medium"
+    max_tokens: 256
+    temperature: 0.6
+
+# Model selection logic
+model_selection:
+  # Automatic model selection based on test requirements
+  auto_select: false
+
+  # Selection criteria
+  criteria:
+    test_type:
+      unit_tests: fast_model
+      integration_tests: quality_model
+      performance_tests: fast_model
+
+    prompt_type:
+      code_prompts: code_model
+      reasoning_prompts: quality_model
+      simple_prompts: fast_model
+
+# Model validation
+validation:
+  # Model capability validation
+  validate_capabilities: true
+  required_capabilities: ["text_generation"]
+
+  # Model performance validation
+  validate_performance: true
+  min_tokens_per_second: 10
+  max_latency_ms: 1000
+
+  # Model correctness validation
+  validate_correctness: false  # Enable for comprehensive testing
+  correctness_threshold: 0.8
+
+# Model optimization for testing
+optimization:
+  # Testing-specific optimizations
+  enable_test_optimizations: true
+  reduce_context_for_speed: true
+  use_deterministic_sampling: false
+  enable_caching: true
+
+  # Resource optimization
+  optimize_for_low_resources: true
+  enable_dynamic_batching: false
+  enable_model_sharding: false

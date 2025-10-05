@@ -70,3 +70,42 @@ performance:
   enable_result_caching: true
   cache_ttl: 3600  # 1 hour
   enable_workflow_optimization: true
+
+# VLLM test configuration
+vllm_tests:
+  enabled: false  # Disabled by default for CI safety
+  run_in_ci: false  # Never run in CI
+  require_manual_confirmation: false
+
+  # Test execution settings
+  execution_strategy: sequential
+  max_concurrent_tests: 1  # Single instance optimization
+  enable_module_batching: true
+  module_batch_size: 3
+
+  # Test data and validation
+  use_realistic_dummy_data: true
+  enable_prompt_validation: true
+  enable_response_validation: true
+
+  # Artifact configuration
+  artifacts:
+    enabled: true
+    base_directory: "test_artifacts/vllm_tests"
+    save_individual_results: true
+    save_module_summaries: true
+    save_global_summary: true
+
+  # Performance monitoring
+  monitoring:
+    enabled: true
+    track_execution_times: true
+    track_memory_usage: true
+    max_execution_time_per_module: 300  # seconds
+
+  # Error handling
+  error_handling:
+    graceful_degradation: true
+    continue_on_module_failure: true
+    retry_failed_prompts: true
+    max_retries_per_prompt: 2

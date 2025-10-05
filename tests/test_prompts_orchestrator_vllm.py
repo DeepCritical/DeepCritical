@@ -1,0 +1,26 @@
+"""
+VLLM-based tests for orchestrator.py prompts.
+
+This module tests all prompts defined in the orchestrator module using VLLM containers.
+These tests are optional and disabled in CI by default.
+"""
+
+import pytest
+from tests.test_prompts_vllm_base import VLLMPromptTestBase
+
+class TestOrchestratorPromptsVLLM(VLLMPromptTestBase):
+    """Test orchestrator.py prompts with VLLM."""
+
+    @pytest.mark.vllm
+    @pytest.mark.optional
+    def test_orchestrator_prompts_vllm(self, vllm_tester):
+        """Test all prompts from orchestrator module with VLLM."""
+        results = self.run_module_prompt_tests(
+            "orchestrator",
+            vllm_tester,
+            max_tokens=256,
+            temperature=0.7
+        )
+
+        self.assert_prompt_test_success(results, min_success_rate=0.8)
+        assert len(results) > 0, "No prompts were tested from orchestrator module"

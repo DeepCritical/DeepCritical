@@ -1,0 +1,265 @@
+# Structured output configuration for VLLM tests
+# Optimized for detailed analysis and reporting
+
+# Output format settings
+format:
+  # Primary output format
+  primary_format: "json"  # json, yaml, markdown, html
+
+  # Output structure
+  structure: "hierarchical"  # flat, hierarchical, nested
+  include_metadata: true
+  include_timestamps: true
+  include_version_info: true
+
+  # Content organization
+  group_by_module: true
+  group_by_test_type: true
+  sort_by_execution_order: true
+
+# Individual test result configuration
+individual_results:
+  # Content inclusion
+  include_prompt_details: true
+  include_response_details: true
+  include_reasoning_analysis: true
+  include_performance_metrics: true
+  include_error_details: true
+
+  # Formatting options
+  pretty_print_json: true
+  include_raw_response: false  # Set to false for size optimization
+  truncate_long_responses: true
+  max_response_length: 2000  # characters
+
+  # File naming
+  naming_scheme: "module_prompt_timestamp"  # module_prompt_timestamp, prompt_module_timestamp
+  include_module_prefix: true
+  include_timestamp: true
+
+# Summary and aggregation configuration
+summaries:
+  # Module summaries
+  enable_module_summaries: true
+  include_module_statistics: true
+  include_module_performance: true
+  include_module_errors: true
+
+  # Global summary
+  enable_global_summary: true
+  include_global_statistics: true
+  include_global_performance: true
+  include_global_trends: true
+
+  # Summary content
+  summary_sections:
+    - overview
+    - statistics
+    - performance
+    - quality_metrics
+    - error_analysis
+    - recommendations
+
+# Performance metrics configuration
+performance_metrics:
+  # Metrics to track
+  track_execution_times: true
+  track_memory_usage: true
+  track_container_metrics: true
+  track_response_times: true
+
+  # Metric aggregation
+  aggregate_by_module: true
+  aggregate_by_test_type: true
+  calculate_averages: true
+  calculate_percentiles: true
+
+  # Performance thresholds for reporting
+  thresholds:
+    slow_prompt_threshold: 30  # seconds
+    memory_warning_threshold: 1024  # MB
+    error_rate_warning: 0.1  # 10%
+
+# Quality metrics configuration
+quality_metrics:
+  # Quality assessment
+  enable_quality_scoring: true
+  quality_scoring_method: "composite"  # composite, individual, weighted
+
+  # Quality dimensions
+  dimensions:
+    - coherence
+    - relevance
+    - informativeness
+    - correctness
+    - reasoning_quality
+
+  # Quality thresholds
+  thresholds:
+    min_acceptable_score: 0.7
+    good_score_threshold: 0.8
+    excellent_score_threshold: 0.9
+
+# Error reporting configuration
+error_reporting:
+  # Error detail level
+  detail_level: "comprehensive"  # minimal, standard, comprehensive, debug
+
+  # Error categorization
+  categorize_errors: true
+  error_categories:
+    - container_errors
+    - network_errors
+    - parsing_errors
+    - validation_errors
+    - timeout_errors
+    - model_errors
+
+  # Error analysis
+  enable_error_pattern_analysis: true
+  enable_error_cause_identification: true
+  enable_error_fix_suggestions: true
+
+# Artifact management
+artifacts:
+  # Artifact organization
+  organization: "hierarchical"  # flat, hierarchical, categorized
+  enable_compression: true
+  compression_format: "gzip"
+
+  # Artifact cleanup
+  enable_cleanup: true
+  cleanup_after_days: 7
+  max_artifacts_per_module: 100
+  max_total_artifacts: 1000
+
+  # Artifact metadata
+  include_creation_metadata: true
+  include_size_metadata: true
+  include_checksum: false
+
+# Export and sharing configuration
+export:
+  # Export formats
+  enable_export: true
+  export_formats:
+    - json
+    - csv
+    - excel
+
+  # Export destinations
+  destinations:
+    - local_filesystem
+    - cloud_storage  # If configured
+
+  # Export triggers
+  export_on_completion: true
+  export_on_failure: true
+  export_interval_minutes: 60
+
+# Visualization configuration
+visualization:
+  # Chart and graph generation
+  enable_charts: true
+  chart_types:
+    - bar_charts
+    - line_charts
+    - pie_charts
+    - scatter_plots
+
+  # Visualization themes
+  theme: "default"  # default, dark, light, professional
+  color_scheme: "blue_green"  # blue_green, red_blue, monochrome
+
+  # Visualization content
+  include_performance_charts: true
+  include_quality_charts: true
+  include_error_analysis_charts: true
+  include_trend_analysis: true
+
+# Report generation configuration
+reports:
+  # Report types
+  types:
+    - summary_report
+    - detailed_report
+    - performance_report
+    - quality_report
+    - error_report
+
+  # Report scheduling
+  generate_on_completion: true
+  generate_periodic_reports: true
+  report_interval_hours: 24
+
+  # Report content
+  include_executive_summary: true
+  include_detailed_findings: true
+  include_recommendations: true
+  include_appendices: true
+
+# Logging integration
+logging_integration:
+  # Log file integration
+  include_logs_in_output: false  # Set to false for size optimization
+  log_summary_in_reports: true
+
+  # Log level filtering
+  include_debug_logs: false
+  include_info_logs: true
+  include_warning_logs: true
+  include_error_logs: true
+
+# Data retention and archiving
+retention:
+  # Retention policies
+  retain_individual_results_days: 30
+  retain_summaries_days: 90
+  retain_reports_days: 365
+
+  # Archiving settings
+  enable_archiving: false  # Enable for long-term storage
+  archive_after_days: 90
+  archive_compression: true
+
+# Security and privacy
+security:
+  # Data sanitization
+  sanitize_sensitive_data: true
+  remove_personal_identifiers: true
+  anonymize_user_data: true
+
+  # Access control
+  enable_access_logging: false
+  require_authentication: false
+  encryption_enabled: false
+
+# Development and debugging
+development:
+  # Debug output
+  enable_debug_output: false
+  include_raw_data: false
+  include_intermediate_results: false
+
+  # Validation output
+  enable_validation_output: false
+  include_validation_details: false
+
+# Integration with external systems
+integration:
+  # Database integration
+  enable_database_storage: false
+  database_connection_string: null
+
+  # API integration
+  enable_api_export: false
+  api_endpoint: null
+  api_authentication: null
+
+  # Webhook integration
+  enable_webhooks: false
+  webhook_urls: []
+  webhook_events:
+    - test_completion
+    - test_failure
+    - report_generation
