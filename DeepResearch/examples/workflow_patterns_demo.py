@@ -31,7 +31,7 @@ from workflow_patterns import (
 )
 
 from datatypes.agents import AgentType
-from datatypes.workflow_patterns import create_interaction_state
+from datatypes.workflow_patterns import create_interaction_state, MessageType
 
 
 class MockAgentExecutor:
@@ -216,8 +216,8 @@ async def demonstrate_consensus_algorithms():
 
             print(f"  Consensus reached: {consensus_result.consensus_reached}")
             print(f"  Final result: {consensus_result.final_result}")
-            print(f"  Confidence: {consensus_result.confidence".3f"}")
-            print(f"  Agreement score: {consensus_result.agreement_score".3f"}")
+            print(f"  Confidence: {consensus_result.confidence:.3f}")
+            print(f"  Agreement score: {consensus_result.agreement_score:.3f}")
             print(f"  Algorithm used: {consensus_result.algorithm_used.value}")
 
         except Exception as e:
@@ -301,8 +301,7 @@ async def demonstrate_state_management():
         state.next_round()
 
     # Show final state
-    print("
-Final state:")
+    print("Final state:")
     print(f"  Total rounds: {state.current_round}")
     print(f"  Total messages: {len(state.messages)}")
     print(f"  Active agents: {len(state.active_agents)}")

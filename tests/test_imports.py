@@ -409,8 +409,7 @@ class TestSubmoduleImports:
                 prime_parser,
                 prime_planner,
                 prime_executor,
-                orchestrator,
-                planner,
+                agent_orchestrator,
                 pyd_ai_toolsets,
                 research_agent,
                 tool_caller,
@@ -420,8 +419,7 @@ class TestSubmoduleImports:
             assert prime_parser is not None
             assert prime_planner is not None
             assert prime_executor is not None
-            assert orchestrator is not None
-            assert planner is not None
+            assert agent_orchestrator is not None
             assert pyd_ai_toolsets is not None
             assert research_agent is not None
             assert tool_caller is not None

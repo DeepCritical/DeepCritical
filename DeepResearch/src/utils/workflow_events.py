@@ -9,7 +9,6 @@ with minimal external dependencies.
 from __future__ import annotations
 
 import traceback as _traceback
-from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass

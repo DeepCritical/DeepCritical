@@ -8,30 +8,26 @@ agent interaction design patterns with minimal external dependencies.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 # Import all the core components
 from .datatypes.workflow_patterns import (
     InteractionPattern,
+    WorkflowOrchestrator,
+    create_workflow_orchestrator,
     MessageType,
     AgentInteractionState,
     InteractionMessage,
-    WorkflowOrchestrator,
     InteractionConfig,
     AgentInteractionRequest,
     AgentInteractionResponse,
-    create_interaction_state,
-    create_workflow_orchestrator,
 )
 from .utils.workflow_patterns import (
     WorkflowPatternUtils,
     ConsensusAlgorithm,
     MessageRoutingStrategy,
     InteractionMetrics,
-    create_collaborative_orchestrator,
-    create_sequential_orchestrator,
-    create_hierarchical_orchestrator,
 )
 from .statemachines.workflow_pattern_statemachines import (
     run_collaborative_pattern_workflow,
@@ -52,7 +48,7 @@ from .agents.workflow_pattern_agents import (
     create_adaptive_pattern_agent,
 )
 from .datatypes.agents import AgentType, AgentDependencies
-from .datatypes.execution_status import ExecutionStatus
+from .utils.execution_status import ExecutionStatus
 
 
 class WorkflowPatternConfig(BaseModel):

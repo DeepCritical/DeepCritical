@@ -8,15 +8,11 @@ with minimal external dependencies.
 
 from __future__ import annotations
 
-import asyncio
 import inspect
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, Awaitable, Callable, MutableSequence
+from collections.abc import Awaitable, Callable, MutableSequence
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeAlias, TypeVar
-
-if TYPE_CHECKING:
-    from pydantic import BaseModel
 
 __all__ = [
     "MiddlewareType",

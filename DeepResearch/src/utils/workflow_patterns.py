@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Callable, Union, TypeVar
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Callable
+from dataclasses import dataclass
 from enum import Enum
 import json
 
@@ -18,9 +18,13 @@ import json
 from ..datatypes.workflow_patterns import (
     InteractionPattern,
     MessageType,
+    AgentInteractionMode,
     AgentInteractionState,
     InteractionMessage,
     WorkflowOrchestrator,
+    InteractionConfig,
+    AgentInteractionRequest,
+    AgentInteractionResponse,
 )
 
 
@@ -720,7 +724,7 @@ class WorkflowPatternUtils:
     def deserialize_interaction_state(data: Dict[str, Any]) -> AgentInteractionState:
         """Deserialize interaction state from persistence."""
         from ..datatypes.agents import AgentStatus
-        from ..datatypes.execution_status import ExecutionStatus
+        from ..utils.execution_status import ExecutionStatus
 
         state = AgentInteractionState()
         state.interaction_id = data.get("interaction_id", state.interaction_id)

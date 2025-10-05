@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
-from ..vllm_client import VLLMClient
+from ..utils.vllm_client import VLLMClient
 
 
 class VLLMAgentDependencies(BaseModel):

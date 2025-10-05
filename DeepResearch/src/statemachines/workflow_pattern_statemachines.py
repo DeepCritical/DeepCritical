@@ -8,39 +8,55 @@ consensus-based coordination strategies.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Annotated
-from uuid import uuid4
 
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+# Optional import for pydantic_graph
+try:
+    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+except ImportError:
+    # Create placeholder classes for when pydantic_graph is not available
+    from typing import TypeVar, Generic
+    
+    T = TypeVar('T')
+    
+    class BaseNode(Generic[T]):
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class End:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class Graph:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class GraphRunContext:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class Edge:
+        def __init__(self, *args, **kwargs):
+            pass
 from omegaconf import DictConfig
 
 # Import existing DeepCritical types
 from ..datatypes.workflow_patterns import (
     InteractionPattern,
-    MessageType,
-    AgentInteractionState,
-    InteractionMessage,
     WorkflowOrchestrator,
-    InteractionConfig,
-    AgentInteractionRequest,
-    AgentInteractionResponse,
-    create_interaction_state,
     create_workflow_orchestrator,
+    AgentInteractionState,
+    create_interaction_state,
 )
-from ..datatypes.agents import AgentType, AgentStatus
-from ..datatypes.deep_agent_state import DeepAgentState
-from ..datatypes.execution_status import ExecutionStatus
+from ..datatypes.agents import AgentType
+from ..utils.execution_status import ExecutionStatus
 from ..utils.workflow_patterns import (
-    WorkflowPatternUtils,
     ConsensusAlgorithm,
     MessageRoutingStrategy,
     InteractionMetrics,
-    create_collaborative_orchestrator,
-    create_sequential_orchestrator,
-    create_hierarchical_orchestrator,
+    WorkflowPatternUtils,
 )
 
 

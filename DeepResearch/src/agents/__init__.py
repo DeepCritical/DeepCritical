@@ -21,6 +21,12 @@ from ..datatypes.research import ResearchOutcome, StepResult
 from .tool_caller import ToolCaller
 from .rag_agent import RAGAgent
 from .search_agent import SearchAgent, SearchAgentConfig, SearchQuery, SearchResult
+from .agent_orchestrator import AgentOrchestrator
+from .workflow_orchestrator import PrimaryWorkflowOrchestrator
+
+# Create aliases for backward compatibility
+Orchestrator = AgentOrchestrator
+Planner = PlanGenerator
 
 __all__ = [
     "QueryParser",
@@ -48,4 +54,8 @@ __all__ = [
     "SearchAgentConfig",
     "SearchQuery",
     "SearchResult",
+    "AgentOrchestrator",
+    "PrimaryWorkflowOrchestrator",
+    "Orchestrator",
+    "Planner",
 ]

@@ -192,7 +192,7 @@ class TestToolsModuleImports:
         assert QueryRewriterTool is not None
 
         # Test that they inherit from ToolRunner
-        from DeepResearch.src.datatypes.tools import ToolRunner
+        from DeepResearch.src.tools.base import ToolRunner
 
         assert issubclass(WebSearchTool, ToolRunner)
         assert issubclass(URLVisitTool, ToolRunner)

@@ -11,16 +11,44 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Callable, TypeVar, Generic
+from typing import Any, Dict, List, Optional, Callable
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
-from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+
+# Optional import for pydantic_graph - may not be available in all environments
+try:
+    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+except ImportError:
+    # Create placeholder classes for when pydantic_graph is not available
+    from typing import TypeVar, Generic
+    
+    T = TypeVar('T')
+    
+    class BaseNode(Generic[T]):
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class End:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class Graph:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class GraphRunContext:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class Edge:
+        def __init__(self, *args, **kwargs):
+            pass
 
 # Import existing DeepCritical types
-from .agents import AgentType, AgentStatus, AgentDependencies, AgentResult
+from .agents import AgentType, AgentStatus
+from ..utils.execution_status import ExecutionStatus
 from .deep_agent_state import DeepAgentState
-from .execution_status import ExecutionStatus
 
 
 class InteractionPattern(str, Enum):

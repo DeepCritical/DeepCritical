@@ -7,7 +7,26 @@ into the existing Pydantic Graph state machine architecture.
 
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-from pydantic_graph import Graph, BaseNode, End
+# Optional import for pydantic_graph
+try:
+    from pydantic_graph import Graph, BaseNode, End
+except ImportError:
+    # Create placeholder classes for when pydantic_graph is not available
+    from typing import TypeVar, Generic
+    
+    T = TypeVar('T')
+    
+    class Graph:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class BaseNode(Generic[T]):
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class End:
+        def __init__(self, *args, **kwargs):
+            pass
 
 from ..tools.integrated_search_tools import IntegratedSearchTool
 from ..datatypes.rag import Document, Chunk

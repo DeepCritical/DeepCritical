@@ -111,6 +111,11 @@ from .execution import (
     ExecutionContext,
 )
 
+from .research import (
+    ResearchOutcome,
+    StepResult,
+)
+
 from .middleware import (
     MiddlewareConfig,
     MiddlewareResult,
@@ -178,6 +183,7 @@ from .tool_specs import (
 )
 
 from .tools import (
+    ToolMetadata,
     ExecutionResult,
     ToolRunner,
     MockToolRunner,
@@ -195,6 +201,17 @@ from .agents import (
     AgentDependencies,
     AgentResult,
     ExecutionHistory,
+)
+
+from .multi_agent import (
+    CoordinationStrategy,
+    CommunicationProtocol,
+    AgentState,
+    CoordinationMessage,
+    CoordinationRound,
+    CoordinationResult,
+    MultiAgentCoordinatorConfig,
+    AgentRole,
 )
 
 __all__ = [
@@ -284,6 +301,9 @@ __all__ = [
     "ExecutionContext",
     "Orchestrator",
     "Planner",
+    # Research types
+    "ResearchOutcome",
+    "StepResult",
     # Middleware types
     "MiddlewareConfig",
     "MiddlewareResult",
@@ -340,6 +360,7 @@ __all__ = [
     "CodeExecBuiltinRunner",
     "UrlContextBuiltinRunner",
     # Core tool types
+    "ToolMetadata",
     "ExecutionResult",
     "ToolRunner",
     "MockToolRunner",
@@ -349,4 +370,13 @@ __all__ = [
     "AgentDependencies",
     "AgentResult",
     "ExecutionHistory",
+    # Multi-agent types
+    "CoordinationStrategy",
+    "CommunicationProtocol",
+    "AgentState",
+    "CoordinationMessage",
+    "CoordinationRound",
+    "CoordinationResult",
+    "MultiAgentCoordinatorConfig",
+    "AgentRole",
 ]

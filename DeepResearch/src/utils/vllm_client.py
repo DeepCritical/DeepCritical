@@ -13,7 +13,7 @@ import time
 from typing import Any, Dict, List, Optional, Union, AsyncGenerator
 import aiohttp
 from pydantic import BaseModel, Field
-from .datatypes.vllm_dataclass import (
+from ..datatypes.vllm_dataclass import (
     # Core configurations
     VllmConfig,
     ModelConfig,
@@ -41,7 +41,7 @@ from .datatypes.vllm_dataclass import (
     # Sampling parameters
     QuantizationMethod,
 )
-from .datatypes.rag import VLLMConfig as RAGVLLMConfig
+from ..datatypes.rag import VLLMConfig as RAGVLLMConfig
 
 
 class VLLMClientError(Exception):

@@ -8,7 +8,6 @@ edge management, routing, and validation functionality with minimal external dep
 from __future__ import annotations
 
 import logging
-import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, ClassVar

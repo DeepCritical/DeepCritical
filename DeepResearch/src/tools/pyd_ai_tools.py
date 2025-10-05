@@ -10,12 +10,12 @@ from ..utils.pydantic_ai_utils import (
     run_agent_sync as _run_sync,
 )
 
-# Registry overrides and additions (commented out to avoid circular imports)
-# registry.register(
-#     "web_search", WebSearchBuiltinRunner
-# )  # override previous synthetic runner
-# registry.register("pyd_code_exec", CodeExecBuiltinRunner)
-# registry.register("url_context", UrlContextBuiltinRunner)
+# Registry overrides and additions
+from .base import registry
+from ..datatypes.pydantic_ai_tools import CodeExecBuiltinRunner, UrlContextBuiltinRunner
+
+registry.register("pyd_code_exec", CodeExecBuiltinRunner)
+registry.register("pyd_url_context", UrlContextBuiltinRunner)
 
 # Export the functions for external use
 __all__ = [

@@ -7,40 +7,19 @@ integrating with the existing DeepCritical agent system and workflow patterns.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
 
 from .base import BaseAgent
 from ..datatypes.workflow_patterns import (
     InteractionPattern,
-    MessageType,
-    AgentInteractionState,
-    InteractionMessage,
-    WorkflowOrchestrator,
-    InteractionConfig,
-    AgentInteractionRequest,
-    AgentInteractionResponse,
-    create_interaction_state,
-    create_workflow_orchestrator,
 )
-from ..datatypes.agents import AgentType, AgentStatus, AgentDependencies, AgentResult
-from ..datatypes.execution_status import ExecutionStatus
-from ..utils.workflow_patterns import (
-    WorkflowPatternUtils,
-    ConsensusAlgorithm,
-    MessageRoutingStrategy,
-    InteractionMetrics,
-    create_collaborative_orchestrator,
-    create_sequential_orchestrator,
-    create_hierarchical_orchestrator,
-)
+from ..utils.workflow_patterns import ConsensusAlgorithm
+from ..datatypes.agents import AgentType, AgentDependencies, AgentResult
 from ..statemachines.workflow_pattern_statemachines import (
     run_collaborative_pattern_workflow,
     run_sequential_pattern_workflow,
     run_hierarchical_pattern_workflow,
-    run_pattern_workflow,
 )
 from ..prompts.workflow_pattern_agents import WorkflowPatternAgentPrompts
 
