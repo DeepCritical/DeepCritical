@@ -183,7 +183,6 @@ from .tool_specs import (
 )
 
 from .tools import (
-    ToolMetadata,
     ExecutionResult,
     ToolRunner,
     MockToolRunner,
@@ -360,7 +359,6 @@ __all__ = [
     "CodeExecBuiltinRunner",
     "UrlContextBuiltinRunner",
     # Core tool types
-    "ToolMetadata",
     "ExecutionResult",
     "ToolRunner",
     "MockToolRunner",
