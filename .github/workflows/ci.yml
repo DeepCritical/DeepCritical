@@ -21,12 +21,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install pydantic omegaconf hydra-core
+        pip install -e .
+        pip install -e ".[dev]"
         pip install pytest pytest-cov
 
     - name: Run basic tests (excluding VLLM)
       run: |
         # Run tests excluding VLLM tests by default
-        pytest tests/ -m "not vllm and not optional" --tb=short
+        pytest tests/ -m "not vllm and not optional" --tb=short --ignore=tests/test_prompts_*_vllm.py --ignore=tests/testcontainers_vllm.py
 
     - name: Run VLLM tests (optional, manual trigger only)
       if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[vllm-tests]')
