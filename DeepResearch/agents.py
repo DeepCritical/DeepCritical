@@ -350,7 +350,7 @@ class SearchAgent(BaseAgent):
     def _register_tools(self):
         """Register search tools."""
         try:
-            from .tools.websearch_tools import WebSearchTool, ChunkedSearchTool
+            from .src.tools.websearch_tools import WebSearchTool, ChunkedSearchTool
 
             # Register web search tools
             web_search_tool = WebSearchTool()
@@ -385,7 +385,7 @@ class RAGAgent(BaseAgent):
     def _register_tools(self):
         """Register RAG tools."""
         try:
-            from .tools.integrated_search_tools import (
+            from .src.tools.integrated_search_tools import (
                 IntegratedSearchTool,
                 RAGSearchTool,
             )
@@ -402,7 +402,7 @@ class RAGAgent(BaseAgent):
 
     async def query(self, rag_query: RAGQuery) -> RAGResponse:
         """Perform RAG query."""
-        result = await self.execute(rag_query.dict())
+        result = await self.execute(rag_query.model_dump())
 
         if result.success:
             return RAGResponse(**result.data)
@@ -426,7 +426,7 @@ class BioinformaticsAgent(BaseAgent):
     def _register_tools(self):
         """Register bioinformatics tools."""
         try:
-            from .tools.bioinformatics_tools import (
+            from .src.tools.bioinformatics_tools import (
                 BioinformaticsFusionTool,
                 BioinformaticsReasoningTool,
                 BioinformaticsWorkflowTool,
@@ -455,7 +455,7 @@ class BioinformaticsAgent(BaseAgent):
 
     async def fuse_data(self, fusion_request: DataFusionRequest) -> FusedDataset:
         """Fuse bioinformatics data from multiple sources."""
-        result = await self.execute(fusion_request.dict())
+        result = await self.execute(fusion_request.model_dump())
 
         if result.success and "fused_dataset" in result.data:
             return FusedDataset(**result.data["fused_dataset"])
@@ -471,7 +471,7 @@ class BioinformaticsAgent(BaseAgent):
         self, task: ReasoningTask, dataset: FusedDataset
     ) -> Dict[str, Any]:
         """Perform reasoning on fused bioinformatics data."""
-        reasoning_params = {"task": task.dict(), "dataset": dataset.dict()}
+        reasoning_params = {"task": task.model_dump(), "dataset": dataset.model_dump()}
 
         result = await self.execute(reasoning_params)
         return result.data if result.success else {"error": result.error}
@@ -486,14 +486,14 @@ class DeepSearchAgent(BaseAgent):
     def _register_tools(self):
         """Register deep search tools."""
         try:
-            from .tools.deepsearch_tools import (
+            from .src.tools.deepsearch_tools import (
                 WebSearchTool,
                 URLVisitTool,
                 ReflectionTool,
                 AnswerGeneratorTool,
                 QueryRewriterTool,
             )
-            from .tools.deepsearch_workflow_tool import (
+            from .src.tools.deepsearch_workflow_tool import (
                 DeepSearchWorkflowTool,
                 DeepSearchAgentTool,
             )
@@ -540,7 +540,7 @@ class EvaluatorAgent(BaseAgent):
     def _register_tools(self):
         """Register evaluation tools."""
         try:
-            from .tools.workflow_tools import EvaluatorTool, ErrorAnalyzerTool
+            from .src.tools.workflow_tools import EvaluatorTool, ErrorAnalyzerTool
 
             # Register evaluation tools
             evaluator_tool = EvaluatorTool()
@@ -581,7 +581,7 @@ class DeepAgentPlanningAgent(BaseAgent):
                 tools=["write_todos", "task"],
                 capabilities=[
                     AgentCapability.PLANNING,
-                    AgentCapability.TASK_MANAGEMENT,
+                    AgentCapability.TASK_ORCHESTRATION,
                 ],
                 max_iterations=5,
                 timeout=120.0,
@@ -593,7 +593,7 @@ class DeepAgentPlanningAgent(BaseAgent):
     def _register_tools(self):
         """Register planning tools."""
         try:
-            from .tools.deep_agent_tools import write_todos_tool, task_tool
+            from .src.tools.deep_agent_tools import write_todos_tool, task_tool
 
             # Register DeepAgent tools
             self._agent.tool(write_todos_tool)
@@ -638,7 +638,7 @@ class DeepAgentFilesystemAgent(BaseAgent):
                 tools=["list_files", "read_file", "write_file", "edit_file"],
                 capabilities=[
                     AgentCapability.FILESYSTEM,
-                    AgentCapability.CONTENT_MANAGEMENT,
+                    AgentCapability.DATA_PROCESSING,
                 ],
                 max_iterations=3,
                 timeout=60.0,
@@ -650,7 +650,7 @@ class DeepAgentFilesystemAgent(BaseAgent):
     def _register_tools(self):
         """Register filesystem tools."""
         try:
-            from .tools.deep_agent_tools import (
+            from .src.tools.deep_agent_tools import (
                 list_files_tool,
                 read_file_tool,
                 write_file_tool,
@@ -700,7 +700,7 @@ class DeepAgentResearchAgent(BaseAgent):
                 model_name=self.model_name,
                 system_prompt="You are a research specialist focused on information gathering and analysis.",
                 tools=["web_search", "rag_query", "task"],
-                capabilities=[AgentCapability.RESEARCH, AgentCapability.ANALYSIS],
+                capabilities=[AgentCapability.SEARCH, AgentCapability.ANALYSIS],
                 max_iterations=10,
                 timeout=300.0,
             )
@@ -711,9 +711,9 @@ class DeepAgentResearchAgent(BaseAgent):
     def _register_tools(self):
         """Register research tools."""
         try:
-            from .tools.deep_agent_tools import task_tool
-            from .tools.websearch_tools import WebSearchTool
-            from .tools.integrated_search_tools import RAGSearchTool
+            from .src.tools.deep_agent_tools import task_tool
+            from .src.tools.websearch_tools import WebSearchTool
+            from .src.tools.integrated_search_tools import RAGSearchTool
 
             # Register DeepAgent tools
             self._agent.tool(task_tool)
@@ -764,8 +764,8 @@ class DeepAgentOrchestrationAgent(BaseAgent):
                 system_prompt="You are an orchestration specialist focused on coordinating multiple agents and workflows.",
                 tools=["task", "coordinate_agents", "synthesize_results"],
                 capabilities=[
-                    AgentCapability.ORCHESTRATION,
-                    AgentCapability.COORDINATION,
+                    AgentCapability.TASK_ORCHESTRATION,
+                    AgentCapability.PLANNING,
                 ],
                 max_iterations=15,
                 timeout=600.0,
@@ -781,7 +781,7 @@ class DeepAgentOrchestrationAgent(BaseAgent):
     def _register_tools(self):
         """Register orchestration tools."""
         try:
-            from .tools.deep_agent_tools import task_tool
+            from .src.tools.deep_agent_tools import task_tool
 
             # Register DeepAgent tools
             self._agent.tool(task_tool)
@@ -840,9 +840,9 @@ class DeepAgentGeneralAgent(BaseAgent):
                 system_prompt="You are a general-purpose agent that can handle various tasks and delegate to specialized agents.",
                 tools=["task", "write_todos", "list_files", "read_file", "web_search"],
                 capabilities=[
-                    AgentCapability.ORCHESTRATION,
-                    AgentCapability.TASK_DELEGATION,
-                    AgentCapability.RESEARCH,
+                    AgentCapability.TASK_ORCHESTRATION,
+                    AgentCapability.PLANNING,
+                    AgentCapability.SEARCH,
                 ],
                 max_iterations=20,
                 timeout=900.0,
@@ -854,13 +854,13 @@ class DeepAgentGeneralAgent(BaseAgent):
     def _register_tools(self):
         """Register general tools."""
         try:
-            from .tools.deep_agent_tools import (
+            from .src.tools.deep_agent_tools import (
                 task_tool,
                 write_todos_tool,
                 list_files_tool,
                 read_file_tool,
             )
-            from .tools.websearch_tools import WebSearchTool
+            from .src.tools.websearch_tools import WebSearchTool
 
             # Register DeepAgent tools
             self._agent.tool(task_tool)
@@ -1065,7 +1065,8 @@ class MultiAgentOrchestrator:
         """Execute DeepAgent workflow."""
         # Create initial state
         initial_state = DeepAgentState(
-            context={
+            session_id=f"deep_agent_{int(time.time())}",
+            shared_state={
                 "question": question,
                 "parsed_question": parsed,
                 "execution_plan": plan,

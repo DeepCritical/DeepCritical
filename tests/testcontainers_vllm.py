@@ -9,7 +9,6 @@ import json
 import logging
 import re
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from testcontainers.vllm import VLLMContainer
@@ -827,6 +826,7 @@ def get_all_prompts_with_modules() -> List[Tuple[str, str, str]]:
         List of (module_name, prompt_name, prompt_content) tuples
     """
     import importlib
+    from pathlib import Path
 
     prompts_dir = Path("DeepResearch/src/prompts")
     all_prompts = []
