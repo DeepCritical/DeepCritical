@@ -27,11 +27,12 @@ class RAGAgent(ResearchAgent):
         # Placeholder implementation - in a real implementation,
         # this would use RAG system components to retrieve and generate
         response = RAGResponse(
-            query_id=query.id,
-            answer="RAG functionality not yet implemented",
-            documents=[],
-            confidence=0.5,
+            query=query.text,
+            retrieved_documents=[],
+            generated_answer="RAG functionality not yet implemented",
+            context="",
             metadata={"status": "placeholder"},
+            processing_time=0.0,
         )
         return response
 

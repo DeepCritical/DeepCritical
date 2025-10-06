@@ -18,7 +18,7 @@ from ..datatypes.vllm_dataclass import (
     VllmConfig,
     QuantizationMethod,
 )
-from ..vllm_client import VLLMClient
+from ..utils.vllm_client import VLLMClient
 
 
 class VLLMAgent:
@@ -259,11 +259,28 @@ def create_advanced_vllm_agent(
     """Create a VLLM agent with advanced configuration."""
 
     # Create VLLM configuration
-    vllm_config = VllmConfig.from_config(
+    from ..datatypes.vllm_dataclass import ModelConfig, CacheConfig, LoadConfig, ParallelConfig, SchedulerConfig, DeviceConfig
+    
+    model_config = ModelConfig(
         model=model_name,
         quantization=quantization,
+    )
+    
+    parallel_config = ParallelConfig(
         tensor_parallel_size=tensor_parallel_size,
+    )
+    
+    cache_config = CacheConfig(
         gpu_memory_utilization=gpu_memory_utilization,
+    )
+    
+    vllm_config = VllmConfig(
+        model=model_config,
+        cache=cache_config,
+        load=LoadConfig(),
+        parallel=parallel_config,
+        scheduler=SchedulerConfig(),
+        device=DeviceConfig(),
     )
 
     config = VLLMAgentConfig(

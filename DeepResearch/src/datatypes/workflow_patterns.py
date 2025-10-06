@@ -216,7 +216,7 @@ class AgentInteractionState:
     def finalize(self) -> None:
         """Finalize the interaction."""
         self.end_time = time.time()
-        self.execution_status = ExecutionStatus.COMPLETED
+        self.execution_status = ExecutionStatus.SUCCESS
 
     def get_summary(self) -> Dict[str, Any]:
         """Get a summary of the interaction state."""
@@ -568,7 +568,7 @@ def create_workflow_orchestrator(
 
 
 # Integration with existing DeepCritical components
-class WorkflowPatternNode(BaseNode[DeepAgentState]):
+class WorkflowPatternNode(BaseNode[DeepAgentState]):  # type: ignore[unsupported-base]
     """Base node for workflow pattern execution."""
 
     def __init__(self, pattern: InteractionPattern):

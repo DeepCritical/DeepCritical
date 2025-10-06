@@ -685,13 +685,13 @@ def use_agent_middleware(agent_class: type[TAgent]) -> type[TAgent]:
                     yield update
 
             async def _stream_generator() -> Any:
-                async for update in agent_pipeline.execute_stream(
+                result = await agent_pipeline.execute(
                     self,
                     normalized_messages,
                     context,
                     _execute_stream_handler,
-                ):
-                    yield update
+                )
+                yield result
 
             return _stream_generator()
 
@@ -738,8 +738,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
             return await original_get_response(self, messages, **kwargs)
 
         # Create pipeline and execute with middleware
-        from ..datatypes.rag import ChatOptions
-
+        from ..datatypes.agent_framework_options import ChatOptions
         # Extract chat_options or create default
         chat_options = kwargs.pop("chat_options", ChatOptions())
 
@@ -792,8 +791,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
                 return
 
             # Create pipeline and execute with middleware
-            from ..datatypes.rag import ChatOptions
-
+            from ..datatypes.agent_framework_options import ChatOptions
             # Extract chat_options or create default
             chat_options = kwargs.pop("chat_options", ChatOptions())
 
@@ -814,15 +812,15 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
                     **ctx.kwargs,
                 )
 
-            async for update in pipeline.execute_stream(
+            result = await pipeline.execute(
                 chat_client=self,
                 messages=context.messages,
                 chat_options=context.chat_options,
                 context=context,
                 final_handler=final_handler,
                 **kwargs,
-            ):
-                yield update
+            )
+            yield result
 
         return _stream_generator()
 

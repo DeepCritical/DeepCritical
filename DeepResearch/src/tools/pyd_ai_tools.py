@@ -14,8 +14,8 @@ from ..utils.pydantic_ai_utils import (
 from .base import registry
 from ..datatypes.pydantic_ai_tools import CodeExecBuiltinRunner, UrlContextBuiltinRunner
 
-registry.register("pyd_code_exec", CodeExecBuiltinRunner)
-registry.register("pyd_url_context", UrlContextBuiltinRunner)
+registry.register("pyd_code_exec", lambda: CodeExecBuiltinRunner())
+registry.register("pyd_url_context", lambda: UrlContextBuiltinRunner())
 
 # Export the functions for external use
 __all__ = [

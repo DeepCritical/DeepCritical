@@ -10,10 +10,11 @@ This test is designed to work in both development and CI environments.
 import importlib
 import sys
 from pathlib import Path
+from typing import Optional
 import pytest
 
 
-def safe_import(module_name: str, fallback_module_name: str = None) -> bool:
+def safe_import(module_name: str, fallback_module_name: Optional[str] = None) -> bool:
     """Safely import a module, handling different environments.
 
     Args:

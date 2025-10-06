@@ -115,7 +115,9 @@ class PlanningMiddleware(BaseMiddleware):
         # Register planning tools with the agent
         for tool in self.tools:
             if hasattr(agent, "add_tool"):
-                agent.add_tool(tool)
+                add_tool_method = getattr(agent, "add_tool", None)
+                if add_tool_method is not None and callable(add_tool_method):
+                    add_tool_method(tool)
 
         # Add planning context to system prompt
         planning_state = ctx.deps.get_planning_state()
@@ -154,7 +156,9 @@ class FilesystemMiddleware(BaseMiddleware):
         # Register filesystem tools with the agent
         for tool in self.tools:
             if hasattr(agent, "add_tool"):
-                agent.add_tool(tool)
+                add_tool_method = getattr(agent, "add_tool", None)
+                if add_tool_method is not None and callable(add_tool_method):
+                    add_tool_method(tool)
 
         # Add filesystem context to system prompt
         filesystem_state = ctx.deps.get_filesystem_state()
@@ -178,8 +182,8 @@ class SubAgentMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        subagents: List[Union[SubAgent, CustomSubAgent]] = None,
-        default_tools: List[Callable] = None,
+        subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+        default_tools: Optional[List[Callable]] = None,
         config: Optional[MiddlewareConfig] = None,
     ):
         super().__init__(config)
@@ -198,7 +202,9 @@ class SubAgentMiddleware(BaseMiddleware):
         # Register task tool with the agent
         for tool in self.tools:
             if hasattr(agent, "add_tool"):
-                agent.add_tool(tool)
+                add_tool_method = getattr(agent, "add_tool", None)
+                if add_tool_method is not None and callable(add_tool_method):
+                    add_tool_method(tool)
 
         # Initialize subagents if not already done
         if not self._agent_registry:
@@ -410,7 +416,7 @@ class PromptCachingMiddleware(BaseMiddleware):
 class MiddlewarePipeline:
     """Pipeline for managing multiple middleware components."""
 
-    def __init__(self, middleware: List[BaseMiddleware] = None):
+    def __init__(self, middleware: Optional[List[BaseMiddleware]] = None):
         self.middleware = middleware or []
         # Sort by priority (higher priority first)
         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
@@ -463,8 +469,8 @@ def create_filesystem_middleware(
 
 
 def create_subagent_middleware(
-    subagents: List[Union[SubAgent, CustomSubAgent]] = None,
-    default_tools: List[Callable] = None,
+    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+    default_tools: Optional[List[Callable]] = None,
     config: Optional[MiddlewareConfig] = None,
 ) -> SubAgentMiddleware:
     """Create a subagent middleware instance."""
@@ -490,8 +496,8 @@ def create_prompt_caching_middleware(
 
 
 def create_default_middleware_pipeline(
-    subagents: List[Union[SubAgent, CustomSubAgent]] = None,
-    default_tools: List[Callable] = None,
+    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+    default_tools: Optional[List[Callable]] = None,
 ) -> MiddlewarePipeline:
     """Create a default middleware pipeline with common middleware."""
     pipeline = MiddlewarePipeline()

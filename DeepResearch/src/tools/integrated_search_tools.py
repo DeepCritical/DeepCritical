@@ -13,7 +13,7 @@ from pydantic_ai import RunContext
 from .base import ToolSpec, ToolRunner, ExecutionResult
 from .websearch_tools import ChunkedSearchTool
 from .analytics_tools import RecordRequestTool
-from ..datatypes.rag import Document, Chunk, RAGQuery
+from ..datatypes.rag import Document, Chunk, RAGQuery, SearchType
 
 
 class IntegratedSearchTool(ToolRunner):
@@ -122,20 +122,12 @@ class IntegratedSearchTool(ToolRunner):
                     )
                     documents.append(document)
 
-                    # Create RAG Chunks
+                    # Create RAG Chunks (using Chunk dataclass fields)
                     for i, chunk_data in enumerate(chunk_list):
                         chunk = Chunk(
                             text=chunk_data.get("text", ""),
-                            metadata={
-                                "source_title": source_title,
-                                "url": chunk_data.get("url", ""),
-                                "source": chunk_data.get("source", ""),
-                                "date": chunk_data.get("date", ""),
-                                "domain": chunk_data.get("domain", ""),
-                                "chunk_index": i,
-                                "search_query": query,
-                                "search_type": search_type,
-                            },
+                            # Place URL in context since Chunk has no source field
+                            context=chunk_data.get("url", ""),
                         )
                         chunks.append(chunk)
 
@@ -154,8 +146,8 @@ class IntegratedSearchTool(ToolRunner):
             return ExecutionResult(
                 success=True,
                 data={
-                    "documents": [doc.dict() for doc in documents],
-                    "chunks": [chunk.dict() for chunk in chunks],
+                    "documents": [doc.model_dump() for doc in documents],
+                    "chunks": [chunk.to_dict() for chunk in chunks],
                     "analytics_recorded": analytics_recorded,
                     "processing_time": processing_time,
                     "success": True,
@@ -215,7 +207,7 @@ class RAGSearchTool(ToolRunner):
             # Create RAG query
             rag_query = RAGQuery(
                 text=query,
-                search_type="similarity",
+                search_type=SearchType.SIMILARITY,
                 top_k=num_results,
                 filters={"search_type": search_type, "chunk_size": chunk_size},
             )
@@ -242,7 +234,7 @@ class RAGSearchTool(ToolRunner):
             return ExecutionResult(
                 success=True,
                 data={
-                    "rag_query": rag_query.dict(),
+                    "rag_query": rag_query.model_dump(),
                     "documents": search_result.data.get("documents", []),
                     "chunks": search_result.data.get("chunks", []),
                     "success": True,

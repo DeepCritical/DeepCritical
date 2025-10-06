@@ -21,7 +21,7 @@ class OrchestratorDependencies(BaseModel):
 class Orchestrator:
     """Placeholder orchestrator that would sequence subflows based on config."""
 
-    def build_plan(self, question: str, flows_cfg: Dict[str, Any]) -> List[str]:
+    def build_plan(self, question: str, flows_cfg: Optional[Dict[str, Any]]) -> List[str]:
         enabled = [
             k
             for k, v in (flows_cfg or {}).items()

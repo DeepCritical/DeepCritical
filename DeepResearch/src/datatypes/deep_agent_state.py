@@ -9,7 +9,7 @@ Pydantic AI architecture.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from enum import Enum
 
@@ -43,7 +43,8 @@ class Todo(BaseModel):
         default_factory=dict, description="Additional metadata"
     )
 
-    @validator("content")
+    @field_validator("content", mode='before')
+    @classmethod
     def validate_content(cls, v):
         if not v or not v.strip():
             raise ValueError("Todo content cannot be empty")
@@ -89,7 +90,8 @@ class FileInfo(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="File metadata")
 
-    @validator("path")
+    @field_validator("path", mode='before')
+    @classmethod
     def validate_path(cls, v):
         if not v or not v.strip():
             raise ValueError("File path cannot be empty")
@@ -384,7 +386,7 @@ def merge_conversation_history(
 
 # Factory functions
 def create_todo(
-    content: str, priority: int = 0, tags: List[str] = None, **kwargs
+    content: str, priority: int = 0, tags: Optional[List[str]] = None, **kwargs
 ) -> Todo:
     """Create a Todo with default values."""
     import uuid

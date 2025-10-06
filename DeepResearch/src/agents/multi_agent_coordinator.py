@@ -11,7 +11,7 @@ import asyncio
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
-from dataclasses import dataclass, field
+from dataclasses import field
 
 from pydantic_ai import Agent, RunContext
 
@@ -40,27 +40,27 @@ if TYPE_CHECKING:
     pass
 
 
-@dataclass
 class MultiAgentCoordinator:
     """Coordinator for multi-agent systems."""
 
-    system_config: MultiAgentSystemConfig
-    agents: Dict[str, Agent] = field(default_factory=dict)
-    judges: Dict[str, Any] = field(default_factory=dict)
-    message_queue: List[CoordinationMessage] = field(default_factory=list)
-    coordination_history: List[CoordinationRound] = field(default_factory=list)
+    def __init__(self, system_config: MultiAgentSystemConfig):
+        self.system_config = system_config
+        self.agents: Dict[str, Agent] = {}
+        self.judges: Dict[str, Any] = field(default_factory=dict)
+        self.message_queue: List[CoordinationMessage] = field(default_factory=list)
+        self.coordination_history: List[CoordinationRound] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize the coordinator."""
-        self._create_agents()
+        self.initialize_agents()
         self._create_judges()
 
-    def _create_agents(self):
+    def initialize_agents(self) -> None:
         """Create agent instances."""
         for agent_config in self.system_config.agents:
             if agent_config.enabled:
                 agent = Agent(
-                    model_name=agent_config.model_name,
+                    model=agent_config.model_name,
                     system_prompt=agent_config.system_prompt
                     or self._get_default_system_prompt(agent_config.role),
                     instructions=self._get_default_instructions(agent_config.role),
@@ -638,12 +638,16 @@ class MultiAgentCoordinator:
             }
 
             # Execute agent
-            result = await agent.run(agent_input)
+            result = await agent.run(str(agent_input))
 
             agent_state.status = WorkflowStatus.COMPLETED
             agent_state.end_time = datetime.now()
 
-            return result
+            if hasattr(result, 'model_dump'):
+                model_dump_method = getattr(result, 'model_dump', None)
+                if model_dump_method is not None and callable(model_dump_method):
+                    return model_dump_method()
+            return {"result": str(result)}
 
         except Exception as e:
             agent_state.status = WorkflowStatus.FAILED

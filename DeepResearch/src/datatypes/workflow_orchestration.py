@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import uuid
 
 if TYPE_CHECKING:
@@ -291,7 +291,8 @@ class WorkflowOrchestrationConfig(BaseModel):
     enable_monitoring: bool = Field(True, description="Enable execution monitoring")
     enable_caching: bool = Field(True, description="Enable result caching")
 
-    @validator("sub_workflows")
+    @field_validator("sub_workflows")
+    @classmethod
     def validate_sub_workflows(cls, v):
         """Validate sub-workflow configurations."""
         names = [w.name for w in v]
@@ -869,7 +870,8 @@ class WorkflowOrchestrationState(BaseModel):
         default_factory=list, description="Sub-workflow information"
     )
 
-    @validator("sub_workflows")
+    @field_validator("sub_workflows")
+    @classmethod
     def validate_sub_workflows(cls, v):
         """Validate sub-workflows structure."""
         for workflow in v:

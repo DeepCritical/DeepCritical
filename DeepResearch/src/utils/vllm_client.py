@@ -418,7 +418,7 @@ class VLLMClient(BaseModel):
         return cls(
             base_url=f"http://{rag_config.host}:{rag_config.port}",
             api_key=rag_config.api_key,
-            timeout=rag_config.timeout,
+            timeout=30.0,  # Default timeout
         )
 
 

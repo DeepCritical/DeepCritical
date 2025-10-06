@@ -607,7 +607,7 @@ class DeepSearchQuery:
     max_results: int = 10
     search_type: str = "web"
     include_images: bool = False
-    filters: Dict[str, Any] = None
+    filters: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.filters is None:
@@ -622,7 +622,7 @@ class DeepSearchResult:
     results: List[Dict[str, Any]]
     total_found: int
     execution_time: float
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:

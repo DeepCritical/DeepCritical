@@ -30,7 +30,7 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
 
         # Log container info
         container_info = vllm_tester.get_container_info()
-        pytest.custom_logger.info(f"VLLM container info: {container_info}")
+        print(f"VLLM container info: {container_info}")
 
     @pytest.mark.vllm
     @pytest.mark.optional

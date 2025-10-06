@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 from .base import ToolSpec, ToolRunner, ExecutionResult, registry
-from ..statemachines.deepsearch_workflow import run_deepsearch_workflow
+# from ..statemachines.deepsearch_workflow import run_deepsearch_workflow
 
 
 @dataclass
@@ -49,12 +49,12 @@ class DeepSearchWorkflowTool(ToolRunner):
         try:
             # Extract parameters
             question = str(params.get("question", "")).strip()
-            max_steps = int(params.get("max_steps", 20))
-            token_budget = int(params.get("token_budget", 10000))
-            search_engines = str(params.get("search_engines", "google")).strip()
-            evaluation_criteria = str(
-                params.get("evaluation_criteria", "definitive,completeness,freshness")
-            ).strip()
+            # max_steps = int(params.get("max_steps", 20))
+            # token_budget = int(params.get("token_budget", 10000))
+            # search_engines = str(params.get("search_engines", "google")).strip()
+            # evaluation_criteria = str(
+            #     params.get("evaluation_criteria", "definitive,completeness,freshness")
+            # ).strip()
 
             if not question:
                 return ExecutionResult(
@@ -62,22 +62,25 @@ class DeepSearchWorkflowTool(ToolRunner):
                 )
 
             # Create configuration
-            config = {
-                "max_steps": max_steps,
-                "token_budget": token_budget,
-                "search_engines": search_engines.split(","),
-                "evaluation_criteria": evaluation_criteria.split(","),
-                "deepsearch": {
-                    "enabled": True,
-                    "max_urls_per_step": 5,
-                    "max_queries_per_step": 5,
-                    "max_reflect_per_step": 2,
-                    "timeout": 30,
-                },
-            }
+            # config = {
+            #     "max_steps": max_steps,
+            #     "token_budget": token_budget,
+            #     "search_engines": search_engines.split(","),
+            #     "evaluation_criteria": evaluation_criteria.split(","),
+            #     "deepsearch": {
+            #         "enabled": True,
+            #         "max_urls_per_step": 5,
+            #         "max_queries_per_step": 5,
+            #         "max_reflect_per_step": 2,
+            #         "timeout": 30,
+            #     },
+            # }
 
             # Run the deep search workflow
-            final_output = run_deepsearch_workflow(question, config)
+            # from omegaconf import DictConfig
+            # config_obj = DictConfig(config) if not isinstance(config, DictConfig) else config
+            # final_output = run_deepsearch_workflow(question, config_obj)
+            final_output = {"error": "Deep search workflow not available"}
 
             # Parse the output to extract structured information
             parsed_results = self._parse_workflow_output(final_output)
@@ -201,7 +204,7 @@ class DeepSearchAgentTool(ToolRunner):
             agent_personality = str(
                 params.get("agent_personality", "analytical")
             ).strip()
-            research_depth = str(params.get("research_depth", "comprehensive")).strip()
+            # research_depth = str(params.get("research_depth", "comprehensive")).strip()
             output_format = str(params.get("output_format", "detailed")).strip()
 
             if not question:
@@ -210,12 +213,13 @@ class DeepSearchAgentTool(ToolRunner):
                 )
 
             # Create agent-specific configuration
-            config = self._create_agent_config(
-                agent_personality, research_depth, output_format
-            )
+            # config = self._create_agent_config(
+            #     agent_personality, research_depth, output_format
+            # )
 
             # Run the deep search workflow
-            final_output = run_deepsearch_workflow(question, config)
+            # final_output = run_deepsearch_workflow(question, config)
+            final_output = {"error": "Deep search workflow not available"}
 
             # Enhance output with agent personality
             enhanced_response = self._enhance_with_agent_personality(

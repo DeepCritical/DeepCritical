@@ -19,7 +19,7 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "tools"))
 
-from base import ToolSpec, ToolRunner, ExecutionResult, registry
+from ..tools.base import ToolSpec, ToolRunner, ExecutionResult, registry
 
 
 # Whitelist of safe Python builtins for sandboxed execution

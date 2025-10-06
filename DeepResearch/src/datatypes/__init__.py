@@ -214,6 +214,42 @@ from .multi_agent import (
     AgentRole,
 )
 
+from .agent_framework_types import (
+    # Content types
+    TextSpanRegion,
+    CitationAnnotation,
+    BaseContent,
+    TextContent,
+    TextReasoningContent,
+    DataContent,
+    UriContent,
+    ErrorContent,
+    FunctionCallContent,
+    FunctionResultContent,
+    UsageContent,
+    HostedFileContent,
+    HostedVectorStoreContent,
+    FunctionApprovalRequestContent,
+    FunctionApprovalResponseContent,
+    Content,
+    prepare_function_call_results,
+    # Usage types
+    UsageDetails,
+    # Enum types
+    Role,
+    FinishReason,
+    ToolMode,
+    # Chat types
+    ChatMessage,
+    ChatResponseUpdate,
+    ChatResponse,
+    # Agent types
+    AgentRunResponseUpdate,
+    AgentRunResponse,
+    # Options types
+    ChatOptions,
+)
+
 __all__ = [
     # Tool specification types
     "ToolSpec",
@@ -379,4 +415,32 @@ __all__ = [
     "CoordinationResult",
     "MultiAgentCoordinatorConfig",
     "AgentRole",
+    # Agent Framework types
+    "TextSpanRegion",
+    "CitationAnnotation",
+    "BaseContent",
+    "TextContent",
+    "TextReasoningContent",
+    "DataContent",
+    "UriContent",
+    "ErrorContent",
+    "FunctionCallContent",
+    "FunctionResultContent",
+    "UsageContent",
+    "HostedFileContent",
+    "HostedVectorStoreContent",
+    "FunctionApprovalRequestContent",
+    "FunctionApprovalResponseContent",
+    "Content",
+    "prepare_function_call_results",
+    "UsageDetails",
+    "Role",
+    "FinishReason",
+    "ToolMode",
+    "ChatMessage",
+    "ChatResponseUpdate",
+    "ChatResponse",
+    "AgentRunResponseUpdate",
+    "AgentRunResponse",
+    "ChatOptions",
 ]

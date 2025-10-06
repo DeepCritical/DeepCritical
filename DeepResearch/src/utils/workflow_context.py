@@ -12,12 +12,12 @@ import inspect
 import logging
 from collections.abc import Callable
 from types import UnionType
-from typing import Any, Generic, Union, cast, get_args, get_origin
+from typing import Any, Generic, Union, cast, get_args, get_origin, TypeVar
 
 logger = logging.getLogger(__name__)
 
-T_Out = type("T_Out", (), {})
-T_W_Out = type("T_W_Out", (), {})
+T_Out = TypeVar("T_Out")
+T_W_Out = TypeVar("T_W_Out")
 
 
 def infer_output_types_from_ctx_annotation(
@@ -180,7 +180,7 @@ def validate_function_signature(
 
     if len(params) not in expected_counts:
         raise ValueError(
-            f"{context_description} {func.__name__} must have {param_description}. Got {len(params)} parameters."
+            f"{context_description} {getattr(func, '__name__', 'function')} must have {param_description}. Got {len(params)} parameters."
         )
 
     # Extract message parameter (index 0 for functions, index 1 for methods)
@@ -190,7 +190,7 @@ def validate_function_signature(
     # Check message parameter has type annotation
     if message_param.annotation == inspect.Parameter.empty:
         raise ValueError(
-            f"{context_description} {func.__name__} must have a type annotation for the message parameter"
+            f"{context_description} {getattr(func, '__name__', 'function')} must have a type annotation for the message parameter"
         )
 
     message_type = message_param.annotation
@@ -207,7 +207,7 @@ def validate_function_signature(
         # No context parameter (only valid for function executors)
         if not context_description.startswith("Function"):
             raise ValueError(
-                f"{context_description} {func.__name__} must have a WorkflowContext parameter"
+                f"{context_description} {getattr(func, '__name__', 'function')} must have a WorkflowContext parameter"
             )
         output_types, workflow_output_types = [], []
         ctx_annotation = None

@@ -119,9 +119,9 @@ class VLLMPromptTester:
         self.docker_available = self._check_docker_availability()
 
         # Extract configuration values with overrides
-        vllm_config = config.get("vllm_tests", {})
-        model_config = config.get("model", {})
-        performance_config = config.get("performance", {})
+        vllm_config = config.get("vllm_tests", {}) if config else {}
+        model_config = config.get("model", {}) if config else {}
+        performance_config = config.get("performance", {}) if config else {}
 
         # Apply configuration with overrides
         self.model_name = model_name or model_config.get("name", "microsoft/DialoGPT-medium")
@@ -284,7 +284,8 @@ class VLLMPromptTester:
         url = f"{self.container.get_connection_url()}{health_check_config.get('endpoint', '/health')}"
 
         retry_count = 0
-        while time.time() - start_time < timeout and retry_count < max_retries:
+        timeout_seconds = timeout or 300  # Default 5 minutes
+        while time.time() - start_time < timeout_seconds and retry_count < max_retries:
             try:
                 response = requests.get(url, timeout=check_timeout)
                 if response.status_code == 200:

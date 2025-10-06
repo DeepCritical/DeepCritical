@@ -50,6 +50,7 @@ from .src.tools import pyd_ai_tools  # noqa: F401 ensure registration
 class ResearchState:
     question: str
     plan: Optional[List[str]] = field(default_factory=list)
+    full_plan: Optional[List[Dict[str, Any]]] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)
     answers: List[str] = field(default_factory=list)
     # PRIME-specific state
@@ -84,7 +85,16 @@ class ResearchState:
 class Plan(BaseNode[ResearchState]):
     async def run(
         self, ctx: GraphRunContext[ResearchState]
-    ) -> Union[Search, PrimaryREACTWorkflow, EnhancedREACTWorkflow]:
+    ) -> Union[
+        Search,
+        PrimaryREACTWorkflow,
+        EnhancedREACTWorkflow,
+        PrepareChallenge,
+        PrimeParse,
+        BioinformaticsParse,
+        RAGParse,
+        DSPlan,
+    ]:
         cfg = ctx.state.config
 
         # Check for enhanced REACT architecture modes
@@ -101,7 +111,7 @@ class Plan(BaseNode[ResearchState]):
             return PrimaryREACTWorkflow()
 
         # Switch to challenge flow if enabled
-        if getattr(cfg.challenge, "enabled", False):
+        if hasattr(cfg, 'challenge') and cfg.challenge and getattr(cfg.challenge, "enabled", False):
             ctx.state.notes.append("Challenge mode enabled")
             return PrepareChallenge()
 
@@ -142,7 +152,7 @@ class Plan(BaseNode[ResearchState]):
         planner = PlannerAgent()
         parsed = parser.parse(ctx.state.question)
         plan = planner.plan(parsed)
-        ctx.set("plan", plan)
+        ctx.state.full_plan = plan
         ctx.state.plan = [f"{s['tool']}" for s in plan]
         ctx.state.notes.append(f"Planned steps: {ctx.state.plan}")
         return Search()
@@ -168,9 +178,11 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             ctx.state.orchestration_state = orchestrator.state
 
             # Execute primary workflow
-            result = await orchestrator.execute_primary_workflow(
-                ctx.state.question, cfg
-            )
+            if cfg is None:
+                from omegaconf import DictConfig
+
+                cfg = DictConfig({})
+            result = await orchestrator.execute_primary_workflow(ctx.state.question, cfg)
 
             # Process results
             if result["success"]:
@@ -453,7 +465,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
 
                 ctx.state.answers.append(final_answer)
                 ctx.state.notes.append(
-                    f"Enhanced REACT workflow ({app_mode.value}) completed successfully"
+                    f"Enhanced REACT workflow ({app_mode.value if app_mode else 'unknown'}) completed successfully"
                 )
 
                 return End(final_answer)
@@ -565,8 +577,9 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         self, ctx: GraphRunContext[ResearchState], orchestrator: AgentOrchestrator
     ):
         """Execute single REACT mode."""
+        cfg = ctx.state.config or DictConfig({})
         return await orchestrator.execute_orchestration(
-            ctx.state.question, ctx.state.config
+            ctx.state.question, cfg
         )
 
     async def _execute_multi_level_react(
@@ -574,8 +587,9 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
     ):
         """Execute multi-level REACT mode."""
         # This would implement multi-level REACT with nested loops
+        cfg = ctx.state.config or DictConfig({})
         return await orchestrator.execute_orchestration(
-            ctx.state.question, ctx.state.config
+            ctx.state.question, cfg
         )
 
     async def _execute_nested_orchestration(
@@ -583,8 +597,9 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
     ):
         """Execute nested orchestration mode."""
         # This would implement nested orchestration with subgraphs
+        cfg = ctx.state.config or DictConfig({})
         return await orchestrator.execute_orchestration(
-            ctx.state.question, ctx.state.config
+            ctx.state.question, cfg
         )
 
     async def _execute_loss_driven(
@@ -592,8 +607,9 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
     ):
         """Execute loss-driven mode."""
         # This would implement loss-driven execution with quality metrics
+        cfg = ctx.state.config or DictConfig({})
         return await orchestrator.execute_orchestration(
-            ctx.state.question, ctx.state.config
+            ctx.state.question, cfg
         )
 
     async def _execute_custom_mode(
@@ -601,8 +617,9 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
     ):
         """Execute custom mode."""
         # This would implement custom execution logic
+        cfg = ctx.state.config or DictConfig({})
         return await orchestrator.execute_orchestration(
-            ctx.state.question, ctx.state.config
+            ctx.state.question, cfg
         )
 
     def _generate_enhanced_output(
@@ -674,12 +691,12 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
 class Search(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> Analyze:
         history = ExecutionHistory()
-        plan = ctx.get("plan") or []
+        plan = getattr(ctx.state, "full_plan", []) or []
         retries = int(getattr(ctx.state.config, "retries", 2))
         exec_agent = ExecutorAgent(retries=retries)
         bag = exec_agent.run_plan(plan, history)
-        ctx.set("history", history)
-        ctx.set("bag", bag)
+        ctx.state.execution_results["history"] = history
+        ctx.state.execution_results["bag"] = bag
         ctx.state.notes.append("Executed plan with tool runners")
         return Analyze()
 
@@ -687,7 +704,7 @@ class Search(BaseNode[ResearchState]):
 @dataclass
 class Analyze(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> Synthesize:
-        history = ctx.get("history")
+        history = ctx.state.execution_results.get("history")
         n = len(history.items) if history else 0
         ctx.state.notes.append(f"Analysis: executed {n} steps")
         return Synthesize()
@@ -698,7 +715,7 @@ class Synthesize(BaseNode[ResearchState]):
     async def run(
         self, ctx: GraphRunContext[ResearchState]
     ) -> Annotated[End[str], Edge(label="done")]:
-        bag = ctx.get("bag") or {}
+        bag = ctx.state.execution_results.get("bag") or {}
         final = (
             bag.get("final")
             or bag.get("finalize.final")
@@ -732,8 +749,11 @@ research_graph = Graph(
 @dataclass
 class PrepareChallenge(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> RunChallenge:
-        ch = ctx.config.challenge
-        ctx.state.notes.append(f"Prepare: {ch.name} in {ch.domain}")
+        ch = getattr(ctx.state.config, 'challenge', None) if ctx.state.config else None
+        if ch:
+            ctx.state.notes.append(f"Prepare: {ch.name} in {ch.domain}")
+        else:
+            ctx.state.notes.append("Prepare: Challenge configuration not found")
         return RunChallenge()
 
 
@@ -760,17 +780,17 @@ class EvaluateChallenge(BaseNode[ResearchState]):
 class DSPlan(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> "DSExecute":
         # Orchestrate plan selection based on enabled subflows
-        flows_cfg = getattr(ctx.config, "flows", {})
+        flows_cfg = getattr(ctx.state.config, "flows", {})
         orchestrator = Orchestrator()
         active = orchestrator.build_plan(ctx.state.question, flows_cfg)
-        ctx.set("ds_active", active)
+        ctx.state.active_subgraphs["deepsearch"] = active
         # Default deepsearch-style plan
         parser = ParserAgent()
         parsed = parser.parse(ctx.state.question)
         planner = PlannerAgent()
         plan = planner.plan(parsed)
         # Prefer Pydantic web_search + summarize + finalize
-        ctx.set("plan", plan)
+        ctx.state.full_plan = plan
         ctx.state.plan = [f"{s['tool']}" for s in plan]
         ctx.state.notes.append(f"DeepSearch planned: {ctx.state.plan}")
         return DSExecute()
@@ -780,12 +800,12 @@ class DSPlan(BaseNode[ResearchState]):
 class DSExecute(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> "DSAnalyze":
         history = ExecutionHistory()
-        plan = ctx.get("plan") or []
-        retries = int(getattr(ctx.config, "retries", 2))
+        plan = getattr(ctx.state, "full_plan", []) or []
+        retries = int(getattr(ctx.state.config, "retries", 2))
         exec_agent = ExecutorAgent(retries=retries)
         bag = exec_agent.run_plan(plan, history)
-        ctx.set("history", history)
-        ctx.set("bag", bag)
+        ctx.state.execution_results["history"] = history
+        ctx.state.execution_results["bag"] = bag
         ctx.state.notes.append("DeepSearch executed plan")
         return DSAnalyze()
 
@@ -793,7 +813,7 @@ class DSExecute(BaseNode[ResearchState]):
 @dataclass
 class DSAnalyze(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> "DSSynthesize":
-        history = ctx.get("history")
+        history = ctx.state.execution_results.get("history")
         n = len(history.items) if history else 0
         ctx.state.notes.append(f"DeepSearch analysis: {n} steps")
         return DSSynthesize()
@@ -804,7 +824,7 @@ class DSSynthesize(BaseNode[ResearchState]):
     async def run(
         self, ctx: GraphRunContext[ResearchState]
     ) -> Annotated[End[str], Edge(label="done")]:
-        bag = ctx.get("bag") or {}
+        bag = ctx.state.execution_results.get("bag") or {}
         final = (
             bag.get("final")
             or bag.get("finalize.final")
@@ -836,6 +856,18 @@ class PrimePlan(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> "PrimeExecute":
         # Generate workflow using PRIME Plan Generator
         planner = PlanGenerator()
+        if ctx.state.structured_problem is None:
+            # Create a simple structured problem from the question
+            from .src.agents.prime_parser import StructuredProblem, ScientificIntent
+            ctx.state.structured_problem = StructuredProblem(
+                intent=ScientificIntent.CLASSIFICATION,
+                input_data={"description": ctx.state.question},
+                output_requirements={"answer": "comprehensive_response"},
+                constraints=[],
+                success_criteria=["complete_answer"],
+                domain="general",
+                complexity="simple"
+            )
         workflow_dag = planner.plan(ctx.state.structured_problem)
         ctx.state.workflow_dag = workflow_dag
         ctx.state.notes.append(f"PRIME planned: {len(workflow_dag.steps)} steps")
@@ -855,6 +887,9 @@ class PrimeExecute(BaseNode[ResearchState]):
 
         # Create execution context
         history = PrimeExecutionHistory()
+        if ctx.state.workflow_dag is None:
+            from .src.datatypes.execution import WorkflowDAG
+            ctx.state.workflow_dag = WorkflowDAG(steps=[], dependencies={}, execution_order=[])
         context = ExecutionContext(
             workflow=ctx.state.workflow_dag,
             history=history,
@@ -969,7 +1004,8 @@ class BioinformaticsParse(BaseNode[ResearchState]):
 
         # Run the complete bioinformatics workflow
         try:
-            final_answer = run_bioinformatics_workflow(question, cfg)
+            cfg_dict = cfg.to_container() if hasattr(cfg, 'to_container') else {}
+            final_answer = run_bioinformatics_workflow(question, cfg_dict)
             ctx.state.answers.append(final_answer)
             ctx.state.notes.append("Bioinformatics workflow completed successfully")
         except Exception as e:
@@ -1006,7 +1042,8 @@ class RAGParse(BaseNode[ResearchState]):
 
         # Run the complete RAG workflow
         try:
-            final_answer = run_rag_workflow(question, cfg)
+            cfg_non_null = cfg or DictConfig({})
+            final_answer = run_rag_workflow(question, cfg_non_null)
             ctx.state.answers.append(final_answer)
             ctx.state.notes.append("RAG workflow completed successfully")
         except Exception as e:
@@ -1055,9 +1092,16 @@ def run_graph(question: str, cfg: DictConfig) -> str:
         PrimaryREACTWorkflow(),
         EnhancedREACTWorkflow(),
     )
-    g = Graph(nodes=nodes, state_type=ResearchState)
-    result = asyncio.run(g.run(Plan(), state=state))
-    return result.output
+    g = Graph(nodes=nodes)
+    # Run the graph starting from Plan node
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(g.run(Plan(), state=state, deps=None))  # type: ignore
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
+    return (result.output or "") if hasattr(result, "output") else ""
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="config")

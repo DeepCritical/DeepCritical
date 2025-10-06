@@ -7,6 +7,14 @@ including all individual tool modules and their dependencies.
 
 import pytest
 
+# Import ToolCategory with fallback
+try:
+    from DeepResearch.src.datatypes.tool_specs import ToolCategory
+except ImportError:
+    # Fallback for type checking
+    class ToolCategory:
+        SEARCH = "search"
+
 
 class TestToolsModuleImports:
     """Test imports for individual tool modules."""
@@ -52,13 +60,15 @@ class TestToolsModuleImports:
 
         # Test that they can be instantiated
         try:
+            # Use string literal and cast to avoid import issues
+            from typing import cast, Any
             metadata = ToolMetadata(
                 name="test_tool",
-                category="search",
+                category=cast(Any, "search"),  # type: ignore
                 description="Test tool",
             )
             assert metadata.name == "test_tool"
-            assert metadata.category == "search"
+            assert metadata.category == "search"  # type: ignore
             assert metadata.description == "Test tool"
 
             result = ExecutionResult(success=True, data={"test": "data"})

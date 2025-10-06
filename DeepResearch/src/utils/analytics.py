@@ -2,6 +2,7 @@
 import os
 import json
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from filelock import FileLock  # pip install filelock
 import pandas as pd  # already available in HF images
 
@@ -28,7 +29,7 @@ LOCK_FILE = os.path.join(DATA_DIR, "analytics.lock")
 class AnalyticsEngine:
     """Main analytics engine for tracking request metrics."""
 
-    def __init__(self, data_dir: str = None):
+    def __init__(self, data_dir: Optional[str] = None):
         """Initialize analytics engine."""
         self.data_dir = data_dir or DATA_DIR
         self.counts_file = os.path.join(self.data_dir, "request_counts.json")
@@ -37,7 +38,7 @@ class AnalyticsEngine:
 
     def record_request(self, endpoint: str, status_code: int, duration: float):
         """Record a request for analytics."""
-        return record_request(endpoint, status_code, duration)
+        return record_request(duration, status_code)
 
     def get_last_n_days_df(self, days: int):
         """Get analytics data for last N days."""
@@ -72,7 +73,7 @@ def _save_times(data: dict):
         json.dump(data, f)
 
 
-async def record_request(duration: float = None, num_results: int = None) -> None:
+async def record_request(duration: Optional[float] = None, num_results: Optional[int] = None) -> None:
     """Increment today's counter (UTC) atomically and optionally record request duration."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     with FileLock(LOCK_FILE):
@@ -141,7 +142,7 @@ def last_n_days_avg_time_df(n: int = 30) -> pd.DataFrame:
 class MetricCalculator:
     """Calculator for various analytics metrics."""
 
-    def __init__(self, data_dir: str = None):
+    def __init__(self, data_dir: Optional[str] = None):
         """Initialize metric calculator."""
         self.data_dir = data_dir or DATA_DIR
 

@@ -36,7 +36,7 @@ class DataFusionAgent:
         self.config = config or {}
         self.agent = self._create_agent()
 
-    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, DataFusionResult]:
+    def _create_agent(self) -> Agent:
         """Create the data fusion agent."""
         # Get model from config or use default
         bioinformatics_config = self.config.get("bioinformatics", {})
@@ -55,7 +55,7 @@ class DataFusionAgent:
         agent = Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
-            result_type=DataFusionResult,
+            output_type=DataFusionResult,
             system_prompt=system_prompt,
         )
 
@@ -85,14 +85,14 @@ class GOAnnotationAgent:
         self.model_name = model_name
         self.agent = self._create_agent()
 
-    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, List[GOAnnotation]]:
+    def _create_agent(self) -> Agent:
         """Create the GO annotation agent."""
         model = AnthropicModel(self.model_name)
 
         agent = Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
-            result_type=List[GOAnnotation],
+            output_type=List[GOAnnotation],
             system_prompt=BioinformaticsAgentPrompts.GO_ANNOTATION_SYSTEM,
         )
 
@@ -124,14 +124,14 @@ class ReasoningAgent:
         self.model_name = model_name
         self.agent = self._create_agent()
 
-    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, ReasoningResult]:
+    def _create_agent(self) -> Agent:
         """Create the reasoning agent."""
         model = AnthropicModel(self.model_name)
 
         agent = Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
-            result_type=ReasoningResult,
+            output_type=ReasoningResult,
             system_prompt=BioinformaticsAgentPrompts.REASONING_SYSTEM,
         )
 
@@ -168,14 +168,14 @@ class DataQualityAgent:
         self.model_name = model_name
         self.agent = self._create_agent()
 
-    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, Dict[str, float]]:
+    def _create_agent(self) -> Agent:
         """Create the data quality agent."""
         model = AnthropicModel(self.model_name)
 
         agent = Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
-            result_type=Dict[str, float],
+            output_type=Dict[str, float],
             system_prompt=BioinformaticsAgentPrompts.DATA_QUALITY_SYSTEM,
         )
 
@@ -187,11 +187,10 @@ class DataQualityAgent:
         """Assess quality of fused dataset."""
 
         quality_prompt = BioinformaticsAgentPrompts.PROMPTS[
-            "quality_assessment"
+            "data_quality_assessment"
         ].format(
-            dataset_name=dataset.name,
-            source_databases=", ".join(dataset.source_databases),
             total_entities=dataset.total_entities,
+            source_databases=", ".join(dataset.source_databases),
             go_annotations_count=len(dataset.go_annotations),
             pubmed_papers_count=len(dataset.pubmed_papers),
             gene_expression_profiles_count=len(dataset.gene_expression_profiles),
@@ -224,10 +223,9 @@ class BioinformaticsAgent:
         reasoning_task = ReasoningTask(
             task_id="main_task",
             task_type="integrative_analysis",
-            question=request.reasoning_question or "Analyze the fused dataset",
+            question=getattr(request, "reasoning_question", None) or "Analyze the fused dataset",
             difficulty_level="moderate",
             required_evidence=[],  # Will use default evidence requirements
-            timeout_seconds=300,
         )
 
         # Perform reasoning
@@ -257,41 +255,21 @@ class AgentOrchestrator:
         fusion_result = await self.fusion_agent.fuse_data(request, deps)
 
         if not fusion_result.success:
-            raise ValueError(f"Data fusion failed: {fusion_result.errors}")
+            raise ValueError("Data fusion failed")
 
-        dataset = fusion_result.fused_dataset
+        # Step 2: Construct dataset from fusion result
+        dataset = FusedDataset(**fusion_result.dataset)
 
-        # Step 2: Assess data quality
+        # Step 3: Assess data quality
         quality_metrics = await self.quality_agent.assess_quality(dataset, deps)
-
-        # Update dataset with quality metrics
-        dataset.quality_metrics = quality_metrics
 
         return dataset, quality_metrics
 
     async def perform_integrative_reasoning(
-        self, task: ReasoningTask, dataset: FusedDataset, deps: BioinformaticsAgentDeps
-    ) -> ReasoningResult:
-        """Perform integrative reasoning using multiple data sources."""
-
-        # Perform reasoning with multi-source evidence
-        reasoning_result = await self.reasoning_agent.perform_reasoning(
-            task, dataset, deps
-        )
-
-        return reasoning_result
-
-    async def process_go_pubmed_fusion(
         self,
-        go_annotations: List[Dict[str, Any]],
-        pubmed_papers: List[PubMedPaper],
+        reasoning_task: ReasoningTask,
+        dataset: FusedDataset,
         deps: BioinformaticsAgentDeps,
-    ) -> List[GOAnnotation]:
-        """Process GO annotations with PubMed context for reasoning tasks."""
-
-        # Process annotations with paper context
-        processed_annotations = await self.go_agent.process_annotations(
-            go_annotations, pubmed_papers, deps
-        )
-
-        return processed_annotations
+    ) -> ReasoningResult:
+        """Perform integrative reasoning using fused data and task."""
+        return await self.reasoning_agent.perform_reasoning(reasoning_task, dataset, deps)

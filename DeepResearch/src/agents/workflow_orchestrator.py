@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Callable, TYPE_CHECKING
+from typing import Any, Dict, List, Callable, TYPE_CHECKING, Optional
 from dataclasses import dataclass, field
 from omegaconf import DictConfig
 
@@ -104,7 +104,7 @@ class PrimaryWorkflowOrchestrator:
         prompts = WorkflowOrchestratorPrompts()
 
         self.primary_agent = Agent(
-            model_name=self.config.primary_workflow.parameters.get(
+            model=self.config.primary_workflow.parameters.get(
                 "model_name", "anthropic:claude-sonnet-4-0"
             ),
             deps_type=OrchestratorDependencies,
@@ -122,7 +122,7 @@ class PrimaryWorkflowOrchestrator:
             workflow_type: str,
             workflow_name: str,
             input_data: Dict[str, Any],
-            parameters: Dict[str, Any] = None,
+            parameters: Optional[Dict[str, Any]] = None,
             priority: int = 0,
         ) -> WorkflowSpawnResult:
             """Spawn a new workflow execution."""
@@ -180,7 +180,7 @@ class PrimaryWorkflowOrchestrator:
             judge_id: str,
             content_to_evaluate: Dict[str, Any],
             evaluation_criteria: List[str],
-            context: Dict[str, Any] = None,
+            context: Optional[Dict[str, Any]] = None,
         ) -> JudgeEvaluationResult:
             """Evaluate content using a judge."""
             try:
@@ -251,7 +251,7 @@ class PrimaryWorkflowOrchestrator:
         """Execute the primary REACT workflow."""
         # Create dependencies
         deps = OrchestratorDependencies(
-            config=config,
+            config=dict(config) if config else {},
             user_input=user_input,
             context={"execution_start": datetime.now().isoformat()},
             available_workflows=list(self.workflow_registry.keys()),

@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import time
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
 # Import existing DeepCritical types
@@ -76,7 +76,8 @@ class AgentGraphNode(BaseModel):
     )
     timeout: float = Field(300.0, gt=0, description="Node timeout")
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Node name cannot be empty")
@@ -102,7 +103,8 @@ class AgentGraphEdge(BaseModel):
     condition: Optional[str] = Field(None, description="Condition for edge traversal")
     weight: float = Field(1.0, description="Edge weight")
 
-    @validator("source", "target")
+    @field_validator("source", "target")
+    @classmethod
     def validate_node_names(cls, v):
         if not v or not v.strip():
             raise ValueError("Node name cannot be empty")
@@ -127,18 +129,20 @@ class AgentGraph(BaseModel):
     entry_point: str = Field(..., description="Entry point node")
     exit_points: List[str] = Field(default_factory=list, description="Exit point nodes")
 
-    @validator("entry_point")
-    def validate_entry_point(cls, v, values):
-        if "nodes" in values:
-            node_names = [node.name for node in values["nodes"]]
+    @field_validator("entry_point")
+    @classmethod
+    def validate_entry_point(cls, v, info):
+        if info.data and "nodes" in info.data:
+            node_names = [node.name for node in info.data["nodes"]]
             if v not in node_names:
                 raise ValueError(f"Entry point '{v}' not found in nodes")
         return v
 
-    @validator("exit_points")
-    def validate_exit_points(cls, v, values):
-        if "nodes" in values:
-            node_names = [node.name for node in values["nodes"]]
+    @field_validator("exit_points")
+    @classmethod
+    def validate_exit_points(cls, v, info):
+        if info.data and "nodes" in info.data:
+            node_names = [node.name for node in info.data["nodes"]]
             for exit_point in v:
                 if exit_point not in node_names:
                     raise ValueError(f"Exit point '{exit_point}' not found in nodes")
@@ -462,7 +466,14 @@ class AgentBuilder:
 
         for tool_name in self.config.tools:
             if tool_name in tool_map:
-                agent.add_tool(tool_map[tool_name])
+                # Add tool if method exists
+                if hasattr(agent, 'add_tool') and callable(getattr(agent, 'add_tool')):
+                    add_tool_method = getattr(agent, 'add_tool')
+                    add_tool_method(tool_map[tool_name])
+                elif hasattr(agent, 'tools') and hasattr(getattr(agent, 'tools'), 'append'):
+                    tools_attr = getattr(agent, 'tools')
+                    if hasattr(tools_attr, 'append'):
+                        tools_attr.append(tool_map[tool_name])
 
     def _add_middleware(self, agent: Agent) -> None:
         """Add middleware to the agent."""
@@ -494,8 +505,8 @@ class AgentBuilder:
 def create_agent_builder(
     model_name: str = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
-    tools: List[str] = None,
-    subagents: List[Union[SubAgent, CustomSubAgent]] = None,
+    tools: Optional[List[str]] = None,
+    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
     **kwargs,
 ) -> AgentBuilder:
     """Create an agent builder with default configuration."""
@@ -512,7 +523,7 @@ def create_agent_builder(
 def create_simple_agent(
     model_name: str = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
-    tools: List[str] = None,
+    tools: Optional[List[str]] = None,
 ) -> Agent:
     """Create a simple agent with basic configuration."""
     builder = create_agent_builder(model_name, instructions, tools)
@@ -520,9 +531,9 @@ def create_simple_agent(
 
 
 def create_deep_agent(
-    tools: List[str] = None,
+    tools: Optional[List[str]] = None,
     instructions: str = "",
-    subagents: List[Union[SubAgent, CustomSubAgent]] = None,
+    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
     model_name: str = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:
@@ -548,9 +559,9 @@ def create_deep_agent(
 
 
 def create_async_deep_agent(
-    tools: List[str] = None,
+    tools: Optional[List[str]] = None,
     instructions: str = "",
-    subagents: List[Union[SubAgent, CustomSubAgent]] = None,
+    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
     model_name: str = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:

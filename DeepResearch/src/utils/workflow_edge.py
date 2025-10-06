@@ -20,7 +20,7 @@ def _extract_function_name(func: Callable[..., Any]) -> str:
     """Map a Python callable to a concise, human-focused identifier."""
     if hasattr(func, "__name__"):
         name = func.__name__
-        return name if name != "<lambda>" else "<lambda>"
+        return str(name) if name != "<lambda>" else "<lambda>"
     return "<callable>"
 
 

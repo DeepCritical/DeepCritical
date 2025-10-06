@@ -146,7 +146,7 @@ def run_vllm_tests(
         config = load_vllm_test_config()
 
     # Check if VLLM tests are enabled
-    vllm_config = config.get("vllm_tests", {})
+    vllm_config = config.get("vllm_tests", {}) if config else {}
     if not vllm_config.get("enabled", True):
         logger.info("VLLM tests are disabled in configuration")
         return 0
@@ -172,7 +172,7 @@ def run_vllm_tests(
     cmd.extend(["-m", "vllm"])
 
     # Add timeout and other options from configuration
-    test_config = config.get("testing", {})
+    test_config = config.get("testing", {}) if config else {}
     timeout = test_config.get("pytest_timeout", 600)
     cmd.extend([f"--timeout={timeout}", "--tb=short", "--durations=10"])
 

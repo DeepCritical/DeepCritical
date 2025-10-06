@@ -330,6 +330,7 @@ class Collection:
     ) -> List[str]:
         """Add documents to collection."""
         # This would be implemented by the actual Chroma client
+        return []
         pass
 
     def query(
@@ -343,6 +344,15 @@ class Collection:
     ) -> QueryResponse:
         """Query documents in collection."""
         # This would be implemented by the actual Chroma client
+        return QueryResponse(
+            ids=[],
+            distances=[],
+            metadatas=[],
+            documents=[],
+            embeddings=[],
+            uris=[],
+            data=[],
+        )
         pass
 
     def get(
@@ -356,6 +366,15 @@ class Collection:
     ) -> QueryResponse:
         """Get documents from collection."""
         # This would be implemented by the actual Chroma client
+        return QueryResponse(
+            ids=[],
+            distances=[],
+            metadatas=[],
+            documents=[],
+            embeddings=[],
+            uris=[],
+            data=[],
+        )
         pass
 
     def update(
@@ -378,6 +397,7 @@ class Collection:
     ) -> List[str]:
         """Delete documents from collection."""
         # This would be implemented by the actual Chroma client
+        return []
         pass
 
     def peek(self, limit: int = 10) -> QueryResponse:
@@ -417,7 +437,11 @@ class EmbeddingFunctionConfig:
     def create_function(self) -> EmbeddingFunction:
         """Create embedding function from config."""
         # This would be implemented based on the function type
-        pass
+        # Return a mock embedding function for now
+        class MockEmbeddingFunction(EmbeddingFunction):
+            def __call__(self, texts):
+                return [[0.0] * 384 for _ in texts]  # Mock 384-dimensional embeddings
+        return MockEmbeddingFunction()
 
 
 # ============================================================================

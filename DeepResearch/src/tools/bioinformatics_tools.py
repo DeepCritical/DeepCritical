@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 # Note: defer decorator is not available in current pydantic-ai version
 
 from .base import ToolSpec, ToolRunner, ExecutionResult, registry
-from ..src.datatypes.bioinformatics import (
+from ..datatypes.bioinformatics import (
     GOAnnotation,
     PubMedPaper,
     GEOSeries,
@@ -25,8 +25,8 @@ from ..src.datatypes.bioinformatics import (
     ReasoningTask,
     DataFusionRequest,
 )
-from ..src.agents.bioinformatics_agents import DataFusionResult, ReasoningResult
-from ..src.statemachines.bioinformatics_workflow import run_bioinformatics_workflow
+from ..agents.bioinformatics_agents import DataFusionResult, ReasoningResult
+from ..statemachines.bioinformatics_workflow import run_bioinformatics_workflow
 
 
 class BioinformaticsToolDeps(BaseModel):
@@ -60,7 +60,7 @@ class BioinformaticsToolDeps(BaseModel):
 def go_annotation_processor(
     annotations: List[Dict[str, Any]],
     papers: List[Dict[str, Any]],
-    evidence_codes: List[str] = None,
+    evidence_codes: Optional[List[str]] = None,
 ) -> List[GOAnnotation]:
     """Process GO annotations with PubMed paper context."""
     # This would be implemented with actual data processing logic
@@ -90,7 +90,7 @@ def geo_data_retriever(
 
 # @defer - not available in current pydantic-ai version
 def drug_target_mapper(
-    drug_ids: List[str], target_types: List[str] = None
+    drug_ids: List[str], target_types: Optional[List[str]] = None
 ) -> List[DrugTarget]:
     """Map drugs to their targets from DrugBank and TTD."""
     # This would be implemented with actual database queries
@@ -201,7 +201,7 @@ class BioinformaticsFusionTool(ToolRunner):
                 success=fusion_result.success,
                 data={
                     "fused_dataset": (
-                        fusion_result.fused_dataset.dict()
+                        fusion_result.fused_dataset.model_dump()
                         if fusion_result.fused_dataset
                         else None
                     ),
@@ -397,7 +397,7 @@ class GOAnnotationTool(ToolRunner):
                 success=True,
                 data={
                     "processed_annotations": [
-                        ann.dict() for ann in processed_annotations
+                        ann.model_dump() for ann in processed_annotations
                     ],
                     "quality_score": quality_score,
                     "annotation_count": len(processed_annotations),
@@ -459,7 +459,7 @@ class PubMedRetrievalTool(ToolRunner):
             return ExecutionResult(
                 success=True,
                 data={
-                    "papers": [paper.dict() for paper in papers],
+                    "papers": [paper.model_dump() for paper in papers],
                     "total_found": len(papers),
                     "open_access_count": open_access_count,
                 },

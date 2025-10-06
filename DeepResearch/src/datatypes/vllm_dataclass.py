@@ -1333,7 +1333,6 @@ def create_sampling_params(
     temperature: float = 1.0,
     top_p: float = 1.0,
     top_k: int = -1,
-    max_tokens: int = 16,
     stop: Optional[Union[str, List[str]]] = None,
     **kwargs,
 ) -> SamplingParams:
@@ -1342,7 +1341,6 @@ def create_sampling_params(
         temperature=temperature,
         top_p=top_p,
         top_k=top_k,
-        max_tokens=max_tokens,
         stop=stop,
         **kwargs,
     )
@@ -1729,27 +1727,45 @@ class VLLMClient(BaseModel):
     ) -> ChatCompletionResponse:
         """Send chat completion request."""
         # Implementation would go here
-        pass
+        return ChatCompletionResponse(
+            id="",
+            object="chat.completion",
+            created=0,
+            model="",
+            choices=[],
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        )
 
     async def completions(self, request: CompletionRequest) -> CompletionResponse:
         """Send completion request."""
         # Implementation would go here
-        pass
+        return CompletionResponse(
+            id="",
+            object="text_completion",
+            created=0,
+            model="",
+            choices=[],
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        )
 
     async def embeddings(self, request: EmbeddingRequest) -> EmbeddingResponse:
         """Send embedding request."""
         # Implementation would go here
-        pass
+        return EmbeddingResponse(
+            data=[], 
+            model="", 
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        )
 
     async def models(self) -> ModelListResponse:
         """Get list of available models."""
         # Implementation would go here
-        pass
+        return ModelListResponse(data=[], object="list")
 
     async def health(self) -> HealthCheck:
         """Get health check."""
         # Implementation would go here
-        pass
+        return HealthCheck(status="healthy")
 
 
 class VLLMBuilder(BaseModel):

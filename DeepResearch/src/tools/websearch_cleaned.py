@@ -82,7 +82,7 @@ async def search_web(
     start_time = time.time()
 
     if not _get_serper_api_key():
-        await record_request(None, num_results)  # Record even failed requests
+        await record_request(0.0, num_results or 0)  # Record even failed requests
         return "Error: SERPER_API_KEY environment variable is not set. Please set it to use this tool."
 
     # Validate and constrain num_results
@@ -236,7 +236,7 @@ async def search_and_chunk(
     start_time = time.time()
 
     if not _get_serper_api_key():
-        await record_request(None, num_results)
+        await record_request(0.0, num_results or 0)
         return json.dumps(
             [{"error": "SERPER_API_KEY not set", "hint": "Set env or paste in the UI"}]
         )

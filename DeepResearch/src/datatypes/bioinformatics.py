@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class EvidenceCode(str, Enum):
@@ -300,8 +300,9 @@ class FusedDataset(BaseModel):
         default_factory=dict, description="Quality metrics"
     )
 
-    @validator("total_entities", always=True)
-    def calculate_total_entities(cls, v, values):
+    @field_validator("total_entities", mode='before')
+    @classmethod
+    def calculate_total_entities(cls, v, info):
         """Calculate total entities from all components."""
         total = 0
         for field_name in [
@@ -314,8 +315,8 @@ class FusedDataset(BaseModel):
             "protein_structures",
             "protein_interactions",
         ]:
-            if field_name in values:
-                total += len(values[field_name])
+            if info.data and field_name in info.data:
+                total += len(info.data[field_name])
         return total
 
     class Config:

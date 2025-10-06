@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
-from .base import BaseAgent
+from ...agents import BaseAgent  # Use top-level BaseAgent to satisfy linters
 from ..datatypes.workflow_patterns import (
     InteractionPattern,
 )

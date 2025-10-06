@@ -8,7 +8,7 @@ using Pydantic AI patterns that align with DeepCritical's architecture.
 from __future__ import annotations
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 
@@ -30,13 +30,15 @@ class PromptTemplate(BaseModel):
     variables: List[str] = Field(default_factory=list, description="Required variables")
     prompt_type: PromptType = Field(PromptType.SYSTEM, description="Type of prompt")
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Prompt template name cannot be empty")
         return v.strip()
 
-    @validator("template")
+    @field_validator("template")
+    @classmethod
     def validate_template(cls, v):
         if not v or not v.strip():
             raise ValueError("Prompt template cannot be empty")
@@ -397,7 +399,7 @@ class PromptManager:
             raise ValueError(f"Template '{name}' not found")
         return template.format(**kwargs)
 
-    def get_system_prompt(self, components: List[str] = None) -> str:
+    def get_system_prompt(self, components: Optional[List[str]] = None) -> str:
         """Get a system prompt combining multiple components."""
         if not components:
             components = ["base_agent"]
@@ -437,7 +439,7 @@ prompt_manager = PromptManager()
 def create_prompt_template(
     name: str,
     template: str,
-    variables: List[str] = None,
+    variables: Optional[List[str]] = None,
     prompt_type: PromptType = PromptType.SYSTEM,
 ) -> PromptTemplate:
     """Create a prompt template."""
@@ -446,7 +448,7 @@ def create_prompt_template(
     )
 
 
-def get_system_prompt(components: List[str] = None) -> str:
+def get_system_prompt(components: Optional[List[str]] = None) -> str:
     """Get a system prompt combining multiple components."""
     return prompt_manager.get_system_prompt(components)
 

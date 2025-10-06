@@ -8,7 +8,7 @@ types that align with DeepCritical's Pydantic AI architecture.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Protocol
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 # Import existing DeepCritical types
@@ -108,13 +108,15 @@ class SubAgent(BaseModel):
     max_iterations: int = Field(10, gt=0, description="Maximum iterations")
     timeout: float = Field(300.0, gt=0, description="Execution timeout in seconds")
 
-    @validator("name")
+    @field_validator("name", mode='before')
+    @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Subagent name cannot be empty")
         return v.strip()
 
-    @validator("description")
+    @field_validator("description", mode='before')
+    @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
             raise ValueError("Subagent description cannot be empty")
@@ -152,13 +154,15 @@ class CustomSubAgent(BaseModel):
     )
     timeout: float = Field(300.0, gt=0, description="Execution timeout in seconds")
 
-    @validator("name")
+    @field_validator("name", mode='before')
+    @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Custom subagent name cannot be empty")
         return v.strip()
 
-    @validator("description")
+    @field_validator("description", mode='before')
+    @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
             raise ValueError("Custom subagent description cannot be empty")
@@ -222,7 +226,8 @@ class TaskRequest(BaseModel):
     )
     timeout: Optional[float] = Field(None, description="Task timeout override")
 
-    @validator("description")
+    @field_validator("description", mode='before')
+    @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
             raise ValueError("Task description cannot be empty")
@@ -363,8 +368,8 @@ def create_subagent(
     name: str,
     description: str,
     prompt: str,
-    capabilities: List[AgentCapability] = None,
-    tools: List[ToolConfig] = None,
+    capabilities: Optional[List[AgentCapability]] = None,
+    tools: Optional[List[ToolConfig]] = None,
     model: Optional[ModelConfig] = None,
     **kwargs,
 ) -> SubAgent:
@@ -385,7 +390,7 @@ def create_custom_subagent(
     description: str,
     graph_config: Dict[str, Any],
     entry_point: str,
-    capabilities: List[AgentCapability] = None,
+    capabilities: Optional[List[AgentCapability]] = None,
     **kwargs,
 ) -> CustomSubAgent:
     """Create a CustomSubAgent with default values."""

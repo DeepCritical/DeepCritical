@@ -678,32 +678,32 @@ class PostgRESTClient:
     def query(self, request: QueryRequest) -> QueryResponse:
         """Execute a query request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return QueryResponse(data=[], count=0, status_code=501)
 
     def insert(self, request: InsertRequest) -> QueryResponse:
         """Execute an insert request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return QueryResponse(data=[], count=0, status_code=501)
 
     def update(self, request: UpdateRequest) -> QueryResponse:
         """Execute an update request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return QueryResponse(data=[], count=0, status_code=501)
 
     def delete(self, request: DeleteRequest) -> QueryResponse:
         """Execute a delete request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return QueryResponse(data=[], count=0, status_code=501)
 
     def upsert(self, request: UpsertRequest) -> QueryResponse:
         """Execute an upsert request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return QueryResponse(data=[], count=0, status_code=501)
 
     def rpc(self, request: RPCRequest) -> RPCResponse:
         """Execute an RPC request."""
         # This would be implemented by the actual PostgREST client
-        pass
+        return RPCResponse(data=[], status_code=501)
 
     def get_schema(self, schema_name: str) -> Optional[Schema]:
         """Get schema by name."""

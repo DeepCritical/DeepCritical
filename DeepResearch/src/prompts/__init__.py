@@ -64,7 +64,8 @@ class PromptLoader:
         except Exception:
             pass
 
-        now = datetime.utcnow()
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         vars_map.setdefault(
             "current_date_utc", now.strftime("%a, %d %b %Y %H:%M:%S GMT")
         )

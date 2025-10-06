@@ -33,7 +33,7 @@ def _compose_agent_system(
     sections: List[str] = [
         header.replace(
             "${current_date_utc}",
-            getattr(__import__("datetime").datetime.utcnow(), "strftime")(
+            getattr(__import__("datetime").datetime.now(__import__("datetime").timezone.utc), "strftime")(
                 "%a, %d %b %Y %H:%M:%S GMT"
             ),
         )
@@ -88,9 +88,9 @@ def _compose_agent_system(
 
 
 def _ensure_core_agent(cfg: DictConfig):
-    builtin = _build_builtin_tools(cfg)
-    toolsets = _build_toolsets(cfg)
-    agent, _ = _build_core_agent(cfg, builtin, toolsets)
+    builtin = _build_builtin_tools(dict(cfg) if cfg else {})
+    toolsets = _build_toolsets(dict(cfg) if cfg else {})
+    agent, _ = _build_core_agent(dict(cfg) if cfg else {}, builtin, toolsets)
     return agent
 
 

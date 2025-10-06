@@ -136,10 +136,10 @@ def build_agent(
             settings = None
 
     agent = Agent(
-        model_name,
+        model=model_name,
         builtin_tools=builtin_tools or [],
         toolsets=toolsets or [],
-        settings=settings,
+        model_settings=settings,
     )
 
     return agent, pyd_cfg

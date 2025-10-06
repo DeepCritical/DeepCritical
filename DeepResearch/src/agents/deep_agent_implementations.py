@@ -11,7 +11,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent, ModelRetry
 
 # Import existing DeepCritical types
@@ -47,7 +47,8 @@ class AgentConfig(BaseModel):
     enable_retry: bool = Field(True, description="Enable retry on failure")
     retry_attempts: int = Field(3, ge=0, description="Number of retry attempts")
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Agent name cannot be empty")
@@ -258,7 +259,10 @@ class BaseDeepAgent:
                 else:
                     raise e
 
-        raise last_error
+        if last_error:
+            raise last_error
+        else:
+            raise RuntimeError("No agents available for execution")
 
     def _update_metrics(
         self, execution_time: float, success: bool, tools_used: List[str]
@@ -402,7 +406,7 @@ class GeneralPurposeAgent(BaseDeepAgent):
 class AgentOrchestrator:
     """Orchestrator for managing multiple agents."""
 
-    def __init__(self, agents: List[BaseDeepAgent] = None):
+    def __init__(self, agents: Optional[List[BaseDeepAgent]] = None):
         self.agents: Dict[str, BaseDeepAgent] = {}
         self.agent_registry: Dict[str, Agent] = {}
 
@@ -448,7 +452,9 @@ class AgentOrchestrator:
             return await self.execute_with_agent(agent_name, input_data, context)
 
         tasks_coroutines = [execute_task(task) for task in tasks]
-        return await asyncio.gather(*tasks_coroutines, return_exceptions=True)
+        results = await asyncio.gather(*tasks_coroutines, return_exceptions=True)
+        # Filter out exceptions and return only successful results
+        return [r for r in results if isinstance(r, AgentExecutionResult)]
 
     def get_all_metrics(self) -> Dict[str, AgentMetrics]:
         """Get metrics for all registered agents."""
@@ -485,7 +491,7 @@ def create_general_purpose_agent(
     return GeneralPurposeAgent(config)
 
 
-def create_agent_orchestrator(agent_types: List[str] = None) -> AgentOrchestrator:
+def create_agent_orchestrator(agent_types: Optional[List[str]] = None) -> AgentOrchestrator:
     """Create an agent orchestrator with default agents."""
     if agent_types is None:
         agent_types = ["planning", "filesystem", "research", "orchestration", "general"]
@@ -558,7 +564,7 @@ class DeepAgentImplementation:
 
     def _initialize_orchestrator(self):
         """Initialize the agent orchestrator."""
-        self.orchestrator = create_agent_orchestrator(self.config, self.agents)
+        self.orchestrator = create_agent_orchestrator()
 
     async def execute_task(self, task: str) -> AgentExecutionResult:
         """Execute a task using the appropriate agent."""

@@ -11,7 +11,10 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from testcontainers.vllm import VLLMContainer
+try:
+    from testcontainers.vllm import VLLMContainer  # type: ignore
+except ImportError:
+    VLLMContainer = None  # type: ignore
 from omegaconf import DictConfig
 
 # Set up logging for test artifacts
@@ -73,9 +76,9 @@ class VLLMPromptTester:
         self.config = config
 
         # Extract configuration values with overrides
-        vllm_config = config.get("vllm_tests", {})
-        model_config = config.get("model", {})
-        performance_config = config.get("performance", {})
+        vllm_config = config.get("vllm_tests", {}) if config else {}
+        model_config = config.get("model", {}) if config else {}
+        performance_config = config.get("performance", {}) if config else {}
 
         # Apply configuration with overrides
         self.model_name = model_name or model_config.get(
@@ -92,7 +95,7 @@ class VLLMPromptTester:
         )
 
         # Container and artifact settings
-        self.container: Optional[VLLMContainer] = None
+        self.container: Optional[Any] = None
         artifacts_config = vllm_config.get("artifacts", {})
         self.artifacts_dir = Path(
             artifacts_config.get("base_directory", "test_artifacts/vllm_tests")
@@ -181,6 +184,9 @@ class VLLMPromptTester:
         generation_config = model_config.get("generation", {})
 
         # Create VLLM container with configuration
+        if VLLMContainer is None:
+            raise ImportError("testcontainers.vllm is not available. Please install testcontainers.")
+        
         self.container = VLLMContainer(
             image=container_config.get("image", "vllm/vllm-openai:latest"),
             model=self.model_name,
@@ -230,17 +236,18 @@ class VLLMPromptTester:
 
         # Use configured timeout or default
         health_check_config = (
-            self.config.get("model", {}).get("server", {}).get("health_check", {})
+            self.config.get("model", {}).get("server", {}).get("health_check", {}) if self.config else {}
         )
         check_timeout = timeout or health_check_config.get("timeout_seconds", 5)
         max_retries = health_check_config.get("max_retries", 3)
         interval = health_check_config.get("interval_seconds", 10)
+        timeout_seconds = timeout or health_check_config.get("timeout_seconds", 300)  # Default 5 minutes
 
         start_time = time.time()
         url = f"{self.container.get_connection_url()}{health_check_config.get('endpoint', '/health')}"
 
         retry_count = 0
-        while time.time() - start_time < timeout and retry_count < max_retries:
+        while time.time() - start_time < timeout_seconds and retry_count < max_retries:
             try:
                 response = requests.get(url, timeout=check_timeout)
                 if response.status_code == 200:

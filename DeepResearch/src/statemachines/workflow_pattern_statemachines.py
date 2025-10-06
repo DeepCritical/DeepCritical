@@ -101,7 +101,7 @@ class WorkflowPatternState:
 
 
 @dataclass
-class InitializePattern(BaseNode[WorkflowPatternState]):
+class InitializePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Initialize workflow pattern execution."""
 
     async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> "SetupAgents":
@@ -134,7 +134,7 @@ class InitializePattern(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class SetupAgents(BaseNode[WorkflowPatternState]):
+class SetupAgents(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Set up agents for interaction."""
 
     async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> "ExecutePattern":
@@ -172,7 +172,7 @@ class SetupAgents(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):
+class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Execute collaborative interaction pattern."""
 
     async def run(
@@ -201,7 +201,7 @@ class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):
+class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Execute sequential interaction pattern."""
 
     async def run(
@@ -230,7 +230,7 @@ class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):
+class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Execute hierarchical interaction pattern."""
 
     async def run(
@@ -262,7 +262,7 @@ class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):
+class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Process results from collaborative pattern."""
 
     async def run(
@@ -301,7 +301,7 @@ class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ProcessSequentialResults(BaseNode[WorkflowPatternState]):
+class ProcessSequentialResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Process results from sequential pattern."""
 
     async def run(
@@ -339,7 +339,7 @@ class ProcessSequentialResults(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):
+class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Process results from hierarchical pattern."""
 
     async def run(
@@ -376,7 +376,7 @@ class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ValidateConsensus(BaseNode[WorkflowPatternState]):
+class ValidateConsensus(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Validate consensus results."""
 
     async def run(
@@ -406,7 +406,7 @@ class ValidateConsensus(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ValidateResults(BaseNode[WorkflowPatternState]):
+class ValidateResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Validate pattern execution results."""
 
     async def run(
@@ -455,7 +455,7 @@ class ValidateResults(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class FinalizePattern(BaseNode[WorkflowPatternState]):
+class FinalizePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Finalize pattern execution."""
 
     async def run(
@@ -550,7 +550,7 @@ class FinalizePattern(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class PatternError(BaseNode[WorkflowPatternState]):
+class PatternError(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Handle pattern execution errors."""
 
     async def run(
@@ -588,7 +588,7 @@ class PatternError(BaseNode[WorkflowPatternState]):
 
 
 @dataclass
-class ExecutePattern(BaseNode[WorkflowPatternState]):
+class ExecutePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Execute the appropriate pattern based on configuration."""
 
     async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> Any:

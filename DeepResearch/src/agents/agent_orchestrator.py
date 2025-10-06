@@ -53,7 +53,7 @@ class AgentOrchestrator:
     def _create_orchestrator_agent(self):
         """Create the orchestrator agent."""
         self.orchestrator_agent = Agent(
-            model_name=self.config.model_name,
+            model=self.config.model_name,
             deps_type=OrchestratorDependencies,
             system_prompt=self._get_orchestrator_system_prompt(),
             instructions=self._get_orchestrator_instructions(),
@@ -83,9 +83,9 @@ class AgentOrchestrator:
             loop_id: str,
             state_machine_mode: str,
             max_iterations: int = 10,
-            subgraphs: List[str] = None,
-            agent_roles: List[str] = None,
-            tools: List[str] = None,
+            subgraphs: Optional[List[str]] = None,
+            agent_roles: Optional[List[str]] = None,
+            tools: Optional[List[str]] = None,
             priority: int = 0,
         ) -> Dict[str, Any]:
             """Spawn a nested REACT loop."""
@@ -93,7 +93,7 @@ class AgentOrchestrator:
                 # Create nested loop configuration
                 nested_config = NestedReactConfig(
                     loop_id=loop_id,
-                    parent_loop_id=ctx.deps.parent_loop_id,
+                    parent_loop_id=getattr(ctx.deps, 'parent_loop_id', None),
                     max_iterations=max_iterations,
                     state_machine_mode=MultiStateMachineMode(state_machine_mode),
                     subgraphs=[SubgraphType(sg) for sg in (subgraphs or [])],
@@ -128,10 +128,10 @@ class AgentOrchestrator:
             ctx: RunContext[OrchestratorDependencies],
             subgraph_id: str,
             subgraph_type: str,
-            parameters: Dict[str, Any] = None,
+            parameters: Optional[Dict[str, Any]] = None,
             entry_node: str = "start",
             max_execution_time: float = 300.0,
-            tools: List[str] = None,
+            tools: Optional[List[str]] = None,
         ) -> Dict[str, Any]:
             """Execute a subgraph."""
             try:
@@ -248,10 +248,9 @@ class AgentOrchestrator:
 
         # Create dependencies
         deps = OrchestratorDependencies(
-            config=config,
+            config=config.model_dump() if hasattr(config, 'model_dump') else dict(config),
             user_input=user_input,
             context={"execution_start": datetime.now().isoformat()},
-            current_iteration=0,
         )
 
         try:
@@ -268,7 +267,7 @@ class AgentOrchestrator:
                 final_answer=final_answer,
                 nested_loops_spawned=list(self.nested_loops.keys()),
                 subgraphs_executed=list(self.subgraphs.keys()),
-                total_iterations=deps.current_iteration,
+                total_iterations=getattr(deps, 'current_iteration', 0),
                 execution_metadata={
                     "execution_time": execution_time,
                     "nested_loops_count": len(self.nested_loops),
@@ -282,7 +281,7 @@ class AgentOrchestrator:
             return OrchestrationResult(
                 success=False,
                 final_answer=f"Orchestration failed: {str(e)}",
-                total_iterations=deps.current_iteration,
+                total_iterations=getattr(deps, 'current_iteration', 0),
                 break_reason=f"Error: {str(e)}",
                 execution_metadata={"execution_time": execution_time, "error": str(e)},
             )

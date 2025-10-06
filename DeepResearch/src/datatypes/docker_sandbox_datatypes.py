@@ -8,7 +8,7 @@ configuration, execution requests, results, and execution policies.
 from __future__ import annotations
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class DockerSandboxPolicies(BaseModel):
@@ -152,14 +152,16 @@ class DockerExecutionRequest(BaseModel):
         default_factory=dict, description="Files to create in container"
     )
 
-    @validator("timeout")
+    @field_validator("timeout")
+    @classmethod
     def validate_timeout(cls, v):
         """Validate timeout is positive."""
         if v <= 0:
             raise ValueError("Timeout must be positive")
         return v
 
-    @validator("language")
+    @field_validator("language")
+    @classmethod
     def validate_language(cls, v):
         """Validate language is not empty."""
         if not v or not v.strip():
