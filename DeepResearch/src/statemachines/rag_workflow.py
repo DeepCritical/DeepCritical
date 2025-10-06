@@ -18,28 +18,30 @@ try:
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
     from typing import TypeVar, Generic
-    
-    T = TypeVar('T')
-    
+
+    T = TypeVar("T")
+
     class BaseNode(Generic[T]):
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class End:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Graph:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class GraphRunContext:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Edge:
         def __init__(self, *args, **kwargs):
             pass
+
+
 from omegaconf import DictConfig
 
 from ..datatypes.rag import RAGConfig, RAGQuery, RAGResponse, Document, SearchType

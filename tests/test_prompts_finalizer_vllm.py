@@ -19,10 +19,7 @@ class TestFinalizerPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from finalizer module with VLLM."""
         # Run tests for finalizer module
         results = self.run_module_prompt_tests(
-            "finalizer",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "finalizer", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -43,7 +40,7 @@ class TestFinalizerPromptsVLLM(VLLMPromptTestBase):
             SYSTEM,
             expected_placeholders=["knowledge_str", "language_style"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]

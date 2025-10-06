@@ -11,6 +11,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
+
 # Note: defer decorator is not available in current pydantic-ai version
 
 from .base import ToolSpec, ToolRunner, ExecutionResult, registry
@@ -199,15 +200,17 @@ class BioinformaticsFusionTool(ToolRunner):
             return ExecutionResult(
                 success=fusion_result.success,
                 data={
-                    "fused_dataset": fusion_result.fused_dataset.dict()
-                    if fusion_result.fused_dataset
-                    else None,
+                    "fused_dataset": (
+                        fusion_result.fused_dataset.dict()
+                        if fusion_result.fused_dataset
+                        else None
+                    ),
                     "quality_metrics": fusion_result.quality_metrics,
                     "success": fusion_result.success,
                 },
-                error=None
-                if fusion_result.success
-                else "; ".join(fusion_result.errors),
+                error=(
+                    None if fusion_result.success else "; ".join(fusion_result.errors)
+                ),
             )
 
         except Exception as e:

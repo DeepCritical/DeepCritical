@@ -15,7 +15,7 @@ import sys
 import os
 
 # Add the DeepResearch source to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from workflow_patterns import (
     InteractionPattern,
@@ -26,7 +26,6 @@ from workflow_patterns import (
     execute_hierarchical_workflow,
     demonstrate_workflow_patterns,
     WorkflowPatternFactory,
-    AgentExecutorRegistry,
     agent_registry,
 )
 
@@ -118,7 +117,7 @@ async def demonstrate_advanced_patterns():
         config={
             "max_rounds": 5,
             "consensus_threshold": 0.8,
-        }
+        },
     )
     print(f"Collaborative result length: {len(collaborative_result)} characters")
 
@@ -131,7 +130,7 @@ async def demonstrate_advanced_patterns():
         agent_executors=agent_executors,
         config={
             "max_rounds": len(agents),
-        }
+        },
     )
     print(f"Sequential result length: {len(sequential_result)} characters")
 
@@ -145,7 +144,7 @@ async def demonstrate_advanced_patterns():
         agent_executors=agent_executors,
         config={
             "max_rounds": 3,
-        }
+        },
     )
     print(f"Hierarchical result length: {len(hierarchical_result)} characters")
 
@@ -166,12 +165,14 @@ async def demonstrate_advanced_patterns():
 
     # 5. Test executor with custom config
     print("\n5. Testing Workflow Executor with Custom Config:")
-    executor = WorkflowPatternExecutor({
-        "pattern": "collaborative",
-        "max_rounds": 2,
-        "consensus_threshold": 0.9,
-        "timeout": 60.0,
-    })
+    executor = WorkflowPatternExecutor(
+        {
+            "pattern": "collaborative",
+            "max_rounds": 2,
+            "consensus_threshold": 0.9,
+            "timeout": 60.0,
+        }
+    )
 
     custom_result = await executor.execute_collaborative_pattern(
         question="What are the latest developments in quantum computing?",
@@ -191,10 +192,19 @@ async def demonstrate_consensus_algorithms():
 
     # Sample results from different agents
     results = [
-        {"answer": "Machine learning improves healthcare diagnostics", "confidence": 0.9},
-        {"answer": "Machine learning improves healthcare diagnostics", "confidence": 0.85},
+        {
+            "answer": "Machine learning improves healthcare diagnostics",
+            "confidence": 0.9,
+        },
+        {
+            "answer": "Machine learning improves healthcare diagnostics",
+            "confidence": 0.85,
+        },
         {"answer": "Machine learning enhances medical imaging", "confidence": 0.8},
-        {"answer": "Machine learning improves healthcare diagnostics", "confidence": 0.9},
+        {
+            "answer": "Machine learning improves healthcare diagnostics",
+            "confidence": 0.9,
+        },
     ]
 
     # Test different consensus algorithms
@@ -233,10 +243,18 @@ async def demonstrate_message_routing():
 
     # Create sample messages
     messages = [
-        WorkflowPatternUtils.create_message("agent1", "agent2", MessageType.DATA, "Hello agent2"),
-        WorkflowPatternUtils.create_message("agent1", "agent3", MessageType.DATA, "Hello agent3"),
-        WorkflowPatternUtils.create_broadcast_message("agent2", "Broadcast from agent2"),
-        WorkflowPatternUtils.create_request_message("agent3", "agent1", {"query": "test"}, "test_request"),
+        WorkflowPatternUtils.create_message(
+            "agent1", "agent2", MessageType.DATA, "Hello agent2"
+        ),
+        WorkflowPatternUtils.create_message(
+            "agent1", "agent3", MessageType.DATA, "Hello agent3"
+        ),
+        WorkflowPatternUtils.create_broadcast_message(
+            "agent2", "Broadcast from agent2"
+        ),
+        WorkflowPatternUtils.create_request_message(
+            "agent3", "agent1", {"query": "test"}, "test_request"
+        ),
     ]
 
     agents = ["agent1", "agent2", "agent3"]
@@ -288,8 +306,12 @@ async def demonstrate_state_management():
         print(f"\nRound {round_num + 1}:")
 
         # Add some messages
-        message1 = WorkflowPatternUtils.create_message("agent1", "agent2", MessageType.DATA, f"Round {round_num} data")
-        message2 = WorkflowPatternUtils.create_broadcast_message("agent2", f"Round {round_num} broadcast")
+        message1 = WorkflowPatternUtils.create_message(
+            "agent1", "agent2", MessageType.DATA, f"Round {round_num} data"
+        )
+        message2 = WorkflowPatternUtils.create_broadcast_message(
+            "agent2", f"Round {round_num} broadcast"
+        )
 
         state.send_message(message1)
         state.send_message(message2)
@@ -338,9 +360,15 @@ async def run_comprehensive_demo():
         # Show summary
         print("\n📊 Summary:")
         print(f"- Executed {len(agent_registry.list())} registered agent executors")
-        print(f"- Demonstrated {len([p for p in InteractionPattern])} interaction patterns")
-        print(f"- Tested {len(['simple_agreement', 'majority_vote', 'confidence_based'])} consensus algorithms")
-        print(f"- Demonstrated {len(['direct', 'broadcast', 'round_robin', 'priority_based', 'load_balanced'])} routing strategies")
+        print(
+            f"- Demonstrated {len([p for p in InteractionPattern])} interaction patterns"
+        )
+        print(
+            f"- Tested {len(['simple_agreement', 'majority_vote', 'confidence_based'])} consensus algorithms"
+        )
+        print(
+            f"- Demonstrated {len(['direct', 'broadcast', 'round_robin', 'priority_based', 'load_balanced'])} routing strategies"
+        )
 
     except Exception as e:
         print(f"\n❌ Demo failed: {e}")

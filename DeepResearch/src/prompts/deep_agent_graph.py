@@ -35,15 +35,15 @@ Maintain high-level oversight while allowing specialized agents to execute their
 
 class DeepAgentGraphPrompts:
     """Prompts for deep agent graph operations."""
-    
+
     def __init__(self):
         self.system_prompt = DEEP_AGENT_GRAPH_SYSTEM_PROMPT
         self.instructions = DEEP_AGENT_GRAPH_INSTRUCTIONS
-    
+
     def get_coordination_prompt(self, workflow_type: str) -> str:
         """Get coordination prompt for specific workflow type."""
         return f"{self.system_prompt}\n\nWorkflow Type: {workflow_type}\n\n{self.instructions}"
-    
+
     def get_subgraph_prompt(self, subgraph_config: Dict) -> str:
         """Get prompt for subgraph coordination."""
         return f"{self.system_prompt}\n\nSubgraph Configuration: {subgraph_config}\n\n{self.instructions}"

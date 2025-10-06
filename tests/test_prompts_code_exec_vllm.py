@@ -19,10 +19,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from code_exec module with VLLM."""
         # Run tests for code_exec module
         results = self.run_module_prompt_tests(
-            "code_exec",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "code_exec", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -43,7 +40,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
             SYSTEM,
             expected_placeholders=["code"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -68,7 +65,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
             execute_prompt,
             expected_placeholders=["code"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -118,7 +115,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
             execute_prompt,
             expected_placeholders=["code"],
             max_tokens=128,
-            temperature=0.3  # Lower temperature for more consistent results
+            temperature=0.3,  # Lower temperature for more consistent results
         )
 
         assert result["success"]
@@ -146,7 +143,7 @@ class TestCodeExecPromptsVLLM(VLLMPromptTestBase):
             execute_prompt,
             expected_placeholders=["code"],
             max_tokens=128,
-            temperature=0.3
+            temperature=0.3,
         )
 
         assert result["success"]

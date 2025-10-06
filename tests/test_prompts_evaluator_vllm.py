@@ -19,10 +19,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from evaluator module with VLLM."""
         # Run tests for evaluator module
         results = self.run_module_prompt_tests(
-            "evaluator",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "evaluator", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -43,7 +40,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             DEFINITIVE_SYSTEM,
             expected_placeholders=["examples"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -65,13 +62,16 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             "PLURALITY_SYSTEM",
             PLURALITY_SYSTEM,
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
 
         # Verify the system prompt contains expected content
-        assert "analyzes if answers provide the appropriate number" in PLURALITY_SYSTEM.lower()
+        assert (
+            "analyzes if answers provide the appropriate number"
+            in PLURALITY_SYSTEM.lower()
+        )
         assert "Question Type Reference Table" in PLURALITY_SYSTEM
 
     @pytest.mark.vllm
@@ -86,13 +86,16 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             COMPLETENESS_SYSTEM,
             expected_placeholders=["completeness_examples"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
 
         # Verify the system prompt contains expected content
-        assert "determines if an answer addresses all explicitly mentioned aspects" in COMPLETENESS_SYSTEM.lower()
+        assert (
+            "determines if an answer addresses all explicitly mentioned aspects"
+            in COMPLETENESS_SYSTEM.lower()
+        )
         assert "multi-aspect question" in COMPLETENESS_SYSTEM.lower()
 
     @pytest.mark.vllm
@@ -107,13 +110,15 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             FRESHNESS_SYSTEM,
             expected_placeholders=["current_time_iso"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
 
         # Verify the system prompt contains expected content
-        assert "analyzes if answer content is likely outdated" in FRESHNESS_SYSTEM.lower()
+        assert (
+            "analyzes if answer content is likely outdated" in FRESHNESS_SYSTEM.lower()
+        )
         assert "mentioned dates" in FRESHNESS_SYSTEM.lower()
 
     @pytest.mark.vllm
@@ -128,7 +133,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             STRICT_SYSTEM,
             expected_placeholders=["knowledge_items"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -150,13 +155,16 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             QUESTION_EVALUATION_SYSTEM,
             expected_placeholders=["examples"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
 
         # Verify the system prompt contains expected content
-        assert "determines if a question requires definitive" in QUESTION_EVALUATION_SYSTEM.lower()
+        assert (
+            "determines if a question requires definitive"
+            in QUESTION_EVALUATION_SYSTEM.lower()
+        )
         assert "evaluation_types" in QUESTION_EVALUATION_SYSTEM.lower()
 
     @pytest.mark.vllm
@@ -198,7 +206,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             definitive_prompt,
             expected_placeholders=["answer"],
             max_tokens=128,
-            temperature=0.3
+            temperature=0.3,
         )
 
         assert result["success"]
@@ -212,7 +220,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             freshness_prompt,
             expected_placeholders=["answer"],
             max_tokens=128,
-            temperature=0.3
+            temperature=0.3,
         )
 
         assert result["success"]
@@ -226,7 +234,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             plurality_prompt,
             expected_placeholders=["answer"],
             max_tokens=128,
-            temperature=0.3
+            temperature=0.3,
         )
 
         assert result["success"]
@@ -248,7 +256,9 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
         ]
 
         for criterion in required_criteria:
-            assert criterion.lower() in DEFINITIVE_SYSTEM.lower(), f"Missing criterion: {criterion}"
+            assert (
+                criterion.lower() in DEFINITIVE_SYSTEM.lower()
+            ), f"Missing criterion: {criterion}"
 
         # Test the prompt formatting
         result = self._test_single_prompt(
@@ -256,7 +266,7 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
             "evaluation_criteria_test",
             DEFINITIVE_SYSTEM,
             max_tokens=64,
-            temperature=0.1
+            temperature=0.1,
         )
 
         assert result["success"]

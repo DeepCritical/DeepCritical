@@ -22,9 +22,6 @@ from ..datatypes.workflow_patterns import (
     AgentInteractionState,
     InteractionMessage,
     WorkflowOrchestrator,
-    InteractionConfig,
-    AgentInteractionRequest,
-    AgentInteractionResponse,
 )
 
 
@@ -70,7 +67,9 @@ class InteractionMetrics:
     consensus_reached_count: int = 0
     total_agents_participated: int = 0
 
-    def record_round(self, success: bool, response_time: float, consensus: bool, agents_count: int):
+    def record_round(
+        self, success: bool, response_time: float, consensus: bool, agents_count: int
+    ):
         """Record metrics for a round."""
         self.total_messages += agents_count
         if success:
@@ -188,7 +187,10 @@ class WorkflowPatternUtils:
         timeout: float = 30.0,
     ) -> Dict[str, Dict[str, Any]]:
         """Execute multiple agents in parallel with timeout."""
-        async def execute_single_agent(agent_id: str, executor: Callable) -> tuple[str, Dict[str, Any]]:
+
+        async def execute_single_agent(
+            agent_id: str, executor: Callable
+        ) -> tuple[str, Dict[str, Any]]:
             try:
                 start_time = time.time()
 
@@ -197,8 +199,7 @@ class WorkflowPatternUtils:
 
                 # Execute agent
                 result = await asyncio.wait_for(
-                    executor(agent_messages),
-                    timeout=timeout
+                    executor(agent_messages), timeout=timeout
                 )
 
                 execution_time = time.time() - start_time
@@ -275,19 +276,29 @@ class WorkflowPatternUtils:
                 confidences.append(0.5)  # Default confidence
 
         if algorithm == ConsensusAlgorithm.SIMPLE_AGREEMENT:
-            return WorkflowPatternUtils._simple_agreement_consensus(results, confidences)
+            return WorkflowPatternUtils._simple_agreement_consensus(
+                results, confidences
+            )
         elif algorithm == ConsensusAlgorithm.MAJORITY_VOTE:
             return WorkflowPatternUtils._majority_vote_consensus(results, confidences)
         elif algorithm == ConsensusAlgorithm.WEIGHTED_AVERAGE:
-            return WorkflowPatternUtils._weighted_average_consensus(results, confidences)
+            return WorkflowPatternUtils._weighted_average_consensus(
+                results, confidences
+            )
         elif algorithm == ConsensusAlgorithm.CONFIDENCE_BASED:
-            return WorkflowPatternUtils._confidence_based_consensus(results, confidences, confidence_threshold)
+            return WorkflowPatternUtils._confidence_based_consensus(
+                results, confidences, confidence_threshold
+            )
         else:
             # Default to simple agreement
-            return WorkflowPatternUtils._simple_agreement_consensus(results, confidences)
+            return WorkflowPatternUtils._simple_agreement_consensus(
+                results, confidences
+            )
 
     @staticmethod
-    def _simple_agreement_consensus(results: List[Any], confidences: List[float]) -> ConsensusResult:
+    def _simple_agreement_consensus(
+        results: List[Any], confidences: List[float]
+    ) -> ConsensusResult:
         """Simple agreement consensus - all results must be identical."""
         first_result = results[0]
         all_agree = all(
@@ -317,7 +328,9 @@ class WorkflowPatternUtils:
             )
 
     @staticmethod
-    def _majority_vote_consensus(results: List[Any], confidences: List[float]) -> ConsensusResult:
+    def _majority_vote_consensus(
+        results: List[Any], confidences: List[float]
+    ) -> ConsensusResult:
         """Majority vote consensus."""
         # Count occurrences of each result
         result_counts = {}
@@ -341,10 +354,20 @@ class WorkflowPatternUtils:
                         break
 
                 # Calculate weighted confidence
-                weighted_confidence = sum(
-                    conf * (1 if json.dumps(r, sort_keys=True) == most_common_result_str else 0)
-                    for r, conf in zip(results, confidences)
-                ) / sum(confidences) if confidences else 0.0
+                weighted_confidence = (
+                    sum(
+                        conf
+                        * (
+                            1
+                            if json.dumps(r, sort_keys=True) == most_common_result_str
+                            else 0
+                        )
+                        for r, conf in zip(results, confidences)
+                    )
+                    / sum(confidences)
+                    if confidences
+                    else 0.0
+                )
 
                 return ConsensusResult(
                     consensus_reached=True,
@@ -365,7 +388,9 @@ class WorkflowPatternUtils:
         )
 
     @staticmethod
-    def _weighted_average_consensus(results: List[Any], confidences: List[float]) -> ConsensusResult:
+    def _weighted_average_consensus(
+        results: List[Any], confidences: List[float]
+    ) -> ConsensusResult:
         """Weighted average consensus for numeric results."""
         numeric_results = []
         for result in results:
@@ -373,7 +398,9 @@ class WorkflowPatternUtils:
                 numeric_results.append(float(result))
             except (ValueError, TypeError):
                 # Non-numeric result, fall back to simple agreement
-                return WorkflowPatternUtils._simple_agreement_consensus(results, confidences)
+                return WorkflowPatternUtils._simple_agreement_consensus(
+                    results, confidences
+                )
 
         if numeric_results:
             # Weighted average
@@ -409,13 +436,16 @@ class WorkflowPatternUtils:
         """Confidence-based consensus."""
         # Find results with high confidence
         high_confidence_results = [
-            (result, conf) for result, conf in zip(results, confidences)
+            (result, conf)
+            for result, conf in zip(results, confidences)
             if conf >= threshold
         ]
 
         if high_confidence_results:
             # Use the highest confidence result
-            best_result, best_confidence = max(high_confidence_results, key=lambda x: x[1])
+            best_result, best_confidence = max(
+                high_confidence_results, key=lambda x: x[1]
+            )
 
             return ConsensusResult(
                 consensus_reached=True,
@@ -439,7 +469,9 @@ class WorkflowPatternUtils:
     def _results_equal(result1: Any, result2: Any) -> bool:
         """Check if two results are equal."""
         try:
-            return json.dumps(result1, sort_keys=True) == json.dumps(result2, sort_keys=True)
+            return json.dumps(result1, sort_keys=True) == json.dumps(
+                result2, sort_keys=True
+            )
         except (TypeError, ValueError):
             # Fallback to direct comparison
             return result1 == result2
@@ -515,7 +547,9 @@ class WorkflowPatternUtils:
 
             try:
                 # Extract content from messages
-                message_content = [msg.content for msg in messages if msg.content is not None]
+                message_content = [
+                    msg.content for msg in messages if msg.content is not None
+                ]
 
                 if message_handler:
                     # Use custom message handler
@@ -600,14 +634,17 @@ class WorkflowPatternUtils:
                     subordinate_tasks = []
 
                     for sub_id, sub_executor in subordinate_executors.items():
-                        task = sub_executor(messages + [
-                            InteractionMessage(
-                                sender_id="coordinator",
-                                receiver_id=sub_id,
-                                message_type=MessageType.DATA,
-                                content=coordinator_result,
-                            )
-                        ])
+                        task = sub_executor(
+                            messages
+                            + [
+                                InteractionMessage(
+                                    sender_id="coordinator",
+                                    receiver_id=sub_id,
+                                    message_type=MessageType.DATA,
+                                    content=coordinator_result,
+                                )
+                            ]
+                        )
                         subordinate_tasks.append((sub_id, task))
 
                     # Execute subordinates in parallel
@@ -636,7 +673,10 @@ class WorkflowPatternUtils:
             try:
                 return await asyncio.wait_for(executor(messages), timeout=timeout)
             except asyncio.TimeoutError:
-                return {"error": f"Execution timed out after {timeout}s", "success": False}
+                return {
+                    "error": f"Execution timed out after {timeout}s",
+                    "success": False,
+                }
 
         return timeout_executor
 
@@ -658,10 +698,15 @@ class WorkflowPatternUtils:
                     last_error = str(e)
 
                     if attempt < max_retries:
-                        await asyncio.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                        await asyncio.sleep(
+                            retry_delay * (2**attempt)
+                        )  # Exponential backoff
                         continue
                     else:
-                        return {"error": f"Failed after {max_retries + 1} attempts: {last_error}", "success": False}
+                        return {
+                            "error": f"Failed after {max_retries + 1} attempts: {last_error}",
+                            "success": False,
+                        }
 
             return {"error": "Unexpected retry failure", "success": False}
 
@@ -681,7 +726,11 @@ class WorkflowPatternUtils:
                 execution_time = time.time() - start_time
 
                 if metrics:
-                    success = result.get("success", True) if isinstance(result, dict) else True
+                    success = (
+                        result.get("success", True)
+                        if isinstance(result, dict)
+                        else True
+                    )
                     metrics.record_round(success, execution_time, True, 1)
 
                 return result
@@ -728,23 +777,31 @@ class WorkflowPatternUtils:
 
         state = AgentInteractionState()
         state.interaction_id = data.get("interaction_id", state.interaction_id)
-        state.pattern = InteractionPattern(data.get("pattern", InteractionPattern.COLLABORATIVE.value))
-        state.mode = AgentInteractionMode(data.get("mode", AgentInteractionMode.SYNC.value))
+        state.pattern = InteractionPattern(
+            data.get("pattern", InteractionPattern.COLLABORATIVE.value)
+        )
+        state.mode = AgentInteractionMode(
+            data.get("mode", AgentInteractionMode.SYNC.value)
+        )
         state.agents = data.get("agents", {})
         state.active_agents = data.get("active_agents", [])
         state.agent_states = {
             k: AgentStatus(v) for k, v in data.get("agent_states", {}).items()
         }
         state.messages = [
-            InteractionMessage.from_dict(msg_data) for msg_data in data.get("messages", [])
+            InteractionMessage.from_dict(msg_data)
+            for msg_data in data.get("messages", [])
         ]
         state.message_queue = [
-            InteractionMessage.from_dict(msg_data) for msg_data in data.get("message_queue", [])
+            InteractionMessage.from_dict(msg_data)
+            for msg_data in data.get("message_queue", [])
         ]
         state.current_round = data.get("current_round", 0)
         state.max_rounds = data.get("max_rounds", 10)
         state.consensus_threshold = data.get("consensus_threshold", 0.8)
-        state.execution_status = ExecutionStatus(data.get("execution_status", ExecutionStatus.PENDING.value))
+        state.execution_status = ExecutionStatus(
+            data.get("execution_status", ExecutionStatus.PENDING.value)
+        )
         state.results = data.get("results", {})
         state.final_result = data.get("final_result")
         state.consensus_reached = data.get("consensus_reached", False)
@@ -828,7 +885,9 @@ def create_hierarchical_orchestrator(
     )
 
     # Add coordinator
-    interaction_state.add_agent(coordinator_id, agent_executors.get(f"{coordinator_id}_type"))
+    interaction_state.add_agent(
+        coordinator_id, agent_executors.get(f"{coordinator_id}_type")
+    )
 
     # Add subordinates
     for sub_id in subordinate_ids:

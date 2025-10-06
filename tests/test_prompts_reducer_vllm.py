@@ -8,6 +8,7 @@ These tests are optional and disabled in CI by default.
 import pytest
 from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
+
 class TestReducerPromptsVLLM(VLLMPromptTestBase):
     """Test reducer.py prompts with VLLM."""
 
@@ -16,14 +17,8 @@ class TestReducerPromptsVLLM(VLLMPromptTestBase):
     def test_reducer_prompts_vllm(self, vllm_tester):
         """Test all prompts from reducer module with VLLM."""
         results = self.run_module_prompt_tests(
-            "reducer",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "reducer", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         self.assert_prompt_test_success(results, min_success_rate=0.8)
         assert len(results) > 0, "No prompts were tested from reducer module"
-
-
-

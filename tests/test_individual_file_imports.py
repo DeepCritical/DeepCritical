@@ -129,9 +129,9 @@ class TestIndividualFileImports:
                     attributes = [
                         attr for attr in dir(module) if not attr.startswith("_")
                     ]
-                    assert len(attributes) > 0, (
-                        f"Module {module_path} appears to be empty"
-                    )
+                    assert (
+                        len(attributes) > 0
+                    ), f"Module {module_path} appears to be empty"
 
             except ImportError:
                 # Skip modules that can't be imported due to missing dependencies
@@ -205,16 +205,16 @@ class TestIndividualFileImports:
 
                 # Check that expected classes exist
                 for class_name in expected_classes:
-                    assert hasattr(module, class_name), (
-                        f"Missing {class_name} in {module_name}"
-                    )
+                    assert hasattr(
+                        module, class_name
+                    ), f"Missing {class_name} in {module_name}"
                     cls = getattr(module, class_name)
                     assert cls is not None
 
                     # Check that it's actually a class
-                    assert inspect.isclass(cls), (
-                        f"{class_name} is not a class in {module_name}"
-                    )
+                    assert inspect.isclass(
+                        cls
+                    ), f"{class_name} is not a class in {module_name}"
 
             except ImportError as e:
                 pytest.fail(f"Failed to import {module_name}: {e}")

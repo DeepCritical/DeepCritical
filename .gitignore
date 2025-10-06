@@ -3,6 +3,10 @@ example
 outputs
 docs
 .claude/
+test_artifacts/
+bandit-report.json
+codecov.yml
+
 
 # Python
 __pycache__/

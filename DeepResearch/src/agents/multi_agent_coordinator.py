@@ -32,6 +32,7 @@ from ..prompts.multi_agent_coordinator import (
     get_system_prompt,
     get_instructions,
 )
+
 # Note: JudgeEvaluationRequest and JudgeEvaluationResult are defined in workflow_orchestrator.py
 # Import them from there if needed in the future
 
@@ -919,9 +920,9 @@ class MultiAgentCoordinator:
                     # Handle subgraph execution errors
                     for agent_id in agent_states:
                         if agent_states[agent_id].status != WorkflowStatus.FAILED:
-                            agent_states[
-                                agent_id
-                            ].error_message = f"Subgraph {subgraph} failed: {str(e)}"
+                            agent_states[agent_id].error_message = (
+                                f"Subgraph {subgraph} failed: {str(e)}"
+                            )
 
             coordination_round.end_time = datetime.now()
             coordination_round.agent_states = agent_states.copy()

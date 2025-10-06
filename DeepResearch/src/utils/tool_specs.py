@@ -14,7 +14,7 @@ from ..datatypes.tool_specs import (
 
 __all__ = [
     "ToolSpec",
-    "ToolCategory", 
+    "ToolCategory",
     "ToolInput",
     "ToolOutput",
 ]

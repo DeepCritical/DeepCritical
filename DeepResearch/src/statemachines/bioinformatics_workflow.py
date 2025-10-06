@@ -10,34 +10,36 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Annotated
+
 # Optional import for pydantic_graph
 try:
     from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
     from typing import TypeVar, Generic
-    
-    T = TypeVar('T')
-    
+
+    T = TypeVar("T")
+
     class BaseNode(Generic[T]):
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class End:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Graph:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class GraphRunContext:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Edge:
         def __init__(self, *args, **kwargs):
             pass
+
 
 from ..datatypes.bioinformatics import (
     FusedDataset,
@@ -295,18 +297,22 @@ class CreateReasoningTask(BaseNode[BioinformaticsState]):
             task_type=self._determine_task_type(question),
             question=question,
             context={
-                "fusion_type": ctx.state.fusion_request.fusion_type
-                if ctx.state.fusion_request
-                else "unknown",
-                "data_sources": ctx.state.fusion_request.source_databases
-                if ctx.state.fusion_request
-                else [],
+                "fusion_type": (
+                    ctx.state.fusion_request.fusion_type
+                    if ctx.state.fusion_request
+                    else "unknown"
+                ),
+                "data_sources": (
+                    ctx.state.fusion_request.source_databases
+                    if ctx.state.fusion_request
+                    else []
+                ),
                 "quality_metrics": ctx.state.quality_metrics,
             },
             difficulty_level=self._assess_difficulty(question),
-            required_evidence=[EvidenceCode.IDA, EvidenceCode.EXP]
-            if fused_dataset
-            else [],
+            required_evidence=(
+                [EvidenceCode.IDA, EvidenceCode.EXP] if fused_dataset else []
+            ),
         )
 
         ctx.state.reasoning_task = reasoning_task

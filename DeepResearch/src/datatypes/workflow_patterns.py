@@ -22,28 +22,29 @@ try:
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
     from typing import TypeVar, Generic
-    
-    T = TypeVar('T')
-    
+
+    T = TypeVar("T")
+
     class BaseNode(Generic[T]):
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class End:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Graph:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class GraphRunContext:
         def __init__(self, *args, **kwargs):
             pass
-    
+
     class Edge:
         def __init__(self, *args, **kwargs):
             pass
+
 
 # Import existing DeepCritical types
 from .agents import AgentType, AgentStatus
@@ -311,7 +312,9 @@ class WorkflowOrchestrator:
 
             if coord_result["success"]:
                 # Execute subordinate agents
-                sub_results = await self._execute_hierarchical_subordinates(coord_result["data"])
+                sub_results = await self._execute_hierarchical_subordinates(
+                    coord_result["data"]
+                )
                 self.state.results.update(sub_results)
             else:
                 self.state.errors.append(f"Coordinator failed: {coord_result['error']}")
@@ -321,7 +324,6 @@ class WorkflowOrchestrator:
 
     async def _execute_agents_parallel(self) -> Dict[str, Dict[str, Any]]:
         """Execute all active agents in parallel."""
-        import asyncio
 
         tasks = []
         for agent_id in self.state.active_agents:
@@ -356,7 +358,9 @@ class WorkflowOrchestrator:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _process_collaborative_results(self, results: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    def _process_collaborative_results(
+        self, results: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Process results from collaborative agents."""
         successful_results = {}
         all_results = []
@@ -401,7 +405,9 @@ class WorkflowOrchestrator:
         if isinstance(result1, str) and isinstance(result2, str):
             return result1.lower() == result2.lower()
         elif isinstance(result1, dict) and isinstance(result2, dict):
-            return result1.get("answer", "").lower() == result2.get("answer", "").lower()
+            return (
+                result1.get("answer", "").lower() == result2.get("answer", "").lower()
+            )
 
         return result1 == result2
 
@@ -437,7 +443,9 @@ class WorkflowOrchestrator:
 
         return 1.0 - (unique_results - 1) / total_results
 
-    def _execute_hierarchical_subordinates(self, coordinator_data: Any) -> Dict[str, Any]:
+    def _execute_hierarchical_subordinates(
+        self, coordinator_data: Any
+    ) -> Dict[str, Any]:
         """Execute subordinate agents in hierarchical pattern."""
         # This would implement hierarchical execution logic
         return {}
@@ -447,7 +455,11 @@ class WorkflowOrchestrator:
         agent_ids = list(self.state.agents.keys())
         try:
             current_index = agent_ids.index(current_agent)
-            return agent_ids[current_index + 1] if current_index + 1 < len(agent_ids) else None
+            return (
+                agent_ids[current_index + 1]
+                if current_index + 1 < len(agent_ids)
+                else None
+            )
         except ValueError:
             return None
 
@@ -508,7 +520,9 @@ class AgentInteractionResponse(BaseModel):
     result: Any = Field(..., description="Interaction result")
     execution_time: float = Field(..., description="Execution time in seconds")
     rounds_executed: int = Field(..., description="Number of rounds executed")
-    errors: List[str] = Field(default_factory=list, description="Any errors encountered")
+    errors: List[str] = Field(
+        default_factory=list, description="Any errors encountered"
+    )
 
     class Config:
         json_schema_extra = {
@@ -661,9 +675,7 @@ async def execute_interaction_pattern(
         )
 
         # Create orchestrator
-        orchestrator = create_workflow_orchestrator(
-            interaction_state, agent_executors
-        )
+        orchestrator = create_workflow_orchestrator(interaction_state, agent_executors)
 
         # Execute based on pattern
         if pattern == InteractionPattern.COLLABORATIVE:

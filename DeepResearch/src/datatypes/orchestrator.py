@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
+
 class OrchestratorDependencies(BaseModel):
     """Dependencies for the agent orchestrator."""
 
@@ -14,6 +15,7 @@ class OrchestratorDependencies(BaseModel):
     available_agents: List[str] = Field(default_factory=list)
     current_iteration: int = Field(0, description="Current iteration number")
     parent_loop_id: Optional[str] = Field(None, description="Parent loop ID if nested")
+
 
 @dataclass
 class Orchestrator:

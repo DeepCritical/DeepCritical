@@ -19,23 +19,24 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from bioinformatics_agents module with VLLM."""
         # Run tests for bioinformatics_agents module
         results = self.run_module_prompt_tests(
-            "bioinformatics_agents",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "bioinformatics_agents", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
         self.assert_prompt_test_success(results, min_success_rate=0.8)
 
         # Check that we tested some prompts
-        assert len(results) > 0, "No prompts were tested from bioinformatics_agents module"
+        assert (
+            len(results) > 0
+        ), "No prompts were tested from bioinformatics_agents module"
 
     @pytest.mark.vllm
     @pytest.mark.optional
     def test_data_fusion_system_prompt(self, vllm_tester):
         """Test data fusion system prompt specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import DATA_FUSION_SYSTEM_PROMPT
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            DATA_FUSION_SYSTEM_PROMPT,
+        )
 
         result = self._test_single_prompt(
             vllm_tester,
@@ -43,7 +44,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             DATA_FUSION_SYSTEM_PROMPT,
             expected_placeholders=["fusion_type", "source_databases"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -53,14 +54,16 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_go_annotation_system_prompt(self, vllm_tester):
         """Test GO annotation system prompt specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import GO_ANNOTATION_SYSTEM_PROMPT
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            GO_ANNOTATION_SYSTEM_PROMPT,
+        )
 
         result = self._test_single_prompt(
             vllm_tester,
             "GO_ANNOTATION_SYSTEM_PROMPT",
             GO_ANNOTATION_SYSTEM_PROMPT,
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -69,7 +72,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_reasoning_system_prompt(self, vllm_tester):
         """Test reasoning system prompt specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import REASONING_SYSTEM_PROMPT
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            REASONING_SYSTEM_PROMPT,
+        )
 
         result = self._test_single_prompt(
             vllm_tester,
@@ -77,7 +82,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             REASONING_SYSTEM_PROMPT,
             expected_placeholders=["task_type", "question"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -86,14 +91,16 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_data_quality_system_prompt(self, vllm_tester):
         """Test data quality system prompt specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import DATA_QUALITY_SYSTEM_PROMPT
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            DATA_QUALITY_SYSTEM_PROMPT,
+        )
 
         result = self._test_single_prompt(
             vllm_tester,
             "DATA_QUALITY_SYSTEM_PROMPT",
             DATA_QUALITY_SYSTEM_PROMPT,
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -102,7 +109,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_data_fusion_prompt_template(self, vllm_tester):
         """Test data fusion prompt template specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import BIOINFORMATICS_AGENT_PROMPTS
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            BIOINFORMATICS_AGENT_PROMPTS,
+        )
 
         data_fusion_prompt = BIOINFORMATICS_AGENT_PROMPTS["data_fusion"]
 
@@ -112,7 +121,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             data_fusion_prompt,
             expected_placeholders=["fusion_type", "source_databases", "filters"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -121,7 +130,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_go_annotation_processing_template(self, vllm_tester):
         """Test GO annotation processing prompt template specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import BIOINFORMATICS_AGENT_PROMPTS
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            BIOINFORMATICS_AGENT_PROMPTS,
+        )
 
         go_processing_prompt = BIOINFORMATICS_AGENT_PROMPTS["go_annotation_processing"]
 
@@ -131,7 +142,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             go_processing_prompt,
             expected_placeholders=["annotation_count", "paper_count"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -140,7 +151,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_reasoning_task_template(self, vllm_tester):
         """Test reasoning task prompt template specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import BIOINFORMATICS_AGENT_PROMPTS
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            BIOINFORMATICS_AGENT_PROMPTS,
+        )
 
         reasoning_prompt = BIOINFORMATICS_AGENT_PROMPTS["reasoning_task"]
 
@@ -150,7 +163,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             reasoning_prompt,
             expected_placeholders=["task_type", "question", "dataset_name"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -159,7 +172,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_quality_assessment_template(self, vllm_tester):
         """Test quality assessment prompt template specifically."""
-        from DeepResearch.src.prompts.bioinformatics_agents import BIOINFORMATICS_AGENT_PROMPTS
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            BIOINFORMATICS_AGENT_PROMPTS,
+        )
 
         quality_prompt = BIOINFORMATICS_AGENT_PROMPTS["quality_assessment"]
 
@@ -169,7 +184,7 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
             quality_prompt,
             expected_placeholders=["dataset_name", "source_databases"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -178,7 +193,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_bioinformatics_agent_prompts_class(self, vllm_tester):
         """Test the BioinformaticsAgentPrompts class functionality."""
-        from DeepResearch.src.prompts.bioinformatics_agents import BioinformaticsAgentPrompts
+        from DeepResearch.src.prompts.bioinformatics_agents import (
+            BioinformaticsAgentPrompts,
+        )
 
         # Test that BioinformaticsAgentPrompts class works
         assert BioinformaticsAgentPrompts is not None

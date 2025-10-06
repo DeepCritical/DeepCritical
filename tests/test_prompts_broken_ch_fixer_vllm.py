@@ -19,10 +19,7 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from broken_ch_fixer module with VLLM."""
         # Run tests for broken_ch_fixer module
         results = self.run_module_prompt_tests(
-            "broken_ch_fixer",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "broken_ch_fixer", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -38,11 +35,7 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
         from DeepResearch.src.prompts.broken_ch_fixer import SYSTEM
 
         result = self._test_single_prompt(
-            vllm_tester,
-            "SYSTEM",
-            SYSTEM,
-            max_tokens=128,
-            temperature=0.5
+            vllm_tester, "SYSTEM", SYSTEM, max_tokens=128, temperature=0.5
         )
 
         assert result["success"]
@@ -67,7 +60,7 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
             fix_prompt,
             expected_placeholders=["text"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -117,7 +110,7 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
             fix_prompt,
             expected_placeholders=["text"],
             max_tokens=128,
-            temperature=0.3  # Lower temperature for more consistent results
+            temperature=0.3,  # Lower temperature for more consistent results
         )
 
         assert result["success"]
@@ -129,4 +122,6 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
         assert len(response) > 0
 
         # Should not contain the � characters in the final output (as per the system prompt)
-        assert "�" not in response, "Response should not contain broken character symbols"
+        assert (
+            "�" not in response
+        ), "Response should not contain broken character symbols"

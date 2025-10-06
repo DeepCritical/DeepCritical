@@ -19,10 +19,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from error_analyzer module with VLLM."""
         # Run tests for error_analyzer module
         results = self.run_module_prompt_tests(
-            "error_analyzer",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "error_analyzer", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -43,7 +40,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
             SYSTEM,
             expected_placeholders=["error_sequence"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -68,7 +65,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
             analyze_prompt,
             expected_placeholders=["error_sequence"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -118,7 +115,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
             analyze_prompt,
             expected_placeholders=["error_sequence"],
             max_tokens=128,
-            temperature=0.3  # Lower temperature for more focused analysis
+            temperature=0.3,  # Lower temperature for more focused analysis
         )
 
         assert result["success"]
@@ -130,9 +127,20 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
         assert len(response) > 0
 
         # Should contain analysis-related keywords
-        analysis_keywords = ["analysis", "problem", "issue", "failed", "wrong", "improve"]
-        has_analysis_keywords = any(keyword in response.lower() for keyword in analysis_keywords)
-        assert has_analysis_keywords, "Response should contain analysis-related keywords"
+        analysis_keywords = [
+            "analysis",
+            "problem",
+            "issue",
+            "failed",
+            "wrong",
+            "improve",
+        ]
+        has_analysis_keywords = any(
+            keyword in response.lower() for keyword in analysis_keywords
+        )
+        assert (
+            has_analysis_keywords
+        ), "Response should contain analysis-related keywords"
 
     @pytest.mark.vllm
     @pytest.mark.optional
@@ -155,7 +163,7 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
             "system_prompt_validation",
             SYSTEM,
             max_tokens=64,
-            temperature=0.1  # Very low temperature for predictable output
+            temperature=0.1,  # Very low temperature for predictable output
         )
 
         assert result["success"]

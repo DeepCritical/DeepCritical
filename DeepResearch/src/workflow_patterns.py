@@ -15,7 +15,6 @@ from pydantic import BaseModel, Field
 from .datatypes.workflow_patterns import (
     InteractionPattern,
     WorkflowOrchestrator,
-    create_workflow_orchestrator,
     MessageType,
     AgentInteractionState,
     InteractionMessage,
@@ -48,7 +47,6 @@ from .agents.workflow_pattern_agents import (
     create_adaptive_pattern_agent,
 )
 from .datatypes.agents import AgentType, AgentDependencies
-from .utils.execution_status import ExecutionStatus
 
 
 class WorkflowPatternConfig(BaseModel):
@@ -56,7 +54,9 @@ class WorkflowPatternConfig(BaseModel):
 
     pattern: InteractionPattern = Field(..., description="Interaction pattern to use")
     max_rounds: int = Field(10, description="Maximum number of interaction rounds")
-    consensus_threshold: float = Field(0.8, description="Consensus threshold for collaborative patterns")
+    consensus_threshold: float = Field(
+        0.8, description="Consensus threshold for collaborative patterns"
+    )
     timeout: float = Field(300.0, description="Timeout in seconds")
     enable_monitoring: bool = Field(True, description="Enable execution monitoring")
     enable_caching: bool = Field(True, description="Enable result caching")
@@ -284,7 +284,9 @@ async def execute_workflow_pattern(
     Returns:
         The workflow execution result
     """
-    executor = WorkflowPatternExecutor(WorkflowPatternConfig(**config) if config else None)
+    executor = WorkflowPatternExecutor(
+        WorkflowPatternConfig(**config) if config else None
+    )
 
     return await executor.execute_pattern(
         question=question,
@@ -404,9 +406,18 @@ async def example_collaborative_workflow():
 
     # Define mock agent executors
     agent_executors = {
-        "parser": lambda messages: {"result": "Parsed question successfully", "confidence": 0.9},
-        "planner": lambda messages: {"result": "Created execution plan", "confidence": 0.85},
-        "executor": lambda messages: {"result": "Executed plan successfully", "confidence": 0.8},
+        "parser": lambda messages: {
+            "result": "Parsed question successfully",
+            "confidence": 0.9,
+        },
+        "planner": lambda messages: {
+            "result": "Created execution plan",
+            "confidence": 0.85,
+        },
+        "executor": lambda messages: {
+            "result": "Executed plan successfully",
+            "confidence": 0.8,
+        },
     }
 
     # Execute workflow
@@ -435,9 +446,18 @@ async def example_sequential_workflow():
 
     # Define mock agent executors
     agent_executors = {
-        "analyzer": lambda messages: {"result": "Analyzed requirements", "confidence": 0.9},
-        "researcher": lambda messages: {"result": "Gathered research data", "confidence": 0.85},
-        "synthesizer": lambda messages: {"result": "Synthesized final answer", "confidence": 0.8},
+        "analyzer": lambda messages: {
+            "result": "Analyzed requirements",
+            "confidence": 0.9,
+        },
+        "researcher": lambda messages: {
+            "result": "Gathered research data",
+            "confidence": 0.85,
+        },
+        "synthesizer": lambda messages: {
+            "result": "Synthesized final answer",
+            "confidence": 0.8,
+        },
     }
 
     # Execute workflow
@@ -459,7 +479,7 @@ async def example_hierarchical_workflow():
     # Define coordinator and subordinates
     coordinator_id = "orchestrator"
     subordinate_ids = ["specialist1", "specialist2", "validator"]
-    agents = [coordinator_id] + subordinate_ids
+    # agents = [coordinator_id] + subordinate_ids
 
     agent_types = {
         coordinator_id: AgentType.ORCHESTRATOR,
@@ -470,10 +490,22 @@ async def example_hierarchical_workflow():
 
     # Define mock agent executors
     agent_executors = {
-        coordinator_id: lambda messages: {"result": "Coordinated workflow", "confidence": 0.95},
-        subordinate_ids[0]: lambda messages: {"result": "Specialized search", "confidence": 0.85},
-        subordinate_ids[1]: lambda messages: {"result": "RAG processing", "confidence": 0.9},
-        subordinate_ids[2]: lambda messages: {"result": "Validated results", "confidence": 0.8},
+        coordinator_id: lambda messages: {
+            "result": "Coordinated workflow",
+            "confidence": 0.95,
+        },
+        subordinate_ids[0]: lambda messages: {
+            "result": "Specialized search",
+            "confidence": 0.85,
+        },
+        subordinate_ids[1]: lambda messages: {
+            "result": "RAG processing",
+            "confidence": 0.9,
+        },
+        subordinate_ids[2]: lambda messages: {
+            "result": "Validated results",
+            "confidence": 0.8,
+        },
     }
 
     # Execute workflow
@@ -519,10 +551,15 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="DeepCritical Workflow Patterns Demo")
-    parser.add_argument("--pattern", choices=["collaborative", "sequential", "hierarchical", "all"],
-                       default="all", help="Pattern to demonstrate")
-    parser.add_argument("--question", default="What is machine learning?",
-                       help="Question to process")
+    parser.add_argument(
+        "--pattern",
+        choices=["collaborative", "sequential", "hierarchical", "all"],
+        default="all",
+        help="Pattern to demonstrate",
+    )
+    parser.add_argument(
+        "--question", default="What is machine learning?", help="Question to process"
+    )
 
     args = parser.parse_args()
 
@@ -554,51 +591,42 @@ __all__ = [
     "InteractionConfig",
     "AgentInteractionRequest",
     "AgentInteractionResponse",
-
     # Utilities
     "WorkflowPatternUtils",
     "ConsensusAlgorithm",
     "MessageRoutingStrategy",
     "InteractionMetrics",
-
     # Factory classes
     "WorkflowPatternFactory",
     "WorkflowPatternExecutor",
     "AgentExecutorRegistry",
-
     # Execution functions
     "execute_workflow_pattern",
     "execute_collaborative_workflow",
     "execute_sequential_workflow",
     "execute_hierarchical_workflow",
-
     # Agent classes
     "CollaborativePatternAgent",
     "SequentialPatternAgent",
     "HierarchicalPatternAgent",
     "PatternOrchestratorAgent",
     "AdaptivePatternAgent",
-
     # Factory functions for agents
     "create_collaborative_agent",
     "create_sequential_agent",
     "create_hierarchical_agent",
     "create_pattern_orchestrator",
     "create_adaptive_pattern_agent",
-
     # Configuration
     "WorkflowPatternConfig",
-
     # Global instances
     "workflow_executor",
     "agent_registry",
-
     # Demo functions
     "demonstrate_workflow_patterns",
     "example_collaborative_workflow",
     "example_sequential_workflow",
     "example_hierarchical_workflow",
-
     # CLI
     "main",
 ]

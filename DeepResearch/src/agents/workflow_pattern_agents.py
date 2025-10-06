@@ -54,15 +54,6 @@ class WorkflowPatternAgent(BaseAgent):
     def _register_tools(self):
         """Register tools for workflow pattern execution."""
         # Register pattern-specific tools
-        from ..tools.workflow_pattern_tools import (
-            collaborative_pattern_tool,
-            sequential_pattern_tool,
-            hierarchical_pattern_tool,
-            consensus_tool,
-            message_routing_tool,
-            workflow_orchestration_tool,
-            interaction_state_tool,
-        )
 
         # Add tools to agent
         if self._agent:
@@ -100,8 +91,12 @@ class WorkflowPatternAgent(BaseAgent):
                     config=self.dependencies.config,
                 )
             elif self.pattern == InteractionPattern.HIERARCHICAL:
-                coordinator_id = input_data.get("coordinator_id", agents[0] if agents else "")
-                subordinate_ids = input_data.get("subordinate_ids", agents[1:] if len(agents) > 1 else [])
+                coordinator_id = input_data.get(
+                    "coordinator_id", agents[0] if agents else ""
+                )
+                subordinate_ids = input_data.get(
+                    "subordinate_ids", agents[1:] if len(agents) > 1 else []
+                )
 
                 result = await run_hierarchical_pattern_workflow(
                     question=input_data.get("question", ""),
@@ -377,16 +372,30 @@ class PatternOrchestratorAgent(BaseAgent):
         """Select the optimal interaction pattern based on requirements."""
 
         # Analyze requirements
-        needs_consensus = coordination_requirements.get("consensus", False) if coordination_requirements else False
-        needs_sequential_flow = coordination_requirements.get("sequential_flow", False) if coordination_requirements else False
-        needs_hierarchy = coordination_requirements.get("hierarchy", False) if coordination_requirements else False
+        needs_consensus = (
+            coordination_requirements.get("consensus", False)
+            if coordination_requirements
+            else False
+        )
+        needs_sequential_flow = (
+            coordination_requirements.get("sequential_flow", False)
+            if coordination_requirements
+            else False
+        )
+        needs_hierarchy = (
+            coordination_requirements.get("hierarchy", False)
+            if coordination_requirements
+            else False
+        )
 
         # Pattern selection logic
         if needs_hierarchy or agent_count > 5:
             return InteractionPattern.HIERARCHICAL
         elif needs_sequential_flow or agent_count <= 3:
             return InteractionPattern.SEQUENTIAL
-        elif needs_consensus or (agent_count > 3 and "diverse_perspectives" in str(agent_capabilities)):
+        elif needs_consensus or (
+            agent_count > 3 and "diverse_perspectives" in str(agent_capabilities)
+        ):
             return InteractionPattern.COLLABORATIVE
         else:
             # Default to collaborative for most cases
@@ -544,7 +553,9 @@ class AdaptivePatternAgent(BaseAgent):
 
                 # Keep track of the best result
                 if result.success:
-                    if best_result is None or self._is_better_result(result, best_result):
+                    if best_result is None or self._is_better_result(
+                        result, best_result
+                    ):
                         best_result = result
 
             execution_time = time.time() - start_time
@@ -556,14 +567,17 @@ class AdaptivePatternAgent(BaseAgent):
                     "best_pattern": best_result.data.get("pattern"),
                     "total_execution_time": execution_time,
                     "pattern_attempts": {
-                        pattern: attempt_result.success for pattern, attempt_result in pattern_attempts.items()
+                        pattern: attempt_result.success
+                        for pattern, attempt_result in pattern_attempts.items()
                     },
                 }
 
                 return best_result
             else:
                 # Return the last attempt if all failed
-                last_attempt = list(pattern_attempts.values())[-1] if pattern_attempts else None
+                last_attempt = (
+                    list(pattern_attempts.values())[-1] if pattern_attempts else None
+                )
                 if last_attempt:
                     return last_attempt
 

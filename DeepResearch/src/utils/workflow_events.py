@@ -44,7 +44,9 @@ __all__ = [
 class WorkflowEventSource(str, Enum):
     """Identifies whether a workflow event came from the framework or an executor."""
 
-    FRAMEWORK = "FRAMEWORK"  # Framework-owned orchestration, regardless of module location
+    FRAMEWORK = (
+        "FRAMEWORK"  # Framework-owned orchestration, regardless of module location
+    )
     EXECUTOR = "EXECUTOR"  # User-supplied executor code and callbacks
 
 
@@ -115,11 +117,17 @@ class WorkflowErrorEvent(WorkflowEvent):
 class WorkflowRunState(str, Enum):
     """Run-level state of a workflow execution."""
 
-    STARTED = "STARTED"  # Explicit pre-work phase (rarely emitted as status; see note above)
+    STARTED = (
+        "STARTED"  # Explicit pre-work phase (rarely emitted as status; see note above)
+    )
     IN_PROGRESS = "IN_PROGRESS"  # Active execution is underway
-    IN_PROGRESS_PENDING_REQUESTS = "IN_PROGRESS_PENDING_REQUESTS"  # Active execution with outstanding requests
+    IN_PROGRESS_PENDING_REQUESTS = (
+        "IN_PROGRESS_PENDING_REQUESTS"  # Active execution with outstanding requests
+    )
     IDLE = "IDLE"  # No active work and no outstanding requests
-    IDLE_WITH_PENDING_REQUESTS = "IDLE_WITH_PENDING_REQUESTS"  # Paused awaiting external responses
+    IDLE_WITH_PENDING_REQUESTS = (
+        "IDLE_WITH_PENDING_REQUESTS"  # Paused awaiting external responses
+    )
     FAILED = "FAILED"  # Finished with an error
     CANCELLED = "CANCELLED"  # Finished due to cancellation
 
@@ -299,4 +307,6 @@ class AgentRunEvent(ExecutorEvent):
         return f"{self.__class__.__name__}(executor_id={self.executor_id}, data={self.data})"
 
 
-WorkflowLifecycleEvent: TypeAlias = WorkflowStartedEvent | WorkflowStatusEvent | WorkflowFailedEvent
+WorkflowLifecycleEvent: TypeAlias = (
+    WorkflowStartedEvent | WorkflowStatusEvent | WorkflowFailedEvent
+)

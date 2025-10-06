@@ -153,9 +153,9 @@ class EvaluatorTool(ToolRunner):
             success=True,
             data={
                 "pass": "true" if is_definitive else "false",
-                "feedback": "Looks clear."
-                if is_definitive
-                else "Avoid uncertainty language.",
+                "feedback": (
+                    "Looks clear." if is_definitive else "Avoid uncertainty language."
+                ),
             },
         )
 

@@ -26,10 +26,25 @@ jobs:
         pip install -e ".[dev]"
         pip install pytest pytest-cov
 
-    - name: Run basic tests (excluding VLLM)
+    - name: Run tests with coverage (excluding VLLM)
       run: |
-        # Run tests excluding VLLM tests by default
-        pytest tests/ -m "not vllm and not optional" --tb=short --ignore=tests/test_prompts_*_vllm.py --ignore=tests/testcontainers_vllm.py
+        # Run tests excluding VLLM tests by default, generate coverage xml for Codecov
+        pytest tests/ \
+          -m "not vllm and not optional" \
+          --tb=short \
+          --ignore=tests/test_prompts_*_vllm.py \
+          --ignore=tests/testcontainers_vllm.py \
+          --cov=DeepResearch \
+          --cov-report=xml \
+          --cov-report=term-missing
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml
+        fail_ci_if_error: true
+        verbose: true
 
     - name: Run VLLM tests (optional, manual trigger only)
       if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[vllm-tests]')
@@ -54,10 +69,44 @@ jobs:
     - name: Install linting tools
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 black isort mypy
+        pip install ruff black
 
-    - name: Run linting
+    - name: Run linting (Ruff)
       run: |
-        # Run basic linting
-        flake8 DeepResearch/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 DeepResearch/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        ruff --version
+        ruff check DeepResearch/ tests/ --output-format=github
+
+    - name: Check formatting (Black)
+      run: |
+        black --version
+        black --check DeepResearch/ tests/
+
+  types:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+    
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Create venv and install deps
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install -e ".[dev]"
+
+    - name: Run ty type check
+      env:
+        VIRTUAL_ENV: .venv
+      run: |
+        uvx ty --version
+        uvx ty check

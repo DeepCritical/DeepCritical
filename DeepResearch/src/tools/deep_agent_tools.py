@@ -11,6 +11,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Dict
 from pydantic_ai import RunContext
+
 # Note: defer decorator is not available in current pydantic-ai version
 
 # Import existing DeepCritical types

@@ -8,7 +8,7 @@ integrating with the existing tool registry and datatypes.
 from __future__ import annotations
 
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 from .base import ToolSpec, ToolRunner, ExecutionResult, registry
 from ..datatypes.workflow_patterns import (
@@ -21,9 +21,9 @@ from ..utils.workflow_patterns import (
     ConsensusAlgorithm,
     MessageRoutingStrategy,
     WorkflowPatternUtils,
-    create_collaborative_orchestrator,
-    create_sequential_orchestrator,
-    create_hierarchical_orchestrator,
+    # create_collaborative_orchestrator,
+    # create_sequential_orchestrator,
+    # create_hierarchical_orchestrator,
 )
 
 
@@ -70,7 +70,9 @@ class WorkflowPatternToolRunner(ToolRunner):
                 agents = json.loads(agents_str)
                 input_data = json.loads(input_data_str)
                 config = json.loads(config_str) if config_str else {}
-                agent_executors = json.loads(agent_executors_str) if agent_executors_str else {}
+                agent_executors = (
+                    json.loads(agent_executors_str) if agent_executors_str else {}
+                )
             except json.JSONDecodeError as e:
                 return ExecutionResult(
                     success=False, error=f"Invalid JSON input: {str(e)}"
@@ -82,17 +84,25 @@ class WorkflowPatternToolRunner(ToolRunner):
                 if isinstance(executor_info, str):
                     # This would need to be resolved to actual function objects
                     # For now, create a placeholder
-                    executor_functions[agent_id] = self._create_placeholder_executor(agent_id)
+                    executor_functions[agent_id] = self._create_placeholder_executor(
+                        agent_id
+                    )
                 else:
                     executor_functions[agent_id] = executor_info
 
             # Execute pattern based on type
             if self.pattern == InteractionPattern.COLLABORATIVE:
-                result = self._execute_collaborative_pattern(agents, input_data, config, executor_functions)
+                result = self._execute_collaborative_pattern(
+                    agents, input_data, config, executor_functions
+                )
             elif self.pattern == InteractionPattern.SEQUENTIAL:
-                result = self._execute_sequential_pattern(agents, input_data, config, executor_functions)
+                result = self._execute_sequential_pattern(
+                    agents, input_data, config, executor_functions
+                )
             elif self.pattern == InteractionPattern.HIERARCHICAL:
-                result = self._execute_hierarchical_pattern(agents, input_data, config, executor_functions)
+                result = self._execute_hierarchical_pattern(
+                    agents, input_data, config, executor_functions
+                )
             else:
                 return ExecutionResult(
                     success=False, error=f"Unsupported pattern: {self.pattern}"
@@ -101,10 +111,13 @@ class WorkflowPatternToolRunner(ToolRunner):
             return result
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Pattern execution failed: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"Pattern execution failed: {str(e)}"
+            )
 
     def _create_placeholder_executor(self, agent_id: str):
         """Create a placeholder executor for testing."""
+
         async def placeholder_executor(messages):
             return {
                 "agent_id": agent_id,
@@ -112,12 +125,15 @@ class WorkflowPatternToolRunner(ToolRunner):
                 "confidence": 0.8,
                 "messages_processed": len(messages),
             }
+
         return placeholder_executor
 
-    def _execute_collaborative_pattern(self, agents, input_data, config, executor_functions):
+    def _execute_collaborative_pattern(
+        self, agents, input_data, config, executor_functions
+    ):
         """Execute collaborative pattern."""
         # Use the utility function
-        orchestrator = create_collaborative_orchestrator(agents, executor_functions, config)
+        # orchestrator = create_collaborative_orchestrator(agents, executor_functions, config)
 
         # This would need to be async in real implementation
         # For now, return mock result
@@ -132,9 +148,11 @@ class WorkflowPatternToolRunner(ToolRunner):
             },
         )
 
-    def _execute_sequential_pattern(self, agents, input_data, config, executor_functions):
+    def _execute_sequential_pattern(
+        self, agents, input_data, config, executor_functions
+    ):
         """Execute sequential pattern."""
-        orchestrator = create_sequential_orchestrator(agents, executor_functions, config)
+        # orchestrator = create_sequential_orchestrator(agents, executor_functions, config)
 
         return ExecutionResult(
             success=True,
@@ -147,19 +165,22 @@ class WorkflowPatternToolRunner(ToolRunner):
             },
         )
 
-    def _execute_hierarchical_pattern(self, agents, input_data, config, executor_functions):
+    def _execute_hierarchical_pattern(
+        self, agents, input_data, config, executor_functions
+    ):
         """Execute hierarchical pattern."""
         if len(agents) < 2:
             return ExecutionResult(
-                success=False, error="Hierarchical pattern requires at least 2 agents (coordinator + subordinates)"
+                success=False,
+                error="Hierarchical pattern requires at least 2 agents (coordinator + subordinates)",
             )
 
         coordinator_id = agents[0]
         subordinate_ids = agents[1:]
 
-        orchestrator = create_hierarchical_orchestrator(
-            coordinator_id, subordinate_ids, executor_functions, config
-        )
+        # orchestrator = create_hierarchical_orchestrator(
+        #     coordinator_id, subordinate_ids, executor_functions, config
+        # )
 
         return ExecutionResult(
             success=True,
@@ -246,14 +267,16 @@ class ConsensusTool(ToolRunner):
             return ExecutionResult(
                 success=True,
                 data={
-                    "consensus_result": json.dumps({
-                        "consensus_reached": consensus_result.consensus_reached,
-                        "final_result": consensus_result.final_result,
-                        "confidence": consensus_result.confidence,
-                        "agreement_score": consensus_result.agreement_score,
-                        "algorithm_used": consensus_result.algorithm_used.value,
-                        "individual_results": consensus_result.individual_results,
-                    }),
+                    "consensus_result": json.dumps(
+                        {
+                            "consensus_reached": consensus_result.consensus_reached,
+                            "final_result": consensus_result.final_result,
+                            "confidence": consensus_result.confidence,
+                            "agreement_score": consensus_result.agreement_score,
+                            "algorithm_used": consensus_result.algorithm_used.value,
+                            "individual_results": consensus_result.individual_results,
+                        }
+                    ),
                     "consensus_reached": consensus_result.consensus_reached,
                     "confidence": consensus_result.confidence,
                     "agreement_score": consensus_result.agreement_score,
@@ -261,7 +284,9 @@ class ConsensusTool(ToolRunner):
             )
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Consensus computation failed: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"Consensus computation failed: {str(e)}"
+            )
 
 
 class MessageRoutingTool(ToolRunner):
@@ -315,21 +340,28 @@ class MessageRoutingTool(ToolRunner):
                 messages.append(message)
 
             # Route messages
-            routed = WorkflowPatternUtils.route_messages(messages, routing_strategy, agents)
+            routed = WorkflowPatternUtils.route_messages(
+                messages, routing_strategy, agents
+            )
 
             # Create summary
             summary = {
                 "total_messages": len(messages),
                 "routing_strategy": routing_strategy.value,
                 "agents": agents,
-                "messages_per_agent": {agent: len(msgs) for agent, msgs in routed.items()},
+                "messages_per_agent": {
+                    agent: len(msgs) for agent, msgs in routed.items()
+                },
             }
 
             return ExecutionResult(
                 success=True,
                 data={
                     "routed_messages": json.dumps(
-                        {agent: [msg.to_dict() for msg in msgs] for agent, msgs in routed.items()},
+                        {
+                            agent: [msg.to_dict() for msg in msgs]
+                            for agent, msgs in routed.items()
+                        },
                         indent=2,
                     ),
                     "routing_summary": json.dumps(summary, indent=2),
@@ -337,7 +369,9 @@ class MessageRoutingTool(ToolRunner):
             )
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Message routing failed: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"Message routing failed: {str(e)}"
+            )
 
 
 class WorkflowOrchestrationTool(ToolRunner):
@@ -371,19 +405,25 @@ class WorkflowOrchestrationTool(ToolRunner):
             try:
                 workflow_config = json.loads(workflow_config_str)
                 input_data = json.loads(input_data_str)
-                pattern_configs = json.loads(pattern_configs_str) if pattern_configs_str else {}
+                pattern_configs = (
+                    json.loads(pattern_configs_str) if pattern_configs_str else {}
+                )
             except json.JSONDecodeError as e:
                 return ExecutionResult(
                     success=False, error=f"Invalid JSON input: {str(e)}"
                 )
 
             # Create workflow orchestration
-            result = self._orchestrate_workflow(workflow_config, input_data, pattern_configs)
+            result = self._orchestrate_workflow(
+                workflow_config, input_data, pattern_configs
+            )
 
             return result
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Workflow orchestration failed: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"Workflow orchestration failed: {str(e)}"
+            )
 
     def _orchestrate_workflow(self, workflow_config, input_data, pattern_configs):
         """Orchestrate workflow execution."""
@@ -392,23 +432,29 @@ class WorkflowOrchestrationTool(ToolRunner):
         return ExecutionResult(
             success=True,
             data={
-                "final_result": json.dumps({
-                    "answer": "Workflow orchestration completed successfully",
-                    "confidence": 0.9,
-                    "steps_executed": len(workflow_config.get("steps", [])),
-                }),
-                "execution_summary": json.dumps({
-                    "total_workflows": 1,
-                    "successful_workflows": 1,
-                    "failed_workflows": 0,
-                    "total_execution_time": 5.2,
-                }),
-                "performance_metrics": json.dumps({
-                    "average_response_time": 1.2,
-                    "total_messages_processed": 15,
-                    "consensus_reached": True,
-                    "agents_involved": 3,
-                }),
+                "final_result": json.dumps(
+                    {
+                        "answer": "Workflow orchestration completed successfully",
+                        "confidence": 0.9,
+                        "steps_executed": len(workflow_config.get("steps", [])),
+                    }
+                ),
+                "execution_summary": json.dumps(
+                    {
+                        "total_workflows": 1,
+                        "successful_workflows": 1,
+                        "failed_workflows": 0,
+                        "total_execution_time": 5.2,
+                    }
+                ),
+                "performance_metrics": json.dumps(
+                    {
+                        "average_response_time": 1.2,
+                        "total_messages_processed": 15,
+                        "consensus_reached": True,
+                        "agents_involved": 3,
+                    }
+                ),
             },
         )
 
@@ -462,7 +508,9 @@ class InteractionStateTool(ToolRunner):
             return result
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"State management failed: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"State management failed: {str(e)}"
+            )
 
     def _create_interaction_state(self, state_data):
         """Create new interaction state."""
@@ -478,17 +526,23 @@ class InteractionStateTool(ToolRunner):
             return ExecutionResult(
                 success=True,
                 data={
-                    "result": json.dumps({
-                        "interaction_id": interaction_state.interaction_id,
-                        "pattern": interaction_state.pattern.value,
-                        "agents_count": len(interaction_state.agents),
-                    }),
-                    "state_summary": json.dumps(interaction_state.get_summary(), indent=2),
+                    "result": json.dumps(
+                        {
+                            "interaction_id": interaction_state.interaction_id,
+                            "pattern": interaction_state.pattern.value,
+                            "agents_count": len(interaction_state.agents),
+                        }
+                    ),
+                    "state_summary": json.dumps(
+                        interaction_state.get_summary(), indent=2
+                    ),
                 },
             )
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Failed to create state: {str(e)}")
+            return ExecutionResult(
+                success=False, error=f"Failed to create state: {str(e)}"
+            )
 
     def _query_interaction_state(self, state_data, query):
         """Query interaction state."""
@@ -679,10 +733,12 @@ def message_routing_tool(ctx: Any) -> str:
     result = tool.run(params)
 
     if result.success:
-        return json.dumps({
-            "routed_messages": result.data["routed_messages"],
-            "routing_summary": result.data["routing_summary"],
-        })
+        return json.dumps(
+            {
+                "routed_messages": result.data["routed_messages"],
+                "routing_summary": result.data["routing_summary"],
+            }
+        )
     else:
         return f"Message routing failed: {result.error}"
 

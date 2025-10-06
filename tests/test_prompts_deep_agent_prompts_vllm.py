@@ -19,10 +19,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from deep_agent_prompts module with VLLM."""
         # Run tests for deep_agent_prompts module
         results = self.run_module_prompt_tests(
-            "deep_agent_prompts",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "deep_agent_prompts", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -49,7 +46,9 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
 
         # Test that prompts contain expected placeholders
         system_prompt = DEEP_AGENT_PROMPTS.get("system", "")
-        assert "{task_description}" in system_prompt or "task_description" in system_prompt
+        assert (
+            "{task_description}" in system_prompt or "task_description" in system_prompt
+        )
 
         reasoning_prompt = DEEP_AGENT_PROMPTS.get("reasoning", "")
         assert "{query}" in reasoning_prompt or "query" in reasoning_prompt
@@ -68,7 +67,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
             system_prompt,
             expected_placeholders=["task_description"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -93,7 +92,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
             task_prompt,
             expected_placeholders=["task_description"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -116,7 +115,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
             reasoning_prompt,
             expected_placeholders=["query"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -148,14 +147,17 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
     @pytest.mark.optional
     def test_prompt_template_class(self, vllm_tester):
         """Test the PromptTemplate class functionality."""
-        from DeepResearch.src.prompts.deep_agent_prompts import PromptTemplate, PromptType
+        from DeepResearch.src.prompts.deep_agent_prompts import (
+            PromptTemplate,
+            PromptType,
+        )
 
         # Test PromptTemplate instantiation
         template = PromptTemplate(
             name="test_template",
             template="This is a test template with {variable}",
             variables=["variable"],
-            prompt_type=PromptType.SYSTEM
+            prompt_type=PromptType.SYSTEM,
         )
 
         assert template.name == "test_template"
@@ -170,10 +172,7 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
         # Test validation
         try:
             PromptTemplate(
-                name="",
-                template="",
-                variables=[],
-                prompt_type=PromptType.SYSTEM
+                name="", template="", variables=[], prompt_type=PromptType.SYSTEM
             )
             assert False, "Should have raised validation error"
         except ValueError:
@@ -192,7 +191,9 @@ class TestDeepAgentPromptsVLLM(VLLMPromptTestBase):
 
         # Test template registration and retrieval
         # Template might not exist, but the manager should work
-        PromptManager().templates.get("test_template")  # Just test that it doesn't crash
+        PromptManager().templates.get(
+            "test_template"
+        )  # Just test that it doesn't crash
 
         # Test system prompt generation (basic functionality)
         system_prompt = manager.get_system_prompt(["base_agent"])

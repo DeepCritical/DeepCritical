@@ -161,9 +161,9 @@ class Document(BaseModel):
                 "doi": data.doi,
                 "pmc_id": data.pmc_id,
                 "journal": data.journal,
-                "publication_date": data.publication_date.isoformat()
-                if data.publication_date
-                else None,
+                "publication_date": (
+                    data.publication_date.isoformat() if data.publication_date else None
+                ),
                 "is_open_access": data.is_open_access,
                 "mesh_terms": data.mesh_terms,
                 "keywords": data.keywords,
@@ -178,9 +178,9 @@ class Document(BaseModel):
                 "platform_ids": data.platform_ids,
                 "sample_ids": data.sample_ids,
                 "pubmed_ids": data.pubmed_ids,
-                "submission_date": data.submission_date.isoformat()
-                if data.submission_date
-                else None,
+                "submission_date": (
+                    data.submission_date.isoformat() if data.submission_date else None
+                ),
             }
         else:
             # Generic bioinformatics data
@@ -792,9 +792,11 @@ class BioinformaticsRAGSystem(RAGSystem):
 
         # Calculate quality metrics
         quality_metrics = {
-            "average_score": sum(r.score for r in search_results) / len(search_results)
-            if search_results
-            else 0.0,
+            "average_score": (
+                sum(r.score for r in search_results) / len(search_results)
+                if search_results
+                else 0.0
+            ),
             "high_quality_docs": sum(1 for r in search_results if r.score > 0.8),
             "evidence_diversity": len(bioinformatics_summary["evidence_codes"]),
             "source_diversity": len(bioinformatics_summary["source_databases"]),

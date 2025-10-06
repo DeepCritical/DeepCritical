@@ -201,19 +201,26 @@ class KnowledgeManager:
         return {
             "total_knowledge_items": len(self.knowledge_base),
             "knowledge_keys": list(self.knowledge_base.keys()),
-            "average_confidence": sum(self.knowledge_confidence.values())
-            / len(self.knowledge_confidence)
-            if self.knowledge_confidence
-            else 0.0,
-            "most_confident": max(self.knowledge_confidence.items(), key=lambda x: x[1])
-            if self.knowledge_confidence
-            else None,
-            "oldest_knowledge": min(self.knowledge_timestamps.values())
-            if self.knowledge_timestamps
-            else None,
-            "newest_knowledge": max(self.knowledge_timestamps.values())
-            if self.knowledge_timestamps
-            else None,
+            "average_confidence": (
+                sum(self.knowledge_confidence.values()) / len(self.knowledge_confidence)
+                if self.knowledge_confidence
+                else 0.0
+            ),
+            "most_confident": (
+                max(self.knowledge_confidence.items(), key=lambda x: x[1])
+                if self.knowledge_confidence
+                else None
+            ),
+            "oldest_knowledge": (
+                min(self.knowledge_timestamps.values())
+                if self.knowledge_timestamps
+                else None
+            ),
+            "newest_knowledge": (
+                max(self.knowledge_timestamps.values())
+                if self.knowledge_timestamps
+                else None
+            ),
         }
 
 
@@ -252,9 +259,11 @@ class SearchOrchestrator:
             execution_item = ExecutionItem(
                 step_name=f"step_{self.context.current_step}",
                 tool=action.value,
-                status=ExecutionStatus.SUCCESS
-                if result.get("success", False)
-                else ExecutionStatus.FAILED,
+                status=(
+                    ExecutionStatus.SUCCESS
+                    if result.get("success", False)
+                    else ExecutionStatus.FAILED
+                ),
                 result=result,
                 duration=time.time() - start_time,
                 parameters=parameters,
@@ -489,9 +498,11 @@ class DeepSearchEvaluator:
                 "think": "Evaluating if answer is comprehensive",
                 "completeness_analysis": {
                     "aspects_expected": "comprehensive coverage",
-                    "aspects_provided": "basic coverage"
-                    if not is_comprehensive
-                    else "comprehensive coverage",
+                    "aspects_provided": (
+                        "basic coverage"
+                        if not is_comprehensive
+                        else "comprehensive coverage"
+                    ),
                 },
                 "pass": is_comprehensive,
             }

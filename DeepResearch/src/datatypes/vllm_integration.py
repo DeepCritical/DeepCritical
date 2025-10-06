@@ -51,9 +51,9 @@ class VLLMEmbeddings(Embeddings):
         url = f"{self.base_url}/v1/{endpoint}"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.config.api_key}"
-            if self.config.api_key
-            else "",
+            "Authorization": (
+                f"Bearer {self.config.api_key}" if self.config.api_key else ""
+            ),
         }
 
         async with self.session.post(url, json=payload, headers=headers) as response:
@@ -133,9 +133,9 @@ class VLLMLLMProvider(LLMProvider):
         url = f"{self.base_url}/v1/{endpoint}"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.config.api_key}"
-            if self.config.api_key
-            else "",
+            "Authorization": (
+                f"Bearer {self.config.api_key}" if self.config.api_key else ""
+            ),
         }
 
         async with self.session.post(url, json=payload, headers=headers) as response:
@@ -202,9 +202,9 @@ class VLLMLLMProvider(LLMProvider):
         url = f"{self.base_url}/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.config.api_key}"
-            if self.config.api_key
-            else "",
+            "Authorization": (
+                f"Bearer {self.config.api_key}" if self.config.api_key else ""
+            ),
         }
 
         try:

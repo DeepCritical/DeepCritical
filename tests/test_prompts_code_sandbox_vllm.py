@@ -19,10 +19,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
         """Test all prompts from code_sandbox module with VLLM."""
         # Run tests for code_sandbox module
         results = self.run_module_prompt_tests(
-            "code_sandbox",
-            vllm_tester,
-            max_tokens=256,
-            temperature=0.7
+            "code_sandbox", vllm_tester, max_tokens=256, temperature=0.7
         )
 
         # Assert minimum success rate
@@ -43,7 +40,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
             SYSTEM,
             expected_placeholders=["available_vars"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -68,7 +65,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
             generate_prompt,
             expected_placeholders=["available_vars"],
             max_tokens=128,
-            temperature=0.5
+            temperature=0.5,
         )
 
         assert result["success"]
@@ -118,7 +115,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
             generate_prompt,
             expected_placeholders=["available_vars"],
             max_tokens=128,
-            temperature=0.3  # Lower temperature for more consistent results
+            temperature=0.3,  # Lower temperature for more consistent results
         )
 
         assert result["success"]
@@ -146,7 +143,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
             generate_prompt,
             expected_placeholders=["available_vars"],
             max_tokens=128,
-            temperature=0.3
+            temperature=0.3,
         )
 
         assert result["success"]
@@ -175,7 +172,7 @@ class TestCodeSandboxPromptsVLLM(VLLMPromptTestBase):
             "system_prompt_validation",
             SYSTEM,
             max_tokens=64,
-            temperature=0.1  # Very low temperature for predictable output
+            temperature=0.1,  # Very low temperature for predictable output
         )
 
         assert result["success"]

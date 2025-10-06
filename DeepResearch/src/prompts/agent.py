@@ -7,8 +7,6 @@ in the DeepCritical system.
 
 from __future__ import annotations
 
-from typing import Dict
-
 
 # Base header template
 HEADER = """DeepCritical Research Agent System
@@ -55,7 +53,7 @@ Generated on: ${current_date_utc}"""
 
 class AgentPrompts:
     """Centralized agent prompt management."""
-    
+
     def __init__(self):
         self._prompts = {
             "parser": {
@@ -67,7 +65,7 @@ class AgentPrompts:
 5. Complexity level
 
 Provide structured analysis of the research question.""",
-                "instructions": "Parse the research question systematically and provide structured output."
+                "instructions": "Parse the research question systematically and provide structured output.",
             },
             "planner": {
                 "system": """You are a research workflow planner. Your job is to create detailed execution plans by:
@@ -77,7 +75,7 @@ Provide structured analysis of the research question.""",
 4. Estimating resource requirements
 
 Create comprehensive, executable research plans.""",
-                "instructions": "Plan the research workflow with clear steps and dependencies."
+                "instructions": "Plan the research workflow with clear steps and dependencies.",
             },
             "executor": {
                 "system": """You are a research task executor. Your job is to execute research tasks by:
@@ -87,14 +85,18 @@ Create comprehensive, executable research plans.""",
 4. Recording results and metadata
 
 Execute tasks efficiently and accurately.""",
-                "instructions": "Execute the research tasks according to the plan."
-            }
+                "instructions": "Execute the research tasks according to the plan.",
+            },
         }
-    
+
     def get_system_prompt(self, agent_type: str) -> str:
         """Get system prompt for a specific agent type."""
-        return self._prompts.get(agent_type, {}).get("system", "You are a research agent.")
-    
+        return self._prompts.get(agent_type, {}).get(
+            "system", "You are a research agent."
+        )
+
     def get_instructions(self, agent_type: str) -> str:
         """Get instructions for a specific agent type."""
-        return self._prompts.get(agent_type, {}).get("instructions", "Execute your task effectively.")
+        return self._prompts.get(agent_type, {}).get(
+            "instructions", "Execute your task effectively."
+        )
