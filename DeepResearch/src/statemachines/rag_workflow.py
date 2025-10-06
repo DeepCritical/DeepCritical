@@ -356,7 +356,11 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         # Create embedding server config
         embedding_server_config = VLLMEmbeddingServerConfig(
             model_name=rag_config.embeddings.model_name,
-            host=str(rag_config.embeddings.base_url) if rag_config.embeddings.base_url else "localhost",
+            host=(
+                str(rag_config.embeddings.base_url)
+                if rag_config.embeddings.base_url
+                else "localhost"
+            ),
             port=8001,  # Default embedding port
         )
 
@@ -390,7 +394,11 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             processing_time = time.time() - start_time
 
             if rag_response:
-                ctx.state.rag_result = rag_response.model_dump() if hasattr(rag_response, 'model_dump') else rag_response.__dict__
+                ctx.state.rag_result = (
+                    rag_response.model_dump()
+                    if hasattr(rag_response, "model_dump")
+                    else rag_response.__dict__
+                )
                 ctx.state.rag_response = rag_response
                 ctx.state.processing_steps.append(
                     f"query_completed_in_{processing_time:.2f}s"

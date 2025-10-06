@@ -62,6 +62,7 @@ class TestToolsModuleImports:
         try:
             # Use string literal and cast to avoid import issues
             from typing import cast, Any
+
             metadata = ToolMetadata(
                 name="test_tool",
                 category=cast(Any, "search"),  # type: ignore

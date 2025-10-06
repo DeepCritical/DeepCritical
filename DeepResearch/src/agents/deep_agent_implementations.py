@@ -491,7 +491,9 @@ def create_general_purpose_agent(
     return GeneralPurposeAgent(config)
 
 
-def create_agent_orchestrator(agent_types: Optional[List[str]] = None) -> AgentOrchestrator:
+def create_agent_orchestrator(
+    agent_types: Optional[List[str]] = None,
+) -> AgentOrchestrator:
     """Create an agent orchestrator with default agents."""
     if agent_types is None:
         agent_types = ["planning", "filesystem", "research", "orchestration", "general"]

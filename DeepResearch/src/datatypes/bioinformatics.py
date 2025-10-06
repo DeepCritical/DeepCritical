@@ -300,7 +300,7 @@ class FusedDataset(BaseModel):
         default_factory=dict, description="Quality metrics"
     )
 
-    @field_validator("total_entities", mode='before')
+    @field_validator("total_entities", mode="before")
     @classmethod
     def calculate_total_entities(cls, v, info):
         """Calculate total entities from all components."""

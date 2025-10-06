@@ -93,7 +93,7 @@ class AgentOrchestrator:
                 # Create nested loop configuration
                 nested_config = NestedReactConfig(
                     loop_id=loop_id,
-                    parent_loop_id=getattr(ctx.deps, 'parent_loop_id', None),
+                    parent_loop_id=getattr(ctx.deps, "parent_loop_id", None),
                     max_iterations=max_iterations,
                     state_machine_mode=MultiStateMachineMode(state_machine_mode),
                     subgraphs=[SubgraphType(sg) for sg in (subgraphs or [])],
@@ -248,7 +248,9 @@ class AgentOrchestrator:
 
         # Create dependencies
         deps = OrchestratorDependencies(
-            config=config.model_dump() if hasattr(config, 'model_dump') else dict(config),
+            config=(
+                config.model_dump() if hasattr(config, "model_dump") else dict(config)
+            ),
             user_input=user_input,
             context={"execution_start": datetime.now().isoformat()},
         )
@@ -267,7 +269,7 @@ class AgentOrchestrator:
                 final_answer=final_answer,
                 nested_loops_spawned=list(self.nested_loops.keys()),
                 subgraphs_executed=list(self.subgraphs.keys()),
-                total_iterations=getattr(deps, 'current_iteration', 0),
+                total_iterations=getattr(deps, "current_iteration", 0),
                 execution_metadata={
                     "execution_time": execution_time,
                     "nested_loops_count": len(self.nested_loops),
@@ -281,7 +283,7 @@ class AgentOrchestrator:
             return OrchestrationResult(
                 success=False,
                 final_answer=f"Orchestration failed: {str(e)}",
-                total_iterations=getattr(deps, 'current_iteration', 0),
+                total_iterations=getattr(deps, "current_iteration", 0),
                 break_reason=f"Error: {str(e)}",
                 execution_metadata={"execution_time": execution_time, "error": str(e)},
             )

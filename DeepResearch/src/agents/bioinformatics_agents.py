@@ -223,7 +223,8 @@ class BioinformaticsAgent:
         reasoning_task = ReasoningTask(
             task_id="main_task",
             task_type="integrative_analysis",
-            question=getattr(request, "reasoning_question", None) or "Analyze the fused dataset",
+            question=getattr(request, "reasoning_question", None)
+            or "Analyze the fused dataset",
             difficulty_level="moderate",
             required_evidence=[],  # Will use default evidence requirements
         )
@@ -272,4 +273,6 @@ class AgentOrchestrator:
         deps: BioinformaticsAgentDeps,
     ) -> ReasoningResult:
         """Perform integrative reasoning using fused data and task."""
-        return await self.reasoning_agent.perform_reasoning(reasoning_task, dataset, deps)
+        return await self.reasoning_agent.perform_reasoning(
+            reasoning_task, dataset, deps
+        )

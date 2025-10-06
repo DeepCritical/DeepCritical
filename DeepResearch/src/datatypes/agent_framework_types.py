@@ -59,7 +59,7 @@ from .agent_framework_options import (
 __all__ = [
     # Content types
     "TextSpanRegion",
-    "CitationAnnotation", 
+    "CitationAnnotation",
     "BaseContent",
     "TextContent",
     "TextReasoningContent",
@@ -75,24 +75,19 @@ __all__ = [
     "FunctionApprovalResponseContent",
     "Content",
     "prepare_function_call_results",
-    
     # Usage types
     "UsageDetails",
-    
     # Enum types
     "Role",
     "FinishReason",
     "ToolMode",
-    
     # Chat types
     "ChatMessage",
     "ChatResponseUpdate",
     "ChatResponse",
-    
     # Agent types
     "AgentRunResponseUpdate",
     "AgentRunResponse",
-    
     # Options types
     "ChatOptions",
 ]

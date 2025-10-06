@@ -747,7 +747,7 @@ class QueryRewriterTool(ToolRunner):
             queries.append(
                 {
                     "q": specific_query,
-                    "tbs": getattr(SearchTimeFilter.PAST_YEAR, 'value', None),
+                    "tbs": getattr(SearchTimeFilter.PAST_YEAR, "value", None),
                     "location": None,
                 }
             )
@@ -760,7 +760,7 @@ class QueryRewriterTool(ToolRunner):
         queries.append(
             {
                 "q": f"{original_query} 2024",
-                "tbs": getattr(SearchTimeFilter.PAST_YEAR, 'value', None),
+                "tbs": getattr(SearchTimeFilter.PAST_YEAR, "value", None),
                 "location": None,
             }
         )

@@ -830,11 +830,14 @@ def create_collaborative_orchestrator(
     # Add agents
     for agent_id in agents:
         agent_type = agent_executors.get(f"{agent_id}_type")
-        if agent_type and hasattr(agent_type, '__name__'):
+        if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
             from ..datatypes.agents import AgentType
+
             try:
-                agent_type_enum = getattr(AgentType, getattr(agent_type, '__name__', 'unknown').upper(), None)
+                agent_type_enum = getattr(
+                    AgentType, getattr(agent_type, "__name__", "unknown").upper(), None
+                )
                 if agent_type_enum:
                     interaction_state.add_agent(agent_id, agent_type_enum)
             except (AttributeError, TypeError):
@@ -867,11 +870,14 @@ def create_sequential_orchestrator(
     # Add agents in order
     for agent_id in agent_order:
         agent_type = agent_executors.get(f"{agent_id}_type")
-        if agent_type and hasattr(agent_type, '__name__'):
+        if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
             from ..datatypes.agents import AgentType
+
             try:
-                agent_type_enum = getattr(AgentType, getattr(agent_type, '__name__', 'unknown').upper(), None)
+                agent_type_enum = getattr(
+                    AgentType, getattr(agent_type, "__name__", "unknown").upper(), None
+                )
                 if agent_type_enum:
                     interaction_state.add_agent(agent_id, agent_type_enum)
             except (AttributeError, TypeError):
@@ -904,11 +910,16 @@ def create_hierarchical_orchestrator(
 
     # Add coordinator
     coordinator_type = agent_executors.get(f"{coordinator_id}_type")
-    if coordinator_type and hasattr(coordinator_type, '__name__'):
+    if coordinator_type and hasattr(coordinator_type, "__name__"):
         # Convert function to AgentType if possible
         from ..datatypes.agents import AgentType
+
         try:
-            agent_type_enum = getattr(AgentType, getattr(coordinator_type, '__name__', 'unknown').upper(), None)
+            agent_type_enum = getattr(
+                AgentType,
+                getattr(coordinator_type, "__name__", "unknown").upper(),
+                None,
+            )
             if agent_type_enum:
                 interaction_state.add_agent(coordinator_id, agent_type_enum)
         except (AttributeError, TypeError):
@@ -917,11 +928,14 @@ def create_hierarchical_orchestrator(
     # Add subordinates
     for sub_id in subordinate_ids:
         agent_type = agent_executors.get(f"{sub_id}_type")
-        if agent_type and hasattr(agent_type, '__name__'):
+        if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
             from ..datatypes.agents import AgentType
+
             try:
-                agent_type_enum = getattr(AgentType, getattr(agent_type, '__name__', 'unknown').upper(), None)
+                agent_type_enum = getattr(
+                    AgentType, getattr(agent_type, "__name__", "unknown").upper(), None
+                )
                 if agent_type_enum:
                     interaction_state.add_agent(sub_id, agent_type_enum)
             except (AttributeError, TypeError):

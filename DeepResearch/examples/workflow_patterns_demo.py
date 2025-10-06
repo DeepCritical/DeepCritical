@@ -25,7 +25,10 @@ from DeepResearch.src.workflow_patterns import (
     agent_registry,
 )
 from DeepResearch.src.datatypes.agents import AgentType
-from DeepResearch.src.datatypes.workflow_patterns import create_interaction_state, MessageType
+from DeepResearch.src.datatypes.workflow_patterns import (
+    create_interaction_state,
+    MessageType,
+)
 
 
 class MockAgentExecutor:
@@ -148,6 +151,7 @@ async def demonstrate_advanced_patterns():
     factory = WorkflowPatternFactory()
 
     from DeepResearch.src.workflow_patterns import InteractionPattern
+
     interaction_state = factory.create_interaction_state(
         pattern=InteractionPattern.COLLABORATIVE,
         agents=agents,
@@ -163,6 +167,7 @@ async def demonstrate_advanced_patterns():
     print("\n5. Testing Workflow Executor with Custom Config:")
     from DeepResearch.src.workflow_patterns import WorkflowPatternConfig
     from DeepResearch.src.workflow_patterns import InteractionPattern
+
     config = WorkflowPatternConfig(
         pattern=InteractionPattern.COLLABORATIVE,
         max_rounds=2,
@@ -216,12 +221,13 @@ async def demonstrate_consensus_algorithms():
 
         try:
             from DeepResearch.src.utils.workflow_patterns import ConsensusAlgorithm
+
             algorithm_enum = ConsensusAlgorithm.SIMPLE_AGREEMENT
             if algorithm_str == "weighted":
                 algorithm_enum = ConsensusAlgorithm.WEIGHTED_AVERAGE
             elif algorithm_str == "majority":
                 algorithm_enum = ConsensusAlgorithm.MAJORITY_VOTE
-            
+
             consensus_result = WorkflowPatternUtils.compute_consensus(
                 results,
                 algorithm=algorithm_enum,
@@ -277,6 +283,7 @@ async def demonstrate_message_routing():
 
         try:
             from DeepResearch.src.utils.workflow_patterns import MessageRoutingStrategy
+
             strategy_enum = MessageRoutingStrategy.DIRECT
             if strategy_str == "broadcast":
                 strategy_enum = MessageRoutingStrategy.BROADCAST
@@ -286,8 +293,10 @@ async def demonstrate_message_routing():
                 strategy_enum = MessageRoutingStrategy.PRIORITY_BASED
             elif strategy_str == "load_balanced":
                 strategy_enum = MessageRoutingStrategy.LOAD_BALANCED
-            
-            routed = WorkflowPatternUtils.route_messages(messages, strategy_enum, agents)
+
+            routed = WorkflowPatternUtils.route_messages(
+                messages, strategy_enum, agents
+            )
 
             for agent, msgs in routed.items():
                 print(f"  {agent}: {len(msgs)} messages")

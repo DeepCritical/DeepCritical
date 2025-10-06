@@ -135,6 +135,7 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
 
             # Execute search using agent
             from ..datatypes.search_agent import SearchQuery
+
             search_query = SearchQuery(
                 query=state.query,
                 search_type=state.search_type,
@@ -145,9 +146,13 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
 
             if agent_result.success:
                 # Update state with agent results
-                state.search_result = {"content": agent_result.content} if hasattr(agent_result, 'content') else {}
+                state.search_result = (
+                    {"content": agent_result.content}
+                    if hasattr(agent_result, "content")
+                    else {}
+                )
                 state.documents = []  # SearchResult doesn't have documents field
-                state.chunks = []     # SearchResult doesn't have chunks field
+                state.chunks = []  # SearchResult doesn't have chunks field
                 state.analytics_recorded = agent_result.analytics_recorded
                 state.processing_time = agent_result.processing_time or 0.0
             else:
@@ -328,7 +333,7 @@ async def run_search_workflow(
     workflow = create_search_workflow()
     result = await workflow.run(InitializeSearch(), state=state)  # type: ignore
 
-    return result.output if hasattr(result, 'output') else {"error": "No output"}  # type: ignore
+    return result.output if hasattr(result, "output") else {"error": "No output"}  # type: ignore
 
 
 # Example usage

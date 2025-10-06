@@ -739,6 +739,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
 
         # Create pipeline and execute with middleware
         from ..datatypes.agent_framework_options import ChatOptions
+
         # Extract chat_options or create default
         chat_options = kwargs.pop("chat_options", ChatOptions())
 
@@ -792,6 +793,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
 
             # Create pipeline and execute with middleware
             from ..datatypes.agent_framework_options import ChatOptions
+
             # Extract chat_options or create default
             chat_options = kwargs.pop("chat_options", ChatOptions())
 

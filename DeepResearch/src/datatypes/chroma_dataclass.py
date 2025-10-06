@@ -436,11 +436,13 @@ class EmbeddingFunctionConfig:
 
     def create_function(self) -> EmbeddingFunction:
         """Create embedding function from config."""
+
         # This would be implemented based on the function type
         # Return a mock embedding function for now
         class MockEmbeddingFunction(EmbeddingFunction):
             def __call__(self, texts):
                 return [[0.0] * 384 for _ in texts]  # Mock 384-dimensional embeddings
+
         return MockEmbeddingFunction()
 
 

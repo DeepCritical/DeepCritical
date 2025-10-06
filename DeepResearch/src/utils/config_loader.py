@@ -21,7 +21,9 @@ class BioinformaticsConfigLoader:
 
     def _extract_bioinformatics_config(self) -> Dict[str, Any]:
         """Extract bioinformatics configuration from main config."""
-        result = OmegaConf.to_container(self.config.get("bioinformatics", {}), resolve=True)
+        result = OmegaConf.to_container(
+            self.config.get("bioinformatics", {}), resolve=True
+        )
         return result if isinstance(result, dict) else {}
 
     def get_model_config(self) -> Dict[str, Any]:

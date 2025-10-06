@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from omegaconf import DictConfig
 
-from scripts.prompt_testing.testcontainers_vllm import VLLMPromptTester, create_dummy_data_for_prompt
+from scripts.prompt_testing.testcontainers_vllm import (
+    VLLMPromptTester,
+    create_dummy_data_for_prompt,
+)
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -46,7 +49,7 @@ class VLLMPromptTestBase:
             model_name=model_config.get("name", "microsoft/DialoGPT-medium"),
             container_timeout=performance_config.get("max_container_startup_time", 120),
             max_tokens=model_config.get("generation", {}).get("max_tokens", 256),
-            temperature=model_config.get("generation", {}).get("temperature", 0.7)
+            temperature=model_config.get("generation", {}).get("temperature", 0.7),
         ) as tester:
             yield tester
 
@@ -65,19 +68,23 @@ class VLLMPromptTestBase:
 
             config_dir = Path("configs")
             if config_dir.exists():
-                with initialize_config_dir(config_dir=str(config_dir), version_base=None):
+                with initialize_config_dir(
+                    config_dir=str(config_dir), version_base=None
+                ):
                     config = compose(
                         config_name="vllm_tests",
                         overrides=[
                             "model=local_model",
                             "performance=balanced",
                             "testing=comprehensive",
-                            "output=structured"
-                        ]
+                            "output=structured",
+                        ],
                     )
                     return config
             else:
-                logger.warning("Config directory not found, using default configuration")
+                logger.warning(
+                    "Config directory not found, using default configuration"
+                )
                 return self._create_default_test_config()
 
         except Exception as e:
@@ -144,7 +151,9 @@ class VLLMPromptTestBase:
 
         return OmegaConf.create(default_config)
 
-    def _load_prompts_from_module(self, module_name: str, config: Optional[DictConfig] = None) -> List[Tuple[str, str, str]]:
+    def _load_prompts_from_module(
+        self, module_name: str, config: Optional[DictConfig] = None
+    ) -> List[Tuple[str, str, str]]:
         """Load prompts from a specific prompt module with configuration support.
 
         Args:
@@ -156,6 +165,7 @@ class VLLMPromptTestBase:
         """
         try:
             import importlib
+
             module = importlib.import_module(f"DeepResearch.src.prompts.{module_name}")
 
             prompts = []
@@ -173,7 +183,9 @@ class VLLMPromptTestBase:
                         if isinstance(prompt_value, str):
                             prompts.append((f"{attr_name}.{prompt_key}", prompt_value))
 
-                elif isinstance(attr, str) and ("PROMPT" in attr_name or "SYSTEM" in attr_name):
+                elif isinstance(attr, str) and (
+                    "PROMPT" in attr_name or "SYSTEM" in attr_name
+                ):
                     # Individual prompt strings
                     prompts.append((attr_name, attr))
 
@@ -192,13 +204,17 @@ class VLLMPromptTestBase:
                 if not scope_config.get("test_all_modules", True):
                     allowed_modules = scope_config.get("modules_to_test", [])
                     if allowed_modules and module_name not in allowed_modules:
-                        logger.info(f"Skipping module {module_name} (not in allowed modules)")
+                        logger.info(
+                            f"Skipping module {module_name} (not in allowed modules)"
+                        )
                         return []
 
                 # Apply prompt count limits
                 max_prompts = scope_config.get("max_prompts_per_module", 50)
                 if len(prompts) > max_prompts:
-                    logger.info(f"Limiting prompts for {module_name} to {max_prompts} (was {len(prompts)})")
+                    logger.info(
+                        f"Limiting prompts for {module_name} to {max_prompts} (was {len(prompts)})"
+                    )
                     prompts = prompts[:max_prompts]
 
             return prompts
@@ -214,7 +230,7 @@ class VLLMPromptTestBase:
         prompt_template: str,
         expected_placeholders: Optional[List[str]] = None,
         config: Optional[DictConfig] = None,
-        **generation_kwargs
+        **generation_kwargs,
     ) -> Dict[str, Any]:
         """Test a single prompt with VLLM using configuration.
 
@@ -239,14 +255,13 @@ class VLLMPromptTestBase:
         # Verify expected placeholders are present
         if expected_placeholders:
             for placeholder in expected_placeholders:
-                assert placeholder in dummy_data, f"Missing expected placeholder: {placeholder}"
+                assert (
+                    placeholder in dummy_data
+                ), f"Missing expected placeholder: {placeholder}"
 
         # Test the prompt
         result = vllm_tester.test_prompt(
-            prompt_template,
-            prompt_name,
-            dummy_data,
-            **generation_kwargs
+            prompt_template, prompt_name, dummy_data, **generation_kwargs
         )
 
         # Basic validation
@@ -261,7 +276,9 @@ class VLLMPromptTestBase:
         # Check minimum response length
         min_length = assertions_config.get("min_response_length", 10)
         if len(result.get("generated_response", "")) < min_length:
-            logger.warning(f"Response for prompt {prompt_name} is shorter than expected: {len(result.get('generated_response', ''))} chars")
+            logger.warning(
+                f"Response for prompt {prompt_name} is shorter than expected: {len(result.get('generated_response', ''))} chars"
+            )
 
         return result
 
@@ -292,7 +309,7 @@ class VLLMPromptTestBase:
         vllm_tester: VLLMPromptTester,
         prompts: List[Tuple[str, str]],
         config: Optional[DictConfig] = None,
-        **generation_kwargs
+        **generation_kwargs,
     ) -> List[Dict[str, Any]]:
         """Test a batch of prompts with configuration and single instance optimization.
 
@@ -332,7 +349,7 @@ class VLLMPromptTestBase:
                     prompt_name,
                     prompt_template,
                     config=config,
-                    **generation_kwargs
+                    **generation_kwargs,
                 )
 
                 results.append(result)
@@ -346,21 +363,25 @@ class VLLMPromptTestBase:
 
                 # Handle errors based on configuration
                 if error_config.get("graceful_degradation", True):
-                    results.append({
-                        "prompt_name": prompt_name,
-                        "prompt_template": prompt_template,
-                        "error": str(e),
-                        "success": False,
-                        "timestamp": time.time(),
-                        "error_handled_gracefully": True
-                    })
+                    results.append(
+                        {
+                            "prompt_name": prompt_name,
+                            "prompt_template": prompt_template,
+                            "error": str(e),
+                            "success": False,
+                            "timestamp": time.time(),
+                            "error_handled_gracefully": True,
+                        }
+                    )
                 else:
                     # Re-raise exception if graceful degradation is disabled
                     raise
 
         return results
 
-    def _generate_test_report(self, results: List[Dict[str, Any]], module_name: str) -> str:
+    def _generate_test_report(
+        self, results: List[Dict[str, Any]], module_name: str
+    ) -> str:
         """Generate a test report for the results.
 
         Args:
@@ -398,16 +419,20 @@ class VLLMPromptTestBase:
         report_file = Path("test_artifacts") / f"vllm_{module_name}_report.json"
         report_file.parent.mkdir(exist_ok=True)
 
-        with open(report_file, 'w') as f:
-            json.dump({
-                "module": module_name,
-                "total_tests": total,
-                "successful_tests": successful,
-                "failed_tests": total - successful,
-                "success_rate": successful / total * 100 if total > 0 else 0,
-                "results": results,
-                "timestamp": time.time()
-            }, f, indent=2)
+        with open(report_file, "w") as f:
+            json.dump(
+                {
+                    "module": module_name,
+                    "total_tests": total,
+                    "successful_tests": successful,
+                    "failed_tests": total - successful,
+                    "success_rate": successful / total * 100 if total > 0 else 0,
+                    "results": results,
+                    "timestamp": time.time(),
+                },
+                f,
+                indent=2,
+            )
 
         return report
 
@@ -416,7 +441,7 @@ class VLLMPromptTestBase:
         module_name: str,
         vllm_tester: VLLMPromptTester,
         config: Optional[DictConfig] = None,
-        **generation_kwargs
+        **generation_kwargs,
     ) -> List[Dict[str, Any]]:
         """Run prompt tests for a specific module with configuration support.
 
@@ -451,14 +476,22 @@ class VLLMPromptTestBase:
             return []
 
         # Test all prompts with configuration
-        results = self._test_prompt_batch(vllm_tester, prompts, config, **generation_kwargs)
+        results = self._test_prompt_batch(
+            vllm_tester, prompts, config, **generation_kwargs
+        )
 
         # Check execution time limits
-        total_time = sum(r.get("execution_time", 0) for r in results if r.get("success", False))
-        max_time = vllm_config.get("monitoring", {}).get("max_execution_time_per_module", 300)
+        total_time = sum(
+            r.get("execution_time", 0) for r in results if r.get("success", False)
+        )
+        max_time = vllm_config.get("monitoring", {}).get(
+            "max_execution_time_per_module", 300
+        )
 
         if total_time > max_time:
-            logger.warning(f"Module {module_name} exceeded time limit: {total_time:.2f}s > {max_time}s")
+            logger.warning(
+                f"Module {module_name} exceeded time limit: {total_time:.2f}s > {max_time}s"
+            )
 
         # Generate and log report
         report = self._generate_test_report(results, module_name)
@@ -466,7 +499,12 @@ class VLLMPromptTestBase:
 
         return results
 
-    def assert_prompt_test_success(self, results: List[Dict[str, Any]], min_success_rate: Optional[float] = None, config: Optional[DictConfig] = None):
+    def assert_prompt_test_success(
+        self,
+        results: List[Dict[str, Any]],
+        min_success_rate: Optional[float] = None,
+        config: Optional[DictConfig] = None,
+    ):
         """Assert that prompt tests meet minimum success criteria using configuration.
 
         Args:
@@ -494,7 +532,12 @@ class VLLMPromptTestBase:
             f"Successful: {successful}/{len(results)}"
         )
 
-    def assert_reasoning_detected(self, results: List[Dict[str, Any]], min_reasoning_rate: Optional[float] = None, config: Optional[DictConfig] = None):
+    def assert_reasoning_detected(
+        self,
+        results: List[Dict[str, Any]],
+        min_reasoning_rate: Optional[float] = None,
+        config: Optional[DictConfig] = None,
+    ):
         """Assert that reasoning was detected in responses using configuration.
 
         Args:
@@ -509,14 +552,18 @@ class VLLMPromptTestBase:
         # Get minimum reasoning rate from configuration or parameter
         test_config = config.get("testing", {})
         assertions_config = test_config.get("assertions", {})
-        min_rate = min_reasoning_rate or assertions_config.get("min_reasoning_detection_rate", 0.3)
+        min_rate = min_reasoning_rate or assertions_config.get(
+            "min_reasoning_detection_rate", 0.3
+        )
 
         if not results:
             pytest.fail("No test results to evaluate")
 
         with_reasoning = sum(
-            1 for r in results
-            if r.get("success", False) and r.get("reasoning", {}).get("has_reasoning", False)
+            1
+            for r in results
+            if r.get("success", False)
+            and r.get("reasoning", {}).get("has_reasoning", False)
         )
 
         reasoning_rate = with_reasoning / len(results) if results else 0.0

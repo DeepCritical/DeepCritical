@@ -43,7 +43,7 @@ class Todo(BaseModel):
         default_factory=dict, description="Additional metadata"
     )
 
-    @field_validator("content", mode='before')
+    @field_validator("content", mode="before")
     @classmethod
     def validate_content(cls, v):
         if not v or not v.strip():
@@ -90,7 +90,7 @@ class FileInfo(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="File metadata")
 
-    @field_validator("path", mode='before')
+    @field_validator("path", mode="before")
     @classmethod
     def validate_path(cls, v):
         if not v or not v.strip():

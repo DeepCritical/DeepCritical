@@ -1070,7 +1070,7 @@ class MultiAgentOrchestrator:
                 "question": question,
                 "parsed_question": parsed,
                 "execution_plan": plan,
-            }
+            },
         )
 
         # Use general DeepAgent for orchestration

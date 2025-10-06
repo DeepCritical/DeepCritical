@@ -67,8 +67,9 @@ class WebSearchBuiltinRunner:
         toolsets = _build_toolsets(cfg)
         agent, _ = _build_agent(cfg, builtin_tools, toolsets)
         if agent is None:
-              return {
-                "success": False, "error": "pydantic_ai not available or misconfigured"
+            return {
+                "success": False,
+                "error": "pydantic_ai not available or misconfigured",
             }
 
         result = _run_sync(agent, q)
@@ -134,8 +135,9 @@ class CodeExecBuiltinRunner:
         toolsets = _build_toolsets(cfg)
         agent, _ = _build_agent(cfg, builtin_tools, toolsets)
         if agent is None:
-              return {
-                "success": False, "error": "pydantic_ai not available or misconfigured"
+            return {
+                "success": False,
+                "error": "pydantic_ai not available or misconfigured",
             }
 
         # Load system prompt from Hydra (if available)
@@ -203,8 +205,9 @@ class UrlContextBuiltinRunner:
         toolsets = _build_toolsets(cfg)
         agent, _ = _build_agent(cfg, builtin_tools, toolsets)
         if agent is None:
-              return {
-                "success": False, "error": "pydantic_ai not available or misconfigured"
+            return {
+                "success": False,
+                "error": "pydantic_ai not available or misconfigured",
             }
 
         prompt = (

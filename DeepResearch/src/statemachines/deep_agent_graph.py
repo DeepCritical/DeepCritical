@@ -467,12 +467,14 @@ class AgentBuilder:
         for tool_name in self.config.tools:
             if tool_name in tool_map:
                 # Add tool if method exists
-                if hasattr(agent, 'add_tool') and callable(getattr(agent, 'add_tool')):
-                    add_tool_method = getattr(agent, 'add_tool')
+                if hasattr(agent, "add_tool") and callable(getattr(agent, "add_tool")):
+                    add_tool_method = getattr(agent, "add_tool")
                     add_tool_method(tool_map[tool_name])
-                elif hasattr(agent, 'tools') and hasattr(getattr(agent, 'tools'), 'append'):
-                    tools_attr = getattr(agent, 'tools')
-                    if hasattr(tools_attr, 'append'):
+                elif hasattr(agent, "tools") and hasattr(
+                    getattr(agent, "tools"), "append"
+                ):
+                    tools_attr = getattr(agent, "tools")
+                    if hasattr(tools_attr, "append"):
                         tools_attr.append(tool_map[tool_name])
 
     def _add_middleware(self, agent: Agent) -> None:

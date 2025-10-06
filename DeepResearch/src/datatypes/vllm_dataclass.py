@@ -1733,7 +1733,7 @@ class VLLMClient(BaseModel):
             created=0,
             model="",
             choices=[],
-            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
 
     async def completions(self, request: CompletionRequest) -> CompletionResponse:
@@ -1745,16 +1745,16 @@ class VLLMClient(BaseModel):
             created=0,
             model="",
             choices=[],
-            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
 
     async def embeddings(self, request: EmbeddingRequest) -> EmbeddingResponse:
         """Send embedding request."""
         # Implementation would go here
         return EmbeddingResponse(
-            data=[], 
-            model="", 
-            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+            data=[],
+            model="",
+            usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
 
     async def models(self) -> ModelListResponse:

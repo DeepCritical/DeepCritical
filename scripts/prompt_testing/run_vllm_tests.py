@@ -16,8 +16,7 @@ from omegaconf import DictConfig
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,9 @@ def setup_artifacts_directory(config: Optional[DictConfig] = None):
         config = load_vllm_test_config()
 
     artifacts_config = config.get("vllm_tests", {}).get("artifacts", {})
-    artifacts_dir = Path(artifacts_config.get("base_directory", "test_artifacts/vllm_tests"))
+    artifacts_dir = Path(
+        artifacts_config.get("base_directory", "test_artifacts/vllm_tests")
+    )
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Artifacts directory: {artifacts_dir}")
     return artifacts_dir
@@ -49,8 +50,8 @@ def load_vllm_test_config() -> DictConfig:
                         "model=local_model",
                         "performance=balanced",
                         "testing=comprehensive",
-                        "output=structured"
-                    ]
+                        "output=structured",
+                    ],
                 )
                 return config
         else:
@@ -129,7 +130,7 @@ def run_vllm_tests(
     coverage: bool = False,
     parallel: bool = False,
     config: Optional[DictConfig] = None,
-    use_hydra_config: bool = True
+    use_hydra_config: bool = True,
 ):
     """Run VLLM tests for specified modules or all modules with Hydra configuration.
 
@@ -156,7 +157,9 @@ def run_vllm_tests(
 
     # Single instance optimization: disable parallel execution
     if parallel:
-        logger.warning("Parallel execution disabled for single VLLM instance optimization")
+        logger.warning(
+            "Parallel execution disabled for single VLLM instance optimization"
+        )
         parallel = False
 
     # Base pytest command with configuration-aware settings
@@ -188,7 +191,9 @@ def run_vllm_tests(
             allowed_modules = scope_config.get("modules_to_test", [])
             modules = [m for m in modules if m in allowed_modules]
             if not modules:
-                logger.warning(f"No modules to test from allowed list: {allowed_modules}")
+                logger.warning(
+                    f"No modules to test from allowed list: {allowed_modules}"
+                )
                 return 0
 
         test_files = [
@@ -209,7 +214,8 @@ def run_vllm_tests(
         else:
             allowed_modules = scope_config.get("modules_to_test", [])
             test_files = [
-                f for f in all_test_files
+                f
+                for f in all_test_files
                 if any(module in f.name for module in allowed_modules)
             ]
 
@@ -245,7 +251,11 @@ def run_vllm_tests(
         return 1
 
 
-def _generate_summary_report(test_files: List[Path], config: Optional[DictConfig] = None, artifacts_dir: Optional[Path] = None):
+def _generate_summary_report(
+    test_files: List[Path],
+    config: Optional[DictConfig] = None,
+    artifacts_dir: Optional[Path] = None,
+):
     """Generate a summary report of test results using configuration."""
     if config is None:
         config = create_default_test_config()
@@ -274,8 +284,8 @@ def _generate_summary_report(test_files: List[Path], config: Optional[DictConfig
         for json_file in json_files:
             # Extract module name from filename (test_prompts_{module}_vllm.py results in {module}_*.json)
             filename = json_file.stem
-            if '_' in filename:
-                module_name = filename.split('_')[0]
+            if "_" in filename:
+                module_name = filename.split("_")[0]
             else:
                 module_name = "unknown"
 
@@ -295,7 +305,7 @@ def _generate_summary_report(test_files: List[Path], config: Optional[DictConfig
     summary += f"- **Artifacts Enabled:** {reporting_config.get('enabled', True)}\n"
 
     # Write summary
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write(summary)
 
     logger.info(f"Summary report written to: {report_file}")
@@ -317,55 +327,46 @@ def list_available_modules():
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="Run VLLM-based prompt tests with Hydra configuration")
-
-    parser.add_argument(
-        "modules",
-        nargs="*",
-        help="Specific modules to test (default: all modules)"
+    parser = argparse.ArgumentParser(
+        description="Run VLLM-based prompt tests with Hydra configuration"
     )
 
     parser.add_argument(
-        "-v", "--verbose",
+        "modules", nargs="*", help="Specific modules to test (default: all modules)"
+    )
+
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
+    )
+
+    parser.add_argument(
+        "--coverage", action="store_true", help="Enable coverage reporting"
+    )
+
+    parser.add_argument(
+        "-p",
+        "--parallel",
         action="store_true",
-        help="Enable verbose output"
+        help="Run tests in parallel (disabled for single instance optimization)",
     )
 
     parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="Enable coverage reporting"
+        "--list-modules", action="store_true", help="List available test modules"
     )
 
     parser.add_argument(
-        "-p", "--parallel",
-        action="store_true",
-        help="Run tests in parallel (disabled for single instance optimization)"
-    )
-
-    parser.add_argument(
-        "--list-modules",
-        action="store_true",
-        help="List available test modules"
-    )
-
-    parser.add_argument(
-        "--config-file",
-        type=str,
-        help="Path to custom Hydra config file"
+        "--config-file", type=str, help="Path to custom Hydra config file"
     )
 
     parser.add_argument(
         "--config-name",
         type=str,
         default="vllm_tests",
-        help="Hydra config name (default: vllm_tests)"
+        help="Hydra config name (default: vllm_tests)",
     )
 
     parser.add_argument(
-        "--no-hydra",
-        action="store_true",
-        help="Disable Hydra configuration loading"
+        "--no-hydra", action="store_true", help="Disable Hydra configuration loading"
     )
 
     args = parser.parse_args()
@@ -410,7 +411,7 @@ def main():
         coverage=args.coverage,
         parallel=args.parallel,
         config=config,
-        use_hydra_config=not args.no_hydra
+        use_hydra_config=not args.no_hydra,
     )
 
 

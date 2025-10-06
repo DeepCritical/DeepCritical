@@ -643,8 +643,8 @@ class MultiAgentCoordinator:
             agent_state.status = WorkflowStatus.COMPLETED
             agent_state.end_time = datetime.now()
 
-            if hasattr(result, 'model_dump'):
-                model_dump_method = getattr(result, 'model_dump', None)
+            if hasattr(result, "model_dump"):
+                model_dump_method = getattr(result, "model_dump", None)
                 if model_dump_method is not None and callable(model_dump_method):
                     return model_dump_method()
             return {"result": str(result)}

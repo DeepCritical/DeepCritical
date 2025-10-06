@@ -254,6 +254,3 @@ class AgentPrompts:
                 "instructions": BASE_AGENT_INSTRUCTIONS,
             },
         )
-
-
-

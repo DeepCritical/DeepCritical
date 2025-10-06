@@ -657,8 +657,8 @@ class DeepSearchUtils:
     @staticmethod
     def create_search_orchestrator(schemas: DeepSearchSchemas) -> SearchOrchestrator:
         """Create a new search orchestrator."""
-        if hasattr(schemas, 'model_dump') and callable(getattr(schemas, 'model_dump')):
-            model_dump_method = getattr(schemas, 'model_dump')
+        if hasattr(schemas, "model_dump") and callable(getattr(schemas, "model_dump")):
+            model_dump_method = getattr(schemas, "model_dump")
             config = model_dump_method()
         else:
             config = {}

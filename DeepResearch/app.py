@@ -83,9 +83,7 @@ class ResearchState:
 # --- Nodes ---
 @dataclass
 class Plan(BaseNode[ResearchState]):
-    async def run(
-        self, ctx: GraphRunContext[ResearchState]
-    ) -> Union[
+    async def run(self, ctx: GraphRunContext[ResearchState]) -> Union[
         Search,
         PrimaryREACTWorkflow,
         EnhancedREACTWorkflow,
@@ -111,7 +109,11 @@ class Plan(BaseNode[ResearchState]):
             return PrimaryREACTWorkflow()
 
         # Switch to challenge flow if enabled
-        if hasattr(cfg, 'challenge') and cfg.challenge and getattr(cfg.challenge, "enabled", False):
+        if (
+            hasattr(cfg, "challenge")
+            and cfg.challenge
+            and getattr(cfg.challenge, "enabled", False)
+        ):
             ctx.state.notes.append("Challenge mode enabled")
             return PrepareChallenge()
 
@@ -182,7 +184,9 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
                 from omegaconf import DictConfig
 
                 cfg = DictConfig({})
-            result = await orchestrator.execute_primary_workflow(ctx.state.question, cfg)
+            result = await orchestrator.execute_primary_workflow(
+                ctx.state.question, cfg
+            )
 
             # Process results
             if result["success"]:
@@ -578,9 +582,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
     ):
         """Execute single REACT mode."""
         cfg = ctx.state.config or DictConfig({})
-        return await orchestrator.execute_orchestration(
-            ctx.state.question, cfg
-        )
+        return await orchestrator.execute_orchestration(ctx.state.question, cfg)
 
     async def _execute_multi_level_react(
         self, ctx: GraphRunContext[ResearchState], orchestrator: AgentOrchestrator
@@ -588,9 +590,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         """Execute multi-level REACT mode."""
         # This would implement multi-level REACT with nested loops
         cfg = ctx.state.config or DictConfig({})
-        return await orchestrator.execute_orchestration(
-            ctx.state.question, cfg
-        )
+        return await orchestrator.execute_orchestration(ctx.state.question, cfg)
 
     async def _execute_nested_orchestration(
         self, ctx: GraphRunContext[ResearchState], orchestrator: AgentOrchestrator
@@ -598,9 +598,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         """Execute nested orchestration mode."""
         # This would implement nested orchestration with subgraphs
         cfg = ctx.state.config or DictConfig({})
-        return await orchestrator.execute_orchestration(
-            ctx.state.question, cfg
-        )
+        return await orchestrator.execute_orchestration(ctx.state.question, cfg)
 
     async def _execute_loss_driven(
         self, ctx: GraphRunContext[ResearchState], orchestrator: AgentOrchestrator
@@ -608,9 +606,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         """Execute loss-driven mode."""
         # This would implement loss-driven execution with quality metrics
         cfg = ctx.state.config or DictConfig({})
-        return await orchestrator.execute_orchestration(
-            ctx.state.question, cfg
-        )
+        return await orchestrator.execute_orchestration(ctx.state.question, cfg)
 
     async def _execute_custom_mode(
         self, ctx: GraphRunContext[ResearchState], orchestrator: AgentOrchestrator
@@ -618,9 +614,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         """Execute custom mode."""
         # This would implement custom execution logic
         cfg = ctx.state.config or DictConfig({})
-        return await orchestrator.execute_orchestration(
-            ctx.state.question, cfg
-        )
+        return await orchestrator.execute_orchestration(ctx.state.question, cfg)
 
     def _generate_enhanced_output(
         self,
@@ -749,7 +743,7 @@ research_graph = Graph(
 @dataclass
 class PrepareChallenge(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> RunChallenge:
-        ch = getattr(ctx.state.config, 'challenge', None) if ctx.state.config else None
+        ch = getattr(ctx.state.config, "challenge", None) if ctx.state.config else None
         if ch:
             ctx.state.notes.append(f"Prepare: {ch.name} in {ch.domain}")
         else:
@@ -859,6 +853,7 @@ class PrimePlan(BaseNode[ResearchState]):
         if ctx.state.structured_problem is None:
             # Create a simple structured problem from the question
             from .src.agents.prime_parser import StructuredProblem, ScientificIntent
+
             ctx.state.structured_problem = StructuredProblem(
                 intent=ScientificIntent.CLASSIFICATION,
                 input_data={"description": ctx.state.question},
@@ -866,7 +861,7 @@ class PrimePlan(BaseNode[ResearchState]):
                 constraints=[],
                 success_criteria=["complete_answer"],
                 domain="general",
-                complexity="simple"
+                complexity="simple",
             )
         workflow_dag = planner.plan(ctx.state.structured_problem)
         ctx.state.workflow_dag = workflow_dag
@@ -889,7 +884,10 @@ class PrimeExecute(BaseNode[ResearchState]):
         history = PrimeExecutionHistory()
         if ctx.state.workflow_dag is None:
             from .src.datatypes.execution import WorkflowDAG
-            ctx.state.workflow_dag = WorkflowDAG(steps=[], dependencies={}, execution_order=[])
+
+            ctx.state.workflow_dag = WorkflowDAG(
+                steps=[], dependencies={}, execution_order=[]
+            )
         context = ExecutionContext(
             workflow=ctx.state.workflow_dag,
             history=history,
@@ -1004,7 +1002,7 @@ class BioinformaticsParse(BaseNode[ResearchState]):
 
         # Run the complete bioinformatics workflow
         try:
-            cfg_dict = cfg.to_container() if hasattr(cfg, 'to_container') else {}
+            cfg_dict = cfg.to_container() if hasattr(cfg, "to_container") else {}
             final_answer = run_bioinformatics_workflow(question, cfg_dict)
             ctx.state.answers.append(final_answer)
             ctx.state.notes.append("Bioinformatics workflow completed successfully")

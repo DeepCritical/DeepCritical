@@ -108,14 +108,14 @@ class SubAgent(BaseModel):
     max_iterations: int = Field(10, gt=0, description="Maximum iterations")
     timeout: float = Field(300.0, gt=0, description="Execution timeout in seconds")
 
-    @field_validator("name", mode='before')
+    @field_validator("name", mode="before")
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Subagent name cannot be empty")
         return v.strip()
 
-    @field_validator("description", mode='before')
+    @field_validator("description", mode="before")
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
@@ -154,14 +154,14 @@ class CustomSubAgent(BaseModel):
     )
     timeout: float = Field(300.0, gt=0, description="Execution timeout in seconds")
 
-    @field_validator("name", mode='before')
+    @field_validator("name", mode="before")
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError("Custom subagent name cannot be empty")
         return v.strip()
 
-    @field_validator("description", mode='before')
+    @field_validator("description", mode="before")
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
@@ -226,7 +226,7 @@ class TaskRequest(BaseModel):
     )
     timeout: Optional[float] = Field(None, description="Task timeout override")
 
-    @field_validator("description", mode='before')
+    @field_validator("description", mode="before")
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():

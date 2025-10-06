@@ -63,8 +63,8 @@ def write_todos_tool(
                     todo.status = TaskStatus.PENDING
 
             # Add to state
-            if hasattr(ctx, 'state') and hasattr(ctx.state, 'add_todo'):
-                add_todo_method = getattr(ctx.state, 'add_todo', None)
+            if hasattr(ctx, "state") and hasattr(ctx.state, "add_todo"):
+                add_todo_method = getattr(ctx.state, "add_todo", None)
                 if add_todo_method is not None and callable(add_todo_method):
                     add_todo_method(todo)
             todos_created += 1
@@ -86,10 +86,10 @@ def list_files_tool(ctx: RunContext[DeepAgentState]) -> ListFilesResponse:
     """Tool for listing files in the filesystem."""
     try:
         files = []
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'files'):
-            files_dict = getattr(ctx.state, 'files', None)
-            if files_dict is not None and hasattr(files_dict, 'keys'):
-                keys_method = getattr(files_dict, 'keys', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "files"):
+            files_dict = getattr(ctx.state, "files", None)
+            if files_dict is not None and hasattr(files_dict, "keys"):
+                keys_method = getattr(files_dict, "keys", None)
                 if keys_method is not None and callable(keys_method):
                     files = list(keys_method())
         return ListFilesResponse(files=files, count=len(files))
@@ -104,8 +104,8 @@ def read_file_tool(
     """Tool for reading a file from the filesystem."""
     try:
         file_info = None
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'get_file'):
-            get_file_method = getattr(ctx.state, 'get_file', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "get_file"):
+            get_file_method = getattr(ctx.state, "get_file", None)
             if get_file_method is not None and callable(get_file_method):
                 file_info = get_file_method(request.file_path)
         if not file_info:
@@ -184,8 +184,8 @@ def write_file_tool(
         file_info = create_file_info(path=request.file_path, content=request.content)
 
         # Add to state
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'add_file'):
-            add_file_method = getattr(ctx.state, 'add_file', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "add_file"):
+            add_file_method = getattr(ctx.state, "add_file", None)
             if add_file_method is not None and callable(add_file_method):
                 add_file_method(file_info)
 
@@ -212,8 +212,8 @@ def edit_file_tool(
     """Tool for editing a file in the filesystem."""
     try:
         file_info = None
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'get_file'):
-            get_file_method = getattr(ctx.state, 'get_file', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "get_file"):
+            get_file_method = getattr(ctx.state, "get_file", None)
             if get_file_method is not None and callable(get_file_method):
                 file_info = get_file_method(request.file_path)
         if not file_info:
@@ -266,8 +266,8 @@ def edit_file_tool(
             result_msg = f"Successfully replaced string in '{request.file_path}'"
 
         # Update the file
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'update_file_content'):
-            update_method = getattr(ctx.state, 'update_file_content', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "update_file_content"):
+            update_method = getattr(ctx.state, "update_file_content", None)
             if update_method is not None and callable(update_method):
                 update_method(request.file_path, new_content)
 
@@ -305,10 +305,10 @@ def task_tool(
         )
 
         # Add to active tasks
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'active_tasks'):
-            active_tasks = getattr(ctx.state, 'active_tasks', None)
-            if active_tasks is not None and hasattr(active_tasks, 'append'):
-                append_method = getattr(active_tasks, 'append', None)
+        if hasattr(ctx, "state") and hasattr(ctx.state, "active_tasks"):
+            active_tasks = getattr(ctx.state, "active_tasks", None)
+            if active_tasks is not None and hasattr(active_tasks, "append"):
+                append_method = getattr(active_tasks, "append", None)
                 if append_method is not None and callable(append_method):
                     append_method(task_id)
 
@@ -323,17 +323,25 @@ def task_tool(
         }
 
         # Move from active to completed
-        if hasattr(ctx, 'state') and hasattr(ctx.state, 'active_tasks') and hasattr(ctx.state, 'completed_tasks'):
-            active_tasks = getattr(ctx.state, 'active_tasks', None)
-            completed_tasks = getattr(ctx.state, 'completed_tasks', None)
-            
-            if active_tasks is not None and hasattr(active_tasks, 'remove'):
-                remove_method = getattr(active_tasks, 'remove', None)
-                if remove_method is not None and callable(remove_method) and task_id in active_tasks:
+        if (
+            hasattr(ctx, "state")
+            and hasattr(ctx.state, "active_tasks")
+            and hasattr(ctx.state, "completed_tasks")
+        ):
+            active_tasks = getattr(ctx.state, "active_tasks", None)
+            completed_tasks = getattr(ctx.state, "completed_tasks", None)
+
+            if active_tasks is not None and hasattr(active_tasks, "remove"):
+                remove_method = getattr(active_tasks, "remove", None)
+                if (
+                    remove_method is not None
+                    and callable(remove_method)
+                    and task_id in active_tasks
+                ):
                     remove_method(task_id)
-            
-            if completed_tasks is not None and hasattr(completed_tasks, 'append'):
-                append_method = getattr(completed_tasks, 'append', None)
+
+            if completed_tasks is not None and hasattr(completed_tasks, "append"):
+                append_method = getattr(completed_tasks, "append", None)
                 if append_method is not None and callable(append_method):
                     append_method(task_id)
 

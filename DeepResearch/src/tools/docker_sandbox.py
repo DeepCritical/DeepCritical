@@ -224,21 +224,31 @@ class DockerSandboxRunner(ToolRunner):
             # Note: CPU and memory limits are not directly supported by testcontainers
             # These would need to be set at the Docker daemon level or through docker-compose
             if sandbox_config.cpu_limit:
-                logger.info(f"CPU limit requested: {sandbox_config.cpu_limit} (not implemented)")
-            
+                logger.info(
+                    f"CPU limit requested: {sandbox_config.cpu_limit} (not implemented)"
+                )
+
             if sandbox_config.memory_limit:
-                logger.info(f"Memory limit requested: {sandbox_config.memory_limit} (not implemented)")
+                logger.info(
+                    f"Memory limit requested: {sandbox_config.memory_limit} (not implemented)"
+                )
 
             # Set working directory if supported
             try:
-                if hasattr(container, 'with_workdir'):
-                    with_workdir_method = getattr(container, 'with_workdir', None)
-                    if with_workdir_method is not None and callable(with_workdir_method):
+                if hasattr(container, "with_workdir"):
+                    with_workdir_method = getattr(container, "with_workdir", None)
+                    if with_workdir_method is not None and callable(
+                        with_workdir_method
+                    ):
                         with_workdir_method(sandbox_config.working_directory)
                 else:
-                    logger.info(f"Working directory requested: {sandbox_config.working_directory} (not supported)")
+                    logger.info(
+                        f"Working directory requested: {sandbox_config.working_directory} (not supported)"
+                    )
             except Exception:
-                logger.warning(f"Failed to set working directory: {sandbox_config.working_directory}")
+                logger.warning(
+                    f"Failed to set working directory: {sandbox_config.working_directory}"
+                )
 
             # Mount working directory
             container.with_volume_mapping(

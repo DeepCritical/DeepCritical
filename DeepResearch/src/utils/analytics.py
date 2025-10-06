@@ -73,7 +73,9 @@ def _save_times(data: dict):
         json.dump(data, f)
 
 
-async def record_request(duration: Optional[float] = None, num_results: Optional[int] = None) -> None:
+async def record_request(
+    duration: Optional[float] = None, num_results: Optional[int] = None
+) -> None:
     """Increment today's counter (UTC) atomically and optionally record request duration."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     with FileLock(LOCK_FILE):

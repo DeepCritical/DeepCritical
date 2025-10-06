@@ -185,8 +185,10 @@ class VLLMPromptTester:
 
         # Create VLLM container with configuration
         if VLLMContainer is None:
-            raise ImportError("testcontainers.vllm is not available. Please install testcontainers.")
-        
+            raise ImportError(
+                "testcontainers.vllm is not available. Please install testcontainers."
+            )
+
         self.container = VLLMContainer(
             image=container_config.get("image", "vllm/vllm-openai:latest"),
             model=self.model_name,
@@ -236,12 +238,16 @@ class VLLMPromptTester:
 
         # Use configured timeout or default
         health_check_config = (
-            self.config.get("model", {}).get("server", {}).get("health_check", {}) if self.config else {}
+            self.config.get("model", {}).get("server", {}).get("health_check", {})
+            if self.config
+            else {}
         )
         check_timeout = timeout or health_check_config.get("timeout_seconds", 5)
         max_retries = health_check_config.get("max_retries", 3)
         interval = health_check_config.get("interval_seconds", 10)
-        timeout_seconds = timeout or health_check_config.get("timeout_seconds", 300)  # Default 5 minutes
+        timeout_seconds = timeout or health_check_config.get(
+            "timeout_seconds", 300
+        )  # Default 5 minutes
 
         start_time = time.time()
         url = f"{self.container.get_connection_url()}{health_check_config.get('endpoint', '/health')}"

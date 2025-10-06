@@ -33,9 +33,12 @@ def _compose_agent_system(
     sections: List[str] = [
         header.replace(
             "${current_date_utc}",
-            getattr(__import__("datetime").datetime.now(__import__("datetime").timezone.utc), "strftime")(
-                "%a, %d %b %Y %H:%M:%S GMT"
-            ),
+            getattr(
+                __import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
+                "strftime",
+            )("%a, %d %b %Y %H:%M:%S GMT"),
         )
     ]
 
