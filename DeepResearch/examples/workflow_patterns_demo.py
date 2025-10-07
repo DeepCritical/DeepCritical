@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Comprehensive demonstration of DeepCritical agent interaction design patterns.
 

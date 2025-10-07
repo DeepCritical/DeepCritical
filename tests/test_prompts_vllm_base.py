@@ -403,7 +403,7 @@ class VLLMPromptTestBase:
 - Total Prompts: {total}
 - Successful: {successful}
 - Failed: {total - successful}
-- Success Rate: {successful/total*100:.1f}%
+- Success Rate: {successful / total * 100:.1f}%
 
 **Results:**
 """

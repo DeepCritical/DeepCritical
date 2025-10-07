@@ -71,17 +71,16 @@ jobs:
     - name: Install linting tools
       run: |
         python -m pip install --upgrade pip
-        pip install ruff black
+        pip install ruff
 
     - name: Run linting (Ruff)
       run: |
         ruff --version
         ruff check DeepResearch/ tests/ --output-format=github
 
-    - name: Check formatting (Black)
+    - name: Check formatting (Ruff)
       run: |
-        black --version
-        black --check DeepResearch/ tests/
+        ruff format --check DeepResearch/ tests/
 
   types:
     runs-on: ubuntu-latest
