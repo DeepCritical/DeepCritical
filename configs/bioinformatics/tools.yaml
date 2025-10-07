@@ -20,7 +20,7 @@ tools:
       fusion_type: "MultiSource"
       source_databases: "GO,PubMed"
       quality_threshold: ${bioinformatics.quality.default_threshold}
-    
+
   bioinformatics_reasoning:
     name: "bioinformatics_reasoning"
     description: "Perform integrative reasoning on bioinformatics data"
@@ -37,7 +37,7 @@ tools:
     defaults:
       task_type: "general_reasoning"
       difficulty_level: ${bioinformatics.reasoning.default_difficulty_level}
-    
+
   bioinformatics_workflow:
     name: "bioinformatics_workflow"
     description: "Run complete bioinformatics workflow with data fusion and reasoning"
@@ -51,7 +51,7 @@ tools:
       reasoning_result: "JSON"
     defaults:
       processing_steps: ["Parse", "Fuse", "Assess", "Create", "Reason", "Synthesize"]
-    
+
   go_annotation_processor:
     name: "go_annotation_processor"
     description: "Process GO annotations with PubMed paper context for reasoning tasks"
@@ -67,7 +67,7 @@ tools:
       evidence_codes: "IDA,EXP"
       quality_score_ida: 0.9
       quality_score_other: 0.7
-    
+
   pubmed_retriever:
     name: "pubmed_retriever"
     description: "Retrieve PubMed papers based on query with full text for open access papers"
@@ -88,28 +88,28 @@ deferred_tools:
   go_annotation_processor:
     evidence_codes: ${bioinformatics.evidence_codes.high_quality}
     quality_threshold: ${bioinformatics.quality.default_threshold}
-    
+
   pubmed_paper_retriever:
     max_results: ${bioinformatics.pubmed.default_max_results}
     year_min: ${bioinformatics.pubmed.default_year_min}
     include_full_text: ${bioinformatics.pubmed.include_full_text}
-    
+
   geo_data_retriever:
     include_expression: ${bioinformatics.geo.include_expression}
     max_series: ${bioinformatics.geo.default_max_series}
-    
+
   drug_target_mapper:
     include_targets: ${bioinformatics.drugbank.include_targets}
     include_mechanisms: ${bioinformatics.drugbank.include_mechanisms}
-    
+
   protein_structure_retriever:
     include_interactions: ${bioinformatics.pdb.include_interactions}
     resolution_max: ${bioinformatics.pdb.resolution_max}
-    
+
   data_fusion_engine:
     quality_threshold: ${bioinformatics.fusion.default_quality_threshold}
     cross_reference_enabled: ${bioinformatics.fusion.cross_reference_enabled}
-    
+
   reasoning_engine:
     confidence_threshold: ${bioinformatics.reasoning.default_confidence_threshold}
     max_reasoning_steps: ${bioinformatics.reasoning.max_reasoning_steps}
@@ -120,9 +120,3 @@ tool_dependencies:
   config: {}
   model_name: ${bioinformatics.model.default}
   quality_threshold: ${bioinformatics.quality.default_threshold}
-
-
-
-
-
-

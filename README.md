@@ -30,7 +30,7 @@ The project already has the foundation for your vision:
 ```yaml
 # Current flow configurations (configs/statemachines/flows/)
 - hypothesis_generation.yaml    # Generate hypothesis datasets
-- hypothesis_testing.yaml       # Test hypothesis environments  
+- hypothesis_testing.yaml       # Test hypothesis environments
 - execution.yaml               # Run experiments/simulations
 - reporting.yaml              # Generate research outputs
 - bioinformatics.yaml         # Multi-source data fusion
@@ -105,7 +105,7 @@ reporting:
   formats: ["academic_paper", "blog_post", "technical_report", "dpo_dataset"]
   agents:
     - role: "structure_organizer"
-    - role: "content_writer" 
+    - role: "content_writer"
     - role: "editor_reviewer"
     - role: "formatter_publisher"
 ```
@@ -134,7 +134,7 @@ The beauty of Hydra integration means we can build this incrementally:
 # Start with hypothesis generation
 deepresearch flows.hypothesis_generation.enabled=true question="machine learning"
 
-# Add hypothesis testing 
+# Add hypothesis testing
 deepresearch flows.hypothesis_testing.enabled=true question="test ML hypothesis"
 
 # Enable full research pipeline
@@ -148,7 +148,7 @@ deepresearch flows="{hypothesis_generation,testing,validation,simulation,reporti
 # configs/config.yaml - Main composition point
 defaults:
   - hypothesis_generation: default
-  - hypothesis_testing: default  
+  - hypothesis_testing: default
   - execution: default
   - reporting: default
 
@@ -161,7 +161,7 @@ flows:
 
 ### 2. **Pydantic Graph Integration**
 ```python
-@dataclass  
+@dataclass
 class ResearchPipeline(BaseNode[ResearchState]):
     async def run(self, ctx: GraphRunContext[ResearchState]) -> NextNode:
         # Check enabled flows and compose dynamically
@@ -176,7 +176,7 @@ class ResearchPipeline(BaseNode[ResearchState]):
 ```python
 @defer
 def generate_hypothesis_dataset(
-    ctx: RunContext[AgentDependencies], 
+    ctx: RunContext[AgentDependencies],
     research_question: str,
     batch_size: int
 ) -> HypothesisDataset:
@@ -245,7 +245,7 @@ uv run deepresearch --config-name=config_with_modes \
 
 This is a sketchpad for building the future of autonomous research—let's collaborate on making it a reality! 🔬✨
 
-# DeepCritical - Hydra + Pydantic Graph Deep Research with Critical Review Tools 
+# DeepCritical - Hydra + Pydantic Graph Deep Research with Critical Review Tools
 
 A comprehensive research automation platform architecture for autonomous scientific discovery workflows.
 
@@ -436,7 +436,7 @@ python -m deepresearch.app flows.prime.params.adaptive_replanning=false
 ```
 
 1. **Parse** → `QueryParser` - Semantic/syntactic analysis of research queries
-2. **Plan** → `PlanGenerator` - DAG workflow construction with 65+ tools  
+2. **Plan** → `PlanGenerator` - DAG workflow construction with 65+ tools
 3. **Execute** → `ToolExecutor` - Adaptive re-planning with strategic/tactical recovery
 
 ## 🧬 PRIME Features
@@ -508,7 +508,7 @@ Plan → Route to Flow → Execute Subflow → Synthesize Results
   │
   ├─ PRIME: Parse → Plan → Execute → Evaluate
   ├─ Bioinformatics: Parse → Fuse → Assess → Reason → Synthesize
-  ├─ DeepSearch: DSPlan → DSExecute → DSAnalyze → DSSynthesize  
+  ├─ DeepSearch: DSPlan → DSExecute → DSAnalyze → DSSynthesize
   └─ Challenge: PrepareChallenge → RunChallenge → EvaluateChallenge
 ```
 
@@ -568,7 +568,7 @@ Each flow has its own configuration file:
 
 - `configs/statemachines/flows/prime.yaml` - PRIME flow parameters
 - `configs/statemachines/flows/bioinformatics.yaml` - Bioinformatics flow parameters
-- `configs/statemachines/flows/deepsearch.yaml` - DeepSearch parameters  
+- `configs/statemachines/flows/deepsearch.yaml` - DeepSearch parameters
 - `configs/statemachines/flows/hypothesis_generation.yaml` - Hypothesis flow
 - `configs/statemachines/flows/execution.yaml` - Execution flow
 - `configs/statemachines/flows/reporting.yaml` - Reporting flow
@@ -693,7 +693,7 @@ DeepCritical/
 1. **Create Data Types**:
    ```python
    from pydantic import BaseModel, Field
-   
+
    class GOAnnotation(BaseModel):
        pmid: str = Field(..., description="PubMed ID")
        gene_id: str = Field(..., description="Gene identifier")
@@ -704,7 +704,7 @@ DeepCritical/
 2. **Implement Agents**:
    ```python
    from pydantic_ai import Agent
-   
+
    class DataFusionAgent:
        def __init__(self, model_name: str):
            self.agent = Agent(
@@ -772,4 +772,3 @@ print(f"Tools used: {summary['tools_used']}")
 - [PRIME Paper](https://doi.org/10.1101/2025.09.22.677756) - Original research paper
 - [Bioinformatics Integration](docs/bioinformatics_integration.md) - Multi-source data fusion guide
 - [Protein Engineering Tools](https://github.com/facebookresearch/hydra) - Tool ecosystem reference
-

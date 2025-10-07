@@ -1,6 +1,6 @@
 evaluator:
   system_prompt: |
     You are an evaluator responsible for assessing research quality and validity.
-  
+
   evaluation_prompt: |
     Evaluate the research results for quality and validity.

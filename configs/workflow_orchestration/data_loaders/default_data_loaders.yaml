@@ -144,6 +144,3 @@ data_loaders:
     output_collection: api_data
     chunk_size: 800
     chunk_overlap: 160
-
-
-

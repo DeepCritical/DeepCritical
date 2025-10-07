@@ -11,7 +11,7 @@ data_sources:
     quality_threshold: ${bioinformatics.quality.default_threshold}
     include_obsolete: false
     namespace_filter: ["biological_process", "molecular_function", "cellular_component"]
-    
+
   pubmed:
     enabled: true
     max_results: ${bioinformatics.pubmed.default_max_results}
@@ -21,7 +21,7 @@ data_sources:
     include_mesh_terms: true
     include_keywords: true
     open_access_only: false
-    
+
   geo:
     enabled: true
     include_expression: ${bioinformatics.geo.include_expression}
@@ -29,7 +29,7 @@ data_sources:
     max_samples_per_series: ${bioinformatics.geo.max_samples_per_series}
     include_platform_info: true
     include_sample_characteristics: true
-    
+
   drugbank:
     enabled: true
     include_targets: ${bioinformatics.drugbank.include_targets}
@@ -37,7 +37,7 @@ data_sources:
     include_indications: ${bioinformatics.drugbank.include_indications}
     include_clinical_phase: true
     include_action_type: true
-    
+
   pdb:
     enabled: true
     include_interactions: ${bioinformatics.pdb.include_interactions}
@@ -46,20 +46,20 @@ data_sources:
     include_secondary_structure: ${bioinformatics.pdb.include_secondary_structure}
     include_binding_sites: true
     include_publication_info: true
-    
+
   intact:
     enabled: true
     confidence_min: ${bioinformatics.intact.default_confidence_min}
     include_detection_method: true
     include_species: true
     include_publication_refs: true
-    
+
   uniprot:
     enabled: true
     include_sequences: true
     include_features: true
     include_cross_references: true
-    
+
   cmap:
     enabled: true
     include_connectivity_scores: true
@@ -67,9 +67,3 @@ data_sources:
     include_cell_lines: true
     include_concentrations: true
     include_time_points: true
-
-
-
-
-
-

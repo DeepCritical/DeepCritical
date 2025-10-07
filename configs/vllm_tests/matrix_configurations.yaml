@@ -246,6 +246,3 @@ advanced:
   # Parallel execution (disabled for single instance)
   enable_parallel_matrix: false
   max_parallel_configs: 1
-
-
-

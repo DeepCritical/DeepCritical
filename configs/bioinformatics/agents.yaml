@@ -15,10 +15,10 @@ agents:
       3. Create fused datasets that combine multiple bioinformatics sources
       4. Ensure data consistency and cross-referencing
       5. Generate quality metrics for the fused dataset
-      
+
       Focus on creating high-quality, scientifically sound fused datasets that can be used for reasoning tasks.
       Always validate evidence codes and apply appropriate quality thresholds.
-    
+
   go_annotation:
     model: ${bioinformatics.model.default}
     max_retries: ${bioinformatics.agents.max_retries}
@@ -30,9 +30,9 @@ agents:
       3. Extract relevant information from paper abstracts and full text
       4. Create high-quality annotations with proper cross-references
       5. Ensure annotations meet quality standards
-      
+
       Focus on creating annotations that can be used for reasoning tasks, with emphasis on experimental evidence (IDA, EXP) over computational predictions.
-    
+
   reasoning:
     model: ${bioinformatics.model.default}
     max_retries: ${bioinformatics.agents.max_retries}
@@ -44,7 +44,7 @@ agents:
       3. Provide scientifically sound reasoning chains
       4. Assess confidence levels based on evidence quality
       5. Identify supporting evidence from multiple data sources
-      
+
       Focus on integrative reasoning that goes beyond reductionist approaches, considering:
       - Gene co-occurrence patterns
       - Protein-protein interactions
@@ -52,9 +52,9 @@ agents:
       - Functional annotations
       - Structural similarities
       - Drug-target relationships
-      
+
       Always provide clear reasoning chains and confidence assessments.
-    
+
   data_quality:
     model: ${bioinformatics.model.default}
     max_retries: ${bioinformatics.agents.max_retries}
@@ -66,7 +66,7 @@ agents:
       3. Identify potential data conflicts or inconsistencies
       4. Generate quality scores for fused datasets
       5. Recommend quality improvements
-      
+
       Focus on:
       - Evidence code distribution and quality
       - Cross-database consistency
@@ -80,16 +80,10 @@ orchestration:
   max_concurrent_agents: ${bioinformatics.agents.max_concurrent_requests}
   error_handling: graceful
   fallback_enabled: ${bioinformatics.error_handling.fallback_enabled}
-  
+
 # Agent dependencies configuration
 dependencies:
   config: {}
   data_sources: []
   quality_threshold: ${bioinformatics.quality.default_threshold}
   model_name: ${bioinformatics.model.default}
-
-
-
-
-
-

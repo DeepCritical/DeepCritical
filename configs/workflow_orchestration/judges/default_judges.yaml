@@ -171,6 +171,3 @@ judges:
       max_tokens: 1200
       enable_comprehensive_evaluation: true
       enable_system_optimization_suggestions: true
-
-
-

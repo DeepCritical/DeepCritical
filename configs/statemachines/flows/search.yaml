@@ -12,7 +12,7 @@ search:
   default_num_results: 4
   max_num_results: 20
   min_num_results: 1
-  
+
   # Chunking parameters
   chunking:
     default_chunk_size: 1000
@@ -21,7 +21,7 @@ search:
     max_chunk_size: 4000
     heading_level: 3
     clean_text: true
-  
+
   # Search types
   types:
     search:
@@ -37,7 +37,7 @@ analytics:
   record_requests: true
   record_timing: true
   data_retention_days: 30
-  
+
   # Analytics data retrieval
   default_days: 30
   max_days: 365
@@ -48,7 +48,7 @@ rag:
   convert_to_rag_format: true
   create_documents: true
   create_chunks: true
-  
+
   # Document metadata
   metadata:
     include_source_title: true
@@ -65,7 +65,7 @@ performance:
   timeout_seconds: 30
   max_retries: 3
   retry_delay_seconds: 1
-  
+
   # Concurrent processing
   max_concurrent_searches: 5
   max_concurrent_chunks: 10
@@ -75,7 +75,7 @@ error_handling:
   continue_on_error: false
   log_errors: true
   return_partial_results: true
-  
+
   # Error types
   handle_network_errors: true
   handle_parsing_errors: true
@@ -87,7 +87,7 @@ output:
   include_metadata: true
   include_analytics: true
   include_processing_time: true
-  
+
   # Content limits
   max_content_length: 10000
   max_summary_length: 2000
@@ -97,13 +97,13 @@ integration:
   # Tool registry integration
   register_tools: true
   auto_register: true
-  
+
   # Pydantic AI integration
   pydantic_ai:
     enabled: true
     model: "gpt-4"
     system_prompt: "You are an intelligent search agent that helps users find information on the web."
-    
+
   # State machine integration
   state_machine:
     enabled: true
@@ -115,13 +115,13 @@ validation:
   validate_query: true
   validate_parameters: true
   validate_results: true
-  
+
   # Query validation
   query:
     min_length: 1
     max_length: 500
     allowed_characters: "alphanumeric, spaces, punctuation"
-  
+
   # Parameter validation
   parameters:
     num_results:
@@ -142,7 +142,7 @@ logging:
   log_responses: true
   log_errors: true
   log_analytics: true
-  
+
   # Log formats
   request_format: "Search request: {query} ({search_type}, {num_results} results)"
   response_format: "Search response: {status} ({processing_time}s, {documents} documents, {chunks} chunks)"
@@ -153,7 +153,7 @@ monitoring:
   enabled: true
   track_metrics: true
   track_performance: true
-  
+
   # Metrics to track
   metrics:
     - "search_count"
@@ -161,7 +161,7 @@ monitoring:
     - "average_processing_time"
     - "average_results_count"
     - "analytics_recording_rate"
-  
+
   # Performance thresholds
   performance:
     max_processing_time: 30.0
@@ -173,12 +173,8 @@ development:
   debug_mode: false
   verbose_logging: false
   mock_analytics: false
-  
+
   # Testing
   test_mode: false
   use_mock_tools: false
   simulate_errors: false
-
-
-
-

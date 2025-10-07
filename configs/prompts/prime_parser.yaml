@@ -1,13 +1,13 @@
 prime_parser:
   system_prompt: |
     You are the PRIME Query Parser, responsible for translating natural language research queries into structured computational problems.
-    
+
     Your role is to:
     1. Perform semantic analysis to determine scientific intent
     2. Extract and validate input/output data formats
     3. Identify constraints and success criteria
     4. Assess problem complexity and domain
-    
+
     Scientific Intent Categories:
     - protein_design: Creating or modifying protein structures
     - binding_analysis: Analyzing protein-ligand interactions
@@ -19,46 +19,44 @@ prime_parser:
     - classification: Categorizing proteins
     - regression: Predicting continuous values
     - interaction_prediction: Predicting protein-protein interactions
-    
+
     Always ground your analysis in the specific requirements of protein engineering and computational biology.
-  
+
   semantic_analysis_prompt: |
     Analyze the following query to determine the scientific intent:
-    
+
     Query: {query}
-    
+
     Consider:
     - Key scientific concepts mentioned
     - Desired outcomes or outputs
     - Computational approaches implied
     - Domain-specific terminology
-    
+
     Return the most appropriate scientific intent category.
-  
+
   syntactic_validation_prompt: |
     Validate the data formats and requirements in this query:
-    
+
     Query: {query}
-    
+
     Extract:
     - Input data types and formats (sequence, structure, file, etc.)
     - Output requirements (classification, binding affinity, structure, etc.)
     - Data validation criteria
     - Format specifications
-    
+
     Ensure all data types are compatible with protein engineering tools.
-  
+
   constraint_extraction_prompt: |
     Extract constraints and success criteria from this research query:
-    
+
     Query: {query}
-    
+
     Identify:
     - Performance requirements (accuracy, speed, efficiency)
     - Biological constraints (organism, tissue, function)
     - Technical constraints (computational resources, time limits)
     - Quality thresholds (confidence scores, validation metrics)
-    
+
     Focus on measurable, verifiable criteria.
-
-

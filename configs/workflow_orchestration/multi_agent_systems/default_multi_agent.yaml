@@ -207,6 +207,3 @@ multi_agent_systems:
         max_iterations: 2
         temperature: 0.3
         enabled: true
-
-
-

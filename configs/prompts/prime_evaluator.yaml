@@ -1,121 +1,119 @@
 prime_evaluator:
   system_prompt: |
     You are the PRIME Evaluator, responsible for assessing the scientific validity and quality of computational results.
-    
+
     Your role is to:
     1. Evaluate results against scientific standards
     2. Detect and flag potential hallucinations
     3. Assess confidence and reliability
     4. Provide actionable feedback for improvement
     5. Ensure reproducibility and transparency
-    
+
     Evaluation Criteria:
     - Scientific accuracy and validity
     - Computational soundness
     - Reproducibility of results
     - Completeness of analysis
     - Adherence to best practices
-    
+
     Always prioritize scientific rigor over computational convenience.
-  
+
   scientific_validity_prompt: |
     Evaluate the scientific validity of these results:
-    
+
     Problem: {problem}
     Results: {results}
     Methodology: {methodology}
     Domain: {domain}
-    
+
     Assess:
     - Biological plausibility
     - Statistical significance
     - Methodological appropriateness
     - Result interpretation accuracy
     - Potential biases or limitations
-    
+
     Flag any results that appear scientifically questionable.
-  
+
   hallucination_detection_prompt: |
     Detect potential hallucinations in these computational results:
-    
+
     Original Query: {query}
     Reported Results: {results}
     Execution History: {execution_history}
-    
+
     Check for:
     - Fabricated data or metrics
     - Misreported execution outcomes
     - Inconsistent or contradictory results
     - Claims not supported by evidence
     - Overconfident assertions without validation
-    
+
     Report any suspected hallucinations with evidence.
-  
+
   confidence_assessment_prompt: |
     Assess the confidence and reliability of these results:
-    
+
     Results: {results}
     Tool Outputs: {tool_outputs}
     Success Criteria: {success_criteria}
     Validation Metrics: {validation_metrics}
-    
+
     Evaluate:
     - Statistical confidence levels
     - Tool-specific reliability scores
     - Cross-validation results
     - Uncertainty quantification
     - Reproducibility indicators
-    
+
     Provide confidence scores and reliability assessments.
-  
+
   completeness_evaluation_prompt: |
     Evaluate the completeness of this computational analysis:
-    
+
     Original Query: {query}
     Executed Workflow: {workflow}
     Results: {results}
     Success Criteria: {success_criteria}
-    
+
     Check:
     - All required steps completed
     - Success criteria fully addressed
     - Missing analyses or validations
     - Incomplete data or results
     - Unexplored alternative approaches
-    
+
     Identify any gaps in the analysis.
-  
+
   reproducibility_assessment_prompt: |
     Assess the reproducibility of this computational workflow:
-    
+
     Workflow: {workflow}
     Parameters: {parameters}
     Results: {results}
     Environment: {environment}
-    
+
     Evaluate:
     - Parameter documentation completeness
     - Tool version specifications
     - Random seed handling
     - Environment reproducibility
     - Result consistency across runs
-    
+
     Provide recommendations for improving reproducibility.
-  
+
   quality_feedback_prompt: |
     Provide actionable feedback for improving computational quality:
-    
+
     Current Results: {results}
     Evaluation Findings: {evaluation_findings}
     Best Practices: {best_practices}
-    
+
     Suggest:
     - Parameter optimizations
     - Additional validations
     - Alternative approaches
     - Quality improvements
     - Reproducibility enhancements
-    
+
     Focus on specific, actionable recommendations.
-
-

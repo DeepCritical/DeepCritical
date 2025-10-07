@@ -1910,7 +1910,7 @@ from vllm_comprehensive import AsyncLLMEngine, SamplingParams, create_vllm_confi
 async def main():
     config = create_vllm_config(model="gpt2")
     engine = AsyncLLMEngine(config)
-    
+
     sampling_params = SamplingParams(temperature=0.7)
     outputs = await engine.generate("Once upon a time", sampling_params)
     print(outputs[0].outputs[0].text)
@@ -1924,7 +1924,7 @@ from vllm_comprehensive import VLLMClient, ChatCompletionRequest
 
 async def chat_example():
     client = VLLMClient(base_url="http://localhost:8000")
-    
+
     request = ChatCompletionRequest(
         model="gpt-3.5-turbo",
         messages=[
@@ -1933,7 +1933,7 @@ async def chat_example():
         temperature=0.7,
         max_tokens=50
     )
-    
+
     response = await client.chat_completions(request)
     print(response.choices[0].message.content)
 
@@ -1994,7 +1994,7 @@ from vllm_comprehensive import BatchRequest, ChatCompletionRequest, VLLMClient
 
 async def batch_example():
     client = VLLMClient()
-    
+
     # Create batch of requests
     requests = [
         ChatCompletionRequest(
@@ -2003,13 +2003,13 @@ async def batch_example():
         )
         for i in range(10)
     ]
-    
+
     batch_request = BatchRequest(
         requests=requests,
         batch_id="batch_001",
         max_retries=3
     )
-    
+
     # Process batch (implementation would handle this)
     # batch_response = await client.process_batch(batch_request)
 ```
@@ -2021,7 +2021,7 @@ from vllm_comprehensive import AsyncLLMEngine, SamplingParams
 async def streaming_example():
     engine = AsyncLLMEngine(create_vllm_config(model="gpt2"))
     sampling_params = SamplingParams(temperature=0.7)
-    
+
     async for output in engine.generate_stream("Tell me a story", sampling_params):
         if output.delta:
             print(output.delta.text, end="", flush=True)

@@ -12,7 +12,7 @@ workflow:
       drugbank_ttd_keywords: ["drugbank", "drug", "compound", "ttd", "target"]
       pdb_intact_keywords: ["pdb", "structure", "protein", "intact", "interaction"]
       default_fusion_type: "MultiSource"
-    
+
     data_source_identification:
       go_keywords: ["go", "gene ontology", "annotation"]
       pubmed_keywords: ["pubmed", "paper", "publication"]
@@ -21,7 +21,7 @@ workflow:
       pdb_keywords: ["structure", "pdb", "protein"]
       intact_keywords: ["interaction", "intact"]
       default_sources: ["GO", "PubMed"]
-    
+
     filter_extraction:
       evidence_code_filters:
         ida_keywords: ["ida", "gold standard"]
@@ -30,26 +30,26 @@ workflow:
       temporal_filters:
         recent_keywords: ["recent", "2022"]
         default_year_min: ${bioinformatics.temporal.recent_year}
-  
+
   # Data fusion configuration
   data_fusion:
     default_quality_threshold: ${bioinformatics.quality.default_threshold}
     default_max_entities: ${bioinformatics.limits.default_max_entities}
     cross_reference_enabled: ${bioinformatics.fusion.cross_reference_enabled}
     temporal_consistency: ${bioinformatics.fusion.temporal_consistency}
-    
+
     error_handling:
       graceful_degradation: ${bioinformatics.error_handling.graceful_degradation}
       fallback_dataset:
         dataset_id: "empty"
         name: "Empty Dataset"
         description: "Empty dataset due to fusion failure"
-  
+
   # Quality assessment configuration
   quality_assessment:
     minimum_entities_for_reasoning: ${bioinformatics.limits.minimum_entities_for_reasoning}
     quality_metrics_to_log: true
-    
+
   # Reasoning task creation configuration
   reasoning_task_creation:
     task_type_detection:
@@ -59,14 +59,14 @@ workflow:
       expression_keywords: ["expression", "regulation", "transcript"]
       structure_keywords: ["structure", "fold", "domain"]
       default_task_type: "general_reasoning"
-    
+
     difficulty_assessment:
       hard_keywords: ["complex", "multiple", "integrate", "combine"]
       easy_keywords: ["simple", "basic", "direct"]
       default_difficulty: ${bioinformatics.reasoning.default_difficulty_level}
-    
+
     default_evidence_codes: ${bioinformatics.evidence_codes.high_quality}
-  
+
   # Reasoning execution configuration
   reasoning_execution:
     default_quality_threshold: ${bioinformatics.quality.default_threshold}
@@ -76,7 +76,7 @@ workflow:
         confidence: 0.0
         supporting_evidence: []
         reasoning_chain: ["Error occurred during reasoning"]
-  
+
   # Result synthesis configuration
   result_synthesis:
     include_question: true
@@ -85,7 +85,7 @@ workflow:
     include_quality_metrics: ${bioinformatics.output.include_quality_metrics}
     include_reasoning_results: true
     include_processing_notes: ${bioinformatics.output.include_processing_notes}
-    
+
     formatting:
       section_separator: ""
       bullet_point: "- "
@@ -99,16 +99,10 @@ state:
   initial_quality_metrics: {}
   initial_go_annotations: []
   initial_pubmed_papers: []
-  
+
 # Workflow execution configuration
 execution:
   async_execution: true
   error_handling: graceful
   timeout: ${bioinformatics.agents.timeout}
   max_retries: ${bioinformatics.agents.max_retries}
-
-
-
-
-
-

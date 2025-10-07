@@ -11,8 +11,3 @@ distance_metric: "cosine"
 index_type: "hnsw"
 username: "postgres"
 password: "postgres"
-
-
-
-
-

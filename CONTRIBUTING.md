@@ -51,8 +51,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies
 uv sync --dev
 
+# 🚨 CRITICAL: Install pre-commit hooks (primary quality assurance)
+make pre-install
+
 # Run tests to verify setup
 uv run pytest tests/
+
+# Show all available development commands
+make help
 ```
 
 ### Using pip (Alternative)
@@ -67,6 +73,9 @@ pip install -e .
 
 # Install development dependencies
 pip install -e ".[dev]"
+
+# Install additional type checking tools
+pip install ty
 
 # Run tests to verify setup
 pytest tests/
@@ -99,11 +108,21 @@ uv run pytest tests/ -v
 uv run pytest tests/unit/ -v
 uv run pytest tests/integration/ -v
 
-# Run linting
+# Run linting and formatting
 uv run ruff check .
-
-# Run formatting check
 uv run ruff format --check .
+
+# Run Black formatting check
+uv run black --check .
+
+# Run type checking
+uvx ty check
+
+# Run all quality checks
+uv run ruff check . && uv run ruff format --check . && uv run black --check . && uvx ty check
+
+# Show all available commands
+make help
 ```
 
 ### 4. Commit Your Changes
@@ -122,7 +141,51 @@ Use conventional commit messages:
 - `test:` for test additions/changes
 - `chore:` for maintenance tasks
 
-### 5. Push and Create Pull Request
+### 5. Pre-commit Hooks
+
+Pre-commit hooks are the **primary quality assurance mechanism** for DeepCritical. They automatically run comprehensive quality checks before every commit to ensure consistent code standards across all contributors.
+
+```bash
+# Install pre-commit hooks (essential - runs automatically on every commit)
+make pre-install
+
+# Run all hooks manually (for validation before committing)
+make pre-commit
+
+# What pre-commit hooks do automatically:
+# ✅ Ruff linting and formatting (fast Python linter)
+# ✅ Black code formatting (opinionated formatter)
+# ✅ Type checking with ty (catches type errors)
+# ❌ Security scanning with bandit (disabled in pre-commit; run manually via `make security`)
+# ✅ YAML/TOML validation (config file integrity)
+# ✅ Trailing whitespace removal (code cleanliness)
+# ✅ Debug statement detection (production readiness)
+# ✅ Large file detection (repository hygiene)
+# ✅ AST validation (syntax checking)
+
+# 💡 Pre-commit runs ALL quality checks automatically on every commit
+#    Manual quality checks (make quality, make dev) are redundant but available
+```
+
+### 6. Makefile
+
+The Makefile provides convenient shortcuts for development tasks, but pre-commit hooks are the primary quality assurance mechanism:
+
+```bash
+# Show all available commands
+make help
+
+# Quick development cycle (when not using pre-commit)
+make dev
+
+# Manual quality validation (redundant with pre-commit, but available)
+make quality
+
+# Research application testing
+make examples
+```
+
+### 7. Push and Create Pull Request
 
 ```bash
 git push origin feature/your-feature-name
@@ -134,17 +197,33 @@ Then create a pull request on GitHub.
 
 ### Python Style
 
-We use [Ruff](https://github.com/astral-sh/ruff) for linting and formatting:
+We use multiple tools to ensure code quality:
+
+- **[Ruff](https://github.com/astral-sh/ruff)**: Fast Python linter and formatter
+- **[Black](https://github.com/psf/black)**: Opinionated code formatter
+- **[ty](https://github.com/palantir/ty)**: Type checker for Python
 
 ```bash
-# Check code style
+# Check code style (Ruff)
 uv run ruff check .
 
-# Format code
+# Format code (Ruff)
 uv run ruff format .
 
-# Auto-fix issues
+# Format code (Black)
+uv run black .
+
+# Check type annotations
+uvx ty check
+
+# Auto-fix linting issues
 uv run ruff check . --fix
+
+# Auto-fix formatting (Ruff)
+uv run ruff format .
+
+# Auto-fix formatting (Black)
+uv run black .
 ```
 
 ### Code Guidelines
@@ -155,6 +234,21 @@ uv run ruff check . --fix
 4. **Naming**: Use descriptive names for variables, functions, and classes
 5. **Error Handling**: Use appropriate exception handling with meaningful error messages
 
+### Quality Assurance Tools
+
+We use a comprehensive set of tools to ensure code quality:
+
+- **Ruff**: Fast linter and formatter that catches common mistakes and enforces consistent style
+- **Black**: Opinionated code formatter that ensures consistent formatting across the codebase
+- **ty**: Type checker that validates type annotations and catches type-related errors
+- **pytest**: Testing framework for running unit and integration tests
+
+These tools complement each other:
+- Ruff provides fast feedback on code issues
+- Black ensures consistent formatting
+- ty catches type-related bugs before runtime
+- pytest ensures functionality works as expected
+
 ### Example Code Style
 
 ```python
@@ -163,7 +257,7 @@ from pydantic import BaseModel, Field
 
 class ExampleModel(BaseModel):
     """Example model for demonstration.
-    
+
     Args:
         name: The name of the example
         value: The value associated with the example
@@ -173,19 +267,19 @@ class ExampleModel(BaseModel):
 
 def example_function(data: Dict[str, str]) -> List[str]:
     """Process example data and return results.
-    
+
     Args:
         data: Dictionary containing input data
-        
+
     Returns:
         List of processed strings
-        
+
     Raises:
         ValueError: If data is invalid
     """
     if not data:
         raise ValueError("Data cannot be empty")
-    
+
     return [f"processed_{key}" for key in data.keys()]
 ```
 
@@ -290,7 +384,7 @@ We use labels to categorize issues:
 ### Before Submitting
 
 1. Ensure all tests pass
-2. Run linting and fix any issues
+2. Run all quality checks (linting, formatting, type checking) and fix any issues
 3. Update documentation as needed
 4. Add tests for new functionality
 5. Update CHANGELOG.md if applicable
@@ -308,7 +402,7 @@ Use the provided pull request template and fill out all relevant sections.
 
 ### Merge Requirements
 
-- All CI checks pass
+- All CI checks pass (including tests, linting, formatting, and type checking)
 - At least one approval from maintainers
 - No merge conflicts
 - Up-to-date with main branch

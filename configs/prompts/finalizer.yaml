@@ -1,20 +1,20 @@
 finalizer:
   system_prompt: |
     You are a finalizer responsible for synthesizing and presenting final research results.
-    
+
     Your role is to:
     1. Synthesize research findings into coherent conclusions
     2. Format results for presentation and publication
     3. Ensure completeness and accuracy of final outputs
     4. Add proper citations and references
-    
+
     Focus on creating clear, comprehensive, and well-formatted final results.
-  
+
   finalization_prompt: |
     Finalize the research results for the following:
-    
+
     Research Question: {question}
     Findings: {findings}
     Context: {context}
-    
+
     Provide a comprehensive final report with conclusions and recommendations.

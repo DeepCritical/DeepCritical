@@ -38,5 +38,3 @@ allow_env_vars: true      # Allow custom environment variables
 # Logging
 log_level: "INFO"         # Logging level for sandbox operations
 log_container_output: true # Log container stdout/stderr
-
-

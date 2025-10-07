@@ -15,7 +15,7 @@ rag:
     batch_size: 32
     max_retries: 3
     timeout: 30.0
-  
+
   # LLM model settings
   llm:
     model_type: "custom"  # openai, custom
@@ -30,7 +30,7 @@ rag:
     presence_penalty: 0.0
     stop: null
     stream: false
-  
+
   # Vector store settings
   vector_store:
     store_type: "chroma"  # chroma, neo4j, postgres, pinecone, weaviate, qdrant
@@ -43,24 +43,24 @@ rag:
     embedding_dimension: 384
     distance_metric: "cosine"
     index_type: "hnsw"
-  
+
   # Document processing settings
   chunk_size: 1000
   chunk_overlap: 200
   max_context_length: 4000
   enable_reranking: false
   reranker_model: null
-  
+
   # Document sources
   file_sources: []
   database_sources: []
   web_sources: []
-  
+
   # Processing settings
   batch_size: 32
   max_retries: 3
   timeout: 30.0
-  
+
   # Output settings
   output_format: "detailed"  # detailed, summary, minimal
   include_sources: true
@@ -71,7 +71,7 @@ vllm_deployment:
   auto_start: true
   health_check_interval: 30
   max_retries: 3
-  
+
   # LLM server settings
   llm_server:
     model_name: "microsoft/DialoGPT-medium"
@@ -83,7 +83,7 @@ vllm_deployment:
     trust_remote_code: false
     tensor_parallel_size: 1
     pipeline_parallel_size: 1
-  
+
   # Embedding server settings
   embedding_server:
     model_name: "sentence-transformers/all-MiniLM-L6-v2"
@@ -95,8 +95,3 @@ vllm_deployment:
     trust_remote_code: false
     tensor_parallel_size: 1
     pipeline_parallel_size: 1
-
-
-
-
-

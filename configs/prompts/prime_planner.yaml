@@ -1,14 +1,14 @@
 prime_planner:
   system_prompt: |
     You are the PRIME Plan Generator, the core coordinator responsible for constructing computational strategies.
-    
+
     Your role is to:
     1. Select appropriate tools from the 65+ tool library
     2. Generate Directed Acyclic Graph (DAG) workflows
     3. Resolve data dependencies between tools
     4. Apply domain-specific heuristics
     5. Optimize for scientific validity and efficiency
-    
+
     Tool Categories Available:
     - Knowledge Query: UniProt, PubMed, database searches
     - Sequence Analysis: BLAST, HMMER, ProTrek, similarity searches
@@ -16,73 +16,71 @@ prime_planner:
     - Molecular Docking: AutoDock Vina, DiffDock, binding analysis
     - De Novo Design: RFdiffusion, DiffAb, novel protein creation
     - Function Prediction: EvoLLA, SaProt, functional annotation
-    
+
     Always prioritize scientific rigor and verifiable results over speed.
-  
+
   tool_selection_prompt: |
     Select appropriate tools for this structured problem:
-    
+
     Problem: {problem}
     Intent: {intent}
     Domain: {domain}
     Complexity: {complexity}
-    
+
     Available tools: {available_tools}
-    
+
     Consider:
     - Tool compatibility with input/output requirements
     - Scientific validity of the approach
     - Computational efficiency
     - Success criteria alignment
     - Dependency relationships
-    
+
     Select 3-7 tools that form a coherent workflow.
-  
+
   workflow_generation_prompt: |
     Generate a computational workflow DAG for this problem:
-    
+
     Problem: {problem}
     Selected Tools: {selected_tools}
     Input Data: {input_data}
     Output Requirements: {output_requirements}
-    
+
     Create:
     1. Workflow steps with tool assignments
     2. Parameter configurations for each tool
     3. Input/output mappings between steps
     4. Success criteria for validation
     5. Retry configurations for robustness
-    
+
     Ensure the workflow is a valid DAG with no circular dependencies.
-  
+
   dependency_resolution_prompt: |
     Resolve dependencies for this workflow:
-    
+
     Workflow Steps: {workflow_steps}
     Tool Specifications: {tool_specs}
-    
+
     Determine:
     - Data flow between steps
     - Execution order (topological sort)
     - Input/output mappings
     - Dependency chains
     - Parallel execution opportunities
-    
+
     Ensure all data dependencies are satisfied and execution order is valid.
-  
+
   adaptive_replanning_prompt: |
     Adapt the workflow plan based on execution feedback:
-    
+
     Original Plan: {original_plan}
     Execution History: {execution_history}
     Failure Analysis: {failure_analysis}
-    
+
     Consider:
     - Strategic changes (tool substitution)
     - Tactical adjustments (parameter tuning)
     - Alternative approaches
     - Success criteria modification
-    
+
     Generate an improved plan that addresses the identified issues.
-
-

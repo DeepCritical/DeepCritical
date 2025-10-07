@@ -39,9 +39,9 @@
 
 ## Changes Made
 <!-- Provide a detailed list of changes -->
-- 
-- 
-- 
+-
+-
+-
 
 ## Testing
 <!-- Describe the testing you've done -->
@@ -93,9 +93,9 @@ flows:
 
 ### Performance Details
 <!-- If applicable, provide performance details -->
-- Execution time: 
-- Memory usage: 
-- Other metrics: 
+- Execution time:
+- Memory usage:
+- Other metrics:
 
 ## Breaking Changes
 <!-- If this is a breaking change, describe what breaks and how to migrate -->

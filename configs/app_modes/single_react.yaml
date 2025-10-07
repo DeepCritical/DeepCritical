@@ -36,6 +36,3 @@ global_break_conditions:
 execution_strategy: "simple"
 max_total_iterations: 10
 max_total_time: 300.0
-
-
-

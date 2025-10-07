@@ -15,23 +15,23 @@ data_sources:
   go:
     evidence_codes: ${bioinformatics.evidence_codes.experimental}  # IDA, EXP, IPI
     quality_threshold: ${bioinformatics.quality.minimum_threshold}  # 0.7
-  
+
   pubmed:
     max_results: ${bioinformatics.pubmed.comprehensive_max_results}  # 100
-  
+
   geo:
     enabled: true
     include_expression: true
-  
+
   drugbank:
     enabled: true
     include_targets: true
     include_mechanisms: true
-  
+
   pdb:
     enabled: true
     include_interactions: true
-  
+
   intact:
     enabled: true
     confidence_min: ${bioinformatics.intact.low_confidence_min}  # 0.5
@@ -46,9 +46,3 @@ reasoning:
 
 performance:
   max_concurrent_requests: 8  # Increased for comprehensive processing
-
-
-
-
-
-

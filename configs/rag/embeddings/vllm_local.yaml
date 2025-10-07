@@ -7,8 +7,3 @@ num_dimensions: 384
 batch_size: 32
 max_retries: 3
 timeout: 30.0
-
-
-
-
-

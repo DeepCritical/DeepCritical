@@ -52,6 +52,3 @@ multi_agent_coordination:
   enable_consensus_building: true
   enable_quality_assessment: true
   max_coordination_rounds: 5
-
-
-

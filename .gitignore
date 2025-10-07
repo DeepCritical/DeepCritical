@@ -6,7 +6,7 @@ docs
 test_artifacts/
 bandit-report.json
 codecov.yml
-
+.ruff_cache
 
 # Python
 __pycache__/

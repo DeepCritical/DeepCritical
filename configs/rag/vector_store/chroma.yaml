@@ -9,8 +9,3 @@ api_key: null
 embedding_dimension: 1536
 distance_metric: "cosine"
 index_type: "hnsw"
-
-
-
-
-

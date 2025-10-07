@@ -1,7 +1,3 @@
 enabled: true
 params:
   default_tools: ["search", "summarize"]
-
-
-
-

@@ -2,7 +2,3 @@ enabled: true
 params:
   provider: "jina"
   num_results: 50
-
-
-
-

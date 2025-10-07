@@ -17,7 +17,7 @@ rag:
     model_name: "sentence-transformers/all-MiniLM-L6-v2"
     base_url: "localhost:8001"
     num_dimensions: 384
-  
+
   llm:
     model_type: "custom"
     model_name: "microsoft/DialoGPT-medium"
@@ -25,22 +25,17 @@ rag:
     port: 8000
     max_tokens: 2048
     temperature: 0.7
-  
+
   vector_store:
     store_type: "chroma"
     host: "localhost"
     port: 8000
     collection_name: "research_docs"
     embedding_dimension: 384
-  
+
   chunk_size: 1000
   chunk_overlap: 200
   max_context_length: 4000
 
 # Sample question for RAG
 question: "What is machine learning and how does it work?"
-
-
-
-
-

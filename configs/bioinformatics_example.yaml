@@ -34,19 +34,19 @@ flows:
       intact:
         enabled: true
         confidence_min: 0.7
-    
+
     fusion:
       quality_threshold: 0.85
       max_entities: 500
       cross_reference_enabled: true
       temporal_consistency: true
-    
+
     reasoning:
       model: "anthropic:claude-sonnet-4-0"
       confidence_threshold: 0.8
       max_reasoning_steps: 15
       integrative_approach: true
-    
+
     agents:
       data_fusion:
         model: "anthropic:claude-sonnet-4-0"
@@ -59,20 +59,20 @@ flows:
       quality_assessment:
         model: "anthropic:claude-sonnet-4-0"
         metrics: ["evidence_quality", "cross_consistency", "completeness", "temporal_relevance"]
-    
+
     output:
       include_quality_metrics: true
       include_reasoning_chain: true
       include_supporting_evidence: true
       include_processing_notes: true
       format: "detailed"
-    
+
     performance:
       parallel_processing: true
       max_concurrent_requests: 3
       cache_enabled: true
       cache_ttl: 1800
-    
+
     validation:
       strict_mode: false
       validate_evidence_codes: true
@@ -101,9 +101,3 @@ pyd_ai:
 retries: 3
 output_dir: "outputs"
 log_level: "INFO"
-
-
-
-
-
-

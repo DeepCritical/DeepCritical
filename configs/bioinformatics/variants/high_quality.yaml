@@ -16,7 +16,7 @@ data_sources:
     evidence_codes: ${bioinformatics.evidence_codes.gold_standard}  # Only IDA
     year_min: ${bioinformatics.temporal.current_year}  # 2023
     quality_threshold: ${bioinformatics.quality.gold_standard_threshold}  # 0.95
-  
+
   pubmed:
     max_results: ${bioinformatics.pubmed.high_quality_max_results}  # 20
     year_min: ${bioinformatics.temporal.current_year}  # 2023
@@ -30,9 +30,3 @@ reasoning:
 
 performance:
   max_concurrent_requests: 2  # Reduced for high-quality processing
-
-
-
-
-
-

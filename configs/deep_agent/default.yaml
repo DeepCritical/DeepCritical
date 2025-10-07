@@ -22,7 +22,7 @@ deep_agent:
       timeout: 120.0
       tools: ["write_todos", "task"]
       capabilities: ["planning", "task_management"]
-    
+
     filesystem_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -30,7 +30,7 @@ deep_agent:
       timeout: 60.0
       tools: ["list_files", "read_file", "write_file", "edit_file"]
       capabilities: ["filesystem", "content_management"]
-    
+
     research_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -38,7 +38,7 @@ deep_agent:
       timeout: 300.0
       tools: ["web_search", "rag_query", "task"]
       capabilities: ["research", "analysis"]
-    
+
     general_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -46,46 +46,46 @@ deep_agent:
       timeout: 600.0
       tools: ["task", "write_todos", "list_files", "read_file"]
       capabilities: ["orchestration", "task_delegation"]
-  
+
   # Middleware configuration
   middleware:
     planning_middleware:
       enabled: true
       system_prompt_addition: "You have access to task planning and management tools."
-    
+
     filesystem_middleware:
       enabled: true
       system_prompt_addition: "You have access to filesystem operations and content management tools."
-    
+
     subagent_middleware:
       enabled: true
       system_prompt_addition: "You can spawn specialized sub-agents for complex tasks."
       max_subagents: 5
       subagent_timeout: 300.0
-  
+
   # State management
   state:
     enable_persistence: true
     state_file: "deep_agent_state.json"
     auto_save_interval: 30.0
-  
+
   # Tool configuration
   tools:
     write_todos:
       enabled: true
       max_todos: 50
       auto_cleanup: true
-    
+
     task:
       enabled: true
       max_concurrent_tasks: 3
       task_timeout: 300.0
-    
+
     filesystem:
       enabled: true
       max_file_size: 10485760  # 10MB
       allowed_extensions: [".md", ".txt", ".py", ".json", ".yaml", ".yml"]
-  
+
   # Orchestration settings
   orchestration:
     strategy: "collaborative"  # Options: collaborative, sequential, hierarchical
@@ -109,6 +109,3 @@ log_level: "INFO"
 output_dir: "outputs"
 save_results: true
 save_state: true
-
-
-

@@ -24,7 +24,7 @@ deep_agent:
       tools: ["write_todos", "task", "analyze_requirements"]
       capabilities: ["planning", "task_management", "requirement_analysis"]
       system_prompt: "You are an advanced planning specialist with expertise in complex project management and workflow optimization."
-    
+
     filesystem_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -33,7 +33,7 @@ deep_agent:
       tools: ["list_files", "read_file", "write_file", "edit_file", "search_files", "backup_files"]
       capabilities: ["filesystem", "content_management", "version_control"]
       system_prompt: "You are a filesystem specialist with expertise in file operations, content management, and project organization."
-    
+
     research_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -42,7 +42,7 @@ deep_agent:
       tools: ["web_search", "rag_query", "task", "analyze_data", "synthesize_information"]
       capabilities: ["research", "analysis", "data_synthesis", "information_retrieval"]
       system_prompt: "You are a research specialist with expertise in information gathering, data analysis, and knowledge synthesis."
-    
+
     code_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -51,7 +51,7 @@ deep_agent:
       tools: ["write_code", "review_code", "test_code", "debug_code", "refactor_code"]
       capabilities: ["code_generation", "code_review", "testing", "debugging"]
       system_prompt: "You are a code specialist with expertise in software development, code review, and quality assurance."
-    
+
     analysis_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -60,7 +60,7 @@ deep_agent:
       tools: ["analyze_data", "generate_insights", "create_visualizations", "statistical_analysis"]
       capabilities: ["data_analysis", "insight_generation", "visualization", "statistics"]
       system_prompt: "You are an analysis specialist with expertise in data analysis, statistical modeling, and insight generation."
-    
+
     general_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -69,7 +69,7 @@ deep_agent:
       tools: ["task", "write_todos", "list_files", "read_file", "coordinate_agents"]
       capabilities: ["orchestration", "task_delegation", "coordination", "synthesis"]
       system_prompt: "You are a general-purpose orchestrator with expertise in coordinating multiple specialized agents and synthesizing complex results."
-  
+
   # Advanced middleware configuration
   middleware:
     planning_middleware:
@@ -77,33 +77,33 @@ deep_agent:
       system_prompt_addition: "You have access to advanced task planning and management tools. Focus on creating efficient, scalable workflows."
       enable_adaptive_planning: true
       planning_horizon: 7  # days
-    
+
     filesystem_middleware:
       enabled: true
       system_prompt_addition: "You have access to comprehensive filesystem operations and content management tools. Maintain project organization and version control."
       enable_backup: true
       enable_versioning: true
-    
+
     subagent_middleware:
       enabled: true
       system_prompt_addition: "You can spawn specialized sub-agents for complex tasks. Coordinate their work and synthesize their results."
       max_subagents: 8
       subagent_timeout: 450.0
       enable_subagent_communication: true
-    
+
     analysis_middleware:
       enabled: true
       system_prompt_addition: "You have access to advanced analysis and visualization tools. Focus on generating actionable insights."
       enable_statistical_analysis: true
       enable_visualization: true
-    
+
     code_middleware:
       enabled: true
       system_prompt_addition: "You have access to code generation, review, and testing tools. Focus on producing high-quality, maintainable code."
       enable_code_review: true
       enable_testing: true
       enable_documentation: true
-  
+
   # Advanced state management
   state:
     enable_persistence: true
@@ -113,7 +113,7 @@ deep_agent:
     max_state_size: 10485760  # 10MB
     enable_state_history: true
     history_retention: 50
-  
+
   # Advanced tool configuration
   tools:
     write_todos:
@@ -122,35 +122,35 @@ deep_agent:
       auto_cleanup: true
       enable_prioritization: true
       enable_dependencies: true
-    
+
     task:
       enabled: true
       max_concurrent_tasks: 5
       task_timeout: 450.0
       enable_task_chaining: true
       enable_task_monitoring: true
-    
+
     filesystem:
       enabled: true
       max_file_size: 52428800  # 50MB
       allowed_extensions: [".md", ".txt", ".py", ".json", ".yaml", ".yml", ".csv", ".xlsx", ".pdf"]
       enable_file_watching: true
       enable_auto_backup: true
-    
+
     analysis:
       enabled: true
       max_data_size: 104857600  # 100MB
       enable_statistical_tests: true
       enable_visualization: true
       visualization_formats: ["png", "svg", "html"]
-    
+
     code:
       enabled: true
       max_code_size: 1048576  # 1MB
       enable_syntax_highlighting: true
       enable_linting: true
       supported_languages: ["python", "javascript", "typescript", "java", "cpp", "go"]
-  
+
   # Advanced orchestration settings
   orchestration:
     strategy: "collaborative"  # Options: collaborative, sequential, hierarchical, consensus
@@ -161,7 +161,7 @@ deep_agent:
     enable_performance_monitoring: true
     enable_adaptive_scheduling: true
     enable_load_balancing: true
-  
+
   # Advanced features
   advanced_features:
     enable_multi_modal: true
@@ -197,6 +197,3 @@ save_metrics: true
 save_logs: true
 enable_compression: true
 output_formats: ["json", "yaml", "markdown", "html"]
-
-
-

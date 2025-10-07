@@ -13,14 +13,14 @@ stages:
     semantic_analysis: true
     syntactic_validation: true
     problem_structuring: true
-  
+
   plan:
     enabled: true
     dag_generation: true
     tool_selection: true
     dependency_resolution: true
     adaptive_replanning: true
-  
+
   execute:
     enabled: true
     tool_execution: true
@@ -38,7 +38,7 @@ tools:
     - molecular_docking
     - de_novo_design
     - function_prediction
-  
+
   validation:
     input_schema_check: true
     output_schema_check: true
@@ -54,5 +54,3 @@ replanning:
     quantitative_metrics: true
     binary_outcomes: true
     scientific_validity: true
-
-

@@ -225,6 +225,3 @@ global_break_conditions:
 execution_strategy: "adaptive"
 max_total_iterations: 30
 max_total_time: 900.0
-
-
-

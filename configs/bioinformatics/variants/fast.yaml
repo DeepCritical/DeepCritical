@@ -15,20 +15,20 @@ data_sources:
   go:
     enabled: true
     evidence_codes: ${bioinformatics.evidence_codes.high_quality}  # IDA, EXP
-  
+
   pubmed:
     enabled: true
     max_results: ${bioinformatics.pubmed.fast_max_results}  # 10
-  
+
   geo:
     enabled: false
-  
+
   drugbank:
     enabled: false
-  
+
   pdb:
     enabled: false
-  
+
   intact:
     enabled: false
 
@@ -44,9 +44,3 @@ performance:
   max_concurrent_requests: 2
   cache_enabled: true
   cache_ttl: 1800  # Reduced cache TTL for faster updates
-
-
-
-
-
-

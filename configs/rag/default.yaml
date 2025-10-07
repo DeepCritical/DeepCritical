@@ -28,8 +28,3 @@ timeout: 30.0
 output_format: "detailed"  # detailed, summary, minimal
 include_sources: true
 include_scores: true
-
-
-
-
-

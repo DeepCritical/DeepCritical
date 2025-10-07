@@ -29,4 +29,3 @@ vllm:
 
   speculative:
     num_speculative_tokens: 7     # More speculative tokens for speed
-

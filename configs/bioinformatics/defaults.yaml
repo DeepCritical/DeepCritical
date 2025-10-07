@@ -128,9 +128,3 @@ error_handling:
   max_retries: 3
   retry_delay: 2
   exponential_backoff: true
-
-
-
-
-
-

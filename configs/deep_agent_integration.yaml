@@ -6,16 +6,16 @@ flows:
   # Existing flows
   prime:
     enabled: false
-  
+
   bioinformatics:
     enabled: false
-  
+
   rag:
     enabled: false
-  
+
   deepsearch:
     enabled: false
-  
+
   # DeepAgent flow
   deep_agent:
     enabled: true
@@ -38,7 +38,7 @@ deep_agent:
       tools: ["task", "write_todos", "coordinate_workflows", "integrate_results"]
       capabilities: ["orchestration", "workflow_integration", "result_synthesis"]
       system_prompt: "You are a workflow orchestrator that can integrate DeepAgent capabilities with existing DeepResearch workflows like PRIME, bioinformatics, RAG, and deepsearch."
-    
+
     planning_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -47,7 +47,7 @@ deep_agent:
       tools: ["write_todos", "task", "workflow_planning"]
       capabilities: ["planning", "workflow_design", "integration_planning"]
       system_prompt: "You are a planning specialist that can design workflows integrating DeepAgent with other DeepResearch components."
-    
+
     filesystem_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -56,7 +56,7 @@ deep_agent:
       tools: ["list_files", "read_file", "write_file", "edit_file", "manage_configs"]
       capabilities: ["filesystem", "config_management", "project_structure"]
       system_prompt: "You are a filesystem specialist that can manage project files and configurations for integrated workflows."
-    
+
     research_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -65,7 +65,7 @@ deep_agent:
       tools: ["web_search", "rag_query", "task", "bioinformatics_query", "deepsearch_query"]
       capabilities: ["research", "multi_source_integration", "domain_expertise"]
       system_prompt: "You are a research specialist that can leverage multiple DeepResearch capabilities including RAG, bioinformatics, and deepsearch."
-    
+
     integration_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -74,7 +74,7 @@ deep_agent:
       tools: ["integrate_workflows", "synthesize_results", "coordinate_agents", "manage_state"]
       capabilities: ["integration", "synthesis", "coordination", "state_management"]
       system_prompt: "You are an integration specialist that can coordinate between different DeepResearch workflows and synthesize their results."
-  
+
   # Integration middleware
   middleware:
     integration_middleware:
@@ -82,21 +82,21 @@ deep_agent:
       system_prompt_addition: "You can integrate with existing DeepResearch workflows including PRIME, bioinformatics, RAG, and deepsearch."
       enable_workflow_routing: true
       enable_result_integration: true
-    
+
     planning_middleware:
       enabled: true
       system_prompt_addition: "You can plan workflows that integrate multiple DeepResearch capabilities."
-    
+
     filesystem_middleware:
       enabled: true
       system_prompt_addition: "You can manage files and configurations for integrated workflows."
-    
+
     subagent_middleware:
       enabled: true
       system_prompt_addition: "You can spawn sub-agents that work with specific DeepResearch workflows."
       max_subagents: 6
       subagent_timeout: 300.0
-  
+
   # Integration state management
   state:
     enable_persistence: true
@@ -104,7 +104,7 @@ deep_agent:
     auto_save_interval: 20.0
     enable_workflow_state_sharing: true
     enable_cross_workflow_state: true
-  
+
   # Integration tool configuration
   tools:
     write_todos:
@@ -112,25 +112,25 @@ deep_agent:
       max_todos: 75
       auto_cleanup: true
       enable_workflow_tracking: true
-    
+
     task:
       enabled: true
       max_concurrent_tasks: 4
       task_timeout: 300.0
       enable_workflow_delegation: true
-    
+
     filesystem:
       enabled: true
       max_file_size: 20971520  # 20MB
       allowed_extensions: [".md", ".txt", ".py", ".json", ".yaml", ".yml", ".csv", ".xlsx"]
       enable_config_management: true
-    
+
     integration:
       enabled: true
       enable_workflow_routing: true
       enable_result_synthesis: true
       enable_state_sharing: true
-  
+
   # Integration orchestration
   orchestration:
     strategy: "hierarchical"  # Hierarchical coordination for complex integrations
@@ -139,7 +139,7 @@ deep_agent:
     enable_metrics: true
     metrics_retention: 150
     enable_workflow_monitoring: true
-  
+
   # Workflow integration settings
   workflow_integration:
     enable_prime_integration: true
@@ -167,6 +167,3 @@ save_results: true
 save_state: true
 save_integration_metrics: true
 enable_workflow_tracing: true
-
-
-

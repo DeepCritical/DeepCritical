@@ -166,6 +166,3 @@ sub_workflows:
       enable_consensus_building: true
       scoring_scale: "1-10"
     output_format: evaluation_results
-
-
-

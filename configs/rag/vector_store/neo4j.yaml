@@ -11,8 +11,3 @@ distance_metric: "cosine"
 index_type: "hnsw"
 username: "neo4j"
 password: "password"
-
-
-
-
-

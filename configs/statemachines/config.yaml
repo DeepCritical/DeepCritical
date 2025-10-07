@@ -8,4 +8,3 @@ deepresearch:
     - PrepareChallenge
     - RunChallenge
     - EvaluateChallenge
-

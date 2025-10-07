@@ -23,7 +23,7 @@ deep_agent:
       timeout: 60.0
       tools: ["write_todos"]
       capabilities: ["planning"]
-    
+
     filesystem_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -31,7 +31,7 @@ deep_agent:
       timeout: 30.0
       tools: ["list_files", "read_file", "write_file"]
       capabilities: ["filesystem"]
-    
+
     research_agent:
       enabled: true
       model_name: "anthropic:claude-sonnet-4-0"
@@ -39,34 +39,34 @@ deep_agent:
       timeout: 120.0
       tools: ["web_search"]
       capabilities: ["research"]
-  
+
   # Basic middleware configuration
   middleware:
     planning_middleware:
       enabled: true
       system_prompt_addition: "You have access to basic task planning tools."
-    
+
     filesystem_middleware:
       enabled: true
       system_prompt_addition: "You have access to basic filesystem operations."
-  
+
   # Basic state management
   state:
     enable_persistence: false
     auto_save_interval: 60.0
-  
+
   # Basic tool configuration
   tools:
     write_todos:
       enabled: true
       max_todos: 20
       auto_cleanup: false
-    
+
     filesystem:
       enabled: true
       max_file_size: 1048576  # 1MB
       allowed_extensions: [".md", ".txt", ".py"]
-  
+
   # Basic orchestration settings
   orchestration:
     strategy: "sequential"  # Simple sequential execution
@@ -88,6 +88,3 @@ log_level: "WARNING"
 output_dir: "outputs"
 save_results: true
 save_state: false
-
-
-

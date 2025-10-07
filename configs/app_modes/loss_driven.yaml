@@ -221,6 +221,3 @@ global_break_conditions:
 execution_strategy: "loss_driven"
 max_total_iterations: 50
 max_total_time: 1200.0
-
-
-

@@ -123,7 +123,7 @@ It is important to skip using this tool when:
 Being proactive with task management demonstrates attentiveness and ensures you complete all requirements successfully
 Remember: If you only need to make a few tool calls to complete a task, and it is clear what you need to do, it is better to just do the task directly and NOT call this tool at all."""
 
-TASK_TOOL_DESCRIPTION = """Launch an ephemeral subagent to handle complex, multi-step independent tasks with isolated context windows. 
+TASK_TOOL_DESCRIPTION = """Launch an ephemeral subagent to handle complex, multi-step independent tasks with isolated context windows.
 
 Available agent types and the tools they have access to:
 - general-purpose: General-purpose agent for researching complex questions, searching for files and content, and executing multi-step tasks. When you are searching for a keyword or file and are not confident that you will find the right match in the first few tries use this agent to perform the search for you. This agent has access to all tools as the main agent.
@@ -214,7 +214,7 @@ function isPrime(n) {{
 Since significant content was created and the task was completed, now use the content-reviewer agent to review the work
 </commentary>
 assistant: Now let me use the content-reviewer agent to review the code
-assistant: Uses the Task tool to launch with the content-reviewer agent 
+assistant: Uses the Task tool to launch with the content-reviewer agent
 </example>
 
 <example>
@@ -250,18 +250,18 @@ Usage:
 - You can optionally specify a line offset and limit (especially handy for long files), but it's recommended to read the whole file by not providing these parameters
 - Any lines longer than 2000 characters will be truncated
 - Results are returned using cat -n format, with line numbers starting at 1
-- You have the capability to call multiple tools in a single response. It is always better to speculatively read multiple files as a batch that are potentially useful. 
+- You have the capability to call multiple tools in a single response. It is always better to speculatively read multiple files as a batch that are potentially useful.
 - If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
 - You should ALWAYS make sure a file has been read before editing it."""
 
-EDIT_FILE_TOOL_DESCRIPTION = """Performs exact string replacements in files. 
+EDIT_FILE_TOOL_DESCRIPTION = """Performs exact string replacements in files.
 
 Usage:
-- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file. 
+- You must use your `Read` tool at least once in the conversation before editing. This tool will error if you attempt an edit without reading the file.
 - When editing text from Read tool output, ensure you preserve the exact indentation (tabs/spaces) as it appears AFTER the line number prefix. The line number prefix format is: spaces + line number + tab. Everything after that tab is the actual file content to match. Never include any part of the line number prefix in the old_string or new_string.
 - ALWAYS prefer editing existing files. NEVER write new files unless explicitly required.
 - Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
-- The edit will FAIL if `old_string` is not unique in the file. Either provide a larger string with more surrounding context to make it unique or use `replace_all` to change every instance of `old_string`. 
+- The edit will FAIL if `old_string` is not unique in the file. Either provide a larger string with more surrounding context to make it unique or use `replace_all` to change every instance of `old_string`.
 - Use `replace_all` for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance."""
 
 WRITE_FILE_TOOL_DESCRIPTION = """Writes to a file in the local filesystem.
@@ -275,7 +275,7 @@ Usage:
 # System prompts
 WRITE_TODOS_SYSTEM_PROMPT = """## `write_todos`
 
-You have access to the `write_todos` tool to help you manage and plan complex objectives. 
+You have access to the `write_todos` tool to help you manage and plan complex objectives.
 Use this tool for complex objectives to ensure that you are tracking each necessary step and giving the user visibility into your progress.
 This tool is very helpful for planning complex objectives, and for breaking down these larger complex objectives into smaller steps.
 

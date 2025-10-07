@@ -17,4 +17,3 @@ vllm:
     enable_streaming: true        # Keep streaming for responsiveness
     enable_embeddings: false      # Disable embeddings for speed
     enable_batch_processing: false # Disable batching for single requests
-

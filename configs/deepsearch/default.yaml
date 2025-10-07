@@ -4,7 +4,7 @@
 # Core deep search settings
 deepsearch:
   enabled: true
-  
+
   # Search limits and constraints
   max_steps: 20
   token_budget: 10000
@@ -12,35 +12,35 @@ deepsearch:
   max_queries_per_step: 5
   max_reflect_per_step: 2
   max_clusters: 5
-  
+
   # Timeout settings
   search_timeout: 30
   url_visit_timeout: 30
   reflection_timeout: 15
-  
+
   # Quality thresholds
   min_confidence_score: 0.7
   min_quality_threshold: 0.8
-  
+
   # Search engines and sources
   search_engines:
     - google
     - bing
     - duckduckgo
-  
+
   # Evaluation criteria
   evaluation_criteria:
     - definitive
     - completeness
     - freshness
     - attribution
-  
+
   # Language settings
   language:
     auto_detect: true
     default_language: "en"
     search_language: null
-  
+
   # Agent personalities
   agent_personalities:
     analytical:
@@ -48,13 +48,13 @@ deepsearch:
       token_budget: 10000
       research_depth: comprehensive
       output_style: structured
-    
+
     thorough:
       max_steps: 30
       token_budget: 15000
       research_depth: deep
       output_style: detailed
-    
+
     quick:
       max_steps: 10
       token_budget: 5000
@@ -75,7 +75,7 @@ web_search:
       - "qdr:w"  # past week
       - "qdr:m"  # past month
       - "qdr:y"  # past year
-  
+
   # Search query optimization
   query_optimization:
     enabled: true
@@ -91,7 +91,7 @@ url_visit:
   extract_metadata: true
   follow_redirects: true
   respect_robots_txt: true
-  
+
   # Content filtering
   content_filters:
     min_content_length: 100
@@ -100,7 +100,7 @@ url_visit:
       - "*.pdf"
       - "*.doc"
       - "*.docx"
-  
+
   # User agent settings
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
@@ -113,7 +113,7 @@ reflection:
     - verification_needs
     - depth_requirements
     - source_validation
-  
+
   # Reflection strategies
   strategies:
     - gap_analysis
@@ -128,7 +128,7 @@ answer_generation:
   include_sources: true
   include_confidence: true
   include_processing_steps: true
-  
+
   # Output formatting
   output_format:
     include_question: true
@@ -141,7 +141,7 @@ answer_generation:
 # Quality evaluation
 evaluation:
   enabled: true
-  
+
   # Evaluation types
   types:
     definitive:
@@ -159,7 +159,7 @@ evaluation:
     plurality:
       enabled: true
       weight: 0.1
-  
+
   # Quality thresholds
   thresholds:
     min_definitive_score: 0.7
@@ -173,15 +173,15 @@ performance:
   # Execution tracking
   track_execution: true
   log_performance_metrics: true
-  
+
   # Resource limits
   max_memory_usage: "1GB"
   max_cpu_usage: 80
-  
+
   # Caching
   enable_caching: true
   cache_ttl: 3600  # 1 hour
-  
+
   # Rate limiting
   rate_limits:
     searches_per_minute: 30
@@ -194,14 +194,14 @@ error_handling:
   max_retries: 3
   retry_delay: 1
   exponential_backoff: true
-  
+
   # Error recovery
   graceful_degradation: true
   fallback_strategies:
     - reduce_search_scope
     - use_cached_results
     - simplify_question
-  
+
   # Logging
   log_errors: true
   log_level: INFO
@@ -215,20 +215,16 @@ integration:
     reflection: true
     answer_generator: true
     query_rewriter: true
-  
+
   # External services
   external_services:
     search_apis: []
     content_apis: []
     evaluation_apis: []
-  
+
   # Database integration
   database:
     enabled: false
     connection_string: null
     cache_results: true
     store_workflows: true
-
-
-
-

@@ -301,6 +301,3 @@ sub_workflows:
       enable_documentation_review: true
       enable_audit_trail_generation: true
     output_format: regulatory_compliance_results
-
-
-

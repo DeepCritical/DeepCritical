@@ -76,4 +76,3 @@ health_check:
   interval: 30
   timeout: 5
   max_retries: 3
-
