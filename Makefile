@@ -18,7 +18,7 @@ help:
 	@echo "  format       Run formatting (ruff + black)"
 	@echo "  type-check   Run type checking (ty)"
 	@echo "  quality      Run all quality checks"
-	@echo "  pre-commit   Run pre-commit hooks on all files"
+	@echo "  pre-commit   Run pre-commit hooks on all files (includes docs build)"
 	@echo ""
 	@echo "🔬 Research Applications:"
 	@echo "  research     Run basic research query"
@@ -105,6 +105,7 @@ docs:
 
 # Pre-commit targets
 pre-commit:
+	@echo "🔍 Running pre-commit hooks (includes docs build check)..."
 	pre-commit run --all-files
 
 pre-install:

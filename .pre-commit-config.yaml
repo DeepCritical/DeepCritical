@@ -66,6 +66,17 @@ repos:
     hooks:
       - id: check-added-large-files
 
+  # Documentation build check
+  - repo: local
+    hooks:
+      - id: docs-build
+        name: Build documentation
+        entry: uv run mkdocs build
+        language: system
+        files: ^(docs/|mkdocs\.yml)$
+        pass_filenames: false
+        description: Ensure documentation builds successfully
+
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
