@@ -4,9 +4,22 @@
 # Run all hooks: pre-commit run --all-files
 
 repos:
+
+  # Black formatter (disabled in favor of ruff-format)
+  # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
+#   - repo: https://github.com/psf/black-pre-commit-mirror
+#    rev: 25.9.0
+#    hooks:
+#      - id: black
+        # It is recommended to specify the latest version of Python
+        # supported by your project here, or alternatively use
+        # pre-commit's default_language_version, see
+        # https://pre-commit.com/#top_level-default_language_version
+#        language_version: python3.13
+
   # Ruff linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.14.0
     hooks:
       # Run the linter
       - id: ruff
@@ -14,17 +27,7 @@ repos:
       # Run the formatter
       - id: ruff-format
 
-  # Black formatter (disabled in favor of ruff-format)
-  # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
-  # - repo: https://github.com/psf/black-pre-commit-mirror
-  #   rev: 25.9.0
-  #   hooks:
-  #     - id: black
-  #       # It is recommended to specify the latest version of Python
-  #       # supported by your project here, or alternatively use
-  #       # pre-commit's default_language_version, see
-  #       # https://pre-commit.com/#top_level-default_language_version
-  #       language_version: python3.13
+
 
 #  Type checking with ty (disabled due to issues)
   - repo: local
@@ -46,7 +49,7 @@ repos:
 
   # Trailing whitespace and end-of-file fixes
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -59,7 +62,7 @@ repos:
 
   # Check for added large files
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
 

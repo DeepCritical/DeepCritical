@@ -138,9 +138,9 @@ class TestErrorAnalyzerPromptsVLLM(VLLMPromptTestBase):
         has_analysis_keywords = any(
             keyword in response.lower() for keyword in analysis_keywords
         )
-        assert (
-            has_analysis_keywords
-        ), "Response should contain analysis-related keywords"
+        assert has_analysis_keywords, (
+            "Response should contain analysis-related keywords"
+        )
 
     @pytest.mark.vllm
     @pytest.mark.optional

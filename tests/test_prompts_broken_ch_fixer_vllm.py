@@ -122,6 +122,6 @@ class TestBrokenCHFixerPromptsVLLM(VLLMPromptTestBase):
         assert len(response) > 0
 
         # Should not contain the � characters in the final output (as per the system prompt)
-        assert (
-            "�" not in response
-        ), "Response should not contain broken character symbols"
+        assert "�" not in response, (
+            "Response should not contain broken character symbols"
+        )

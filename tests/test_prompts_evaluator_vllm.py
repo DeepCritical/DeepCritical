@@ -256,9 +256,9 @@ class TestEvaluatorPromptsVLLM(VLLMPromptTestBase):
         ]
 
         for criterion in required_criteria:
-            assert (
-                criterion.lower() in DEFINITIVE_SYSTEM.lower()
-            ), f"Missing criterion: {criterion}"
+            assert criterion.lower() in DEFINITIVE_SYSTEM.lower(), (
+                f"Missing criterion: {criterion}"
+            )
 
         # Test the prompt formatting
         result = self._test_single_prompt(

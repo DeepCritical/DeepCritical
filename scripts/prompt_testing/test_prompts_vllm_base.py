@@ -257,9 +257,9 @@ class VLLMPromptTestBase:
         # Verify expected placeholders are present
         if expected_placeholders:
             for placeholder in expected_placeholders:
-                assert (
-                    placeholder in dummy_data
-                ), f"Missing expected placeholder: {placeholder}"
+                assert placeholder in dummy_data, (
+                    f"Missing expected placeholder: {placeholder}"
+                )
 
         # Test the prompt
         result = vllm_tester.test_prompt(
@@ -403,7 +403,7 @@ class VLLMPromptTestBase:
 - Total Prompts: {total}
 - Successful: {successful}
 - Failed: {total - successful}
-- Success Rate: {successful/total*100:.1f}%
+- Success Rate: {successful / total * 100:.1f}%
 
 **Results:**
 """

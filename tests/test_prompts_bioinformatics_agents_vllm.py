@@ -26,9 +26,9 @@ class TestBioinformaticsAgentsPromptsVLLM(VLLMPromptTestBase):
         self.assert_prompt_test_success(results, min_success_rate=0.8)
 
         # Check that we tested some prompts
-        assert (
-            len(results) > 0
-        ), "No prompts were tested from bioinformatics_agents module"
+        assert len(results) > 0, (
+            "No prompts were tested from bioinformatics_agents module"
+        )
 
     @pytest.mark.vllm
     @pytest.mark.optional
