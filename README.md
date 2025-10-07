@@ -245,7 +245,7 @@ uv run deepresearch --config-name=config_with_modes \
 
 This is a sketchpad for building the future of autonomous research—let's collaborate on making it a reality! 🔬✨
 
-# DeepCritical - Hydra + Pydantic Graph Deep Research with PRIME Architecture
+# DeepCritical - Hydra + Pydantic Graph Deep Research with Critical Review Tools 
 
 A comprehensive research automation platform architecture for autonomous scientific discovery workflows.
 

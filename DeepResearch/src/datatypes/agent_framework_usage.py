@@ -100,4 +100,3 @@ class UsageDetails(BaseModel):
             and self.total_token_count == other.total_token_count
             and self.additional_counts == other.additional_counts
         )
-
