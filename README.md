@@ -723,16 +723,6 @@ DeepCritical/
            return AssessDataQuality()
    ```
 
-4. **Register Deferred Tools**:
-   ```python
-   from pydantic_ai.tools import defer
-   
-   @defer
-   def go_annotation_processor(annotations, papers, evidence_codes):
-       # Processing logic
-       return processed_annotations
-   ```
-
 ## 🚀 Advanced Usage
 
 ### Batch Processing

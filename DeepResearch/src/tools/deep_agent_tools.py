@@ -39,7 +39,6 @@ from .base import ToolRunner, ToolSpec, ExecutionResult
 
 
 # Pydantic AI tool functions
-# @defer - not available in current pydantic-ai version
 def write_todos_tool(
     request: WriteTodosRequest, ctx: RunContext[DeepAgentState]
 ) -> WriteTodosResponse:
@@ -81,7 +80,6 @@ def write_todos_tool(
         )
 
 
-# @defer - not available in current pydantic-ai version
 def list_files_tool(ctx: RunContext[DeepAgentState]) -> ListFilesResponse:
     """Tool for listing files in the filesystem."""
     try:
@@ -97,7 +95,6 @@ def list_files_tool(ctx: RunContext[DeepAgentState]) -> ListFilesResponse:
         return ListFilesResponse(files=[], count=0)
 
 
-# @defer - not available in current pydantic-ai version
 def read_file_tool(
     request: ReadFileRequest, ctx: RunContext[DeepAgentState]
 ) -> ReadFileResponse:
@@ -174,7 +171,6 @@ def read_file_tool(
         )
 
 
-# @defer - not available in current pydantic-ai version
 def write_file_tool(
     request: WriteFileRequest, ctx: RunContext[DeepAgentState]
 ) -> WriteFileResponse:
@@ -205,7 +201,6 @@ def write_file_tool(
         )
 
 
-# @defer - not available in current pydantic-ai version
 def edit_file_tool(
     request: EditFileRequest, ctx: RunContext[DeepAgentState]
 ) -> EditFileResponse:
@@ -287,7 +282,6 @@ def edit_file_tool(
         )
 
 
-# @defer - not available in current pydantic-ai version
 def task_tool(
     request: TaskRequestModel, ctx: RunContext[DeepAgentState]
 ) -> TaskResponse:
