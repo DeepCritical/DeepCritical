@@ -156,6 +156,7 @@ make pre-commit
 # ✅ Ruff linting and formatting (fast Python linter)
 # ✅ Black code formatting (opinionated formatter)
 # ✅ Type checking with ty (catches type errors)
+# ✅ Documentation build validation (ensures docs build successfully)
 # ❌ Security scanning with bandit (disabled in pre-commit; run manually via `make security`)
 # ✅ YAML/TOML validation (config file integrity)
 # ✅ Trailing whitespace removal (code cleanliness)
@@ -181,8 +182,17 @@ make dev
 # Manual quality validation (redundant with pre-commit, but available)
 make quality
 
+# Documentation commands
+make docs-serve    # Start MkDocs development server
+make docs-build    # Build documentation
+make docs-deploy   # Deploy to GitHub Pages
+make docs-check    # Check documentation links
+
 # Research application testing
 make examples
+
+# Pre-commit (includes docs build validation)
+make pre-commit
 ```
 
 ### 7. Push and Create Pull Request
@@ -332,27 +342,80 @@ uv run pytest tests/ -k "test_example" -v
 
 ## Documentation
 
-### Documentation Structure
+### Documentation System
 
-- `README.md`: Main project documentation
-- `docs/`: Detailed documentation
-- `CONTRIBUTING.md`: This file
-- `SECURITY.md`: Security policy
-- Code docstrings: Inline documentation
+DeepCritical uses **MkDocs with Material theme** for comprehensive documentation with automatic API generation and live deployment to GitHub Pages.
+
+#### Key Features
+- **MkDocs + Material Theme**: Modern, responsive documentation with dark/light mode
+- **Automatic API Docs**: MkDocstrings generates API documentation from Python docstrings
+- **GitHub Pages Deployment**: Automated deployment from main and dev branches
+- **Pre-commit Integration**: Documentation builds are validated before commits
+- **Search & Navigation**: Full-text search and intelligent navigation
+
+#### Documentation Structure
+
+```
+docs/
+├── index.md                    # Home page
+├── core/                       # Core modules API docs
+├── utilities/                  # Utility modules API docs
+├── flows/                      # State machines and workflows
+├── tools/                      # Tool implementations
+├── getting-started/            # Installation, quickstart, config
+├── architecture/               # System design and overview
+├── user-guide/                 # Detailed usage guides
+├── development/                # Setup, testing, CI/CD
+├── examples/                   # Basic and advanced usage
+├── mkdocs.yml                  # MkDocs configuration
+└── README.md                   # Legacy docs
+```
 
 ### Writing Documentation
 
 1. **README Updates**: Update README.md for user-facing changes
-2. **API Documentation**: Use docstrings for all public APIs
-3. **Configuration Documentation**: Document new configuration options
-4. **Examples**: Provide usage examples for new features
+2. **MkDocs Pages**: Add new documentation in `docs/` directory
+3. **API Documentation**: Use Google-style docstrings for automatic API docs generation
+4. **Configuration Documentation**: Document new configuration options
+5. **Examples**: Provide usage examples for new features
+
+### Documentation Commands
+
+```bash
+# Development server (with live reload)
+make docs-serve
+# or: uv run mkdocs serve
+
+# Build documentation
+make docs-build
+# or: uv run mkdocs build
+
+# Deploy to GitHub Pages
+make docs-deploy
+# or: uv run mkdocs gh-deploy
+
+# Check documentation links (strict mode)
+make docs-check
+# or: uv run mkdocs build --strict
+
+# Pre-commit includes docs build validation
+make pre-commit
+```
+
+### Documentation Deployment
+
+- **Main Branch**: Deploys to `https://deepcritical.github.io/DeepCritical/`
+- **Dev Branch**: Deploys preview docs (temporarily replaces main for testing)
+- **Automatic**: Triggered by pushes to `docs/`, `mkdocs.yml`, or workflow files
+- **Pre-commit**: Validates docs build before commits
 
 ### Documentation Style
 
-- Use clear, concise language
-- Provide code examples
-- Include configuration examples
+- Use clear, concise language with code examples
+- Include configuration examples and command outputs
 - Update related documentation when making changes
+- Follow Google-style docstrings for API documentation
+- Use Mermaid diagrams for architecture visualization
 
 ## Issue Guidelines
 

@@ -101,7 +101,11 @@ build:
 	uv build
 
 docs:
-	@echo "Documentation build not configured yet"
+	@echo "📚 Documentation Commands:"
+	@echo "  docs-serve    Start MkDocs development server"
+	@echo "  docs-build    Build documentation"
+	@echo "  docs-deploy   Deploy to GitHub Pages"
+	@echo "  docs-check    Check documentation links"
 
 # Pre-commit targets
 pre-commit:
