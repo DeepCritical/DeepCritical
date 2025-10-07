@@ -7,9 +7,10 @@ types that align with DeepCritical's Pydantic AI architecture.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Protocol
-from pydantic import BaseModel, Field, field_validator
 from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol
+
+from pydantic import BaseModel, Field, field_validator
 
 # Import existing DeepCritical types
 
@@ -53,8 +54,8 @@ class ModelConfig(BaseModel):
 
     provider: ModelProvider = Field(..., description="Model provider")
     model_name: str = Field(..., description="Model name or identifier")
-    api_key: Optional[str] = Field(None, description="API key if required")
-    base_url: Optional[str] = Field(None, description="Base URL for API")
+    api_key: str | None = Field(None, description="API key if required")
+    base_url: str | None = Field(None, description="Base URL for API")
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: int = Field(2048, gt=0, description="Maximum tokens to generate")
     timeout: float = Field(30.0, gt=0, description="Request timeout in seconds")
@@ -75,7 +76,7 @@ class ToolConfig(BaseModel):
 
     name: str = Field(..., description="Tool name")
     description: str = Field(..., description="Tool description")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Tool parameters"
     )
     enabled: bool = Field(True, description="Whether tool is enabled")
@@ -97,12 +98,12 @@ class SubAgent(BaseModel):
     name: str = Field(..., description="Subagent name")
     description: str = Field(..., description="Subagent description")
     prompt: str = Field(..., description="System prompt for the subagent")
-    capabilities: List[AgentCapability] = Field(
+    capabilities: list[AgentCapability] = Field(
         default_factory=list, description="Agent capabilities"
     )
-    tools: List[ToolConfig] = Field(default_factory=list, description="Available tools")
-    model: Optional[ModelConfig] = Field(None, description="Model configuration")
-    middleware: List[str] = Field(
+    tools: list[ToolConfig] = Field(default_factory=list, description="Available tools")
+    model: ModelConfig | None = Field(None, description="Model configuration")
+    middleware: list[str] = Field(
         default_factory=list, description="Middleware components"
     )
     max_iterations: int = Field(10, gt=0, description="Maximum iterations")
@@ -147,9 +148,9 @@ class CustomSubAgent(BaseModel):
 
     name: str = Field(..., description="Custom subagent name")
     description: str = Field(..., description="Custom subagent description")
-    graph_config: Dict[str, Any] = Field(..., description="Graph configuration")
+    graph_config: dict[str, Any] = Field(..., description="Graph configuration")
     entry_point: str = Field(..., description="Graph entry point")
-    capabilities: List[AgentCapability] = Field(
+    capabilities: list[AgentCapability] = Field(
         default_factory=list, description="Agent capabilities"
     )
     timeout: float = Field(300.0, gt=0, description="Execution timeout in seconds")
@@ -217,14 +218,14 @@ class TaskRequest(BaseModel):
     task_id: str = Field(..., description="Unique task identifier")
     description: str = Field(..., description="Task description")
     subagent_type: str = Field(..., description="Type of subagent to use")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Task parameters"
     )
     priority: int = Field(0, description="Task priority (higher = more important)")
-    dependencies: List[str] = Field(
+    dependencies: list[str] = Field(
         default_factory=list, description="Task dependencies"
     )
-    timeout: Optional[float] = Field(None, description="Task timeout override")
+    timeout: float | None = Field(None, description="Task timeout override")
 
     @field_validator("description", mode="before")
     @classmethod
@@ -255,11 +256,11 @@ class TaskResult(BaseModel):
 
     task_id: str = Field(..., description="Task identifier")
     success: bool = Field(..., description="Whether task succeeded")
-    result: Optional[Dict[str, Any]] = Field(None, description="Task result data")
-    error: Optional[str] = Field(None, description="Error message if failed")
+    result: dict[str, Any] | None = Field(None, description="Task result data")
+    error: str | None = Field(None, description="Error message if failed")
     execution_time: float = Field(..., description="Execution time in seconds")
     subagent_used: str = Field(..., description="Subagent that executed the task")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
 
@@ -283,17 +284,17 @@ class AgentContext(BaseModel):
     """Context for agent execution."""
 
     session_id: str = Field(..., description="Session identifier")
-    user_id: Optional[str] = Field(None, description="User identifier")
-    conversation_history: List[Dict[str, Any]] = Field(
+    user_id: str | None = Field(None, description="User identifier")
+    conversation_history: list[dict[str, Any]] = Field(
         default_factory=list, description="Conversation history"
     )
-    shared_state: Dict[str, Any] = Field(
+    shared_state: dict[str, Any] = Field(
         default_factory=dict, description="Shared state between agents"
     )
-    active_tasks: List[str] = Field(
+    active_tasks: list[str] = Field(
         default_factory=list, description="Currently active task IDs"
     )
-    completed_tasks: List[str] = Field(
+    completed_tasks: list[str] = Field(
         default_factory=list, description="Completed task IDs"
     )
 
@@ -325,7 +326,7 @@ class AgentMetrics(BaseModel):
     failed_tasks: int = Field(0, description="Failed tasks")
     average_execution_time: float = Field(0.0, description="Average execution time")
     total_tokens_used: int = Field(0, description="Total tokens used")
-    last_activity: Optional[str] = Field(None, description="Last activity timestamp")
+    last_activity: str | None = Field(None, description="Last activity timestamp")
 
     @property
     def success_rate(self) -> float:
@@ -368,9 +369,9 @@ def create_subagent(
     name: str,
     description: str,
     prompt: str,
-    capabilities: Optional[List[AgentCapability]] = None,
-    tools: Optional[List[ToolConfig]] = None,
-    model: Optional[ModelConfig] = None,
+    capabilities: list[AgentCapability] | None = None,
+    tools: list[ToolConfig] | None = None,
+    model: ModelConfig | None = None,
     **kwargs,
 ) -> SubAgent:
     """Create a SubAgent with default values."""
@@ -388,9 +389,9 @@ def create_subagent(
 def create_custom_subagent(
     name: str,
     description: str,
-    graph_config: Dict[str, Any],
+    graph_config: dict[str, Any],
     entry_point: str,
-    capabilities: Optional[List[AgentCapability]] = None,
+    capabilities: list[AgentCapability] | None = None,
     **kwargs,
 ) -> CustomSubAgent:
     """Create a CustomSubAgent with default values."""

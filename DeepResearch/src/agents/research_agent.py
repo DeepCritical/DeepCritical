@@ -10,19 +10,21 @@ except Exception:  # pragma: no cover
 
 from omegaconf import DictConfig
 
+from ..datatypes.research import ResearchOutcome
 from ..prompts import PromptLoader
+from ..tools.pyd_ai_tools import (
+    _build_agent as _build_core_agent,
+)
 from ..tools.pyd_ai_tools import (
     _build_builtin_tools,
     _build_toolsets,
-    _build_agent as _build_core_agent,
 )
-from ..datatypes.research import ResearchOutcome
 
 
 def _compose_agent_system(
     cfg: DictConfig,
-    url_list: List[str] | None = None,
-    bad_requests: List[str] | None = None,
+    url_list: list[str] | None = None,
+    bad_requests: list[str] | None = None,
     beast: bool = False,
 ) -> str:
     loader = PromptLoader(cfg)
@@ -30,15 +32,12 @@ def _compose_agent_system(
     actions_wrapper = loader.get("agent", "actions_wrapper")
     footer = loader.get("agent", "footer")
 
-    sections: List[str] = [
+    sections: list[str] = [
         header.replace(
             "${current_date_utc}",
-            getattr(
-                __import__("datetime").datetime.now(
-                    __import__("datetime").timezone.utc
-                ),
-                "strftime",
-            )("%a, %d %b %Y %H:%M:%S GMT"),
+            (
+                __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+            ).strftime("%a, %d %b %Y %H:%M:%S GMT"),
         )
     ]
 
@@ -97,19 +96,19 @@ def _ensure_core_agent(cfg: DictConfig):
     return agent
 
 
-def _run_object(agent: Any, system: str, user: str) -> Dict[str, Any]:
+def _run_object(agent: Any, system: str, user: str) -> dict[str, Any]:
     # Minimal wrapper to a structured object; fallback to text and simple routing
     try:
         result = agent.run_sync({"system": system, "user": user})
         if hasattr(result, "object"):
-            return getattr(result, "object")
+            return result.object
         return {"action": "answer", "answer": getattr(result, "output", str(result))}
     except Exception:
         return {"action": "answer", "answer": ""}
 
 
-def _build_user(question: str, knowledge: List[Tuple[str, str]] | None = None) -> str:
-    messages: List[str] = []
+def _build_user(question: str, knowledge: list[tuple[str, str]] | None = None) -> str:
+    messages: list[str] = []
     for q, a in knowledge or []:
         messages.append(q)
         messages.append(a)
@@ -129,12 +128,12 @@ class ResearchAgent:
                 answer="", references=[], context={"error": "pydantic_ai missing"}
             )
 
-        knowledge: List[Tuple[str, str]] = []
-        url_pool: List[str] = []
-        bad_queries: List[str] = []
-        visited: List[str] = []
+        knowledge: list[tuple[str, str]] = []
+        url_pool: list[str] = []
+        bad_queries: list[str] = []
+        visited: list[str] = []
         final_answer: str = ""
-        refs: List[str] = []
+        refs: list[str] = []
 
         for step in range(1, self.max_steps + 1):
             system = _compose_agent_system(self.cfg, url_pool, bad_queries, beast=False)

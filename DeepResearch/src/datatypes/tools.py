@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .tool_specs import ToolSpec, ToolCategory
+from .tool_specs import ToolCategory, ToolSpec
 
 
 @dataclass
@@ -23,7 +23,7 @@ class ToolMetadata:
     category: ToolCategory
     description: str
     version: str = "1.0.0"
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -31,9 +31,9 @@ class ExecutionResult:
     """Result of tool execution."""
 
     success: bool
-    data: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ToolRunner(ABC):
@@ -43,11 +43,10 @@ class ToolRunner(ABC):
         self.tool_spec = tool_spec
 
     @abstractmethod
-    def run(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def run(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Execute the tool with given parameters."""
-        pass
 
-    def validate_inputs(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def validate_inputs(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Validate input parameters against tool specification."""
         for param_name, expected_type in self.tool_spec.input_schema.items():
             if param_name not in parameters:
@@ -81,7 +80,7 @@ class ToolRunner(ABC):
 class MockToolRunner(ToolRunner):
     """Mock implementation of tool runner for testing."""
 
-    def run(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def run(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock execution that returns simulated results."""
         # Validate inputs first
         validation = self.validate_inputs(parameters)
@@ -91,24 +90,23 @@ class MockToolRunner(ToolRunner):
         # Generate mock results based on tool type
         if self.tool_spec.category == ToolCategory.KNOWLEDGE_QUERY:
             return self._mock_knowledge_query(parameters)
-        elif self.tool_spec.category == ToolCategory.SEQUENCE_ANALYSIS:
+        if self.tool_spec.category == ToolCategory.SEQUENCE_ANALYSIS:
             return self._mock_sequence_analysis(parameters)
-        elif self.tool_spec.category == ToolCategory.STRUCTURE_PREDICTION:
+        if self.tool_spec.category == ToolCategory.STRUCTURE_PREDICTION:
             return self._mock_structure_prediction(parameters)
-        elif self.tool_spec.category == ToolCategory.MOLECULAR_DOCKING:
+        if self.tool_spec.category == ToolCategory.MOLECULAR_DOCKING:
             return self._mock_molecular_docking(parameters)
-        elif self.tool_spec.category == ToolCategory.DE_NOVO_DESIGN:
+        if self.tool_spec.category == ToolCategory.DE_NOVO_DESIGN:
             return self._mock_de_novo_design(parameters)
-        elif self.tool_spec.category == ToolCategory.FUNCTION_PREDICTION:
+        if self.tool_spec.category == ToolCategory.FUNCTION_PREDICTION:
             return self._mock_function_prediction(parameters)
-        else:
-            return ExecutionResult(
-                success=True,
-                data={"result": "mock_execution_completed"},
-                metadata={"tool": self.tool_spec.name, "mock": True},
-            )
+        return ExecutionResult(
+            success=True,
+            data={"result": "mock_execution_completed"},
+            metadata={"tool": self.tool_spec.name, "mock": True},
+        )
 
-    def _mock_knowledge_query(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_knowledge_query(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock knowledge query results."""
         query = parameters.get("query", "")
         return ExecutionResult(
@@ -126,7 +124,7 @@ class MockToolRunner(ToolRunner):
             metadata={"query": query, "mock": True},
         )
 
-    def _mock_sequence_analysis(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_sequence_analysis(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock sequence analysis results."""
         sequence = parameters.get("sequence", "")
         return ExecutionResult(
@@ -150,7 +148,7 @@ class MockToolRunner(ToolRunner):
             metadata={"sequence_length": len(sequence), "mock": True},
         )
 
-    def _mock_structure_prediction(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_structure_prediction(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock structure prediction results."""
         sequence = parameters.get("sequence", "")
         return ExecutionResult(
@@ -166,7 +164,7 @@ class MockToolRunner(ToolRunner):
             metadata={"sequence_length": len(sequence), "mock": True},
         )
 
-    def _mock_molecular_docking(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_molecular_docking(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock molecular docking results."""
         return ExecutionResult(
             success=True,
@@ -181,7 +179,7 @@ class MockToolRunner(ToolRunner):
             metadata={"num_poses": 2, "mock": True},
         )
 
-    def _mock_de_novo_design(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_de_novo_design(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock de novo design results."""
         num_designs = parameters.get("num_designs", 1)
         return ExecutionResult(
@@ -199,7 +197,7 @@ class MockToolRunner(ToolRunner):
             metadata={"num_designs": num_designs, "mock": True},
         )
 
-    def _mock_function_prediction(self, parameters: Dict[str, Any]) -> ExecutionResult:
+    def _mock_function_prediction(self, parameters: dict[str, Any]) -> ExecutionResult:
         """Mock function prediction results."""
         return ExecutionResult(
             success=True,

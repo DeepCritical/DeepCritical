@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 class Planner:
     """Placeholder planner that mirrors Parser/PlannerAgent logic with rewrite/search/finalize."""
 
-    def plan(self, question: str) -> List[Dict[str, Any]]:
+    def plan(self, question: str) -> list[dict[str, Any]]:
         return [
             {"tool": "rewrite", "params": {"query": question}},
             {"tool": "web_search", "params": {"query": "${rewrite.queries}"}},

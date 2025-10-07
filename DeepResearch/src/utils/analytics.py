@@ -1,10 +1,11 @@
 # ─── analytics.py ──────────────────────────────────────────────────────────────
-import os
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from filelock import FileLock  # pip install filelock
+
 import pandas as pd  # already available in HF images
+from filelock import FileLock  # pip install filelock
 
 # Determine data directory based on environment
 # 1. Check for environment variable override
@@ -29,7 +30,7 @@ LOCK_FILE = os.path.join(DATA_DIR, "analytics.lock")
 class AnalyticsEngine:
     """Main analytics engine for tracking request metrics."""
 
-    def __init__(self, data_dir: Optional[str] = None):
+    def __init__(self, data_dir: str | None = None):
         """Initialize analytics engine."""
         self.data_dir = data_dir or DATA_DIR
         self.counts_file = os.path.join(self.data_dir, "request_counts.json")
@@ -74,7 +75,7 @@ def _save_times(data: dict):
 
 
 async def record_request(
-    duration: Optional[float] = None, num_results: Optional[int] = None
+    duration: float | None = None, num_results: int | None = None
 ) -> None:
     """Increment today's counter (UTC) atomically and optionally record request duration."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -144,7 +145,7 @@ def last_n_days_avg_time_df(n: int = 30) -> pd.DataFrame:
 class MetricCalculator:
     """Calculator for various analytics metrics."""
 
-    def __init__(self, data_dir: Optional[str] = None):
+    def __init__(self, data_dir: str | None = None):
         """Initialize metric calculator."""
         self.data_dir = data_dir or DATA_DIR
 

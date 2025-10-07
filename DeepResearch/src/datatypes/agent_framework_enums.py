@@ -4,7 +4,8 @@ Vendored enum types from agent_framework._types.
 This module provides enum-like types for AI agent interactions.
 """
 
-from typing import Literal, ClassVar, Optional
+from typing import ClassVar, Literal, Optional
+
 from pydantic import BaseModel
 
 
@@ -76,7 +77,7 @@ class ToolMode(BaseModel):
     """Defines if and how tools are used in a chat request."""
 
     mode: Literal["auto", "required", "none"]
-    required_function_name: Optional[str] = None
+    required_function_name: str | None = None
 
     # Predefined tool mode constants
     AUTO: ClassVar[str] = "auto"
@@ -84,7 +85,7 @@ class ToolMode(BaseModel):
     NONE: ClassVar[str] = "none"
 
     @classmethod
-    def REQUIRED(cls, function_name: Optional[str] = None) -> "ToolMode":
+    def REQUIRED(cls, function_name: str | None = None) -> "ToolMode":
         """Returns a ToolMode that requires the specified function to be called."""
         return cls(mode="required", required_function_name=function_name)
 

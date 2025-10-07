@@ -7,7 +7,6 @@ and specialized bioinformatics RAG queries.
 
 from typing import Dict
 
-
 # General RAG query prompt template
 RAG_QUERY_PROMPT = """Based on the following context, please answer the question: {query}
 
@@ -31,7 +30,7 @@ Please provide:
 Answer:"""
 
 # Prompt templates dictionary for easy access
-RAG_PROMPTS: Dict[str, str] = {
+RAG_PROMPTS: dict[str, str] = {
     "rag_query": RAG_QUERY_PROMPT,
     "bioinformatics_rag_query": BIOINFORMATICS_RAG_QUERY_PROMPT,
 }

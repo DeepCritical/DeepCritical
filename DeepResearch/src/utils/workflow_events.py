@@ -15,9 +15,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-if TYPE_CHECKING:
-    pass
-
 __all__ = [
     "WorkflowEventSource",
     "WorkflowEvent",
@@ -86,8 +83,6 @@ class WorkflowEvent:
 
 class WorkflowStartedEvent(WorkflowEvent):
     """Built-in lifecycle event emitted when a workflow run begins."""
-
-    ...
 
 
 class WorkflowWarningEvent(WorkflowEvent):
@@ -165,7 +160,7 @@ class WorkflowErrorDetails:
         *,
         executor_id: str | None = None,
         extra: dict[str, Any] | None = None,
-    ) -> "WorkflowErrorDetails":
+    ) -> WorkflowErrorDetails:
         tb = None
         try:
             tb = "".join(_traceback.format_exception(type(exc), exc, exc.__traceback__))

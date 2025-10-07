@@ -6,6 +6,7 @@ These tests are optional and disabled in CI by default.
 """
 
 import pytest
+
 from scripts.prompt_testing.test_prompts_vllm_base import VLLMPromptTestBase
 
 

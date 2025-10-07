@@ -7,9 +7,10 @@ using Pydantic AI patterns that align with DeepCritical's architecture.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator
 from enum import Enum
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class PromptType(str, Enum):
@@ -27,7 +28,7 @@ class PromptTemplate(BaseModel):
 
     name: str = Field(..., description="Prompt template name")
     template: str = Field(..., description="Prompt template string")
-    variables: List[str] = Field(default_factory=list, description="Required variables")
+    variables: list[str] = Field(default_factory=list, description="Required variables")
     prompt_type: PromptType = Field(PromptType.SYSTEM, description="Type of prompt")
 
     @field_validator("name")
@@ -368,7 +369,7 @@ class PromptManager:
     """Manager for prompt templates and system messages."""
 
     def __init__(self):
-        self.templates: Dict[str, PromptTemplate] = {}
+        self.templates: dict[str, PromptTemplate] = {}
         self._register_default_templates()
 
     def _register_default_templates(self) -> None:
@@ -388,7 +389,7 @@ class PromptManager:
         """Register a prompt template."""
         self.templates[template.name] = template
 
-    def get_template(self, name: str) -> Optional[PromptTemplate]:
+    def get_template(self, name: str) -> PromptTemplate | None:
         """Get a prompt template by name."""
         return self.templates.get(name)
 
@@ -399,7 +400,7 @@ class PromptManager:
             raise ValueError(f"Template '{name}' not found")
         return template.format(**kwargs)
 
-    def get_system_prompt(self, components: Optional[List[str]] = None) -> str:
+    def get_system_prompt(self, components: list[str] | None = None) -> str:
         """Get a system prompt combining multiple components."""
         if not components:
             components = ["base_agent"]
@@ -417,18 +418,17 @@ class PromptManager:
         """Get a tool description with variable substitution."""
         if tool_name == "write_todos":
             return WRITE_TODOS_TOOL_DESCRIPTION
-        elif tool_name == "task":
+        if tool_name == "task":
             return self.format_template("task_tool_description", **kwargs)
-        elif tool_name == "list_files":
+        if tool_name == "list_files":
             return LIST_FILES_TOOL_DESCRIPTION
-        elif tool_name == "read_file":
+        if tool_name == "read_file":
             return READ_FILE_TOOL_DESCRIPTION
-        elif tool_name == "write_file":
+        if tool_name == "write_file":
             return WRITE_FILE_TOOL_DESCRIPTION
-        elif tool_name == "edit_file":
+        if tool_name == "edit_file":
             return EDIT_FILE_TOOL_DESCRIPTION
-        else:
-            return f"Tool: {tool_name}"
+        return f"Tool: {tool_name}"
 
 
 # Global prompt manager instance
@@ -439,7 +439,7 @@ prompt_manager = PromptManager()
 def create_prompt_template(
     name: str,
     template: str,
-    variables: Optional[List[str]] = None,
+    variables: list[str] | None = None,
     prompt_type: PromptType = PromptType.SYSTEM,
 ) -> PromptTemplate:
     """Create a prompt template."""
@@ -448,7 +448,7 @@ def create_prompt_template(
     )
 
 
-def get_system_prompt(components: Optional[List[str]] = None) -> str:
+def get_system_prompt(components: list[str] | None = None) -> str:
     """Get a system prompt combining multiple components."""
     return prompt_manager.get_system_prompt(components)
 

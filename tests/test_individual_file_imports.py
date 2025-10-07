@@ -5,10 +5,11 @@ This module tests that all individual Python files in the src directory
 can be imported correctly and validates their basic structure.
 """
 
-import os
 import importlib
 import inspect
+import os
 from pathlib import Path
+
 import pytest
 
 
@@ -80,11 +81,10 @@ class TestIndividualFileImports:
                     clean_module_path = module_path.replace("DeepResearch.src.", "")
                     module = importlib.import_module(clean_module_path)
                     assert module is not None
-                else:
-                    # Handle files in the root of src
-                    if "." in module_path:
-                        module = importlib.import_module(module_path)
-                        assert module is not None
+                # Handle files in the root of src
+                elif "." in module_path:
+                    module = importlib.import_module(module_path)
+                    assert module is not None
 
             except ImportError:
                 # Skip files that can't be imported due to missing dependencies or path issues
@@ -149,7 +149,7 @@ class TestIndividualFileImports:
 
             try:
                 # Try to compile the file
-                with open(full_path, "r", encoding="utf-8") as f:
+                with open(full_path, encoding="utf-8") as f:
                     source = f.read()
 
                 compile(source, str(full_path), "exec")

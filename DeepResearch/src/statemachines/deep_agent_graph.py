@@ -11,24 +11,25 @@ from __future__ import annotations
 import asyncio
 import time
 from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
 # Import existing DeepCritical types
 from ..datatypes.deep_agent_state import DeepAgentState
 from ..datatypes.deep_agent_types import (
-    SubAgent,
-    CustomSubAgent,
     AgentOrchestrationConfig,
+    CustomSubAgent,
+    SubAgent,
 )
 from ..tools.deep_agent_middleware import create_default_middleware_pipeline
 from ..tools.deep_agent_tools import (
-    write_todos_tool,
+    edit_file_tool,
     list_files_tool,
     read_file_tool,
-    write_file_tool,
-    edit_file_tool,
     task_tool,
+    write_file_tool,
+    write_todos_tool,
 )
 
 
@@ -37,11 +38,11 @@ class AgentBuilderConfig(BaseModel):
 
     model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
     instructions: str = Field("", description="Additional instructions")
-    tools: List[str] = Field(default_factory=list, description="Tool names to include")
-    subagents: List[Union[SubAgent, CustomSubAgent]] = Field(
+    tools: list[str] = Field(default_factory=list, description="Tool names to include")
+    subagents: list[SubAgent | CustomSubAgent] = Field(
         default_factory=list, description="Subagents"
     )
-    middleware_config: Dict[str, Any] = Field(
+    middleware_config: dict[str, Any] = Field(
         default_factory=dict, description="Middleware configuration"
     )
     enable_parallel_execution: bool = Field(
@@ -68,10 +69,10 @@ class AgentGraphNode(BaseModel):
 
     name: str = Field(..., description="Node name")
     agent_type: str = Field(..., description="Type of agent")
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         default_factory=dict, description="Node configuration"
     )
-    dependencies: List[str] = Field(
+    dependencies: list[str] = Field(
         default_factory=list, description="Node dependencies"
     )
     timeout: float = Field(300.0, gt=0, description="Node timeout")
@@ -100,7 +101,7 @@ class AgentGraphEdge(BaseModel):
 
     source: str = Field(..., description="Source node name")
     target: str = Field(..., description="Target node name")
-    condition: Optional[str] = Field(None, description="Condition for edge traversal")
+    condition: str | None = Field(None, description="Condition for edge traversal")
     weight: float = Field(1.0, description="Edge weight")
 
     @field_validator("source", "target")
@@ -124,10 +125,10 @@ class AgentGraphEdge(BaseModel):
 class AgentGraph(BaseModel):
     """Graph structure for agent orchestration."""
 
-    nodes: List[AgentGraphNode] = Field(..., description="Graph nodes")
-    edges: List[AgentGraphEdge] = Field(default_factory=list, description="Graph edges")
+    nodes: list[AgentGraphNode] = Field(..., description="Graph nodes")
+    edges: list[AgentGraphEdge] = Field(default_factory=list, description="Graph edges")
     entry_point: str = Field(..., description="Entry point node")
-    exit_points: List[str] = Field(default_factory=list, description="Exit point nodes")
+    exit_points: list[str] = Field(default_factory=list, description="Exit point nodes")
 
     @field_validator("entry_point")
     @classmethod
@@ -148,14 +149,14 @@ class AgentGraph(BaseModel):
                     raise ValueError(f"Exit point '{exit_point}' not found in nodes")
         return v
 
-    def get_node(self, name: str) -> Optional[AgentGraphNode]:
+    def get_node(self, name: str) -> AgentGraphNode | None:
         """Get a node by name."""
         for node in self.nodes:
             if node.name == name:
                 return node
         return None
 
-    def get_adjacent_nodes(self, node_name: str) -> List[str]:
+    def get_adjacent_nodes(self, node_name: str) -> list[str]:
         """Get nodes adjacent to the given node."""
         adjacent = []
         for edge in self.edges:
@@ -163,7 +164,7 @@ class AgentGraph(BaseModel):
                 adjacent.append(edge.target)
         return adjacent
 
-    def get_dependencies(self, node_name: str) -> List[str]:
+    def get_dependencies(self, node_name: str) -> list[str]:
         """Get dependencies for a node."""
         node = self.get_node(node_name)
         if node:
@@ -198,17 +199,17 @@ class AgentGraphExecutor:
     def __init__(
         self,
         graph: AgentGraph,
-        agent_registry: Dict[str, Agent],
-        config: Optional[AgentOrchestrationConfig] = None,
+        agent_registry: dict[str, Agent],
+        config: AgentOrchestrationConfig | None = None,
     ):
         self.graph = graph
         self.agent_registry = agent_registry
         self.config = config or AgentOrchestrationConfig()
-        self.execution_history: List[Dict[str, Any]] = []
+        self.execution_history: list[dict[str, Any]] = []
 
     async def execute(
-        self, initial_state: DeepAgentState, start_node: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, initial_state: DeepAgentState, start_node: str | None = None
+    ) -> dict[str, Any]:
         """Execute the agent graph."""
         start_node = start_node or self.graph.entry_point
         execution_start = time.time()
@@ -242,8 +243,8 @@ class AgentGraphExecutor:
             }
 
     async def _execute_graph_traversal(
-        self, execution_state: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, execution_state: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute graph traversal logic."""
         current_node = execution_state["current_node"]
 
@@ -286,8 +287,8 @@ class AgentGraphExecutor:
         }
 
     async def _execute_node(
-        self, node_name: str, execution_state: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, node_name: str, execution_state: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a single node."""
         node = self.graph.get_node(node_name)
         if not node:
@@ -355,7 +356,7 @@ class AgentGraphExecutor:
             return {"success": False, "error": str(e), "execution_time": execution_time}
 
     async def _run_agent(
-        self, agent: Agent, state: DeepAgentState, config: Dict[str, Any]
+        self, agent: Agent, state: DeepAgentState, config: dict[str, Any]
     ) -> Any:
         """Run an agent with the given state and configuration."""
         # This is a simplified implementation
@@ -366,15 +367,15 @@ class AgentGraphExecutor:
         return {"agent_result": "mock_result", "config": config, "state_updated": True}
 
     def _dependencies_satisfied(
-        self, dependencies: List[str], execution_state: Dict[str, Any]
+        self, dependencies: list[str], execution_state: dict[str, Any]
     ) -> bool:
         """Check if all dependencies are satisfied."""
         completed_nodes = execution_state["completed_nodes"]
         return all(dep in completed_nodes for dep in dependencies)
 
     def _get_next_node(
-        self, current_node: str, execution_state: Dict[str, Any]
-    ) -> Optional[str]:
+        self, current_node: str, execution_state: dict[str, Any]
+    ) -> str | None:
         """Get the next node to execute."""
         adjacent_nodes = self.graph.get_adjacent_nodes(current_node)
 
@@ -393,16 +394,16 @@ class AgentGraphExecutor:
         return None
 
     def _handle_dependency_wait(
-        self, current_node: str, execution_state: Dict[str, Any]
-    ) -> Optional[str]:
+        self, current_node: str, execution_state: dict[str, Any]
+    ) -> str | None:
         """Handle waiting for dependencies."""
         # In a real implementation, you might implement retry logic
         # or parallel execution of independent nodes
         return None
 
     def _handle_failure(
-        self, failed_node: str, execution_state: Dict[str, Any]
-    ) -> Optional[str]:
+        self, failed_node: str, execution_state: dict[str, Any]
+    ) -> str | None:
         """Handle node failure."""
         # In a real implementation, you might implement retry logic
         # or alternative execution paths
@@ -412,7 +413,7 @@ class AgentGraphExecutor:
 class AgentBuilder:
     """Builder for creating agents with middleware and tools."""
 
-    def __init__(self, config: Optional[AgentBuilderConfig] = None):
+    def __init__(self, config: AgentBuilderConfig | None = None):
         self.config = config or AgentBuilderConfig()
         self.middleware_pipeline = create_default_middleware_pipeline(
             subagents=self.config.subagents
@@ -467,24 +468,21 @@ class AgentBuilder:
         for tool_name in self.config.tools:
             if tool_name in tool_map:
                 # Add tool if method exists
-                if hasattr(agent, "add_tool") and callable(getattr(agent, "add_tool")):
-                    add_tool_method = getattr(agent, "add_tool")
+                if hasattr(agent, "add_tool") and callable(agent.add_tool):
+                    add_tool_method = agent.add_tool
                     add_tool_method(tool_map[tool_name])
-                elif hasattr(agent, "tools") and hasattr(
-                    getattr(agent, "tools"), "append"
-                ):
-                    tools_attr = getattr(agent, "tools")
-                    if hasattr(tools_attr, "append"):
+                elif hasattr(agent, "tools") and hasattr(agent.tools, "append"):
+                    tools_attr = agent.tools
+                    if hasattr(tools_attr, "append") and callable(tools_attr.append):
                         tools_attr.append(tool_map[tool_name])
 
     def _add_middleware(self, agent: Agent) -> None:
         """Add middleware to the agent."""
         # In a real implementation, you would integrate middleware
         # with the Pydantic AI agent system
-        pass
 
     def build_graph(
-        self, nodes: List[AgentGraphNode], edges: List[AgentGraphEdge]
+        self, nodes: list[AgentGraphNode], edges: list[AgentGraphEdge]
     ) -> AgentGraph:
         """Build an agent graph."""
         return AgentGraph(
@@ -498,7 +496,7 @@ class AgentBuilder:
             ],
         )
 
-    def _has_outgoing_edges(self, node_name: str, edges: List[AgentGraphEdge]) -> bool:
+    def _has_outgoing_edges(self, node_name: str, edges: list[AgentGraphEdge]) -> bool:
         """Check if a node has outgoing edges."""
         return any(edge.source == node_name for edge in edges)
 
@@ -507,8 +505,8 @@ class AgentBuilder:
 def create_agent_builder(
     model_name: str = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
-    tools: Optional[List[str]] = None,
-    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+    tools: list[str] | None = None,
+    subagents: list[SubAgent | CustomSubAgent] | None = None,
     **kwargs,
 ) -> AgentBuilder:
     """Create an agent builder with default configuration."""
@@ -525,7 +523,7 @@ def create_agent_builder(
 def create_simple_agent(
     model_name: str = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
-    tools: Optional[List[str]] = None,
+    tools: list[str] | None = None,
 ) -> Agent:
     """Create a simple agent with basic configuration."""
     builder = create_agent_builder(model_name, instructions, tools)
@@ -533,9 +531,9 @@ def create_simple_agent(
 
 
 def create_deep_agent(
-    tools: Optional[List[str]] = None,
+    tools: list[str] | None = None,
     instructions: str = "",
-    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+    subagents: list[SubAgent | CustomSubAgent] | None = None,
     model_name: str = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:
@@ -561,9 +559,9 @@ def create_deep_agent(
 
 
 def create_async_deep_agent(
-    tools: Optional[List[str]] = None,
+    tools: list[str] | None = None,
     instructions: str = "",
-    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
+    subagents: list[SubAgent | CustomSubAgent] | None = None,
     model_name: str = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:

@@ -10,32 +10,32 @@ from __future__ import annotations
 
 import uuid
 from typing import Any, Dict
+
 from pydantic_ai import RunContext
 
 # Note: defer decorator is not available in current pydantic-ai version
-
 # Import existing DeepCritical types
 from ..datatypes.deep_agent_state import (
-    TaskStatus,
     DeepAgentState,
-    create_todo,
+    TaskStatus,
     create_file_info,
+    create_todo,
 )
-from ..datatypes.deep_agent_types import TaskRequest
 from ..datatypes.deep_agent_tools import (
-    WriteTodosRequest,
-    WriteTodosResponse,
+    EditFileRequest,
+    EditFileResponse,
     ListFilesResponse,
     ReadFileRequest,
     ReadFileResponse,
-    WriteFileRequest,
-    WriteFileResponse,
-    EditFileRequest,
-    EditFileResponse,
     TaskRequestModel,
     TaskResponse,
+    WriteFileRequest,
+    WriteFileResponse,
+    WriteTodosRequest,
+    WriteTodosResponse,
 )
-from .base import ToolRunner, ToolSpec, ExecutionResult
+from ..datatypes.deep_agent_types import TaskRequest
+from .base import ExecutionResult, ToolRunner, ToolSpec
 
 
 # Pydantic AI tool functions
@@ -76,7 +76,7 @@ def write_todos_tool(
 
     except Exception as e:
         return WriteTodosResponse(
-            success=False, todos_created=0, message=f"Error creating todos: {str(e)}"
+            success=False, todos_created=0, message=f"Error creating todos: {e!s}"
         )
 
 
@@ -164,7 +164,7 @@ def read_file_tool(
 
     except Exception as e:
         return ReadFileResponse(
-            content=f"Error reading file: {str(e)}",
+            content=f"Error reading file: {e!s}",
             file_path=request.file_path,
             lines_read=0,
             total_lines=0,
@@ -197,7 +197,7 @@ def write_file_tool(
             success=False,
             file_path=request.file_path,
             bytes_written=0,
-            message=f"Error writing file: {str(e)}",
+            message=f"Error writing file: {e!s}",
         )
 
 
@@ -238,7 +238,7 @@ def edit_file_tool(
                     replacements_made=0,
                     message=f"Error: String '{request.old_string}' appears {occurrences} times in file. Use replace_all=True to replace all instances, or provide a more specific string with surrounding context.",
                 )
-            elif occurrences == 0:
+            if occurrences == 0:
                 return EditFileResponse(
                     success=False,
                     file_path=request.file_path,
@@ -278,7 +278,7 @@ def edit_file_tool(
             success=False,
             file_path=request.file_path,
             replacements_made=0,
-            message=f"Error editing file: {str(e)}",
+            message=f"Error editing file: {e!s}",
         )
 
 
@@ -351,7 +351,7 @@ def task_tool(
             success=False,
             task_id="",
             result=None,
-            message=f"Error executing task: {str(e)}",
+            message=f"Error executing task: {e!s}",
         )
 
 
@@ -375,7 +375,7 @@ class WriteTodosToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             todos_data = params.get("todos", [])
             WriteTodosRequest(todos=todos_data)
@@ -407,7 +407,7 @@ class ListFilesToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             # This would normally be called through Pydantic AI
             # For now, return a mock result
@@ -434,7 +434,7 @@ class ReadFileToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             request = ReadFileRequest(
                 file_path=params.get("file_path", ""),
@@ -475,7 +475,7 @@ class WriteFileToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             request = WriteFileRequest(
                 file_path=params.get("file_path", ""), content=params.get("content", "")
@@ -519,7 +519,7 @@ class EditFileToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             request = EditFileRequest(
                 file_path=params.get("file_path", ""),
@@ -565,7 +565,7 @@ class TaskToolRunner(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             request = TaskRequestModel(
                 description=params.get("description", ""),

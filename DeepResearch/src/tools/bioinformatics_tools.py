@@ -9,30 +9,31 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-# Note: defer decorator is not available in current pydantic-ai version
-
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
-from ..datatypes.bioinformatics import (
-    GOAnnotation,
-    PubMedPaper,
-    GEOSeries,
-    DrugTarget,
-    ProteinStructure,
-    FusedDataset,
-    ReasoningTask,
-    DataFusionRequest,
-)
 from ..agents.bioinformatics_agents import DataFusionResult, ReasoningResult
+from ..datatypes.bioinformatics import (
+    DataFusionRequest,
+    DrugTarget,
+    FusedDataset,
+    GEOSeries,
+    GOAnnotation,
+    ProteinStructure,
+    PubMedPaper,
+    ReasoningTask,
+)
 from ..statemachines.bioinformatics_workflow import run_bioinformatics_workflow
+
+# Note: defer decorator is not available in current pydantic-ai version
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 
 class BioinformaticsToolDeps(BaseModel):
     """Dependencies for bioinformatics tools."""
 
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
     model_name: str = Field(
         "anthropic:claude-sonnet-4-0", description="Model to use for AI agents"
     )
@@ -41,7 +42,7 @@ class BioinformaticsToolDeps(BaseModel):
     )
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any], **kwargs) -> "BioinformaticsToolDeps":
+    def from_config(cls, config: dict[str, Any], **kwargs) -> BioinformaticsToolDeps:
         """Create tool dependencies from configuration."""
         bioinformatics_config = config.get("bioinformatics", {})
         model_config = bioinformatics_config.get("model", {})
@@ -57,10 +58,10 @@ class BioinformaticsToolDeps(BaseModel):
 
 # Tool definitions for bioinformatics data processing
 def go_annotation_processor(
-    annotations: List[Dict[str, Any]],
-    papers: List[Dict[str, Any]],
-    evidence_codes: Optional[List[str]] = None,
-) -> List[GOAnnotation]:
+    annotations: list[dict[str, Any]],
+    papers: list[dict[str, Any]],
+    evidence_codes: list[str] | None = None,
+) -> list[GOAnnotation]:
     """Process GO annotations with PubMed paper context."""
     # This would be implemented with actual data processing logic
     # For now, return mock data structure
@@ -68,8 +69,8 @@ def go_annotation_processor(
 
 
 def pubmed_paper_retriever(
-    query: str, max_results: int = 100, year_min: Optional[int] = None
-) -> List[PubMedPaper]:
+    query: str, max_results: int = 100, year_min: int | None = None
+) -> list[PubMedPaper]:
     """Retrieve PubMed papers based on query."""
     # This would be implemented with actual PubMed API calls
     # For now, return mock data structure
@@ -77,8 +78,8 @@ def pubmed_paper_retriever(
 
 
 def geo_data_retriever(
-    series_ids: List[str], include_expression: bool = True
-) -> List[GEOSeries]:
+    series_ids: list[str], include_expression: bool = True
+) -> list[GEOSeries]:
     """Retrieve GEO data for specified series."""
     # This would be implemented with actual GEO API calls
     # For now, return mock data structure
@@ -86,8 +87,8 @@ def geo_data_retriever(
 
 
 def drug_target_mapper(
-    drug_ids: List[str], target_types: Optional[List[str]] = None
-) -> List[DrugTarget]:
+    drug_ids: list[str], target_types: list[str] | None = None
+) -> list[DrugTarget]:
     """Map drugs to their targets from DrugBank and TTD."""
     # This would be implemented with actual database queries
     # For now, return mock data structure
@@ -95,8 +96,8 @@ def drug_target_mapper(
 
 
 def protein_structure_retriever(
-    pdb_ids: List[str], include_interactions: bool = True
-) -> List[ProteinStructure]:
+    pdb_ids: list[str], include_interactions: bool = True
+) -> list[ProteinStructure]:
     """Retrieve protein structures from PDB."""
     # This would be implemented with actual PDB API calls
     # For now, return mock data structure
@@ -164,7 +165,7 @@ class BioinformaticsFusionTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute bioinformatics data fusion."""
         try:
             # Extract parameters
@@ -208,7 +209,7 @@ class BioinformaticsFusionTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, data={}, error=f"Bioinformatics fusion failed: {str(e)}"
+                success=False, data={}, error=f"Bioinformatics fusion failed: {e!s}"
             )
 
 
@@ -236,7 +237,7 @@ class BioinformaticsReasoningTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute bioinformatics reasoning."""
         try:
             # Extract parameters
@@ -282,7 +283,7 @@ class BioinformaticsReasoningTool(ToolRunner):
             return ExecutionResult(
                 success=False,
                 data={},
-                error=f"Bioinformatics reasoning failed: {str(e)}",
+                error=f"Bioinformatics reasoning failed: {e!s}",
             )
 
 
@@ -305,7 +306,7 @@ class BioinformaticsWorkflowTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute complete bioinformatics workflow."""
         try:
             # Extract parameters
@@ -344,7 +345,7 @@ class BioinformaticsWorkflowTool(ToolRunner):
             return ExecutionResult(
                 success=False,
                 data={},
-                error=f"Bioinformatics workflow failed: {str(e)}",
+                error=f"Bioinformatics workflow failed: {e!s}",
             )
 
 
@@ -370,7 +371,7 @@ class GOAnnotationTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Process GO annotations with PubMed context."""
         try:
             # Extract parameters
@@ -402,7 +403,7 @@ class GOAnnotationTool(ToolRunner):
             return ExecutionResult(
                 success=False,
                 data={},
-                error=f"GO annotation processing failed: {str(e)}",
+                error=f"GO annotation processing failed: {e!s}",
             )
 
 
@@ -428,7 +429,7 @@ class PubMedRetrievalTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Retrieve PubMed papers."""
         try:
             # Extract parameters
@@ -461,7 +462,7 @@ class PubMedRetrievalTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, data={}, error=f"PubMed retrieval failed: {str(e)}"
+                success=False, data={}, error=f"PubMed retrieval failed: {e!s}"
             )
 
 

@@ -9,36 +9,34 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime
-from typing import Any, Dict, List, Callable, TYPE_CHECKING, Optional
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from omegaconf import DictConfig
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from omegaconf import DictConfig
 from pydantic_ai import Agent, RunContext
 
 from ..datatypes.workflow_orchestration import (
-    WorkflowOrchestrationConfig,
-    WorkflowExecution,
-    WorkflowResult,
-    WorkflowStatus,
-    WorkflowType,
-    WorkflowComposition,
-    OrchestrationState,
     HypothesisDataset,
     HypothesisTestingEnvironment,
-    WorkflowConfig,
-    OrchestratorDependencies,
-    WorkflowSpawnRequest,
-    WorkflowSpawnResult,
-    MultiAgentCoordinationRequest,
-    MultiAgentCoordinationResult,
     JudgeEvaluationRequest,
     JudgeEvaluationResult,
+    MultiAgentCoordinationRequest,
+    MultiAgentCoordinationResult,
+    OrchestrationState,
+    OrchestratorDependencies,
+    WorkflowComposition,
+    WorkflowConfig,
+    WorkflowExecution,
+    WorkflowOrchestrationConfig,
+    WorkflowResult,
+    WorkflowSpawnRequest,
+    WorkflowSpawnResult,
+    WorkflowStatus,
+    WorkflowType,
 )
 from ..prompts.workflow_orchestrator import WorkflowOrchestratorPrompts
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclass
@@ -47,9 +45,9 @@ class PrimaryWorkflowOrchestrator:
 
     config: WorkflowOrchestrationConfig
     state: OrchestrationState = field(default_factory=OrchestrationState)
-    workflow_registry: Dict[str, Callable] = field(default_factory=dict)
-    agent_registry: Dict[str, Any] = field(default_factory=dict)
-    judge_registry: Dict[str, Any] = field(default_factory=dict)
+    workflow_registry: dict[str, Callable] = field(default_factory=dict)
+    agent_registry: dict[str, Any] = field(default_factory=dict)
+    judge_registry: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Initialize the orchestrator with workflows, agents, and judges."""
@@ -121,8 +119,8 @@ class PrimaryWorkflowOrchestrator:
             ctx: RunContext[OrchestratorDependencies],
             workflow_type: str,
             workflow_name: str,
-            input_data: Dict[str, Any],
-            parameters: Optional[Dict[str, Any]] = None,
+            input_data: dict[str, Any],
+            parameters: dict[str, Any] | None = None,
             priority: int = 0,
         ) -> WorkflowSpawnResult:
             """Spawn a new workflow execution."""
@@ -149,7 +147,7 @@ class PrimaryWorkflowOrchestrator:
             ctx: RunContext[OrchestratorDependencies],
             system_id: str,
             task_description: str,
-            input_data: Dict[str, Any],
+            input_data: dict[str, Any],
             coordination_strategy: str = "collaborative",
             max_rounds: int = 10,
         ) -> MultiAgentCoordinationResult:
@@ -178,9 +176,9 @@ class PrimaryWorkflowOrchestrator:
         def evaluate_with_judge(
             ctx: RunContext[OrchestratorDependencies],
             judge_id: str,
-            content_to_evaluate: Dict[str, Any],
-            evaluation_criteria: List[str],
-            context: Optional[Dict[str, Any]] = None,
+            content_to_evaluate: dict[str, Any],
+            evaluation_criteria: list[str],
+            context: dict[str, Any] | None = None,
         ) -> JudgeEvaluationResult:
             """Evaluate content using a judge."""
             try:
@@ -197,7 +195,7 @@ class PrimaryWorkflowOrchestrator:
                     judge_id=judge_id,
                     overall_score=0.0,
                     criterion_scores={},
-                    feedback=f"Evaluation failed: {str(e)}",
+                    feedback=f"Evaluation failed: {e!s}",
                     recommendations=[],
                 )
 
@@ -205,7 +203,7 @@ class PrimaryWorkflowOrchestrator:
         def compose_workflows(
             ctx: RunContext[OrchestratorDependencies],
             user_input: str,
-            selected_workflows: List[str],
+            selected_workflows: list[str],
             execution_strategy: str = "parallel",
         ) -> WorkflowComposition:
             """Compose workflows based on user input."""
@@ -218,8 +216,8 @@ class PrimaryWorkflowOrchestrator:
             ctx: RunContext[OrchestratorDependencies],
             name: str,
             description: str,
-            hypotheses: List[Dict[str, Any]],
-            source_workflows: List[str],
+            hypotheses: list[dict[str, Any]],
+            source_workflows: list[str],
         ) -> HypothesisDataset:
             """Generate a hypothesis dataset."""
             return HypothesisDataset(
@@ -233,9 +231,9 @@ class PrimaryWorkflowOrchestrator:
         def create_testing_environment(
             ctx: RunContext[OrchestratorDependencies],
             name: str,
-            hypothesis: Dict[str, Any],
-            test_configuration: Dict[str, Any],
-            expected_outcomes: List[str],
+            hypothesis: dict[str, Any],
+            test_configuration: dict[str, Any],
+            expected_outcomes: list[str],
         ) -> HypothesisTestingEnvironment:
             """Create a hypothesis testing environment."""
             return HypothesisTestingEnvironment(
@@ -247,7 +245,7 @@ class PrimaryWorkflowOrchestrator:
 
     async def execute_primary_workflow(
         self, user_input: str, config: DictConfig
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute the primary REACT workflow."""
         # Create dependencies
         deps = OrchestratorDependencies(
@@ -412,7 +410,7 @@ class PrimaryWorkflowOrchestrator:
         )
 
     def _compose_workflows(
-        self, user_input: str, selected_workflows: List[str], execution_strategy: str
+        self, user_input: str, selected_workflows: list[str], execution_strategy: str
     ) -> WorkflowComposition:
         """Compose workflows based on user input."""
         return WorkflowComposition(
@@ -424,15 +422,15 @@ class PrimaryWorkflowOrchestrator:
 
     # Workflow execution methods (placeholders for now)
     async def _execute_rag_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute RAG workflow."""
         # This would implement actual RAG workflow execution
         return {"rag_result": "placeholder", "documents_retrieved": 5}
 
     async def _execute_bioinformatics_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute bioinformatics workflow."""
         # This would implement actual bioinformatics workflow execution
         return {
@@ -441,50 +439,50 @@ class PrimaryWorkflowOrchestrator:
         }
 
     async def _execute_search_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute search workflow."""
         # This would implement actual search workflow execution
         return {"search_result": "placeholder", "results_found": 10}
 
     async def _execute_multi_agent_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute multi-agent workflow."""
         # This would implement actual multi-agent workflow execution
         return {"multi_agent_result": "placeholder", "agents_used": 3}
 
     async def _execute_hypothesis_generation_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute hypothesis generation workflow."""
         # This would implement actual hypothesis generation
         return {"hypotheses": [{"hypothesis": "placeholder", "confidence": 0.8}]}
 
     async def _execute_hypothesis_testing_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute hypothesis testing workflow."""
         # This would implement actual hypothesis testing
         return {"test_results": "placeholder", "success": True}
 
     async def _execute_reasoning_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute reasoning workflow."""
         # This would implement actual reasoning
         return {"reasoning_result": "placeholder", "confidence": 0.9}
 
     async def _execute_code_execution_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute code execution workflow."""
         # This would implement actual code execution
         return {"code_result": "placeholder", "execution_success": True}
 
     async def _execute_evaluation_workflow(
-        self, input_data: Dict[str, Any], parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, input_data: dict[str, Any], parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute evaluation workflow."""
         # This would implement actual evaluation
         return {"evaluation_result": "placeholder", "score": 8.5}

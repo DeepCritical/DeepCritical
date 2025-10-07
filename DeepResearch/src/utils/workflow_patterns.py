@@ -8,19 +8,20 @@ with minimal external dependencies, focusing on Pydantic AI and Pydantic Graph i
 from __future__ import annotations
 
 import asyncio
+import json
 import time
-from typing import Any, Dict, List, Optional, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-import json
+from typing import Any, Dict, List, Optional
 
 # Import existing DeepCritical types
 from ..datatypes.workflow_patterns import (
-    InteractionPattern,
-    MessageType,
     AgentInteractionMode,
     AgentInteractionState,
     InteractionMessage,
+    InteractionPattern,
+    MessageType,
     WorkflowOrchestrator,
 )
 
@@ -52,7 +53,7 @@ class ConsensusResult:
     final_result: Any
     confidence: float
     agreement_score: float
-    individual_results: List[Any]
+    individual_results: list[Any]
     algorithm_used: ConsensusAlgorithm
 
 
@@ -98,11 +99,11 @@ class WorkflowPatternUtils:
     @staticmethod
     def create_message(
         sender_id: str,
-        receiver_id: Optional[str] = None,
+        receiver_id: str | None = None,
         message_type: MessageType = MessageType.DATA,
         content: Any = None,
         priority: int = 0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> InteractionMessage:
         """Create a new interaction message."""
         return InteractionMessage(
@@ -160,7 +161,7 @@ class WorkflowPatternUtils:
         request_id: str,
         response_data: Any,
         success: bool = True,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> InteractionMessage:
         """Create a response message."""
         metadata = {
@@ -182,15 +183,15 @@ class WorkflowPatternUtils:
 
     @staticmethod
     async def execute_agents_parallel(
-        agent_executors: Dict[str, Callable],
-        messages: Dict[str, List[InteractionMessage]],
+        agent_executors: dict[str, Callable],
+        messages: dict[str, list[InteractionMessage]],
         timeout: float = 30.0,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """Execute multiple agents in parallel with timeout."""
 
         async def execute_single_agent(
             agent_id: str, executor: Callable
-        ) -> tuple[str, Dict[str, Any]]:
+        ) -> tuple[str, dict[str, Any]]:
             try:
                 start_time = time.time()
 
@@ -241,7 +242,7 @@ class WorkflowPatternUtils:
 
     @staticmethod
     def compute_consensus(
-        results: List[Any],
+        results: list[Any],
         algorithm: ConsensusAlgorithm = ConsensusAlgorithm.SIMPLE_AGREEMENT,
         confidence_threshold: float = 0.7,
     ) -> ConsensusResult:
@@ -279,25 +280,22 @@ class WorkflowPatternUtils:
             return WorkflowPatternUtils._simple_agreement_consensus(
                 results, confidences
             )
-        elif algorithm == ConsensusAlgorithm.MAJORITY_VOTE:
+        if algorithm == ConsensusAlgorithm.MAJORITY_VOTE:
             return WorkflowPatternUtils._majority_vote_consensus(results, confidences)
-        elif algorithm == ConsensusAlgorithm.WEIGHTED_AVERAGE:
+        if algorithm == ConsensusAlgorithm.WEIGHTED_AVERAGE:
             return WorkflowPatternUtils._weighted_average_consensus(
                 results, confidences
             )
-        elif algorithm == ConsensusAlgorithm.CONFIDENCE_BASED:
+        if algorithm == ConsensusAlgorithm.CONFIDENCE_BASED:
             return WorkflowPatternUtils._confidence_based_consensus(
                 results, confidences, confidence_threshold
             )
-        else:
-            # Default to simple agreement
-            return WorkflowPatternUtils._simple_agreement_consensus(
-                results, confidences
-            )
+        # Default to simple agreement
+        return WorkflowPatternUtils._simple_agreement_consensus(results, confidences)
 
     @staticmethod
     def _simple_agreement_consensus(
-        results: List[Any], confidences: List[float]
+        results: list[Any], confidences: list[float]
     ) -> ConsensusResult:
         """Simple agreement consensus - all results must be identical."""
         first_result = results[0]
@@ -317,19 +315,18 @@ class WorkflowPatternUtils:
                 individual_results=results,
                 algorithm_used=ConsensusAlgorithm.SIMPLE_AGREEMENT,
             )
-        else:
-            return ConsensusResult(
-                consensus_reached=False,
-                final_result=None,
-                confidence=0.0,
-                agreement_score=0.0,
-                individual_results=results,
-                algorithm_used=ConsensusAlgorithm.SIMPLE_AGREEMENT,
-            )
+        return ConsensusResult(
+            consensus_reached=False,
+            final_result=None,
+            confidence=0.0,
+            agreement_score=0.0,
+            individual_results=results,
+            algorithm_used=ConsensusAlgorithm.SIMPLE_AGREEMENT,
+        )
 
     @staticmethod
     def _majority_vote_consensus(
-        results: List[Any], confidences: List[float]
+        results: list[Any], confidences: list[float]
     ) -> ConsensusResult:
         """Majority vote consensus."""
         # Count occurrences of each result
@@ -362,7 +359,7 @@ class WorkflowPatternUtils:
                             if json.dumps(r, sort_keys=True) == most_common_result_str
                             else 0
                         )
-                        for r, conf in zip(results, confidences)
+                        for r, conf in zip(results, confidences, strict=False)
                     )
                     / sum(confidences)
                     if confidences
@@ -389,7 +386,7 @@ class WorkflowPatternUtils:
 
     @staticmethod
     def _weighted_average_consensus(
-        results: List[Any], confidences: List[float]
+        results: list[Any], confidences: list[float]
     ) -> ConsensusResult:
         """Weighted average consensus for numeric results."""
         numeric_results = []
@@ -404,7 +401,9 @@ class WorkflowPatternUtils:
 
         if numeric_results:
             # Weighted average
-            weighted_sum = sum(r * c for r, c in zip(numeric_results, confidences))
+            weighted_sum = sum(
+                r * c for r, c in zip(numeric_results, confidences, strict=False)
+            )
             total_confidence = sum(confidences)
 
             if total_confidence > 0:
@@ -431,13 +430,13 @@ class WorkflowPatternUtils:
 
     @staticmethod
     def _confidence_based_consensus(
-        results: List[Any], confidences: List[float], threshold: float
+        results: list[Any], confidences: list[float], threshold: float
     ) -> ConsensusResult:
         """Confidence-based consensus."""
         # Find results with high confidence
         high_confidence_results = [
             (result, conf)
-            for result, conf in zip(results, confidences)
+            for result, conf in zip(results, confidences, strict=False)
             if conf >= threshold
         ]
 
@@ -478,10 +477,10 @@ class WorkflowPatternUtils:
 
     @staticmethod
     def route_messages(
-        messages: List[InteractionMessage],
+        messages: list[InteractionMessage],
         routing_strategy: MessageRoutingStrategy,
-        agents: List[str],
-    ) -> Dict[str, List[InteractionMessage]]:
+        agents: list[str],
+    ) -> dict[str, list[InteractionMessage]]:
         """Route messages to agents based on strategy."""
         routed_messages = {agent_id: [] for agent_id in agents}
 
@@ -518,7 +517,7 @@ class WorkflowPatternUtils:
         return routed_messages
 
     @staticmethod
-    def validate_interaction_state(state: AgentInteractionState) -> List[str]:
+    def validate_interaction_state(state: AgentInteractionState) -> list[str]:
         """Validate interaction state and return any errors."""
         errors = []
 
@@ -536,11 +535,11 @@ class WorkflowPatternUtils:
     @staticmethod
     def create_agent_executor_wrapper(
         agent_instance: Any,
-        message_handler: Optional[Callable] = None,
+        message_handler: Callable | None = None,
     ) -> Callable:
         """Create a wrapper for agent execution."""
 
-        async def executor(messages: List[InteractionMessage]) -> Any:
+        async def executor(messages: list[InteractionMessage]) -> Any:
             """Execute agent with messages."""
             if not messages:
                 return {"result": "No messages to process"}
@@ -554,16 +553,15 @@ class WorkflowPatternUtils:
                 if message_handler:
                     # Use custom message handler
                     result = await message_handler(message_content)
+                # Default agent execution
+                elif hasattr(agent_instance, "execute"):
+                    result = await agent_instance.execute(message_content)
+                elif hasattr(agent_instance, "run"):
+                    result = await agent_instance.run(message_content)
+                elif hasattr(agent_instance, "process"):
+                    result = await agent_instance.process(message_content)
                 else:
-                    # Default agent execution
-                    if hasattr(agent_instance, "execute"):
-                        result = await agent_instance.execute(message_content)
-                    elif hasattr(agent_instance, "run"):
-                        result = await agent_instance.run(message_content)
-                    elif hasattr(agent_instance, "process"):
-                        result = await agent_instance.process(message_content)
-                    else:
-                        result = {"result": "Agent executed successfully"}
+                    result = {"result": "Agent executed successfully"}
 
                 return result
 
@@ -574,12 +572,12 @@ class WorkflowPatternUtils:
 
     @staticmethod
     def create_sequential_executor_chain(
-        agent_executors: Dict[str, Callable],
-        agent_order: List[str],
+        agent_executors: dict[str, Callable],
+        agent_order: list[str],
     ) -> Callable:
         """Create a sequential executor chain."""
 
-        async def sequential_executor(messages: List[InteractionMessage]) -> Any:
+        async def sequential_executor(messages: list[InteractionMessage]) -> Any:
             """Execute agents in sequence."""
             results = {}
             current_messages = messages
@@ -616,11 +614,11 @@ class WorkflowPatternUtils:
     @staticmethod
     def create_hierarchical_executor(
         coordinator_executor: Callable,
-        subordinate_executors: Dict[str, Callable],
+        subordinate_executors: dict[str, Callable],
     ) -> Callable:
         """Create a hierarchical executor."""
 
-        async def hierarchical_executor(messages: List[InteractionMessage]) -> Any:
+        async def hierarchical_executor(messages: list[InteractionMessage]) -> Any:
             """Execute coordinator then subordinates."""
             results = {}
 
@@ -669,7 +667,7 @@ class WorkflowPatternUtils:
     ) -> Callable:
         """Wrap executor with timeout."""
 
-        async def timeout_executor(messages: List[InteractionMessage]) -> Any:
+        async def timeout_executor(messages: list[InteractionMessage]) -> Any:
             try:
                 return await asyncio.wait_for(executor(messages), timeout=timeout)
             except asyncio.TimeoutError:
@@ -688,7 +686,7 @@ class WorkflowPatternUtils:
     ) -> Callable:
         """Wrap executor with retry logic."""
 
-        async def retry_executor(messages: List[InteractionMessage]) -> Any:
+        async def retry_executor(messages: list[InteractionMessage]) -> Any:
             last_error = None
 
             for attempt in range(max_retries + 1):
@@ -702,11 +700,10 @@ class WorkflowPatternUtils:
                             retry_delay * (2**attempt)
                         )  # Exponential backoff
                         continue
-                    else:
-                        return {
-                            "error": f"Failed after {max_retries + 1} attempts: {last_error}",
-                            "success": False,
-                        }
+                    return {
+                        "error": f"Failed after {max_retries + 1} attempts: {last_error}",
+                        "success": False,
+                    }
 
             return {"error": "Unexpected retry failure", "success": False}
 
@@ -715,11 +712,11 @@ class WorkflowPatternUtils:
     @staticmethod
     def create_monitoring_wrapper(
         executor: Callable,
-        metrics: Optional[InteractionMetrics] = None,
+        metrics: InteractionMetrics | None = None,
     ) -> Callable:
         """Wrap executor with monitoring."""
 
-        async def monitored_executor(messages: List[InteractionMessage]) -> Any:
+        async def monitored_executor(messages: list[InteractionMessage]) -> Any:
             start_time = time.time()
             try:
                 result = await executor(messages)
@@ -746,7 +743,7 @@ class WorkflowPatternUtils:
         return monitored_executor
 
     @staticmethod
-    def serialize_interaction_state(state: AgentInteractionState) -> Dict[str, Any]:
+    def serialize_interaction_state(state: AgentInteractionState) -> dict[str, Any]:
         """Serialize interaction state for persistence."""
         return {
             "interaction_id": state.interaction_id,
@@ -770,7 +767,7 @@ class WorkflowPatternUtils:
         }
 
     @staticmethod
-    def deserialize_interaction_state(data: Dict[str, Any]) -> AgentInteractionState:
+    def deserialize_interaction_state(data: dict[str, Any]) -> AgentInteractionState:
         """Deserialize interaction state from persistence."""
         from ..datatypes.agents import AgentStatus
         from ..utils.execution_status import ExecutionStatus
@@ -814,9 +811,9 @@ class WorkflowPatternUtils:
 
 # Factory functions for common patterns
 def create_collaborative_orchestrator(
-    agents: List[str],
-    agent_executors: Dict[str, Callable],
-    config: Optional[Dict[str, Any]] = None,
+    agents: list[str],
+    agent_executors: dict[str, Callable],
+    config: dict[str, Any] | None = None,
 ) -> WorkflowOrchestrator:
     """Create a collaborative interaction orchestrator."""
 
@@ -855,9 +852,9 @@ def create_collaborative_orchestrator(
 
 
 def create_sequential_orchestrator(
-    agent_order: List[str],
-    agent_executors: Dict[str, Callable],
-    config: Optional[Dict[str, Any]] = None,
+    agent_order: list[str],
+    agent_executors: dict[str, Callable],
+    config: dict[str, Any] | None = None,
 ) -> WorkflowOrchestrator:
     """Create a sequential interaction orchestrator."""
 
@@ -896,9 +893,9 @@ def create_sequential_orchestrator(
 
 def create_hierarchical_orchestrator(
     coordinator_id: str,
-    subordinate_ids: List[str],
-    agent_executors: Dict[str, Callable],
-    config: Optional[Dict[str, Any]] = None,
+    subordinate_ids: list[str],
+    agent_executors: dict[str, Callable],
+    config: dict[str, Any] | None = None,
 ) -> WorkflowOrchestrator:
     """Create a hierarchical interaction orchestrator."""
 

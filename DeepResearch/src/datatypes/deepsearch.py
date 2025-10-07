@@ -78,8 +78,8 @@ class WebSearchRequest:
     """Web search request parameters."""
 
     query: str
-    time_filter: Optional[SearchTimeFilter] = None
-    location: Optional[str] = None
+    time_filter: SearchTimeFilter | None = None
+    location: str | None = None
     max_results: int = 10
 
 
@@ -91,7 +91,7 @@ class URLVisitResult:
     title: str
     content: str
     success: bool
-    error: Optional[str] = None
+    error: str | None = None
     processing_time: float = 0.0
 
 
@@ -101,7 +101,7 @@ class ReflectionQuestion:
 
     question: str
     priority: int = 1
-    context: Optional[str] = None
+    context: str | None = None
 
 
 @dataclass
@@ -118,7 +118,7 @@ class DeepSearchSchemas:
     def __init__(self):
         self.language_style: str = "formal English"
         self.language_code: str = "en"
-        self.search_language_code: Optional[str] = None
+        self.search_language_code: str | None = None
 
         # Language mapping equivalent to TypeScript version
         self.language_iso6391_map = {

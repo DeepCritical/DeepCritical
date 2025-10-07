@@ -6,14 +6,15 @@ into the existing Pydantic Graph state machine architecture.
 """
 
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 # Optional import for pydantic_graph
 try:
-    from pydantic_graph import Graph, BaseNode, End
+    from pydantic_graph import BaseNode, End, Graph
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
-    from typing import TypeVar, Generic
+    from typing import Generic, TypeVar
 
     T = TypeVar("T")
 
@@ -30,8 +31,8 @@ except ImportError:
             pass
 
 
+from ..datatypes.rag import Chunk, Document
 from ..tools.integrated_search_tools import IntegratedSearchTool
-from ..datatypes.rag import Document, Chunk
 from ..utils.execution_status import ExecutionStatus
 
 
@@ -45,10 +46,10 @@ class SearchWorkflowState(BaseModel):
     chunk_overlap: int = Field(0, description="Chunk overlap")
 
     # Results
-    raw_content: Optional[str] = Field(None, description="Raw search content")
-    documents: List[Document] = Field(default_factory=list, description="RAG documents")
-    chunks: List[Chunk] = Field(default_factory=list, description="RAG chunks")
-    search_result: Optional[Dict[str, Any]] = Field(
+    raw_content: str | None = Field(None, description="Raw search content")
+    documents: list[Document] = Field(default_factory=list, description="RAG documents")
+    chunks: list[Chunk] = Field(default_factory=list, description="RAG chunks")
+    search_result: dict[str, Any] | None = Field(
         None, description="Agent search results"
     )
 
@@ -62,7 +63,7 @@ class SearchWorkflowState(BaseModel):
     status: ExecutionStatus = Field(
         ExecutionStatus.PENDING, description="Execution status"
     )
-    errors: List[str] = Field(
+    errors: list[str] = Field(
         default_factory=list, description="Any errors encountered"
     )
 
@@ -111,9 +112,9 @@ class InitializeSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
             return PerformWebSearch()
 
         except Exception as e:
-            state.errors.append(f"Initialization failed: {str(e)}")
+            state.errors.append(f"Initialization failed: {e!s}")
             state.status = ExecutionStatus.FAILED
-            return End(f"Search failed: {str(e)}")
+            return End(f"Search failed: {e!s}")
 
 
 class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupported-base]
@@ -188,9 +189,9 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
             return ProcessResults()
 
         except Exception as e:
-            state.errors.append(f"Web search failed: {str(e)}")
+            state.errors.append(f"Web search failed: {e!s}")
             state.status = ExecutionStatus.FAILED
-            return End(f"Search failed: {str(e)}")
+            return End(f"Search failed: {e!s}")
 
 
 class ProcessResults(BaseNode[SearchWorkflowState]):  # type: ignore[unsupported-base]
@@ -212,11 +213,11 @@ class ProcessResults(BaseNode[SearchWorkflowState]):  # type: ignore[unsupported
             return GenerateFinalResponse()
 
         except Exception as e:
-            state.errors.append(f"Result processing failed: {str(e)}")
+            state.errors.append(f"Result processing failed: {e!s}")
             state.status = ExecutionStatus.FAILED
-            return End(f"Search failed: {str(e)}")
+            return End(f"Search failed: {e!s}")
 
-    def _create_summary(self, documents: List[Document], chunks: List[Chunk]) -> str:
+    def _create_summary(self, documents: list[Document], chunks: list[Chunk]) -> str:
         """Create a summary of search results."""
         summary_parts = []
 
@@ -268,9 +269,9 @@ class GenerateFinalResponse(BaseNode[SearchWorkflowState]):  # type: ignore[unsu
             return End(response)
 
         except Exception as e:
-            state.errors.append(f"Response generation failed: {str(e)}")
+            state.errors.append(f"Response generation failed: {e!s}")
             state.status = ExecutionStatus.FAILED
-            return End(f"Search failed: {str(e)}")
+            return End(f"Search failed: {e!s}")
 
 
 class SearchWorkflowError(BaseNode[SearchWorkflowState]):  # type: ignore[unsupported-base]
@@ -317,7 +318,7 @@ async def run_search_workflow(
     num_results: int = 4,
     chunk_size: int = 1000,
     chunk_overlap: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run the search workflow with the given parameters."""
 
     # Create initial state

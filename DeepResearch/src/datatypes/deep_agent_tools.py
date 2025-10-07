@@ -8,13 +8,14 @@ and related data structures that align with DeepCritical's architecture.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
 class WriteTodosRequest(BaseModel):
     """Request for writing todos."""
 
-    todos: List[Dict[str, Any]] = Field(..., description="List of todos to write")
+    todos: list[dict[str, Any]] = Field(..., description="List of todos to write")
 
     @field_validator("todos")
     @classmethod
@@ -40,7 +41,7 @@ class WriteTodosResponse(BaseModel):
 class ListFilesResponse(BaseModel):
     """Response from listing files."""
 
-    files: List[str] = Field(..., description="List of file paths")
+    files: list[str] = Field(..., description="List of file paths")
     count: int = Field(..., description="Number of files")
 
 
@@ -128,7 +129,7 @@ class TaskRequestModel(BaseModel):
 
     description: str = Field(..., description="Task description")
     subagent_type: str = Field(..., description="Type of subagent to use")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Task parameters"
     )
 
@@ -152,5 +153,5 @@ class TaskResponse(BaseModel):
 
     success: bool = Field(..., description="Whether task succeeded")
     task_id: str = Field(..., description="Task identifier")
-    result: Optional[Dict[str, Any]] = Field(None, description="Task result")
+    result: dict[str, Any] | None = Field(None, description="Task result")
     message: str = Field(..., description="Response message")

@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class AgentType(str, Enum):
@@ -47,10 +47,10 @@ class AgentStatus(str, Enum):
 class AgentDependencies:
     """Dependencies for agent execution."""
 
-    config: Dict[str, Any] = field(default_factory=dict)
-    tools: List[str] = field(default_factory=list)
-    other_agents: List[str] = field(default_factory=list)
-    data_sources: List[str] = field(default_factory=list)
+    config: dict[str, Any] = field(default_factory=dict)
+    tools: list[str] = field(default_factory=list)
+    other_agents: list[str] = field(default_factory=list)
+    data_sources: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -58,9 +58,9 @@ class AgentResult:
     """Result from agent execution."""
 
     success: bool
-    data: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    data: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
     execution_time: float = 0.0
     agent_type: AgentType = AgentType.EXECUTOR
 
@@ -69,7 +69,7 @@ class AgentResult:
 class ExecutionHistory:
     """History of agent executions."""
 
-    items: List[Dict[str, Any]] = field(default_factory=list)
+    items: list[dict[str, Any]] = field(default_factory=list)
 
     def record(self, agent_type: AgentType, result: AgentResult, **kwargs):
         """Record an execution result."""

@@ -12,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
+
 from omegaconf import DictConfig
 
 # Set up logging
@@ -21,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def setup_artifacts_directory(config: Optional[DictConfig] = None):
+def setup_artifacts_directory(config: DictConfig | None = None):
     """Set up the test artifacts directory using configuration."""
     if config is None:
         config = load_vllm_test_config()
@@ -38,8 +39,9 @@ def setup_artifacts_directory(config: Optional[DictConfig] = None):
 def load_vllm_test_config() -> DictConfig:
     """Load VLLM test configuration using Hydra."""
     try:
-        from hydra import compose, initialize_config_dir
         from pathlib import Path
+
+        from hydra import compose, initialize_config_dir
 
         config_dir = Path("configs")
         if config_dir.exists():
@@ -125,11 +127,11 @@ def create_default_test_config() -> DictConfig:
 
 
 def run_vllm_tests(
-    modules: Optional[List[str]] = None,
+    modules: list[str] | None = None,
     verbose: bool = False,
     coverage: bool = False,
     parallel: bool = False,
-    config: Optional[DictConfig] = None,
+    config: DictConfig | None = None,
     use_hydra_config: bool = True,
 ):
     """Run VLLM tests for specified modules or all modules with Hydra configuration.
@@ -231,7 +233,7 @@ def run_vllm_tests(
 
     # Run the tests
     try:
-        result = subprocess.run(cmd, cwd=Path.cwd())
+        result = subprocess.run(cmd, cwd=Path.cwd(), check=False)
 
         # Generate test report using configuration
         if result.returncode == 0:
@@ -252,9 +254,9 @@ def run_vllm_tests(
 
 
 def _generate_summary_report(
-    test_files: List[Path],
-    config: Optional[DictConfig] = None,
-    artifacts_dir: Optional[Path] = None,
+    test_files: list[Path],
+    config: DictConfig | None = None,
+    artifacts_dir: Path | None = None,
 ):
     """Generate a summary report of test results using configuration."""
     if config is None:

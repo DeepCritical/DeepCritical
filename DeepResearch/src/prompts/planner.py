@@ -1,11 +1,10 @@
 from typing import Dict
 
-
 STYLE = "concise"
 MAX_DEPTH = 3
 
 
-PLANNER_PROMPTS: Dict[str, str] = {
+PLANNER_PROMPTS: dict[str, str] = {
     "style": STYLE,
     "max_depth": str(MAX_DEPTH),
     "plan_workflow": "Plan the following workflow: {workflow_description}",

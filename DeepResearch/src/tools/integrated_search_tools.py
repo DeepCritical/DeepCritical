@@ -6,14 +6,15 @@ analytics tracking, and RAG datatypes for a complete search and retrieval system
 """
 
 import json
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict
+
 from pydantic_ai import RunContext
 
-from .base import ToolSpec, ToolRunner, ExecutionResult
-from .websearch_tools import ChunkedSearchTool
+from ..datatypes.rag import Chunk, Document, RAGQuery, SearchType
 from .analytics_tools import RecordRequestTool
-from ..datatypes.rag import Document, Chunk, RAGQuery, SearchType
+from .base import ExecutionResult, ToolRunner, ToolSpec
+from .websearch_tools import ChunkedSearchTool
 
 
 class IntegratedSearchTool(ToolRunner):
@@ -43,7 +44,7 @@ class IntegratedSearchTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute integrated search operation."""
         start_time = datetime.now()
 
@@ -160,7 +161,7 @@ class IntegratedSearchTool(ToolRunner):
             processing_time = (datetime.now() - start_time).total_seconds()
             return ExecutionResult(
                 success=False,
-                error=f"Integrated search failed: {str(e)}",
+                error=f"Integrated search failed: {e!s}",
                 data={"processing_time": processing_time, "success": False},
             )
 
@@ -189,7 +190,7 @@ class RAGSearchTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute RAG search operation."""
         try:
             # Extract parameters
@@ -243,7 +244,7 @@ class RAGSearchTool(ToolRunner):
             )
 
         except Exception as e:
-            return ExecutionResult(success=False, error=f"RAG search failed: {str(e)}")
+            return ExecutionResult(success=False, error=f"RAG search failed: {e!s}")
 
 
 # Pydantic AI Tool Functions
@@ -283,8 +284,7 @@ def integrated_search_tool(ctx: RunContext[Any]) -> str:
                 "query": result.data.get("query", ""),
             }
         )
-    else:
-        return f"Integrated search failed: {result.error}"
+    return f"Integrated search failed: {result.error}"
 
 
 def rag_search_tool(ctx: RunContext[Any]) -> str:
@@ -319,8 +319,7 @@ def rag_search_tool(ctx: RunContext[Any]) -> str:
                 "chunks": result.data.get("chunks", []),
             }
         )
-    else:
-        return f"RAG search failed: {result.error}"
+    return f"RAG search failed: {result.error}"
 
 
 # Register tools with the global registry

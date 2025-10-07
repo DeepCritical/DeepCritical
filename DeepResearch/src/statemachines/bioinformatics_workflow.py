@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Annotated
+from typing import Annotated, Any, Dict, List, Optional
 
 # Optional import for pydantic_graph
 try:
-    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+    from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
-    from typing import TypeVar, Generic
+    from typing import Generic, TypeVar
 
     T = TypeVar("T")
 
@@ -42,12 +42,12 @@ except ImportError:
 
 
 from ..datatypes.bioinformatics import (
-    FusedDataset,
-    ReasoningTask,
     DataFusionRequest,
+    EvidenceCode,
+    FusedDataset,
     GOAnnotation,
     PubMedPaper,
-    EvidenceCode,
+    ReasoningTask,
 )
 
 
@@ -57,30 +57,30 @@ class BioinformaticsState:
 
     # Input
     question: str
-    fusion_request: Optional[DataFusionRequest] = None
-    reasoning_task: Optional[ReasoningTask] = None
+    fusion_request: DataFusionRequest | None = None
+    reasoning_task: ReasoningTask | None = None
 
     # Processing state
-    go_annotations: List[GOAnnotation] = field(default_factory=list)
-    pubmed_papers: List[PubMedPaper] = field(default_factory=list)
-    fused_dataset: Optional[FusedDataset] = None
-    quality_metrics: Dict[str, float] = field(default_factory=dict)
+    go_annotations: list[GOAnnotation] = field(default_factory=list)
+    pubmed_papers: list[PubMedPaper] = field(default_factory=list)
+    fused_dataset: FusedDataset | None = None
+    quality_metrics: dict[str, float] = field(default_factory=dict)
 
     # Results
-    reasoning_result: Optional[Dict[str, Any]] = None
+    reasoning_result: dict[str, Any] | None = None
     final_answer: str = ""
 
     # Metadata
-    notes: List[str] = field(default_factory=list)
-    processing_steps: List[str] = field(default_factory=list)
-    config: Optional[Dict[str, Any]] = None
+    notes: list[str] = field(default_factory=list)
+    processing_steps: list[str] = field(default_factory=list)
+    config: dict[str, Any] | None = None
 
 
 @dataclass
 class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[unsupported-base]
     """Parse bioinformatics query and determine workflow type."""
 
-    async def run(self, ctx: GraphRunContext[BioinformaticsState]) -> "FuseDataSources":
+    async def run(self, ctx: GraphRunContext[BioinformaticsState]) -> FuseDataSources:
         """Parse the query and create appropriate fusion request using the new agent system."""
 
         question = ctx.state.question
@@ -121,7 +121,7 @@ class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[u
             return FuseDataSources()
 
         except Exception as e:
-            ctx.state.notes.append(f"Error in parsing: {str(e)}")
+            ctx.state.notes.append(f"Error in parsing: {e!s}")
             # Fallback to original logic
             fusion_type = self._determine_fusion_type(question)
             source_databases = self._identify_data_sources(question)
@@ -145,16 +145,15 @@ class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[u
 
         if "go" in question_lower and "pubmed" in question_lower:
             return "GO+PubMed"
-        elif "geo" in question_lower and "cmap" in question_lower:
+        if "geo" in question_lower and "cmap" in question_lower:
             return "GEO+CMAP"
-        elif "drugbank" in question_lower and "ttd" in question_lower:
+        if "drugbank" in question_lower and "ttd" in question_lower:
             return "DrugBank+TTD+CMAP"
-        elif "pdb" in question_lower and "intact" in question_lower:
+        if "pdb" in question_lower and "intact" in question_lower:
             return "PDB+IntAct"
-        else:
-            return "MultiSource"
+        return "MultiSource"
 
-    def _identify_data_sources(self, question: str) -> List[str]:
+    def _identify_data_sources(self, question: str) -> list[str]:
         """Identify relevant data sources from the question."""
         question_lower = question.lower()
         sources = []
@@ -176,7 +175,7 @@ class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[u
 
         return sources if sources else ["GO", "PubMed"]
 
-    def _extract_filters(self, question: str) -> Dict[str, Any]:
+    def _extract_filters(self, question: str) -> dict[str, Any]:
         """Extract filtering criteria from the question."""
         filters = {}
         question_lower = question.lower()
@@ -198,9 +197,7 @@ class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[u
 class FuseDataSources(BaseNode[BioinformaticsState]):  # type: ignore[unsupported-base]
     """Fuse data from multiple bioinformatics sources."""
 
-    async def run(
-        self, ctx: GraphRunContext[BioinformaticsState]
-    ) -> "AssessDataQuality":
+    async def run(self, ctx: GraphRunContext[BioinformaticsState]) -> AssessDataQuality:
         """Fuse data from multiple sources using the new agent system."""
 
         fusion_request = ctx.state.fusion_request
@@ -229,7 +226,7 @@ class FuseDataSources(BaseNode[BioinformaticsState]):  # type: ignore[unsupporte
             )
 
         except Exception as e:
-            ctx.state.notes.append(f"Data fusion failed: {str(e)}")
+            ctx.state.notes.append(f"Data fusion failed: {e!s}")
             # Create empty dataset for continuation
             ctx.state.fused_dataset = FusedDataset(
                 dataset_id="empty",
@@ -247,7 +244,7 @@ class AssessDataQuality(BaseNode[BioinformaticsState]):  # type: ignore[unsuppor
 
     async def run(
         self, ctx: GraphRunContext[BioinformaticsState]
-    ) -> "CreateReasoningTask":
+    ) -> CreateReasoningTask:
         """Assess data quality and determine next steps."""
 
         fused_dataset = ctx.state.fused_dataset
@@ -280,9 +277,7 @@ class AssessDataQuality(BaseNode[BioinformaticsState]):  # type: ignore[unsuppor
 class CreateReasoningTask(BaseNode[BioinformaticsState]):  # type: ignore[unsupported-base]
     """Create reasoning task based on original question and fused data."""
 
-    async def run(
-        self, ctx: GraphRunContext[BioinformaticsState]
-    ) -> "PerformReasoning":
+    async def run(self, ctx: GraphRunContext[BioinformaticsState]) -> PerformReasoning:
         """Create reasoning task from the original question."""
 
         question = ctx.state.question
@@ -326,21 +321,20 @@ class CreateReasoningTask(BaseNode[BioinformaticsState]):  # type: ignore[unsupp
 
         if any(term in question_lower for term in ["function", "role", "purpose"]):
             return "gene_function_prediction"
-        elif any(
+        if any(
             term in question_lower for term in ["interaction", "binding", "complex"]
         ):
             return "protein_interaction_prediction"
-        elif any(term in question_lower for term in ["drug", "compound", "inhibitor"]):
+        if any(term in question_lower for term in ["drug", "compound", "inhibitor"]):
             return "drug_target_prediction"
-        elif any(
+        if any(
             term in question_lower
             for term in ["expression", "regulation", "transcript"]
         ):
             return "expression_analysis"
-        elif any(term in question_lower for term in ["structure", "fold", "domain"]):
+        if any(term in question_lower for term in ["structure", "fold", "domain"]):
             return "structure_function_analysis"
-        else:
-            return "general_reasoning"
+        return "general_reasoning"
 
     def _assess_difficulty(self, question: str) -> str:
         """Assess the difficulty level of the reasoning task."""
@@ -351,19 +345,16 @@ class CreateReasoningTask(BaseNode[BioinformaticsState]):  # type: ignore[unsupp
             for term in ["complex", "multiple", "integrate", "combine"]
         ):
             return "hard"
-        elif any(term in question_lower for term in ["simple", "basic", "direct"]):
+        if any(term in question_lower for term in ["simple", "basic", "direct"]):
             return "easy"
-        else:
-            return "medium"
+        return "medium"
 
 
 @dataclass
 class PerformReasoning(BaseNode[BioinformaticsState]):  # type: ignore[unsupported-base]
     """Perform integrative reasoning using fused bioinformatics data."""
 
-    async def run(
-        self, ctx: GraphRunContext[BioinformaticsState]
-    ) -> "SynthesizeResults":
+    async def run(self, ctx: GraphRunContext[BioinformaticsState]) -> SynthesizeResults:
         """Perform reasoning using the new agent system."""
 
         reasoning_task = ctx.state.reasoning_task
@@ -396,11 +387,11 @@ class PerformReasoning(BaseNode[BioinformaticsState]):  # type: ignore[unsupport
             )
 
         except Exception as e:
-            ctx.state.notes.append(f"Reasoning failed: {str(e)}")
+            ctx.state.notes.append(f"Reasoning failed: {e!s}")
             # Create fallback result
             ctx.state.reasoning_result = {
                 "success": False,
-                "answer": f"Reasoning failed: {str(e)}",
+                "answer": f"Reasoning failed: {e!s}",
                 "confidence": 0.0,
                 "supporting_evidence": [],
                 "reasoning_chain": ["Error occurred during reasoning"],
@@ -508,7 +499,7 @@ bioinformatics_workflow = Graph(
 
 
 def run_bioinformatics_workflow(
-    question: str, config: Optional[Dict[str, Any]] = None
+    question: str, config: dict[str, Any] | None = None
 ) -> str:
     """Run the bioinformatics workflow for a given question."""
 

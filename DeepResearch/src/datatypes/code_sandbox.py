@@ -8,22 +8,21 @@ runners, tools, and execution results.
 from __future__ import annotations
 
 import json
+import os
 import re
-from dataclasses import dataclass
-from textwrap import indent
-from typing import Dict, List, Any
 
 # Import from tools directory since this file contains implementation that needs tools.base
 import sys
-import os
+from dataclasses import dataclass
+from textwrap import indent
+from typing import Any, Dict, List
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "tools"))
 
-from ..tools.base import ToolSpec, ToolRunner, ExecutionResult, registry
-
+from ..tools.base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Whitelist of safe Python builtins for sandboxed execution
-SAFE_BUILTINS: Dict[str, Any] = {
+SAFE_BUILTINS: dict[str, Any] = {
     "abs": abs,
     "all": all,
     "any": any,
@@ -59,14 +58,14 @@ class CodeSandboxRunner(ToolRunner):
         )
 
     def _generate_code(
-        self, problem: str, available_vars: str, previous_attempts: List[Dict[str, str]]
+        self, problem: str, available_vars: str, previous_attempts: list[dict[str, str]]
     ) -> str:
         """Generate code for the given problem."""
         # Load prompt from Hydra via PromptLoader; fall back to a minimal system
         try:
             from ..prompts import PromptLoader  # type: ignore
 
-            cfg: Dict[str, Any] = {}
+            cfg: dict[str, Any] = {}
             loader = PromptLoader(cfg)  # type: ignore
             system = loader.get("code_sandbox")
         except Exception:
@@ -110,10 +109,10 @@ class CodeSandboxRunner(ToolRunner):
 
         return _extract_code_from_output(output_text)
 
-    def _evaluate_code(self, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _evaluate_code(self, code: str, context: dict[str, Any]) -> dict[str, Any]:
         """Evaluate the generated code in a sandboxed environment."""
         # Prepare locals with context variables (valid identifiers only)
-        locals_env: Dict[str, Any] = {}
+        locals_env: dict[str, Any] = {}
         for key, value in (context or {}).items():
             if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
                 locals_env[key] = value
@@ -122,7 +121,7 @@ class CodeSandboxRunner(ToolRunner):
         wrapped = (
             f"def __solution__():\n{indent(code, '    ')}\nresult = __solution__()"
         )
-        global_env: Dict[str, Any] = {"__builtins__": SAFE_BUILTINS}
+        global_env: dict[str, Any] = {"__builtins__": SAFE_BUILTINS}
 
         try:
             exec(wrapped, global_env, locals_env)
@@ -136,7 +135,7 @@ class CodeSandboxRunner(ToolRunner):
             }
         return {"success": True, "output": locals_env["result"]}
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         """Run the code sandbox tool."""
         ok, err = self.validate(params)
         if not ok:
@@ -157,7 +156,7 @@ class CodeSandboxRunner(ToolRunner):
         ctx = _dict_from_context(context_str)
         available_vars = _analyze_structure(ctx)
 
-        attempts: List[Dict[str, str]] = []
+        attempts: list[dict[str, str]] = []
 
         for _ in range(max_attempts):
             code = self._generate_code(problem, available_vars, attempts)
@@ -194,7 +193,7 @@ class CodeSandboxTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         """Run the code sandbox tool."""
         code = params.get("code", "")
         language = params.get("language", "python")
@@ -207,15 +206,14 @@ class CodeSandboxTool(ToolRunner):
             runner = CodeSandboxRunner()
             result = runner.run({"code": code})
             return result
-        else:
-            return ExecutionResult(
-                success=True,
-                data={
-                    "result": f"Code executed in {language}: {code[:50]}...",
-                    "success": True,
-                },
-                metrics={"language": language},
-            )
+        return ExecutionResult(
+            success=True,
+            data={
+                "result": f"Code executed in {language}: {code[:50]}...",
+                "success": True,
+            },
+            metrics={"language": language},
+        )
 
 
 def _format_value(value: Any) -> str:
@@ -248,7 +246,7 @@ def _analyze_structure(value: Any, indent_str: str = "") -> str:
     if isinstance(value, dict):
         if not value:
             return "{}"
-        props: List[str] = []
+        props: list[str] = []
         for k, v in value.items():
             analyzed = _analyze_structure(v, indent_str + "  ")
             props.append(f'{indent_str}  "{k}": {analyzed}')
@@ -257,7 +255,7 @@ def _analyze_structure(value: Any, indent_str: str = "") -> str:
     return type(value).__name__
 
 
-def _dict_from_context(context_str: str) -> Dict[str, Any]:
+def _dict_from_context(context_str: str) -> dict[str, Any]:
     """Convert context string to dictionary."""
     if not context_str:
         return {}

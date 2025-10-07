@@ -11,10 +11,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Protocol
 from datetime import datetime
-
+from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol, Union
 
 # ============================================================================
 # Core Enums and Types
@@ -81,7 +80,7 @@ class ID:
 class Metadata:
     """Document metadata structure."""
 
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get metadata value by key."""
@@ -91,7 +90,7 @@ class Metadata:
         """Set metadata value."""
         self.data[key] = value
 
-    def update(self, metadata: Dict[str, Any]) -> None:
+    def update(self, metadata: dict[str, Any]) -> None:
         """Update metadata with new values."""
         self.data.update(metadata)
 
@@ -106,8 +105,8 @@ class Metadata:
 class Embedding:
     """Embedding vector structure."""
 
-    vector: List[float]
-    dimension: Optional[int] = None
+    vector: list[float]
+    dimension: int | None = None
 
     def __post_init__(self):
         if self.dimension is None:
@@ -124,9 +123,9 @@ class Document:
 
     id: ID
     content: str
-    metadata: Optional[Metadata] = None
-    embedding: Optional[Embedding] = None
-    uri: Optional[str] = None
+    metadata: Metadata | None = None
+    embedding: Embedding | None = None
+    uri: str | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -146,7 +145,7 @@ class WhereFilter:
     operator: str
     value: Any
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {self.field: {self.operator: self.value}}
 
@@ -158,7 +157,7 @@ class WhereDocumentFilter:
     operator: str
     value: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         return {self.operator: self.value}
 
@@ -167,10 +166,10 @@ class WhereDocumentFilter:
 class CompositeFilter:
     """Composite filter combining multiple conditions."""
 
-    and_conditions: Optional[List[Union[WhereFilter, WhereDocumentFilter]]] = None
-    or_conditions: Optional[List[Union[WhereFilter, WhereDocumentFilter]]] = None
+    and_conditions: list[WhereFilter | WhereDocumentFilter] | None = None
+    or_conditions: list[WhereFilter | WhereDocumentFilter] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary format."""
         result = {}
         if self.and_conditions:
@@ -196,7 +195,7 @@ class Include:
     uris: bool = False
     data: bool = False
 
-    def to_list(self) -> List[str]:
+    def to_list(self) -> list[str]:
         """Convert to list of include types."""
         includes = []
         if self.metadatas:
@@ -223,14 +222,14 @@ class Include:
 class QueryRequest:
     """Query request structure."""
 
-    query_texts: Optional[List[str]] = None
-    query_embeddings: Optional[List[List[float]]] = None
+    query_texts: list[str] | None = None
+    query_embeddings: list[list[float]] | None = None
     n_results: int = 10
-    where: Optional[Dict[str, Any]] = None
-    where_document: Optional[Dict[str, Any]] = None
-    include: Optional[Include] = None
-    collection_name: Optional[str] = None
-    collection_id: Optional[str] = None
+    where: dict[str, Any] | None = None
+    where_document: dict[str, Any] | None = None
+    include: Include | None = None
+    collection_name: str | None = None
+    collection_id: str | None = None
 
     def __post_init__(self):
         if self.include is None:
@@ -242,27 +241,27 @@ class QueryResult:
     """Single query result structure."""
 
     id: str
-    distance: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
-    document: Optional[str] = None
-    embedding: Optional[List[float]] = None
-    uri: Optional[str] = None
-    data: Optional[Any] = None
+    distance: float | None = None
+    metadata: dict[str, Any] | None = None
+    document: str | None = None
+    embedding: list[float] | None = None
+    uri: str | None = None
+    data: Any | None = None
 
 
 @dataclass
 class QueryResponse:
     """Query response structure."""
 
-    ids: List[List[str]]
-    distances: Optional[List[List[float]]] = None
-    metadatas: Optional[List[List[Dict[str, Any]]]] = None
-    documents: Optional[List[List[str]]] = None
-    embeddings: Optional[List[List[List[float]]]] = None
-    uris: Optional[List[List[str]]] = None
-    data: Optional[List[List[Any]]] = None
+    ids: list[list[str]]
+    distances: list[list[float]] | None = None
+    metadatas: list[list[dict[str, Any]]] | None = None
+    documents: list[list[str]] | None = None
+    embeddings: list[list[list[float]]] | None = None
+    uris: list[list[str]] | None = None
+    data: list[list[Any]] | None = None
 
-    def get_results(self, query_index: int = 0) -> List[QueryResult]:
+    def get_results(self, query_index: int = 0) -> list[QueryResult]:
         """Get results for a specific query."""
         results = []
         for i in range(len(self.ids[query_index])):
@@ -290,11 +289,11 @@ class CollectionMetadata:
 
     name: str
     id: str
-    metadata: Optional[Dict[str, Any]] = None
-    dimension: Optional[int] = None
+    metadata: dict[str, Any] | None = None
+    dimension: int | None = None
     distance_function: DistanceFunction = DistanceFunction.EUCLIDEAN
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @dataclass
@@ -302,8 +301,8 @@ class CreateCollectionRequest:
     """Request to create a new collection."""
 
     name: str
-    metadata: Optional[Dict[str, Any]] = None
-    embedding_function: Optional[str] = None
+    metadata: dict[str, Any] | None = None
+    embedding_function: str | None = None
     distance_function: DistanceFunction = DistanceFunction.EUCLIDEAN
 
 
@@ -313,34 +312,33 @@ class Collection:
 
     name: str
     id: str
-    metadata: Optional[Dict[str, Any]] = None
-    dimension: Optional[int] = None
+    metadata: dict[str, Any] | None = None
+    dimension: int | None = None
     distance_function: DistanceFunction = DistanceFunction.EUCLIDEAN
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
     count: int = 0
 
     def add(
         self,
-        documents: List[str],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
-        ids: Optional[List[str]] = None,
-        embeddings: Optional[List[List[float]]] = None,
-        uris: Optional[List[str]] = None,
-    ) -> List[str]:
+        documents: list[str],
+        metadatas: list[dict[str, Any]] | None = None,
+        ids: list[str] | None = None,
+        embeddings: list[list[float]] | None = None,
+        uris: list[str] | None = None,
+    ) -> list[str]:
         """Add documents to collection."""
         # This would be implemented by the actual Chroma client
         return []
-        pass
 
     def query(
         self,
-        query_texts: Optional[List[str]] = None,
-        query_embeddings: Optional[List[List[float]]] = None,
+        query_texts: list[str] | None = None,
+        query_embeddings: list[list[float]] | None = None,
         n_results: int = 10,
-        where: Optional[Dict[str, Any]] = None,
-        where_document: Optional[Dict[str, Any]] = None,
-        include: Optional[Include] = None,
+        where: dict[str, Any] | None = None,
+        where_document: dict[str, Any] | None = None,
+        include: Include | None = None,
     ) -> QueryResponse:
         """Query documents in collection."""
         # This would be implemented by the actual Chroma client
@@ -353,16 +351,15 @@ class Collection:
             uris=[],
             data=[],
         )
-        pass
 
     def get(
         self,
-        ids: Optional[List[str]] = None,
-        where: Optional[Dict[str, Any]] = None,
-        where_document: Optional[Dict[str, Any]] = None,
-        include: Optional[Include] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
+        ids: list[str] | None = None,
+        where: dict[str, Any] | None = None,
+        where_document: dict[str, Any] | None = None,
+        include: Include | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> QueryResponse:
         """Get documents from collection."""
         # This would be implemented by the actual Chroma client
@@ -375,30 +372,27 @@ class Collection:
             uris=[],
             data=[],
         )
-        pass
 
     def update(
         self,
-        ids: List[str],
-        documents: Optional[List[str]] = None,
-        metadatas: Optional[List[Dict[str, Any]]] = None,
-        embeddings: Optional[List[List[float]]] = None,
-        uris: Optional[List[str]] = None,
+        ids: list[str],
+        documents: list[str] | None = None,
+        metadatas: list[dict[str, Any]] | None = None,
+        embeddings: list[list[float]] | None = None,
+        uris: list[str] | None = None,
     ) -> None:
         """Update documents in collection."""
         # This would be implemented by the actual Chroma client
-        pass
 
     def delete(
         self,
-        ids: Optional[List[str]] = None,
-        where: Optional[Dict[str, Any]] = None,
-        where_document: Optional[Dict[str, Any]] = None,
-    ) -> List[str]:
+        ids: list[str] | None = None,
+        where: dict[str, Any] | None = None,
+        where_document: dict[str, Any] | None = None,
+    ) -> list[str]:
         """Delete documents from collection."""
         # This would be implemented by the actual Chroma client
         return []
-        pass
 
     def peek(self, limit: int = 10) -> QueryResponse:
         """Peek at documents in collection."""
@@ -418,7 +412,7 @@ class Collection:
 class EmbeddingFunction(Protocol):
     """Protocol for embedding functions."""
 
-    def __call__(self, input_texts: List[str]) -> List[List[float]]:
+    def __call__(self, input_texts: list[str]) -> list[list[float]]:
         """Generate embeddings for input texts."""
         ...
 
@@ -428,11 +422,11 @@ class EmbeddingFunctionConfig:
     """Configuration for embedding functions."""
 
     function_type: EmbeddingFunctionType
-    model_name: Optional[str] = None
-    api_key: Optional[str] = None
-    base_url: Optional[str] = None
-    custom_function: Optional[EmbeddingFunction] = None
-    dimension: Optional[int] = None
+    model_name: str | None = None
+    api_key: str | None = None
+    base_url: str | None = None
+    custom_function: EmbeddingFunction | None = None
+    dimension: int | None = None
 
     def create_function(self) -> EmbeddingFunction:
         """Create embedding function from config."""
@@ -456,12 +450,12 @@ class AuthConfig:
     """Authentication configuration."""
 
     auth_type: AuthType = AuthType.NONE
-    username: Optional[str] = None
-    password: Optional[str] = None
-    token: Optional[str] = None
+    username: str | None = None
+    password: str | None = None
+    token: str | None = None
     ssl_enabled: bool = False
-    ssl_cert_path: Optional[str] = None
-    ssl_key_path: Optional[str] = None
+    ssl_cert_path: str | None = None
+    ssl_key_path: str | None = None
 
 
 # ============================================================================
@@ -476,10 +470,10 @@ class ClientConfig:
     host: str = "localhost"
     port: int = 8000
     ssl: bool = False
-    headers: Optional[Dict[str, str]] = None
-    settings: Optional[Dict[str, Any]] = None
-    auth_config: Optional[AuthConfig] = None
-    embedding_function: Optional[EmbeddingFunctionConfig] = None
+    headers: dict[str, str] | None = None
+    settings: dict[str, Any] | None = None
+    auth_config: AuthConfig | None = None
+    embedding_function: EmbeddingFunctionConfig | None = None
 
 
 # ============================================================================
@@ -492,7 +486,7 @@ class ChromaClient:
     """Main ChromaDB client structure."""
 
     config: ClientConfig
-    collections: Dict[str, Collection] = field(default_factory=dict)
+    collections: dict[str, Collection] = field(default_factory=dict)
 
     def __post_init__(self):
         if self.config.auth_config is None:
@@ -501,8 +495,8 @@ class ChromaClient:
     def create_collection(
         self,
         name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        embedding_function: Optional[EmbeddingFunctionConfig] = None,
+        metadata: dict[str, Any] | None = None,
+        embedding_function: EmbeddingFunctionConfig | None = None,
         distance_function: DistanceFunction = DistanceFunction.EUCLIDEAN,
     ) -> Collection:
         """Create a new collection."""
@@ -517,11 +511,11 @@ class ChromaClient:
         self.collections[name] = collection
         return collection
 
-    def get_collection(self, name: str) -> Optional[Collection]:
+    def get_collection(self, name: str) -> Collection | None:
         """Get collection by name."""
         return self.collections.get(name)
 
-    def list_collections(self) -> List[CollectionMetadata]:
+    def list_collections(self) -> list[CollectionMetadata]:
         """List all collections."""
         return [
             CollectionMetadata(
@@ -546,8 +540,8 @@ class ChromaClient:
     def get_or_create_collection(
         self,
         name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        embedding_function: Optional[EmbeddingFunctionConfig] = None,
+        metadata: dict[str, Any] | None = None,
+        embedding_function: EmbeddingFunctionConfig | None = None,
         distance_function: DistanceFunction = DistanceFunction.EUCLIDEAN,
     ) -> Collection:
         """Get existing collection or create new one."""
@@ -585,8 +579,8 @@ def create_client(
     host: str = "localhost",
     port: int = 8000,
     ssl: bool = False,
-    auth_config: Optional[AuthConfig] = None,
-    embedding_function: Optional[EmbeddingFunctionConfig] = None,
+    auth_config: AuthConfig | None = None,
+    embedding_function: EmbeddingFunctionConfig | None = None,
 ) -> ChromaClient:
     """Create a new ChromaDB client."""
     config = ClientConfig(
@@ -601,10 +595,10 @@ def create_client(
 
 def create_embedding_function(
     function_type: EmbeddingFunctionType,
-    model_name: Optional[str] = None,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-    custom_function: Optional[EmbeddingFunction] = None,
+    model_name: str | None = None,
+    api_key: str | None = None,
+    base_url: str | None = None,
+    custom_function: EmbeddingFunction | None = None,
 ) -> EmbeddingFunctionConfig:
     """Create embedding function configuration."""
     return EmbeddingFunctionConfig(

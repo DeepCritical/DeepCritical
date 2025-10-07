@@ -9,35 +9,32 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from dataclasses import field
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic_ai import Agent, RunContext
 
-from ..datatypes.workflow_orchestration import (
-    MultiAgentSystemConfig,
-    AgentConfig,
-    WorkflowStatus,
-)
 from ..datatypes.multi_agent import (
-    CoordinationStrategy,
+    AgentRole,
     AgentState,
     CoordinationMessage,
-    CoordinationRound,
     CoordinationResult,
-    AgentRole,
+    CoordinationRound,
+    CoordinationStrategy,
+)
+from ..datatypes.workflow_orchestration import (
+    AgentConfig,
+    MultiAgentSystemConfig,
+    WorkflowStatus,
 )
 from ..prompts.multi_agent_coordinator import (
-    get_system_prompt,
     get_instructions,
+    get_system_prompt,
 )
 
 # Note: JudgeEvaluationRequest and JudgeEvaluationResult are defined in workflow_orchestrator.py
 # Import them from there if needed in the future
-
-if TYPE_CHECKING:
-    pass
 
 
 class MultiAgentCoordinator:
@@ -45,10 +42,10 @@ class MultiAgentCoordinator:
 
     def __init__(self, system_config: MultiAgentSystemConfig):
         self.system_config = system_config
-        self.agents: Dict[str, Agent] = {}
-        self.judges: Dict[str, Any] = field(default_factory=dict)
-        self.message_queue: List[CoordinationMessage] = field(default_factory=list)
-        self.coordination_history: List[CoordinationRound] = field(default_factory=list)
+        self.agents: dict[str, Agent] = {}
+        self.judges: dict[str, Any] = field(default_factory=dict)
+        self.message_queue: list[CoordinationMessage] = field(default_factory=list)
+        self.coordination_history: list[CoordinationRound] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize the coordinator."""
@@ -82,7 +79,7 @@ class MultiAgentCoordinator:
         """Get default system prompt for an agent role."""
         return get_system_prompt(role.value)
 
-    def _get_default_instructions(self, role: AgentRole) -> List[str]:
+    def _get_default_instructions(self, role: AgentRole) -> list[str]:
         """Get default instructions for an agent role."""
         return get_instructions(role.value)
 
@@ -94,7 +91,7 @@ class MultiAgentCoordinator:
             ctx: RunContext,
             receiver_id: str,
             message_type: str,
-            content: Dict[str, Any],
+            content: dict[str, Any],
             priority: int = 0,
         ) -> bool:
             """Send a message to another agent."""
@@ -113,7 +110,7 @@ class MultiAgentCoordinator:
         def broadcast_message(
             ctx: RunContext,
             message_type: str,
-            content: Dict[str, Any],
+            content: dict[str, Any],
             priority: int = 0,
         ) -> bool:
             """Broadcast a message to all agents."""
@@ -129,15 +126,15 @@ class MultiAgentCoordinator:
             return True
 
         @agent.tool
-        def get_agent_status(ctx: RunContext, agent_id: str) -> Dict[str, Any]:
+        def get_agent_status(ctx: RunContext, agent_id: str) -> dict[str, Any]:
             """Get the status of another agent."""
             # This would return actual agent status
             return {"agent_id": agent_id, "status": "active", "current_task": "working"}
 
         @agent.tool
         def request_consensus(
-            ctx: RunContext, topic: str, options: List[str]
-        ) -> Dict[str, Any]:
+            ctx: RunContext, topic: str, options: list[str]
+        ) -> dict[str, Any]:
             """Request consensus on a topic."""
             # This would implement consensus building
             return {"topic": topic, "consensus": "placeholder", "score": 0.8}
@@ -145,8 +142,8 @@ class MultiAgentCoordinator:
     async def coordinate(
         self,
         task_description: str,
-        input_data: Dict[str, Any],
-        max_rounds: Optional[int] = None,
+        input_data: dict[str, Any],
+        max_rounds: int | None = None,
     ) -> CoordinationResult:
         """Coordinate the multi-agent system."""
         start_time = time.time()
@@ -250,8 +247,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents collaboratively."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -328,8 +325,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents sequentially."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -394,8 +391,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents hierarchically."""
         # Find coordinator agent
@@ -472,8 +469,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents in peer-to-peer fashion."""
         # Similar to collaborative but with more direct communication
@@ -485,8 +482,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents in pipeline fashion."""
         # Execute agents in a pipeline where output of one becomes input of next
@@ -548,8 +545,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents to reach consensus."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -621,7 +618,7 @@ class MultiAgentCoordinator:
         task_description: str,
         agent_state: AgentState,
         round_num: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a single round for an agent."""
         agent_state.status = WorkflowStatus.RUNNING
         agent_state.start_time = datetime.now()
@@ -663,8 +660,8 @@ class MultiAgentCoordinator:
         return AgentRole.EXECUTOR
 
     def _determine_pipeline_order(
-        self, agent_states: Dict[str, AgentState]
-    ) -> List[str]:
+        self, agent_states: dict[str, AgentState]
+    ) -> list[str]:
         """Determine the order of agents in a pipeline."""
         # Simple ordering based on role priority
         role_priority = {
@@ -683,7 +680,7 @@ class MultiAgentCoordinator:
 
         return sorted_agents
 
-    def _calculate_consensus(self, agent_states: Dict[str, AgentState]) -> float:
+    def _calculate_consensus(self, agent_states: dict[str, AgentState]) -> float:
         """Calculate consensus score from agent states."""
         # Simple consensus calculation based on output similarity
         outputs = [
@@ -698,15 +695,15 @@ class MultiAgentCoordinator:
         return 0.8
 
     def _calculate_consensus_from_opinions(
-        self, opinions: Dict[str, Dict[str, Any]]
+        self, opinions: dict[str, dict[str, Any]]
     ) -> float:
         """Calculate consensus score from agent opinions."""
         # Placeholder consensus calculation
         return 0.8
 
     def _synthesize_results(
-        self, agent_states: Dict[str, AgentState]
-    ) -> Dict[str, Any]:
+        self, agent_states: dict[str, AgentState]
+    ) -> dict[str, Any]:
         """Synthesize results from all agent states."""
         results = {}
         for agent_id, state in agent_states.items():
@@ -725,8 +722,8 @@ class MultiAgentCoordinator:
         }
 
     def _synthesize_consensus_results(
-        self, agent_states: Dict[str, AgentState], consensus_score: float
-    ) -> Dict[str, Any]:
+        self, agent_states: dict[str, AgentState], consensus_score: float
+    ) -> dict[str, Any]:
         """Synthesize results based on consensus."""
         results = self._synthesize_results(agent_states)
         results["consensus_score"] = consensus_score
@@ -739,8 +736,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents in group chat mode (no strict turn-taking)."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -819,8 +816,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents by entering state machines."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -889,8 +886,8 @@ class MultiAgentCoordinator:
         self,
         coordination_id: str,
         task_description: str,
-        agent_states: Dict[str, AgentState],
-        max_rounds: Optional[int],
+        agent_states: dict[str, AgentState],
+        max_rounds: int | None,
     ) -> CoordinationResult:
         """Coordinate agents by executing subgraphs."""
         max_rounds = max_rounds or self.system_config.max_rounds
@@ -926,7 +923,7 @@ class MultiAgentCoordinator:
                         if agent_states[agent_id].status != WorkflowStatus.FAILED:
                             agent_states[
                                 agent_id
-                            ].error_message = f"Subgraph {subgraph} failed: {str(e)}"
+                            ].error_message = f"Subgraph {subgraph} failed: {e!s}"
 
             coordination_round.end_time = datetime.now()
             coordination_round.agent_states = agent_states.copy()
@@ -961,7 +958,7 @@ class MultiAgentCoordinator:
         return round_num % 2 == 0 or agent_state.iteration_count < 3
 
     def _conversation_should_end(
-        self, agent_states: Dict[str, AgentState], round_num: int
+        self, agent_states: dict[str, AgentState], round_num: int
     ) -> bool:
         """Determine if the group chat conversation should end."""
         # Check if all agents have contributed meaningfully
@@ -972,7 +969,7 @@ class MultiAgentCoordinator:
         ]
         return len(active_agents) >= len(agent_states) * 0.8 or round_num >= 5
 
-    def _identify_relevant_state_machines(self, task_description: str) -> List[str]:
+    def _identify_relevant_state_machines(self, task_description: str) -> list[str]:
         """Identify relevant state machines for the task."""
         # This would analyze the task and determine which state machines to use
         state_machines = []
@@ -990,22 +987,22 @@ class MultiAgentCoordinator:
         return state_machines if state_machines else ["search_workflow"]
 
     def _select_state_machine_for_agent(
-        self, agent_id: str, state_machines: List[str]
-    ) -> Optional[str]:
+        self, agent_id: str, state_machines: list[str]
+    ) -> str | None:
         """Select the appropriate state machine for an agent."""
         # This would match agent roles to state machines
         agent_role = self._get_agent_role(agent_id)
 
         if agent_role == AgentRole.SEARCH_AGENT and "search_workflow" in state_machines:
             return "search_workflow"
-        elif agent_role == AgentRole.RAG_AGENT and "rag_workflow" in state_machines:
+        if agent_role == AgentRole.RAG_AGENT and "rag_workflow" in state_machines:
             return "rag_workflow"
-        elif (
+        if (
             agent_role == AgentRole.CODE_EXECUTOR
             and "code_execution_workflow" in state_machines
         ):
             return "code_execution_workflow"
-        elif (
+        if (
             agent_role == AgentRole.BIOINFORMATICS_AGENT
             and "bioinformatics_workflow" in state_machines
         ):
@@ -1021,7 +1018,7 @@ class MultiAgentCoordinator:
         state_machine: str,
         task_description: str,
         agent_state: AgentState,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Enter a state machine with an agent."""
         # This would actually enter the state machine
         # For now, return a placeholder
@@ -1032,7 +1029,7 @@ class MultiAgentCoordinator:
             "status": "completed",
         }
 
-    def _identify_relevant_subgraphs(self, task_description: str) -> List[str]:
+    def _identify_relevant_subgraphs(self, task_description: str) -> list[str]:
         """Identify relevant subgraphs for the task."""
         # Similar to state machines but for subgraphs
         subgraphs = []
@@ -1050,8 +1047,8 @@ class MultiAgentCoordinator:
         return subgraphs if subgraphs else ["search_subgraph"]
 
     async def _execute_subgraph_with_agents(
-        self, subgraph: str, task_description: str, agent_states: Dict[str, AgentState]
-    ) -> Dict[str, Dict[str, Any]]:
+        self, subgraph: str, task_description: str, agent_states: dict[str, AgentState]
+    ) -> dict[str, dict[str, Any]]:
         """Execute a subgraph with agents."""
         # This would execute the actual subgraph
         # For now, return placeholder results
@@ -1064,12 +1061,12 @@ class MultiAgentCoordinator:
             }
         return results
 
-    def _all_state_machines_processed(self, state_machines: List[str]) -> bool:
+    def _all_state_machines_processed(self, state_machines: list[str]) -> bool:
         """Check if all state machines have been processed."""
         # This would track which state machines have been processed
         return True  # Simplified for now
 
-    def _all_subgraphs_processed(self, subgraphs: List[str]) -> bool:
+    def _all_subgraphs_processed(self, subgraphs: list[str]) -> bool:
         """Check if all subgraphs have been processed."""
         # This would track which subgraphs have been processed
         return True  # Simplified for now

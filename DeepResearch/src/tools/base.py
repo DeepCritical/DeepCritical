@@ -1,23 +1,24 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Callable, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 @dataclass
 class ToolSpec:
     name: str
     description: str = ""
-    inputs: Dict[str, str] = field(default_factory=dict)  # param: type
-    outputs: Dict[str, str] = field(default_factory=dict)  # key: type
+    inputs: dict[str, str] = field(default_factory=dict)  # param: type
+    outputs: dict[str, str] = field(default_factory=dict)  # key: type
 
 
 @dataclass
 class ExecutionResult:
     success: bool
-    data: Dict[str, Any] = field(default_factory=dict)
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    data: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
 
 
 class ToolRunner:
@@ -26,7 +27,7 @@ class ToolRunner:
     def __init__(self, spec: ToolSpec):
         self.spec = spec
 
-    def validate(self, params: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    def validate(self, params: dict[str, Any]) -> tuple[bool, str | None]:
         for k, t in self.spec.inputs.items():
             if k not in params:
                 return False, f"Missing required param: {k}"
@@ -36,13 +37,13 @@ class ToolRunner:
                     return False, f"Invalid type for {k}: expected str for {t}"
         return True, None
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         raise NotImplementedError
 
 
 class ToolRegistry:
     def __init__(self):
-        self._tools: Dict[str, Callable[[], ToolRunner]] = {}
+        self._tools: dict[str, Callable[[], ToolRunner]] = {}
 
     def register(self, name: str, factory: Callable[[], ToolRunner]):
         self._tools[name] = factory

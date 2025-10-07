@@ -14,10 +14,10 @@ class TestAgentsModuleImports:
     def test_agents_datatypes_imports(self):
         """Test all imports from agents datatypes module."""
         from DeepResearch.src.datatypes.agents import (
-            AgentType,
-            AgentStatus,
             AgentDependencies,
             AgentResult,
+            AgentStatus,
+            AgentType,
             ExecutionHistory,
         )
 
@@ -58,10 +58,10 @@ class TestAgentsModuleImports:
 
         # Test specific classes and functions
         from DeepResearch.src.agents.prime_parser import (
-            ScientificIntent,
             DataType,
-            StructuredProblem,
             QueryParser,
+            ScientificIntent,
+            StructuredProblem,
             parse_query,
         )
 
@@ -81,10 +81,10 @@ class TestAgentsModuleImports:
 
         from DeepResearch.src.agents.prime_planner import (
             PlanGenerator,
+            ToolCategory,
+            ToolSpec,
             WorkflowDAG,
             WorkflowStep,
-            ToolSpec,
-            ToolCategory,
             generate_plan,
         )
 
@@ -104,8 +104,8 @@ class TestAgentsModuleImports:
         """Test all imports from prime_executor module."""
 
         from DeepResearch.src.agents.prime_executor import (
-            ToolExecutor,
             ExecutionContext,
+            ToolExecutor,
             execute_workflow,
         )
 
@@ -213,9 +213,9 @@ class TestAgentsModuleImports:
         # Test that the main types are accessible through the main module
         # (they should be imported from the datatypes module)
         from DeepResearch.src.datatypes import (
-            CoordinationStrategy,
             AgentRole,
             CoordinationResult,
+            CoordinationStrategy,
         )
 
         assert CoordinationStrategy is not None
@@ -231,9 +231,9 @@ class TestAgentsModuleImports:
 
         # Test that execution types are accessible from datatypes (used by agents)
         from DeepResearch.src.datatypes import (
-            WorkflowStep,
-            WorkflowDAG,
             ExecutionContext,
+            WorkflowDAG,
+            WorkflowStep,
         )
 
         # Verify they are all accessible and not None
@@ -254,9 +254,9 @@ class TestAgentsModuleImports:
         from DeepResearch.src.agents.search_agent import SearchAgent
         from DeepResearch.src.datatypes.search_agent import (
             SearchAgentConfig,
+            SearchAgentDependencies,
             SearchQuery,
             SearchResult,
-            SearchAgentDependencies,
         )
         from DeepResearch.src.prompts.search_agent import SearchAgentPrompts
 
@@ -327,11 +327,11 @@ class TestAgentsComplexImportChains:
         # This tests the full chain: agents -> prompts -> tools -> datatypes
         try:
             from DeepResearch.src.agents.research_agent import ResearchAgent
+            from DeepResearch.src.datatypes import Document, ResearchOutcome, StepResult
             from DeepResearch.src.prompts import PromptLoader
             from DeepResearch.src.utils.pydantic_ai_utils import (
                 build_builtin_tools as _build_builtin_tools,
             )
-            from DeepResearch.src.datatypes import Document, ResearchOutcome, StepResult
 
             # If all imports succeed, the chain is working
             assert ResearchAgent is not None
@@ -347,8 +347,8 @@ class TestAgentsComplexImportChains:
     def test_workflow_execution_chain(self):
         """Test the complete import chain for workflow execution."""
         try:
-            from DeepResearch.src.agents.prime_planner import generate_plan
             from DeepResearch.src.agents.prime_executor import execute_workflow
+            from DeepResearch.src.agents.prime_planner import generate_plan
             from DeepResearch.src.datatypes.orchestrator import Orchestrator
 
             # If all imports succeed, the chain is working

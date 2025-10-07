@@ -7,10 +7,11 @@ can inherit from to test prompts using VLLM containers.
 
 import json
 import logging
-import pytest
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import pytest
 from omegaconf import DictConfig
 
 from scripts.prompt_testing.testcontainers_vllm import (
@@ -57,14 +58,15 @@ class VLLMPromptTestBase:
         """Check if running in CI environment."""
         return any(
             var in {"CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL"}
-            for var in {"CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL"}
+            for var in ("CI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS_URL")
         )
 
     def _load_vllm_test_config(self) -> DictConfig:
         """Load VLLM test configuration using Hydra."""
         try:
-            from hydra import compose, initialize_config_dir
             from pathlib import Path
+
+            from hydra import compose, initialize_config_dir
 
             config_dir = Path("configs")
             if config_dir.exists():
@@ -152,8 +154,8 @@ class VLLMPromptTestBase:
         return OmegaConf.create(default_config)
 
     def _load_prompts_from_module(
-        self, module_name: str, config: Optional[DictConfig] = None
-    ) -> List[Tuple[str, str, str]]:
+        self, module_name: str, config: DictConfig | None = None
+    ) -> list[tuple[str, str, str]]:
         """Load prompts from a specific prompt module with configuration support.
 
         Args:
@@ -228,10 +230,10 @@ class VLLMPromptTestBase:
         vllm_tester: VLLMPromptTester,
         prompt_name: str,
         prompt_template: str,
-        expected_placeholders: Optional[List[str]] = None,
-        config: Optional[DictConfig] = None,
+        expected_placeholders: list[str] | None = None,
+        config: DictConfig | None = None,
         **generation_kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test a single prompt with VLLM using configuration.
 
         Args:
@@ -307,10 +309,10 @@ class VLLMPromptTestBase:
     def _test_prompt_batch(
         self,
         vllm_tester: VLLMPromptTester,
-        prompts: List[Tuple[str, str]],
-        config: Optional[DictConfig] = None,
+        prompts: list[tuple[str, str]],
+        config: DictConfig | None = None,
         **generation_kwargs,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Test a batch of prompts with configuration and single instance optimization.
 
         Args:
@@ -380,7 +382,7 @@ class VLLMPromptTestBase:
         return results
 
     def _generate_test_report(
-        self, results: List[Dict[str, Any]], module_name: str
+        self, results: list[dict[str, Any]], module_name: str
     ) -> str:
         """Generate a test report for the results.
 
@@ -440,9 +442,9 @@ class VLLMPromptTestBase:
         self,
         module_name: str,
         vllm_tester: VLLMPromptTester,
-        config: Optional[DictConfig] = None,
+        config: DictConfig | None = None,
         **generation_kwargs,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Run prompt tests for a specific module with configuration support.
 
         Args:
@@ -501,9 +503,9 @@ class VLLMPromptTestBase:
 
     def assert_prompt_test_success(
         self,
-        results: List[Dict[str, Any]],
-        min_success_rate: Optional[float] = None,
-        config: Optional[DictConfig] = None,
+        results: list[dict[str, Any]],
+        min_success_rate: float | None = None,
+        config: DictConfig | None = None,
     ):
         """Assert that prompt tests meet minimum success criteria using configuration.
 
@@ -534,9 +536,9 @@ class VLLMPromptTestBase:
 
     def assert_reasoning_detected(
         self,
-        results: List[Dict[str, Any]],
-        min_reasoning_rate: Optional[float] = None,
-        config: Optional[DictConfig] = None,
+        results: list[dict[str, Any]],
+        min_reasoning_rate: float | None = None,
+        config: DictConfig | None = None,
     ):
         """Assert that reasoning was detected in responses using configuration.
 

@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Annotated
+from typing import Annotated, Any, Dict, List, Optional
 
 # Optional import for pydantic_graph
 try:
-    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+    from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
-    from typing import TypeVar, Generic
+    from typing import Generic, TypeVar
 
     T = TypeVar("T")
 
@@ -44,20 +44,21 @@ except ImportError:
 
 from omegaconf import DictConfig
 
+from ..datatypes.agents import AgentType
+
 # Import existing DeepCritical types
 from ..datatypes.workflow_patterns import (
+    AgentInteractionState,
     InteractionPattern,
     WorkflowOrchestrator,
-    create_workflow_orchestrator,
-    AgentInteractionState,
     create_interaction_state,
+    create_workflow_orchestrator,
 )
-from ..datatypes.agents import AgentType
 from ..utils.execution_status import ExecutionStatus
 from ..utils.workflow_patterns import (
     ConsensusAlgorithm,
-    MessageRoutingStrategy,
     InteractionMetrics,
+    MessageRoutingStrategy,
     WorkflowPatternUtils,
 )
 
@@ -68,31 +69,31 @@ class WorkflowPatternState:
 
     # Input
     question: str
-    config: Optional[DictConfig] = None
+    config: DictConfig | None = None
 
     # Pattern configuration
     interaction_pattern: InteractionPattern = InteractionPattern.COLLABORATIVE
-    agent_ids: List[str] = field(default_factory=list)
-    agent_types: Dict[str, AgentType] = field(default_factory=dict)
+    agent_ids: list[str] = field(default_factory=list)
+    agent_types: dict[str, AgentType] = field(default_factory=dict)
 
     # Execution state
-    interaction_state: Optional[AgentInteractionState] = None
-    orchestrator: Optional[WorkflowOrchestrator] = None
+    interaction_state: AgentInteractionState | None = None
+    orchestrator: WorkflowOrchestrator | None = None
     metrics: InteractionMetrics = field(default_factory=InteractionMetrics)
 
     # Results
-    final_result: Optional[Any] = None
-    execution_summary: Dict[str, Any] = field(default_factory=dict)
+    final_result: Any | None = None
+    execution_summary: dict[str, Any] = field(default_factory=dict)
 
     # Metadata
-    processing_steps: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    processing_steps: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     execution_status: ExecutionStatus = ExecutionStatus.PENDING
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
+    end_time: float | None = None
 
     # Context for Pydantic Graph
-    agent_executors: Dict[str, Any] = field(default_factory=dict)
+    agent_executors: dict[str, Any] = field(default_factory=dict)
     message_routing: MessageRoutingStrategy = MessageRoutingStrategy.DIRECT
     consensus_algorithm: ConsensusAlgorithm = ConsensusAlgorithm.SIMPLE_AGREEMENT
 
@@ -104,7 +105,7 @@ class WorkflowPatternState:
 class InitializePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Initialize workflow pattern execution."""
 
-    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> "SetupAgents":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> SetupAgents:
         """Initialize the interaction pattern."""
         try:
             # Create interaction state
@@ -128,7 +129,7 @@ class InitializePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsuppo
             return SetupAgents()
 
         except Exception as e:
-            ctx.state.errors.append(f"Pattern initialization failed: {str(e)}")
+            ctx.state.errors.append(f"Pattern initialization failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -137,7 +138,7 @@ class InitializePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsuppo
 class SetupAgents(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Set up agents for interaction."""
 
-    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> "ExecutePattern":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> ExecutePattern:
         """Set up agents and prepare for execution."""
         try:
             orchestrator = ctx.state.orchestrator
@@ -163,7 +164,7 @@ class SetupAgents(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-b
             return ExecutePattern()
 
         except Exception as e:
-            ctx.state.errors.append(f"Agent setup failed: {str(e)}")
+            ctx.state.errors.append(f"Agent setup failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -177,7 +178,7 @@ class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):  # type: igno
 
     async def run(
         self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ProcessCollaborativeResults":
+    ) -> ProcessCollaborativeResults:
         """Execute collaborative pattern."""
         try:
             orchestrator = ctx.state.orchestrator
@@ -195,7 +196,7 @@ class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):  # type: igno
             return ProcessCollaborativeResults()
 
         except Exception as e:
-            ctx.state.errors.append(f"Collaborative pattern execution failed: {str(e)}")
+            ctx.state.errors.append(f"Collaborative pattern execution failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -206,7 +207,7 @@ class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):  # type: ignore[
 
     async def run(
         self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ProcessSequentialResults":
+    ) -> ProcessSequentialResults:
         """Execute sequential pattern."""
         try:
             orchestrator = ctx.state.orchestrator
@@ -224,7 +225,7 @@ class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):  # type: ignore[
             return ProcessSequentialResults()
 
         except Exception as e:
-            ctx.state.errors.append(f"Sequential pattern execution failed: {str(e)}")
+            ctx.state.errors.append(f"Sequential pattern execution failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -235,7 +236,7 @@ class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):  # type: ignor
 
     async def run(
         self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ProcessHierarchicalResults":
+    ) -> ProcessHierarchicalResults:
         """Execute hierarchical pattern."""
         try:
             orchestrator = ctx.state.orchestrator
@@ -253,7 +254,7 @@ class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):  # type: ignor
             return ProcessHierarchicalResults()
 
         except Exception as e:
-            ctx.state.errors.append(f"Hierarchical pattern execution failed: {str(e)}")
+            ctx.state.errors.append(f"Hierarchical pattern execution failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -267,7 +268,7 @@ class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):  # type: igno
 
     async def run(
         self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ValidateConsensus":
+    ) -> ValidateConsensus:
         """Process collaborative results."""
         try:
             # Compute consensus metrics
@@ -295,7 +296,7 @@ class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):  # type: igno
             return ValidateConsensus()
 
         except Exception as e:
-            ctx.state.errors.append(f"Collaborative result processing failed: {str(e)}")
+            ctx.state.errors.append(f"Collaborative result processing failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -304,9 +305,7 @@ class ProcessCollaborativeResults(BaseNode[WorkflowPatternState]):  # type: igno
 class ProcessSequentialResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Process results from sequential pattern."""
 
-    async def run(
-        self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ValidateResults":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> ValidateResults:
         """Process sequential results."""
         try:
             # Sequential results are already in the correct format
@@ -333,7 +332,7 @@ class ProcessSequentialResults(BaseNode[WorkflowPatternState]):  # type: ignore[
             return ValidateResults()
 
         except Exception as e:
-            ctx.state.errors.append(f"Sequential result processing failed: {str(e)}")
+            ctx.state.errors.append(f"Sequential result processing failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -342,9 +341,7 @@ class ProcessSequentialResults(BaseNode[WorkflowPatternState]):  # type: ignore[
 class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Process results from hierarchical pattern."""
 
-    async def run(
-        self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "ValidateResults":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> ValidateResults:
         """Process hierarchical results."""
         try:
             # Hierarchical results contain coordinator and subordinate results
@@ -367,7 +364,7 @@ class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):  # type: ignor
             return ValidateResults()
 
         except Exception as e:
-            ctx.state.errors.append(f"Hierarchical result processing failed: {str(e)}")
+            ctx.state.errors.append(f"Hierarchical result processing failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -379,9 +376,7 @@ class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):  # type: ignor
 class ValidateConsensus(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Validate consensus results."""
 
-    async def run(
-        self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "FinalizePattern":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> FinalizePattern:
         """Validate consensus was achieved."""
         try:
             consensus_reached = ctx.state.execution_summary.get(
@@ -400,7 +395,7 @@ class ValidateConsensus(BaseNode[WorkflowPatternState]):  # type: ignore[unsuppo
             return FinalizePattern()
 
         except Exception as e:
-            ctx.state.errors.append(f"Consensus validation failed: {str(e)}")
+            ctx.state.errors.append(f"Consensus validation failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -409,9 +404,7 @@ class ValidateConsensus(BaseNode[WorkflowPatternState]):  # type: ignore[unsuppo
 class ValidateResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-base]
     """Validate pattern execution results."""
 
-    async def run(
-        self, ctx: GraphRunContext[WorkflowPatternState]
-    ) -> "FinalizePattern":
+    async def run(self, ctx: GraphRunContext[WorkflowPatternState]) -> FinalizePattern:
         """Validate pattern execution was successful."""
         try:
             final_result = ctx.state.final_result
@@ -446,7 +439,7 @@ class ValidateResults(BaseNode[WorkflowPatternState]):  # type: ignore[unsupport
             return FinalizePattern()
 
         except Exception as e:
-            ctx.state.errors.append(f"Result validation failed: {str(e)}")
+            ctx.state.errors.append(f"Result validation failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -544,7 +537,7 @@ class FinalizePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupport
             return End(final_output)
 
         except Exception as e:
-            ctx.state.errors.append(f"Pattern finalization failed: {str(e)}")
+            ctx.state.errors.append(f"Pattern finalization failed: {e!s}")
             ctx.state.execution_status = ExecutionStatus.FAILED
             return PatternError()
 
@@ -597,13 +590,12 @@ class ExecutePattern(BaseNode[WorkflowPatternState]):  # type: ignore[unsupporte
 
         if pattern == InteractionPattern.COLLABORATIVE:
             return ExecuteCollaborativePattern()
-        elif pattern == InteractionPattern.SEQUENTIAL:
+        if pattern == InteractionPattern.SEQUENTIAL:
             return ExecuteSequentialPattern()
-        elif pattern == InteractionPattern.HIERARCHICAL:
+        if pattern == InteractionPattern.HIERARCHICAL:
             return ExecuteHierarchicalPattern()
-        else:
-            ctx.state.errors.append(f"Unsupported pattern: {pattern}")
-            return PatternError()
+        ctx.state.errors.append(f"Unsupported pattern: {pattern}")
+        return PatternError()
 
 
 # --- Workflow Graph Creation ---
@@ -662,13 +654,12 @@ def create_pattern_graph(pattern: InteractionPattern) -> Graph[WorkflowPatternSt
 
     if pattern == InteractionPattern.COLLABORATIVE:
         return create_collaborative_pattern_graph()
-    elif pattern == InteractionPattern.SEQUENTIAL:
+    if pattern == InteractionPattern.SEQUENTIAL:
         return create_sequential_pattern_graph()
-    elif pattern == InteractionPattern.HIERARCHICAL:
+    if pattern == InteractionPattern.HIERARCHICAL:
         return create_hierarchical_pattern_graph()
-    else:
-        # Default to collaborative
-        return create_collaborative_pattern_graph()
+    # Default to collaborative
+    return create_collaborative_pattern_graph()
 
 
 # --- Workflow Execution Functions ---
@@ -676,10 +667,10 @@ def create_pattern_graph(pattern: InteractionPattern) -> Graph[WorkflowPatternSt
 
 async def run_collaborative_pattern_workflow(
     question: str,
-    agents: List[str],
-    agent_types: Dict[str, AgentType],
-    agent_executors: Dict[str, Any],
-    config: Optional[DictConfig] = None,
+    agents: list[str],
+    agent_types: dict[str, AgentType],
+    agent_executors: dict[str, Any],
+    config: DictConfig | None = None,
 ) -> str:
     """Run collaborative pattern workflow."""
 
@@ -699,10 +690,10 @@ async def run_collaborative_pattern_workflow(
 
 async def run_sequential_pattern_workflow(
     question: str,
-    agents: List[str],
-    agent_types: Dict[str, AgentType],
-    agent_executors: Dict[str, Any],
-    config: Optional[DictConfig] = None,
+    agents: list[str],
+    agent_types: dict[str, AgentType],
+    agent_executors: dict[str, Any],
+    config: DictConfig | None = None,
 ) -> str:
     """Run sequential pattern workflow."""
 
@@ -723,10 +714,10 @@ async def run_sequential_pattern_workflow(
 async def run_hierarchical_pattern_workflow(
     question: str,
     coordinator_id: str,
-    subordinate_ids: List[str],
-    agent_types: Dict[str, AgentType],
-    agent_executors: Dict[str, Any],
-    config: Optional[DictConfig] = None,
+    subordinate_ids: list[str],
+    agent_types: dict[str, AgentType],
+    agent_executors: dict[str, Any],
+    config: DictConfig | None = None,
 ) -> str:
     """Run hierarchical pattern workflow."""
 
@@ -748,10 +739,10 @@ async def run_hierarchical_pattern_workflow(
 async def run_pattern_workflow(
     question: str,
     pattern: InteractionPattern,
-    agents: List[str],
-    agent_types: Dict[str, AgentType],
-    agent_executors: Dict[str, Any],
-    config: Optional[DictConfig] = None,
+    agents: list[str],
+    agent_types: dict[str, AgentType],
+    agent_executors: dict[str, Any],
+    config: DictConfig | None = None,
 ) -> str:
     """Run workflow with the specified interaction pattern."""
 

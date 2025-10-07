@@ -10,14 +10,14 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Annotated
+from typing import Annotated, Any, Dict, List, Optional
 
 # Optional import for pydantic_graph
 try:
-    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+    from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
-    from typing import TypeVar, Generic
+    from typing import Generic, TypeVar
 
     T = TypeVar("T")
 
@@ -44,8 +44,8 @@ except ImportError:
 
 from omegaconf import DictConfig
 
-from ..datatypes.rag import RAGConfig, RAGQuery, RAGResponse, Document, SearchType
-from ..datatypes.vllm_integration import VLLMRAGSystem, VLLMDeployment
+from ..datatypes.rag import Document, RAGConfig, RAGQuery, RAGResponse, SearchType
+from ..datatypes.vllm_integration import VLLMDeployment, VLLMRAGSystem
 from ..utils.execution_status import ExecutionStatus
 
 
@@ -54,13 +54,13 @@ class RAGState:
     """State for RAG workflow execution."""
 
     question: str
-    rag_config: Optional[RAGConfig] = None
-    documents: List[Document] = field(default_factory=list)
-    rag_response: Optional[RAGResponse] = None
-    rag_result: Optional[Dict[str, Any]] = None  # For agent results
-    processing_steps: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    config: Optional[DictConfig] = None
+    rag_config: RAGConfig | None = None
+    documents: list[Document] = field(default_factory=list)
+    rag_response: RAGResponse | None = None
+    rag_result: dict[str, Any] | None = None  # For agent results
+    processing_steps: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    config: DictConfig | None = None
     execution_status: ExecutionStatus = ExecutionStatus.PENDING
 
 
@@ -87,20 +87,20 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return LoadDocuments()
 
         except Exception as e:
-            error_msg = f"Failed to initialize RAG system: {str(e)}"
+            error_msg = f"Failed to initialize RAG system: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
 
-    def _create_rag_config(self, rag_cfg: Dict[str, Any]) -> RAGConfig:
+    def _create_rag_config(self, rag_cfg: dict[str, Any]) -> RAGConfig:
         """Create RAG configuration from Hydra config."""
         from ..datatypes.rag import (
-            EmbeddingsConfig,
-            VLLMConfig,
-            VectorStoreConfig,
             EmbeddingModelType,
+            EmbeddingsConfig,
             LLMModelType,
+            VectorStoreConfig,
             VectorStoreType,
+            VLLMConfig,
         )
 
         # Create embeddings config
@@ -166,12 +166,12 @@ class LoadDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return ProcessDocuments()
 
         except Exception as e:
-            error_msg = f"Failed to load documents: {str(e)}"
+            error_msg = f"Failed to load documents: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
 
-    async def _load_documents(self, rag_cfg: Dict[str, Any]) -> List[Document]:
+    async def _load_documents(self, rag_cfg: dict[str, Any]) -> list[Document]:
         """Load documents from configured sources."""
         documents = []
 
@@ -195,19 +195,19 @@ class LoadDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
         return documents
 
-    async def _load_from_file(self, source: Dict[str, Any]) -> List[Document]:
+    async def _load_from_file(self, source: dict[str, Any]) -> list[Document]:
         """Load documents from file sources."""
         # Implementation would depend on file type (PDF, TXT, etc.)
         # For now, return empty list
         return []
 
-    async def _load_from_database(self, source: Dict[str, Any]) -> List[Document]:
+    async def _load_from_database(self, source: dict[str, Any]) -> list[Document]:
         """Load documents from database sources."""
         # Implementation would connect to database and extract documents
         # For now, return empty list
         return []
 
-    async def _load_from_web(self, source: Dict[str, Any]) -> List[Document]:
+    async def _load_from_web(self, source: dict[str, Any]) -> list[Document]:
         """Load documents from web sources."""
         # Implementation would scrape or fetch from web APIs
         # For now, return empty list
@@ -239,12 +239,12 @@ class ProcessDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return StoreDocuments()
 
         except Exception as e:
-            error_msg = f"Failed to process documents: {str(e)}"
+            error_msg = f"Failed to process documents: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
 
-    def _create_sample_documents(self) -> List[Document]:
+    def _create_sample_documents(self) -> list[Document]:
         """Create sample documents for testing."""
         return [
             Document(
@@ -265,8 +265,8 @@ class ProcessDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         ]
 
     async def _chunk_documents(
-        self, documents: List[Document], chunk_size: int, chunk_overlap: int
-    ) -> List[Document]:
+        self, documents: list[Document], chunk_size: int, chunk_overlap: int
+    ) -> list[Document]:
         """Chunk documents into smaller pieces."""
         chunked_docs = []
 
@@ -334,7 +334,7 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return QueryRAG()
 
         except Exception as e:
-            error_msg = f"Failed to store documents: {str(e)}"
+            error_msg = f"Failed to store documents: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
@@ -342,8 +342,8 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
     def _create_vllm_deployment(self, rag_config: RAGConfig) -> VLLMDeployment:
         """Create VLLM deployment configuration."""
         from ..datatypes.vllm_integration import (
-            VLLMServerConfig,
             VLLMEmbeddingServerConfig,
+            VLLMServerConfig,
         )
 
         # Create LLM server config
@@ -418,7 +418,7 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return GenerateResponse()
 
         except Exception as e:
-            error_msg = f"Failed to query RAG system: {str(e)}"
+            error_msg = f"Failed to query RAG system: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
@@ -446,13 +446,13 @@ class GenerateResponse(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             return End(final_response)
 
         except Exception as e:
-            error_msg = f"Failed to generate response: {str(e)}"
+            error_msg = f"Failed to generate response: {e!s}"
             ctx.state.errors.append(error_msg)
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
 
     def _format_response(
-        self, rag_response: Optional[RAGResponse], state: RAGState
+        self, rag_response: RAGResponse | None, state: RAGState
     ) -> str:
         """Format the final response."""
         response_parts = [

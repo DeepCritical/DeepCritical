@@ -13,12 +13,12 @@ __all__ = [
 # Direct import for tools to make them available for documentation
 try:
     from .src.tools import (
-        WebSearchTool,
         ChunkedSearchTool,
+        DeepSearchTool,
         GOAnnotationTool,
         PubMedRetrievalTool,
-        DeepSearchTool,
         RAGSearchTool,
+        WebSearchTool,
         registry,
     )
 except ImportError:

@@ -11,6 +11,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent, ModelRetry
 
@@ -18,17 +19,17 @@ from pydantic_ai import Agent, ModelRetry
 from ..datatypes.deep_agent_state import DeepAgentState
 from ..datatypes.deep_agent_types import AgentCapability, AgentMetrics
 from ..prompts.deep_agent_prompts import get_system_prompt
-from ..tools.deep_agent_tools import (
-    write_todos_tool,
-    list_files_tool,
-    read_file_tool,
-    write_file_tool,
-    edit_file_tool,
-    task_tool,
-)
 from ..tools.deep_agent_middleware import (
     MiddlewarePipeline,
     create_default_middleware_pipeline,
+)
+from ..tools.deep_agent_tools import (
+    edit_file_tool,
+    list_files_tool,
+    read_file_tool,
+    task_tool,
+    write_file_tool,
+    write_todos_tool,
 )
 
 
@@ -38,8 +39,8 @@ class AgentConfig(BaseModel):
     name: str = Field(..., description="Agent name")
     model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
     system_prompt: str = Field("", description="System prompt")
-    tools: List[str] = Field(default_factory=list, description="Tool names")
-    capabilities: List[AgentCapability] = Field(
+    tools: list[str] = Field(default_factory=list, description="Tool names")
+    capabilities: list[AgentCapability] = Field(
         default_factory=list, description="Agent capabilities"
     )
     max_iterations: int = Field(10, gt=0, description="Maximum iterations")
@@ -74,14 +75,14 @@ class AgentExecutionResult(BaseModel):
     """Result from agent execution."""
 
     success: bool = Field(..., description="Whether execution succeeded")
-    result: Optional[Dict[str, Any]] = Field(None, description="Execution result")
-    error: Optional[str] = Field(None, description="Error message if failed")
+    result: dict[str, Any] | None = Field(None, description="Execution result")
+    error: str | None = Field(None, description="Error message if failed")
     execution_time: float = Field(..., description="Execution time in seconds")
     iterations_used: int = Field(0, description="Number of iterations used")
-    tools_used: List[str] = Field(
+    tools_used: list[str] = Field(
         default_factory=list, description="Tools used during execution"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
 
@@ -103,8 +104,8 @@ class BaseDeepAgent:
 
     def __init__(self, config: AgentConfig):
         self.config = config
-        self.agent: Optional[Agent] = None
-        self.middleware_pipeline: Optional[MiddlewarePipeline] = None
+        self.agent: Agent | None = None
+        self.middleware_pipeline: MiddlewarePipeline | None = None
         self.metrics = AgentMetrics(agent_name=config.name)
         self._initialize_agent()
 
@@ -166,8 +167,8 @@ class BaseDeepAgent:
 
     async def execute(
         self,
-        input_data: Union[str, Dict[str, Any]],
-        context: Optional[DeepAgentState] = None,
+        input_data: str | dict[str, Any],
+        context: DeepAgentState | None = None,
     ) -> AgentExecutionResult:
         """Execute the agent with given input and context."""
         if not self.agent:
@@ -229,7 +230,7 @@ class BaseDeepAgent:
             )
 
     async def _execute_with_retry(
-        self, input_data: Union[str, Dict[str, Any]], context: DeepAgentState
+        self, input_data: str | dict[str, Any], context: DeepAgentState
     ) -> Any:
         """Execute agent with retry logic."""
         last_error = None
@@ -248,24 +249,21 @@ class BaseDeepAgent:
                 if attempt < self.config.retry_attempts:
                     await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
                     continue
-                else:
-                    raise e
+                raise e
 
             except Exception as e:
                 last_error = e
                 if attempt < self.config.retry_attempts and self.config.enable_retry:
                     await asyncio.sleep(1.0 * (attempt + 1))
                     continue
-                else:
-                    raise e
+                raise e
 
         if last_error:
             raise last_error
-        else:
-            raise RuntimeError("No agents available for execution")
+        raise RuntimeError("No agents available for execution")
 
     def _update_metrics(
-        self, execution_time: float, success: bool, tools_used: List[str]
+        self, execution_time: float, success: bool, tools_used: list[str]
     ) -> None:
         """Update agent metrics."""
         self.metrics.total_tasks += 1
@@ -292,7 +290,7 @@ class BaseDeepAgent:
 class PlanningAgent(BaseDeepAgent):
     """Agent specialized for planning and task management."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         if config is None:
             config = AgentConfig(
                 name="planning-agent",
@@ -303,7 +301,7 @@ class PlanningAgent(BaseDeepAgent):
         super().__init__(config)
 
     async def create_plan(
-        self, task_description: str, context: Optional[DeepAgentState] = None
+        self, task_description: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Create a plan for the given task."""
         prompt = f"Create a detailed plan for the following task: {task_description}"
@@ -313,7 +311,7 @@ class PlanningAgent(BaseDeepAgent):
 class FilesystemAgent(BaseDeepAgent):
     """Agent specialized for filesystem operations."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         if config is None:
             config = AgentConfig(
                 name="filesystem-agent",
@@ -324,7 +322,7 @@ class FilesystemAgent(BaseDeepAgent):
         super().__init__(config)
 
     async def manage_files(
-        self, operation: str, context: Optional[DeepAgentState] = None
+        self, operation: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Perform filesystem operations."""
         prompt = f"Perform the following filesystem operation: {operation}"
@@ -334,7 +332,7 @@ class FilesystemAgent(BaseDeepAgent):
 class ResearchAgent(BaseDeepAgent):
     """Agent specialized for research tasks."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         if config is None:
             config = AgentConfig(
                 name="research-agent",
@@ -345,7 +343,7 @@ class ResearchAgent(BaseDeepAgent):
         super().__init__(config)
 
     async def conduct_research(
-        self, research_query: str, context: Optional[DeepAgentState] = None
+        self, research_query: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Conduct research on the given query."""
         prompt = f"Conduct comprehensive research on: {research_query}"
@@ -355,7 +353,7 @@ class ResearchAgent(BaseDeepAgent):
 class TaskOrchestrationAgent(BaseDeepAgent):
     """Agent specialized for task orchestration and subagent management."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         if config is None:
             config = AgentConfig(
                 name="orchestration-agent",
@@ -369,7 +367,7 @@ class TaskOrchestrationAgent(BaseDeepAgent):
         super().__init__(config)
 
     async def orchestrate_tasks(
-        self, task_description: str, context: Optional[DeepAgentState] = None
+        self, task_description: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Orchestrate tasks using subagents."""
         prompt = f"Orchestrate the following complex task using appropriate subagents: {task_description}"
@@ -379,7 +377,7 @@ class TaskOrchestrationAgent(BaseDeepAgent):
 class GeneralPurposeAgent(BaseDeepAgent):
     """General-purpose agent with all capabilities."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         if config is None:
             config = AgentConfig(
                 name="general-purpose-agent",
@@ -406,9 +404,9 @@ class GeneralPurposeAgent(BaseDeepAgent):
 class AgentOrchestrator:
     """Orchestrator for managing multiple agents."""
 
-    def __init__(self, agents: Optional[List[BaseDeepAgent]] = None):
-        self.agents: Dict[str, BaseDeepAgent] = {}
-        self.agent_registry: Dict[str, Agent] = {}
+    def __init__(self, agents: list[BaseDeepAgent] | None = None):
+        self.agents: dict[str, BaseDeepAgent] = {}
+        self.agent_registry: dict[str, Agent] = {}
 
         if agents:
             for agent in agents:
@@ -420,15 +418,15 @@ class AgentOrchestrator:
         if agent.agent:
             self.agent_registry[agent.config.name] = agent.agent
 
-    def get_agent(self, name: str) -> Optional[BaseDeepAgent]:
+    def get_agent(self, name: str) -> BaseDeepAgent | None:
         """Get an agent by name."""
         return self.agents.get(name)
 
     async def execute_with_agent(
         self,
         agent_name: str,
-        input_data: Union[str, Dict[str, Any]],
-        context: Optional[DeepAgentState] = None,
+        input_data: str | dict[str, Any],
+        context: DeepAgentState | None = None,
     ) -> AgentExecutionResult:
         """Execute a specific agent."""
         agent = self.get_agent(agent_name)
@@ -442,8 +440,8 @@ class AgentOrchestrator:
         return await agent.execute(input_data, context)
 
     async def execute_parallel(
-        self, tasks: List[Dict[str, Any]], context: Optional[DeepAgentState] = None
-    ) -> List[AgentExecutionResult]:
+        self, tasks: list[dict[str, Any]], context: DeepAgentState | None = None
+    ) -> list[AgentExecutionResult]:
         """Execute multiple tasks in parallel."""
 
         async def execute_task(task):
@@ -456,43 +454,43 @@ class AgentOrchestrator:
         # Filter out exceptions and return only successful results
         return [r for r in results if isinstance(r, AgentExecutionResult)]
 
-    def get_all_metrics(self) -> Dict[str, AgentMetrics]:
+    def get_all_metrics(self) -> dict[str, AgentMetrics]:
         """Get metrics for all registered agents."""
         return {name: agent.get_metrics() for name, agent in self.agents.items()}
 
 
 # Factory functions
-def create_planning_agent(config: Optional[AgentConfig] = None) -> PlanningAgent:
+def create_planning_agent(config: AgentConfig | None = None) -> PlanningAgent:
     """Create a planning agent."""
     return PlanningAgent(config)
 
 
-def create_filesystem_agent(config: Optional[AgentConfig] = None) -> FilesystemAgent:
+def create_filesystem_agent(config: AgentConfig | None = None) -> FilesystemAgent:
     """Create a filesystem agent."""
     return FilesystemAgent(config)
 
 
-def create_research_agent(config: Optional[AgentConfig] = None) -> ResearchAgent:
+def create_research_agent(config: AgentConfig | None = None) -> ResearchAgent:
     """Create a research agent."""
     return ResearchAgent(config)
 
 
 def create_task_orchestration_agent(
-    config: Optional[AgentConfig] = None,
+    config: AgentConfig | None = None,
 ) -> TaskOrchestrationAgent:
     """Create a task orchestration agent."""
     return TaskOrchestrationAgent(config)
 
 
 def create_general_purpose_agent(
-    config: Optional[AgentConfig] = None,
+    config: AgentConfig | None = None,
 ) -> GeneralPurposeAgent:
     """Create a general-purpose agent."""
     return GeneralPurposeAgent(config)
 
 
 def create_agent_orchestrator(
-    agent_types: Optional[List[str]] = None,
+    agent_types: list[str] | None = None,
 ) -> AgentOrchestrator:
     """Create an agent orchestrator with default agents."""
     if agent_types is None:
@@ -546,8 +544,8 @@ class DeepAgentImplementation:
     """Main DeepAgent implementation that coordinates multiple specialized agents."""
 
     config: AgentConfig
-    agents: Dict[str, BaseDeepAgent] = field(default_factory=dict)
-    orchestrator: Optional[AgentOrchestrator] = None
+    agents: dict[str, BaseDeepAgent] = field(default_factory=dict)
+    orchestrator: AgentOrchestrator | None = None
 
     def __post_init__(self):
         """Initialize the DeepAgent implementation."""
@@ -578,6 +576,6 @@ class DeepAgentImplementation:
             )
         )
 
-    def get_agent(self, agent_type: str) -> Optional[BaseDeepAgent]:
+    def get_agent(self, agent_type: str) -> BaseDeepAgent | None:
         """Get a specific agent by type."""
         return self.agents.get(agent_type)

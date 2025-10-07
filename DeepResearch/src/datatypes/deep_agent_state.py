@@ -8,10 +8,11 @@ Pydantic AI architecture.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 # Import existing DeepCritical types
 from .deep_agent_types import AgentContext
@@ -36,10 +37,10 @@ class Todo(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.now, description="Creation timestamp"
     )
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
     priority: int = Field(0, description="Priority level (higher = more important)")
-    tags: List[str] = Field(default_factory=list, description="Todo tags")
-    metadata: Dict[str, Any] = Field(
+    tags: list[str] = Field(default_factory=list, description="Todo tags")
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
 
@@ -87,8 +88,8 @@ class FileInfo(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.now, description="Creation timestamp"
     )
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="File metadata")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="File metadata")
 
     @field_validator("path", mode="before")
     @classmethod
@@ -117,11 +118,11 @@ class FileInfo(BaseModel):
 class FilesystemState(BaseModel):
     """State for filesystem operations."""
 
-    files: Dict[str, FileInfo] = Field(
+    files: dict[str, FileInfo] = Field(
         default_factory=dict, description="Files in the filesystem"
     )
     current_directory: str = Field("/", description="Current working directory")
-    permissions: Dict[str, List[str]] = Field(
+    permissions: dict[str, list[str]] = Field(
         default_factory=dict, description="File permissions"
     )
 
@@ -129,7 +130,7 @@ class FilesystemState(BaseModel):
         """Add a file to the filesystem."""
         self.files[file_info.path] = file_info
 
-    def get_file(self, path: str) -> Optional[FileInfo]:
+    def get_file(self, path: str) -> FileInfo | None:
         """Get a file by path."""
         return self.files.get(path)
 
@@ -140,7 +141,7 @@ class FilesystemState(BaseModel):
             return True
         return False
 
-    def list_files(self) -> List[str]:
+    def list_files(self) -> list[str]:
         """List all file paths."""
         return list(self.files.keys())
 
@@ -170,9 +171,9 @@ class FilesystemState(BaseModel):
 class PlanningState(BaseModel):
     """State for planning operations."""
 
-    todos: List[Todo] = Field(default_factory=list, description="List of todos")
-    active_plan: Optional[str] = Field(None, description="Active plan identifier")
-    planning_context: Dict[str, Any] = Field(
+    todos: list[Todo] = Field(default_factory=list, description="List of todos")
+    active_plan: str | None = Field(None, description="Active plan identifier")
+    planning_context: dict[str, Any] = Field(
         default_factory=dict, description="Planning context"
     )
 
@@ -180,7 +181,7 @@ class PlanningState(BaseModel):
         """Add a todo to the planning state."""
         self.todos.append(todo)
 
-    def get_todo_by_id(self, todo_id: str) -> Optional[Todo]:
+    def get_todo_by_id(self, todo_id: str) -> Todo | None:
         """Get a todo by ID."""
         for todo in self.todos:
             if todo.id == todo_id:
@@ -196,19 +197,19 @@ class PlanningState(BaseModel):
             return True
         return False
 
-    def get_todos_by_status(self, status: TaskStatus) -> List[Todo]:
+    def get_todos_by_status(self, status: TaskStatus) -> list[Todo]:
         """Get todos by status."""
         return [todo for todo in self.todos if todo.status == status]
 
-    def get_pending_todos(self) -> List[Todo]:
+    def get_pending_todos(self) -> list[Todo]:
         """Get pending todos."""
         return self.get_todos_by_status(TaskStatus.PENDING)
 
-    def get_in_progress_todos(self) -> List[Todo]:
+    def get_in_progress_todos(self) -> list[Todo]:
         """Get in-progress todos."""
         return self.get_todos_by_status(TaskStatus.IN_PROGRESS)
 
-    def get_completed_todos(self) -> List[Todo]:
+    def get_completed_todos(self) -> list[Todo]:
         """Get completed todos."""
         return self.get_todos_by_status(TaskStatus.COMPLETED)
 
@@ -233,28 +234,28 @@ class DeepAgentState(BaseModel):
     """Main state for DeepAgent operations."""
 
     session_id: str = Field(..., description="Session identifier")
-    todos: List[Todo] = Field(default_factory=list, description="List of todos")
-    files: Dict[str, FileInfo] = Field(
+    todos: list[Todo] = Field(default_factory=list, description="List of todos")
+    files: dict[str, FileInfo] = Field(
         default_factory=dict, description="Files in the filesystem"
     )
     current_directory: str = Field("/", description="Current working directory")
-    active_tasks: List[str] = Field(default_factory=list, description="Active task IDs")
-    completed_tasks: List[str] = Field(
+    active_tasks: list[str] = Field(default_factory=list, description="Active task IDs")
+    completed_tasks: list[str] = Field(
         default_factory=list, description="Completed task IDs"
     )
-    conversation_history: List[Dict[str, Any]] = Field(
+    conversation_history: list[dict[str, Any]] = Field(
         default_factory=list, description="Conversation history"
     )
-    shared_state: Dict[str, Any] = Field(
+    shared_state: dict[str, Any] = Field(
         default_factory=dict, description="Shared state between agents"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
     created_at: datetime = Field(
         default_factory=datetime.now, description="Creation timestamp"
     )
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
 
     def add_todo(self, todo: Todo) -> None:
         """Add a todo to the state."""
@@ -276,7 +277,7 @@ class DeepAgentState(BaseModel):
         self.files[file_info.path] = file_info
         self.updated_at = datetime.now()
 
-    def get_file(self, path: str) -> Optional[FileInfo]:
+    def get_file(self, path: str) -> FileInfo | None:
         """Get a file by path."""
         return self.files.get(path)
 
@@ -357,15 +358,15 @@ class DeepAgentState(BaseModel):
 
 # State reducer functions for merging state updates
 def merge_filesystem_state(
-    current: Dict[str, FileInfo], update: Dict[str, FileInfo]
-) -> Dict[str, FileInfo]:
+    current: dict[str, FileInfo], update: dict[str, FileInfo]
+) -> dict[str, FileInfo]:
     """Merge filesystem state updates."""
     result = current.copy()
     result.update(update)
     return result
 
 
-def merge_todos_state(current: List[Todo], update: List[Todo]) -> List[Todo]:
+def merge_todos_state(current: list[Todo], update: list[Todo]) -> list[Todo]:
     """Merge todos state updates."""
     # Create a map of existing todos by ID
     todo_map = {todo.id: todo for todo in current}
@@ -378,15 +379,15 @@ def merge_todos_state(current: List[Todo], update: List[Todo]) -> List[Todo]:
 
 
 def merge_conversation_history(
-    current: List[Dict[str, Any]], update: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    current: list[dict[str, Any]], update: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     """Merge conversation history updates."""
     return current + update
 
 
 # Factory functions
 def create_todo(
-    content: str, priority: int = 0, tags: Optional[List[str]] = None, **kwargs
+    content: str, priority: int = 0, tags: list[str] | None = None, **kwargs
 ) -> Todo:
     """Create a Todo with default values."""
     import uuid

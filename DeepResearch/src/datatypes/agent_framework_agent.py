@@ -4,29 +4,31 @@ Vendored agent types from agent_framework._types.
 This module provides agent run response types for AI agent interactions.
 """
 
-from typing import Any, Dict, List, Optional, Union, Sequence
-from pydantic import BaseModel, Field, field_validator
+from collections.abc import Sequence
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
+from pydantic import BaseModel, Field, field_validator
+
+from .agent_framework_chat import ChatMessage
 from .agent_framework_content import (
     Content,
-    TextContent,
     FunctionApprovalRequestContent,
+    TextContent,
 )
-from .agent_framework_chat import ChatMessage
 
 
 class AgentRunResponseUpdate(BaseModel):
     """Represents a single streaming response chunk from an Agent."""
 
-    contents: List[Content] = Field(default_factory=list)
-    role: Optional[Union[str, Any]] = None
-    author_name: Optional[str] = None
-    response_id: Optional[str] = None
-    message_id: Optional[str] = None
-    created_at: Optional[Union[str, datetime]] = None
-    additional_properties: Optional[Dict[str, Any]] = None
-    raw_representation: Optional[Union[Any, List[Any]]] = None
+    contents: list[Content] = Field(default_factory=list)
+    role: str | Any | None = None
+    author_name: str | None = None
+    response_id: str | None = None
+    message_id: str | None = None
+    created_at: str | datetime | None = None
+    additional_properties: dict[str, Any] | None = None
+    raw_representation: Any | list[Any] | None = None
 
     @field_validator("contents", mode="before")
     @classmethod
@@ -52,7 +54,7 @@ class AgentRunResponseUpdate(BaseModel):
         )
 
     @property
-    def user_input_requests(self) -> List[FunctionApprovalRequestContent]:
+    def user_input_requests(self) -> list[FunctionApprovalRequestContent]:
         """Get all BaseUserInputRequest messages from the response."""
         return [
             content
@@ -67,13 +69,13 @@ class AgentRunResponseUpdate(BaseModel):
 class AgentRunResponse(BaseModel):
     """Represents the response to an Agent run request."""
 
-    messages: List[ChatMessage] = Field(default_factory=list)
-    response_id: Optional[str] = None
-    created_at: Optional[Union[str, datetime]] = None
-    usage_details: Optional[Any] = None  # UsageDetails - avoiding circular import
-    structured_output: Optional[Any] = None
-    additional_properties: Optional[Dict[str, Any]] = None
-    raw_representation: Optional[Union[Any, List[Any]]] = None
+    messages: list[ChatMessage] = Field(default_factory=list)
+    response_id: str | None = None
+    created_at: str | datetime | None = None
+    usage_details: Any | None = None  # UsageDetails - avoiding circular import
+    structured_output: Any | None = None
+    additional_properties: dict[str, Any] | None = None
+    raw_representation: Any | list[Any] | None = None
 
     @field_validator("messages", mode="before")
     @classmethod
@@ -91,7 +93,7 @@ class AgentRunResponse(BaseModel):
         return "".join(msg.text for msg in self.messages) if self.messages else ""
 
     @property
-    def user_input_requests(self) -> List[FunctionApprovalRequestContent]:
+    def user_input_requests(self) -> list[FunctionApprovalRequestContent]:
         """Get all BaseUserInputRequest messages from the response."""
         return [
             content
@@ -105,7 +107,7 @@ class AgentRunResponse(BaseModel):
         cls,
         updates: Sequence[AgentRunResponseUpdate],
         *,
-        output_format_type: Optional[type] = None,
+        output_format_type: type | None = None,
     ) -> "AgentRunResponse":
         """Joins multiple updates into a single AgentRunResponse."""
         response = cls(messages=[])
@@ -158,7 +160,7 @@ class AgentRunResponse(BaseModel):
         cls,
         updates,
         *,
-        output_format_type: Optional[type] = None,
+        output_format_type: type | None = None,
     ) -> "AgentRunResponse":
         """Joins multiple updates from an async generator into a single AgentRunResponse."""
         response = cls(messages=[])

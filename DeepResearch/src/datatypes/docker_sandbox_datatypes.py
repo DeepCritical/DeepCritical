@@ -8,6 +8,7 @@ configuration, execution requests, results, and execution policies.
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -30,7 +31,7 @@ class DockerSandboxPolicies(BaseModel):
         language_lower = language.lower()
         return getattr(self, language_lower, False)
 
-    def get_allowed_languages(self) -> List[str]:
+    def get_allowed_languages(self) -> list[str]:
         """Get list of allowed languages."""
         allowed = []
         for field_name in self.__fields__:
@@ -53,14 +54,14 @@ class DockerSandboxPolicies(BaseModel):
 class DockerSandboxEnvironment(BaseModel):
     """Environment variables and settings for Docker sandbox."""
 
-    variables: Dict[str, str] = Field(
+    variables: dict[str, str] = Field(
         default_factory=dict, description="Environment variables"
     )
     working_directory: str = Field(
         "/workspace", description="Working directory in container"
     )
-    user: Optional[str] = Field(None, description="User to run as")
-    network_mode: Optional[str] = Field(None, description="Network mode for container")
+    user: str | None = Field(None, description="User to run as")
+    network_mode: str | None = Field(None, description="Network mode for container")
 
     def add_variable(self, key: str, value: str) -> None:
         """Add an environment variable."""
@@ -94,8 +95,8 @@ class DockerSandboxConfig(BaseModel):
     working_directory: str = Field(
         "/workspace", description="Working directory in container"
     )
-    cpu_limit: Optional[float] = Field(None, description="CPU limit (cores)")
-    memory_limit: Optional[str] = Field(
+    cpu_limit: float | None = Field(None, description="CPU limit (cores)")
+    memory_limit: str | None = Field(
         None, description="Memory limit (e.g., '512m', '1g')"
     )
     auto_remove: bool = Field(
@@ -103,7 +104,7 @@ class DockerSandboxConfig(BaseModel):
     )
     network_disabled: bool = Field(False, description="Disable network access")
     privileged: bool = Field(False, description="Run container in privileged mode")
-    volumes: Dict[str, str] = Field(
+    volumes: dict[str, str] = Field(
         default_factory=dict, description="Volume mounts (host_path:container_path)"
     )
 
@@ -138,17 +139,17 @@ class DockerExecutionRequest(BaseModel):
         "python", description="Programming language (python, bash, shell, etc.)"
     )
     code: str = Field("", description="Code string to execute")
-    command: Optional[str] = Field(
+    command: str | None = Field(
         None, description="Explicit command to run (overrides code)"
     )
-    environment: Dict[str, str] = Field(
+    environment: dict[str, str] = Field(
         default_factory=dict, description="Environment variables"
     )
     timeout: int = Field(60, description="Execution timeout in seconds")
-    execution_policy: Optional[Dict[str, bool]] = Field(
+    execution_policy: dict[str, bool] | None = Field(
         None, description="Custom execution policies for languages"
     )
-    files: Dict[str, str] = Field(
+    files: dict[str, str] = Field(
         default_factory=dict, description="Files to create in container"
     )
 
@@ -187,11 +188,11 @@ class DockerExecutionResult(BaseModel):
     stdout: str = Field("", description="Standard output")
     stderr: str = Field("", description="Standard error")
     exit_code: int = Field(..., description="Exit code")
-    files_created: List[str] = Field(
+    files_created: list[str] = Field(
         default_factory=list, description="Files created during execution"
     )
     execution_time: float = Field(0.0, description="Execution time in seconds")
-    error_message: Optional[str] = Field(
+    error_message: str | None = Field(
         None, description="Error message if execution failed"
     )
 
@@ -228,9 +229,9 @@ class DockerSandboxContainerInfo(BaseModel):
     container_name: str = Field(..., description="Container name")
     image: str = Field(..., description="Docker image used")
     status: str = Field(..., description="Container status")
-    created_at: Optional[str] = Field(None, description="Creation timestamp")
-    started_at: Optional[str] = Field(None, description="Start timestamp")
-    finished_at: Optional[str] = Field(None, description="Finish timestamp")
+    created_at: str | None = Field(None, description="Creation timestamp")
+    started_at: str | None = Field(None, description="Start timestamp")
+    finished_at: str | None = Field(None, description="Finish timestamp")
 
     class Config:
         json_schema_extra = {
@@ -295,13 +296,13 @@ class DockerSandboxRequest(BaseModel):
     """Complete request for Docker sandbox operations."""
 
     execution: DockerExecutionRequest = Field(..., description="Execution parameters")
-    config: Optional[DockerSandboxConfig] = Field(
+    config: DockerSandboxConfig | None = Field(
         None, description="Sandbox configuration"
     )
-    environment: Optional[DockerSandboxEnvironment] = Field(
+    environment: DockerSandboxEnvironment | None = Field(
         None, description="Environment settings"
     )
-    policies: Optional[DockerSandboxPolicies] = Field(
+    policies: DockerSandboxPolicies | None = Field(
         None, description="Execution policies"
     )
 
@@ -342,12 +343,10 @@ class DockerSandboxResponse(BaseModel):
 
     request: DockerSandboxRequest = Field(..., description="Original request")
     result: DockerExecutionResult = Field(..., description="Execution result")
-    container_info: Optional[DockerSandboxContainerInfo] = Field(
+    container_info: DockerSandboxContainerInfo | None = Field(
         None, description="Container information"
     )
-    metrics: Optional[DockerSandboxMetrics] = Field(
-        None, description="Execution metrics"
-    )
+    metrics: DockerSandboxMetrics | None = Field(None, description="Execution metrics")
 
     class Config:
         json_schema_extra = {

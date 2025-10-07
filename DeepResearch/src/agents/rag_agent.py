@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from ..datatypes.rag import RAGQuery, RAGResponse, Document
+from ..datatypes.rag import Document, RAGQuery, RAGResponse
 from .research_agent import ResearchAgent
 
 
@@ -36,12 +36,12 @@ class RAGAgent(ResearchAgent):
         )
         return response
 
-    def retrieve_documents(self, query: str, limit: int = 5) -> List[Document]:
+    def retrieve_documents(self, query: str, limit: int = 5) -> list[Document]:
         """Retrieve relevant documents for a query."""
         # Placeholder implementation
         return []
 
-    def generate_answer(self, query: str, documents: List[Document]) -> str:
+    def generate_answer(self, query: str, documents: list[Document]) -> str:
         """Generate an answer based on retrieved documents."""
         # Placeholder implementation
         return "Answer generation not yet implemented"

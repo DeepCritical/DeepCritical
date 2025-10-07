@@ -4,25 +4,26 @@ import importlib
 import inspect
 from typing import Any, Dict, List, Optional, Type
 
+from ..datatypes.tool_specs import ToolCategory, ToolSpec
+
 # Import core tool types from datatypes
 from ..datatypes.tools import (
     ExecutionResult,
-    ToolRunner,
     MockToolRunner,
+    ToolRunner,
 )
-from ..datatypes.tool_specs import ToolSpec, ToolCategory
 
 
 class ToolRegistry:
     """Registry for managing and executing tools in the PRIME ecosystem."""
 
     def __init__(self):
-        self.tools: Dict[str, ToolSpec] = {}
-        self.runners: Dict[str, ToolRunner] = {}
+        self.tools: dict[str, ToolSpec] = {}
+        self.runners: dict[str, ToolRunner] = {}
         self.mock_mode = True  # Default to mock mode for development
 
     def register_tool(
-        self, tool_spec: ToolSpec, runner_class: Optional[Type[ToolRunner]] = None
+        self, tool_spec: ToolSpec, runner_class: type[ToolRunner] | None = None
     ) -> None:
         """Register a tool with its specification and runner."""
         self.tools[tool_spec.name] = tool_spec
@@ -32,20 +33,20 @@ class ToolRegistry:
         elif self.mock_mode:
             self.runners[tool_spec.name] = MockToolRunner(tool_spec)
 
-    def get_tool_spec(self, tool_name: str) -> Optional[ToolSpec]:
+    def get_tool_spec(self, tool_name: str) -> ToolSpec | None:
         """Get tool specification by name."""
         return self.tools.get(tool_name)
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """List all registered tool names."""
         return list(self.tools.keys())
 
-    def list_tools_by_category(self, category: ToolCategory) -> List[str]:
+    def list_tools_by_category(self, category: ToolCategory) -> list[str]:
         """List tools by category."""
         return [name for name, spec in self.tools.items() if spec.category == category]
 
     def execute_tool(
-        self, tool_name: str, parameters: Dict[str, Any]
+        self, tool_name: str, parameters: dict[str, Any]
     ) -> ExecutionResult:
         """Execute a tool with given parameters."""
         if tool_name not in self.tools:
@@ -60,7 +61,7 @@ class ToolRegistry:
         return runner.run(parameters)
 
     def validate_tool_execution(
-        self, tool_name: str, parameters: Dict[str, Any]
+        self, tool_name: str, parameters: dict[str, Any]
     ) -> ExecutionResult:
         """Validate tool execution without running it."""
         if tool_name not in self.tools:
@@ -74,14 +75,14 @@ class ToolRegistry:
         runner = self.runners[tool_name]
         return runner.validate_inputs(parameters)
 
-    def get_tool_dependencies(self, tool_name: str) -> List[str]:
+    def get_tool_dependencies(self, tool_name: str) -> list[str]:
         """Get dependencies for a tool."""
         if tool_name not in self.tools:
             return []
 
         return self.tools[tool_name].dependencies
 
-    def check_dependency_availability(self, tool_name: str) -> Dict[str, bool]:
+    def check_dependency_availability(self, tool_name: str) -> dict[str, bool]:
         """Check if all dependencies for a tool are available."""
         dependencies = self.get_tool_dependencies(tool_name)
         availability = {}
@@ -128,7 +129,7 @@ class ToolRegistry:
         except ImportError as e:
             print(f"Warning: Could not load tools from module {module_name}: {e}")
 
-    def get_registry_summary(self) -> Dict[str, Any]:
+    def get_registry_summary(self) -> dict[str, Any]:
         """Get a summary of the tool registry."""
         categories = {}
         for tool_name, tool_spec in self.tools.items():

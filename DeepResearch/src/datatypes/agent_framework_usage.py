@@ -5,16 +5,17 @@ This module provides usage tracking types for AI agent interactions.
 """
 
 from typing import Dict, Optional
+
 from pydantic import BaseModel
 
 
 class UsageDetails(BaseModel):
     """Provides usage details about a request/response."""
 
-    input_token_count: Optional[int] = None
-    output_token_count: Optional[int] = None
-    total_token_count: Optional[int] = None
-    additional_counts: Optional[Dict[str, int]] = None
+    input_token_count: int | None = None
+    output_token_count: int | None = None
+    total_token_count: int | None = None
+    additional_counts: dict[str, int] | None = None
 
     def __init__(self, **kwargs):
         # Extract additional counts from kwargs

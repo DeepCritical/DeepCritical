@@ -11,36 +11,37 @@ from __future__ import annotations
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from pydantic_ai import Agent
 
-# Import existing tools and schemas
-from .src.tools.base import registry, ExecutionResult
-from .src.datatypes.rag import RAGQuery, RAGResponse
-from .src.datatypes.bioinformatics import FusedDataset, ReasoningTask, DataFusionRequest
+from .src.agents.deep_agent_implementations import (
+    AgentConfig,
+    AgentExecutionResult,
+    AgentOrchestrator,
+    FilesystemAgent,
+    GeneralPurposeAgent,
+    PlanningAgent,
+    ResearchAgent,
+    TaskOrchestrationAgent,
+)
 from .src.datatypes.agents import (
-    AgentType,
-    AgentStatus,
     AgentDependencies,
     AgentResult,
+    AgentStatus,
+    AgentType,
     ExecutionHistory,
 )
-from .src.prompts.agents import AgentPrompts
+from .src.datatypes.bioinformatics import DataFusionRequest, FusedDataset, ReasoningTask
 
 # Import DeepAgent components
 from .src.datatypes.deep_agent_state import DeepAgentState
 from .src.datatypes.deep_agent_types import AgentCapability
-from .src.agents.deep_agent_implementations import (
-    PlanningAgent,
-    FilesystemAgent,
-    ResearchAgent,
-    TaskOrchestrationAgent,
-    GeneralPurposeAgent,
-    AgentOrchestrator,
-    AgentConfig,
-    AgentExecutionResult,
-)
+from .src.datatypes.rag import RAGQuery, RAGResponse
+from .src.prompts.agents import AgentPrompts
+
+# Import existing tools and schemas
+from .src.tools.base import ExecutionResult, registry
 
 
 class BaseAgent(ABC):
@@ -75,23 +76,21 @@ class BaseAgent(ABC):
         self,
         agent_type: AgentType,
         model_name: str = "anthropic:claude-sonnet-4-0",
-        dependencies: Optional[AgentDependencies] = None,
-        system_prompt: Optional[str] = None,
-        instructions: Optional[str] = None,
+        dependencies: AgentDependencies | None = None,
+        system_prompt: str | None = None,
+        instructions: str | None = None,
     ):
         self.agent_type = agent_type
         self.model_name = model_name
         self.dependencies = dependencies or AgentDependencies()
         self.status = AgentStatus.IDLE
         self.history = ExecutionHistory()
-        self._agent: Optional[Agent] = None
+        self._agent: Agent | None = None
 
         # Initialize Pydantic AI agent
         self._initialize_agent(system_prompt, instructions)
 
-    def _initialize_agent(
-        self, system_prompt: Optional[str], instructions: Optional[str]
-    ):
+    def _initialize_agent(self, system_prompt: str | None, instructions: str | None):
         """Initialize the Pydantic AI agent."""
         try:
             self._agent = Agent(
@@ -166,10 +165,9 @@ class BaseAgent(ABC):
                     return self._perform_web_search(query)
             ```
         """
-        pass
 
     async def execute(
-        self, input_data: Any, deps: Optional[AgentDependencies] = None
+        self, input_data: Any, deps: AgentDependencies | None = None
     ) -> AgentResult:
         """
         Execute the agent with input data.
@@ -260,19 +258,18 @@ class BaseAgent(ABC):
             return agent_result
 
     def execute_sync(
-        self, input_data: Any, deps: Optional[AgentDependencies] = None
+        self, input_data: Any, deps: AgentDependencies | None = None
     ) -> AgentResult:
         """Synchronous execution wrapper."""
         return asyncio.run(self.execute(input_data, deps))
 
-    def _process_result(self, result: Any) -> Dict[str, Any]:
+    def _process_result(self, result: Any) -> dict[str, Any]:
         """Process the result from Pydantic AI agent."""
         if hasattr(result, "output"):
             return {"output": result.output}
-        elif hasattr(result, "data"):
+        if hasattr(result, "data"):
             return result.data
-        else:
-            return {"result": str(result)}
+        return {"result": str(result)}
 
 
 class ParserAgent(BaseAgent):
@@ -284,17 +281,15 @@ class ParserAgent(BaseAgent):
     def _register_tools(self):
         """Register parsing tools."""
         # Add any specific parsing tools here
-        pass
 
-    async def parse_question(self, question: str) -> Dict[str, Any]:
+    async def parse_question(self, question: str) -> dict[str, Any]:
         """Parse a research question."""
         result = await self.execute(question)
         if result.success:
             return result.data
-        else:
-            return {"intent": "research", "query": question, "error": result.error}
+        return {"intent": "research", "query": question, "error": result.error}
 
-    def parse(self, question: str) -> Dict[str, Any]:
+    def parse(self, question: str) -> dict[str, Any]:
         """Legacy synchronous parse method."""
         result = self.execute_sync(question)
         return (
@@ -310,20 +305,18 @@ class PlannerAgent(BaseAgent):
 
     def _register_tools(self):
         """Register planning tools."""
-        pass
 
     async def create_plan(
-        self, parsed_question: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, parsed_question: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Create an execution plan from parsed question."""
         result = await self.execute(parsed_question)
         if result.success and "steps" in result.data:
             return result.data["steps"]
-        else:
-            # Fallback to default plan
-            return self._get_default_plan(parsed_question.get("query", ""))
+        # Fallback to default plan
+        return self._get_default_plan(parsed_question.get("query", ""))
 
-    def _get_default_plan(self, query: str) -> List[Dict[str, Any]]:
+    def _get_default_plan(self, query: str) -> list[dict[str, Any]]:
         """Get default execution plan."""
         return [
             {"tool": "rewrite", "params": {"query": query}},
@@ -343,13 +336,12 @@ class PlannerAgent(BaseAgent):
             },
         ]
 
-    def plan(self, parsed: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def plan(self, parsed: dict[str, Any]) -> list[dict[str, Any]]:
         """Legacy synchronous plan method."""
         result = self.execute_sync(parsed)
         if result.success and "steps" in result.data:
             return result.data["steps"]
-        else:
-            return self._get_default_plan(parsed.get("query", ""))
+        return self._get_default_plan(parsed.get("query", ""))
 
 
 class ExecutorAgent(BaseAgent):
@@ -375,17 +367,17 @@ class ExecutorAgent(BaseAgent):
                 print(f"Warning: Failed to register tool {tool_name}: {e}")
 
     async def execute_plan(
-        self, plan: List[Dict[str, Any]], history: ExecutionHistory
-    ) -> Dict[str, Any]:
+        self, plan: list[dict[str, Any]], history: ExecutionHistory
+    ) -> dict[str, Any]:
         """Execute a research plan."""
-        bag: Dict[str, Any] = {}
+        bag: dict[str, Any] = {}
 
         for step in plan:
             tool_name = step["tool"]
             params = self._materialize_params(step.get("params", {}), bag)
 
             attempt = 0
-            result: Optional[ExecutionResult] = None
+            result: ExecutionResult | None = None
 
             while attempt <= self.retries:
                 try:
@@ -424,10 +416,10 @@ class ExecutorAgent(BaseAgent):
         return bag
 
     def _materialize_params(
-        self, params: Dict[str, Any], bag: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, params: dict[str, Any], bag: dict[str, Any]
+    ) -> dict[str, Any]:
         """Materialize parameter placeholders with actual values."""
-        out: Dict[str, Any] = {}
+        out: dict[str, Any] = {}
         for k, v in params.items():
             if isinstance(v, str) and v.startswith("${") and v.endswith("}"):
                 key = v[2:-1]
@@ -437,8 +429,8 @@ class ExecutorAgent(BaseAgent):
         return out
 
     def _adjust_parameters(
-        self, params: Dict[str, Any], bag: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, params: dict[str, Any], bag: dict[str, Any]
+    ) -> dict[str, Any]:
         """Adjust parameters for retry attempts."""
         adjusted = params.copy()
 
@@ -451,8 +443,8 @@ class ExecutorAgent(BaseAgent):
         return adjusted
 
     def run_plan(
-        self, plan: List[Dict[str, Any]], history: ExecutionHistory
-    ) -> Dict[str, Any]:
+        self, plan: list[dict[str, Any]], history: ExecutionHistory
+    ) -> dict[str, Any]:
         """Legacy synchronous run_plan method."""
         return asyncio.run(self.execute_plan(plan, history))
 
@@ -466,7 +458,7 @@ class SearchAgent(BaseAgent):
     def _register_tools(self):
         """Register search tools."""
         try:
-            from .src.tools.websearch_tools import WebSearchTool, ChunkedSearchTool
+            from .src.tools.websearch_tools import ChunkedSearchTool, WebSearchTool
 
             # Register web search tools
             web_search_tool = WebSearchTool()
@@ -480,7 +472,7 @@ class SearchAgent(BaseAgent):
 
     async def search(
         self, query: str, search_type: str = "search", num_results: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform web search."""
         search_params = {
             "query": query,
@@ -522,15 +514,14 @@ class RAGAgent(BaseAgent):
 
         if result.success:
             return RAGResponse(**result.data)
-        else:
-            return RAGResponse(
-                query=rag_query.text,
-                retrieved_documents=[],
-                generated_answer="",
-                context="",
-                processing_time=0.0,
-                metadata={"error": result.error},
-            )
+        return RAGResponse(
+            query=rag_query.text,
+            retrieved_documents=[],
+            generated_answer="",
+            context="",
+            processing_time=0.0,
+            metadata={"error": result.error},
+        )
 
 
 class BioinformaticsAgent(BaseAgent):
@@ -575,17 +566,16 @@ class BioinformaticsAgent(BaseAgent):
 
         if result.success and "fused_dataset" in result.data:
             return FusedDataset(**result.data["fused_dataset"])
-        else:
-            return FusedDataset(
-                dataset_id="error",
-                name="Error Dataset",
-                description="Failed to fuse data",
-                source_databases=[],
-            )
+        return FusedDataset(
+            dataset_id="error",
+            name="Error Dataset",
+            description="Failed to fuse data",
+            source_databases=[],
+        )
 
     async def perform_reasoning(
         self, task: ReasoningTask, dataset: FusedDataset
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform reasoning on fused bioinformatics data."""
         reasoning_params = {"task": task.model_dump(), "dataset": dataset.model_dump()}
 
@@ -603,15 +593,15 @@ class DeepSearchAgent(BaseAgent):
         """Register deep search tools."""
         try:
             from .src.tools.deepsearch_tools import (
-                WebSearchTool,
-                URLVisitTool,
-                ReflectionTool,
                 AnswerGeneratorTool,
                 QueryRewriterTool,
+                ReflectionTool,
+                URLVisitTool,
+                WebSearchTool,
             )
             from .src.tools.deepsearch_workflow_tool import (
-                DeepSearchWorkflowTool,
                 DeepSearchAgentTool,
+                DeepSearchWorkflowTool,
             )
 
             # Register deep search tools
@@ -639,7 +629,7 @@ class DeepSearchAgent(BaseAgent):
         except Exception as e:
             print(f"Warning: Failed to register deep search tools: {e}")
 
-    async def deep_search(self, question: str, max_steps: int = 20) -> Dict[str, Any]:
+    async def deep_search(self, question: str, max_steps: int = 20) -> dict[str, Any]:
         """Perform deep search with iterative refinement."""
         search_params = {"question": question, "max_steps": max_steps}
 
@@ -656,7 +646,7 @@ class EvaluatorAgent(BaseAgent):
     def _register_tools(self):
         """Register evaluation tools."""
         try:
-            from .src.tools.workflow_tools import EvaluatorTool, ErrorAnalyzerTool
+            from .src.tools.workflow_tools import ErrorAnalyzerTool, EvaluatorTool
 
             # Register evaluation tools
             evaluator_tool = EvaluatorTool()
@@ -668,7 +658,7 @@ class EvaluatorAgent(BaseAgent):
         except Exception as e:
             print(f"Warning: Failed to register evaluation tools: {e}")
 
-    async def evaluate(self, question: str, answer: str) -> Dict[str, Any]:
+    async def evaluate(self, question: str, answer: str) -> dict[str, Any]:
         """Evaluate research results."""
         eval_params = {"question": question, "answer": answer}
 
@@ -709,7 +699,7 @@ class DeepAgentPlanningAgent(BaseAgent):
     def _register_tools(self):
         """Register planning tools."""
         try:
-            from .src.tools.deep_agent_tools import write_todos_tool, task_tool
+            from .src.tools.deep_agent_tools import task_tool, write_todos_tool
 
             # Register DeepAgent tools
             self._agent.tool(write_todos_tool)
@@ -719,21 +709,20 @@ class DeepAgentPlanningAgent(BaseAgent):
             print(f"Warning: Failed to register DeepAgent planning tools: {e}")
 
     async def create_plan(
-        self, task_description: str, context: Optional[DeepAgentState] = None
+        self, task_description: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Create a detailed execution plan."""
         if self._deep_agent:
             return await self._deep_agent.create_plan(task_description, context)
-        else:
-            # Fallback to standard agent execution
-            result = await self.execute({"task": task_description, "context": context})
-            return AgentExecutionResult(
-                success=result.success,
-                result=result.data,
-                error=result.error,
-                execution_time=result.execution_time,
-                tools_used=["standard_planning"],
-            )
+        # Fallback to standard agent execution
+        result = await self.execute({"task": task_description, "context": context})
+        return AgentExecutionResult(
+            success=result.success,
+            result=result.data,
+            error=result.error,
+            execution_time=result.execution_time,
+            tools_used=["standard_planning"],
+        )
 
 
 class DeepAgentFilesystemAgent(BaseAgent):
@@ -767,10 +756,10 @@ class DeepAgentFilesystemAgent(BaseAgent):
         """Register filesystem tools."""
         try:
             from .src.tools.deep_agent_tools import (
+                edit_file_tool,
                 list_files_tool,
                 read_file_tool,
                 write_file_tool,
-                edit_file_tool,
             )
 
             # Register DeepAgent tools
@@ -783,21 +772,20 @@ class DeepAgentFilesystemAgent(BaseAgent):
             print(f"Warning: Failed to register DeepAgent filesystem tools: {e}")
 
     async def manage_files(
-        self, operation: str, context: Optional[DeepAgentState] = None
+        self, operation: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Manage filesystem operations."""
         if self._deep_agent:
             return await self._deep_agent.manage_files(operation, context)
-        else:
-            # Fallback to standard agent execution
-            result = await self.execute({"operation": operation, "context": context})
-            return AgentExecutionResult(
-                success=result.success,
-                result=result.data,
-                error=result.error,
-                execution_time=result.execution_time,
-                tools_used=["standard_filesystem"],
-            )
+        # Fallback to standard agent execution
+        result = await self.execute({"operation": operation, "context": context})
+        return AgentExecutionResult(
+            success=result.success,
+            result=result.data,
+            error=result.error,
+            execution_time=result.execution_time,
+            tools_used=["standard_filesystem"],
+        )
 
 
 class DeepAgentResearchAgent(BaseAgent):
@@ -828,8 +816,8 @@ class DeepAgentResearchAgent(BaseAgent):
         """Register research tools."""
         try:
             from .src.tools.deep_agent_tools import task_tool
-            from .src.tools.websearch_tools import WebSearchTool
             from .src.tools.integrated_search_tools import RAGSearchTool
+            from .src.tools.websearch_tools import WebSearchTool
 
             # Register DeepAgent tools
             self._agent.tool(task_tool)
@@ -845,21 +833,20 @@ class DeepAgentResearchAgent(BaseAgent):
             print(f"Warning: Failed to register DeepAgent research tools: {e}")
 
     async def conduct_research(
-        self, research_query: str, context: Optional[DeepAgentState] = None
+        self, research_query: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Conduct comprehensive research."""
         if self._deep_agent:
             return await self._deep_agent.conduct_research(research_query, context)
-        else:
-            # Fallback to standard agent execution
-            result = await self.execute({"query": research_query, "context": context})
-            return AgentExecutionResult(
-                success=result.success,
-                result=result.data,
-                error=result.error,
-                execution_time=result.execution_time,
-                tools_used=["standard_research"],
-            )
+        # Fallback to standard agent execution
+        result = await self.execute({"query": research_query, "context": context})
+        return AgentExecutionResult(
+            success=result.success,
+            result=result.data,
+            error=result.error,
+            execution_time=result.execution_time,
+            tools_used=["standard_research"],
+        )
 
 
 class DeepAgentOrchestrationAgent(BaseAgent):
@@ -906,37 +893,33 @@ class DeepAgentOrchestrationAgent(BaseAgent):
             print(f"Warning: Failed to register DeepAgent orchestration tools: {e}")
 
     async def orchestrate_tasks(
-        self, task_description: str, context: Optional[DeepAgentState] = None
+        self, task_description: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Orchestrate multiple tasks across agents."""
         if self._deep_agent:
             return await self._deep_agent.orchestrate_tasks(task_description, context)
-        else:
-            # Fallback to standard agent execution
-            result = await self.execute({"task": task_description, "context": context})
-            return AgentExecutionResult(
-                success=result.success,
-                result=result.data,
-                error=result.error,
-                execution_time=result.execution_time,
-                tools_used=["standard_orchestration"],
-            )
+        # Fallback to standard agent execution
+        result = await self.execute({"task": task_description, "context": context})
+        return AgentExecutionResult(
+            success=result.success,
+            result=result.data,
+            error=result.error,
+            execution_time=result.execution_time,
+            tools_used=["standard_orchestration"],
+        )
 
     async def execute_parallel_tasks(
-        self, tasks: List[Dict[str, Any]], context: Optional[DeepAgentState] = None
-    ) -> List[AgentExecutionResult]:
+        self, tasks: list[dict[str, Any]], context: DeepAgentState | None = None
+    ) -> list[AgentExecutionResult]:
         """Execute multiple tasks in parallel."""
         if self._orchestrator:
             return await self._orchestrator.execute_parallel(tasks, context)
-        else:
-            # Fallback to sequential execution
-            results = []
-            for task in tasks:
-                result = await self.orchestrate_tasks(
-                    task.get("description", ""), context
-                )
-                results.append(result)
-            return results
+        # Fallback to sequential execution
+        results = []
+        for task in tasks:
+            result = await self.orchestrate_tasks(task.get("description", ""), context)
+            results.append(result)
+        return results
 
 
 class DeepAgentGeneralAgent(BaseAgent):
@@ -971,10 +954,10 @@ class DeepAgentGeneralAgent(BaseAgent):
         """Register general tools."""
         try:
             from .src.tools.deep_agent_tools import (
-                task_tool,
-                write_todos_tool,
                 list_files_tool,
                 read_file_tool,
+                task_tool,
+                write_todos_tool,
             )
             from .src.tools.websearch_tools import WebSearchTool
 
@@ -992,29 +975,28 @@ class DeepAgentGeneralAgent(BaseAgent):
             print(f"Warning: Failed to register DeepAgent general tools: {e}")
 
     async def handle_general_task(
-        self, task_description: str, context: Optional[DeepAgentState] = None
+        self, task_description: str, context: DeepAgentState | None = None
     ) -> AgentExecutionResult:
         """Handle general-purpose tasks."""
         if self._deep_agent:
             return await self._deep_agent.execute(task_description, context)
-        else:
-            # Fallback to standard agent execution
-            result = await self.execute({"task": task_description, "context": context})
-            return AgentExecutionResult(
-                success=result.success,
-                result=result.data,
-                error=result.error,
-                execution_time=result.execution_time,
-                tools_used=["standard_general"],
-            )
+        # Fallback to standard agent execution
+        result = await self.execute({"task": task_description, "context": context})
+        return AgentExecutionResult(
+            success=result.success,
+            result=result.data,
+            error=result.error,
+            execution_time=result.execution_time,
+            tools_used=["standard_general"],
+        )
 
 
 class MultiAgentOrchestrator:
     """Orchestrator for coordinating multiple agents in complex workflows."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         self.config = config
-        self.agents: Dict[AgentType, BaseAgent] = {}
+        self.agents: dict[AgentType, BaseAgent] = {}
         self.history = ExecutionHistory()
         self._initialize_agents()
 
@@ -1052,7 +1034,7 @@ class MultiAgentOrchestrator:
 
     async def execute_workflow(
         self, question: str, workflow_type: str = "research"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a complete research workflow."""
         start_time = time.time()
 
@@ -1107,16 +1089,16 @@ class MultiAgentOrchestrator:
             }
 
     async def _execute_standard_workflow(
-        self, question: str, parsed: Dict[str, Any], plan: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Execute standard research workflow."""
         executor = self.agents[AgentType.EXECUTOR]
         result = await executor.execute_plan(plan, self.history)
         return result
 
     async def _execute_bioinformatics_workflow(
-        self, question: str, parsed: Dict[str, Any], plan: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Execute bioinformatics workflow."""
         bioinformatics_agent = self.agents[AgentType.BIOINFORMATICS]
 
@@ -1151,16 +1133,16 @@ class MultiAgentOrchestrator:
         }
 
     async def _execute_deepsearch_workflow(
-        self, question: str, parsed: Dict[str, Any], plan: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Execute deep search workflow."""
         deepsearch_agent = self.agents[AgentType.DEEPSEARCH]
         result = await deepsearch_agent.deep_search(question)
         return result
 
     async def _execute_rag_workflow(
-        self, question: str, parsed: Dict[str, Any], plan: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Execute RAG workflow."""
         rag_agent = self.agents[AgentType.RAG]
 
@@ -1176,8 +1158,8 @@ class MultiAgentOrchestrator:
         }
 
     async def _execute_deep_agent_workflow(
-        self, question: str, parsed: Dict[str, Any], plan: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Execute DeepAgent workflow."""
         # Create initial state
         initial_state = DeepAgentState(
@@ -1261,7 +1243,7 @@ def create_agent(agent_type: AgentType, **kwargs) -> BaseAgent:
     return agent_class(**kwargs)
 
 
-def create_orchestrator(config: Dict[str, Any]) -> MultiAgentOrchestrator:
+def create_orchestrator(config: dict[str, Any]) -> MultiAgentOrchestrator:
     """Create a multi-agent orchestrator."""
     return MultiAgentOrchestrator(config)
 

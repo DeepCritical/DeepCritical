@@ -50,6 +50,157 @@ packages = ["DeepResearch"]
 [tool.uv.sources]
 testcontainers = { git = "https://github.com/josephrp/testcontainers-python.git", rev = "vllm" }
 
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.10+
+target-version = "py310"
+
+[tool.ruff.lint]
+# Enable only essential linting rules to avoid conflicts
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "FBT003",
+    # Ignore checks for possible passwords
+    "S105", "S106", "S107",
+    # Ignore complexity
+    "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+    # Allow magic values
+    "PLR2004",
+    # Ignore long lines
+    "E501",
+    # Allow print statements
+    "T201",
+    # Allow relative imports
+    "TID252",
+    # Allow unused imports in __init__.py files
+    "F401",
+    # Ignore f-string in logging (common pattern)
+    "G004",
+    # Ignore try/except patterns that are acceptable
+    "TRY300", "TRY400", "TRY003", "TRY004", "TRY301",
+    # Ignore exception message patterns
+    "EM101", "EM102",
+    # Ignore performance warnings in loops
+    "PERF203", "PERF102", "PERF403", "PERF401",
+    # Ignore pathlib suggestions
+    "PTH123", "PTH110", "PTH103", "PTH118", "PTH117", "PTH120",
+    # Ignore type checking issues
+    "PGH003", "TCH001", "TCH002", "TCH003",
+    # Ignore deprecated typing
+    "UP035", "UP038", "UP007",
+    # Ignore import namespace issues
+    "INP001",
+    # Ignore simplification suggestions
+    "SIM102", "SIM105", "SIM108", "SIM118", "SIM103",
+    # Ignore unused arguments
+    "ARG002", "ARG005", "ARG001", "ARG003",
+    # Ignore return patterns
+    "RET504",
+    # Ignore commented code
+    "ERA001",
+    # Ignore mutable class attributes
+    "RUF012", "RUF001", "RUF006", "RUF015", "RUF005",
+    # Ignore loop variable overwrites
+    "PLW2901",
+    # Ignore startswith optimization
+    "PIE810",
+    # Ignore datetime timezone
+    "DTZ005",
+    # Ignore unused loop variables
+    "B007",
+    # Ignore variable naming
+    "N806", "N814", "N999", "N802",
+    # Ignore assertion patterns
+    "B011", "PT015",
+    # Ignore list comprehension suggestions
+    "PERF401", "C416", "C401",
+    # Ignore pandas DataFrame naming
+    "PD901",
+    # Ignore private member access
+    "SLF001",
+    # Ignore builtin shadowing
+    "A001", "A002",
+    # Ignore function naming
+    "N802",
+    # Ignore type annotations
+    "PYI034",
+    # Ignore import organization
+    "ISC001",
+    # Ignore exception handling
+    "B904",
+    # Ignore raise patterns
+    "TRY201",
+    # Ignore lambda arguments
+    "ARG005",
+    # Ignore docstring formatting
+    "RUF002",
+    # Ignore exception naming
+    "N818",
+    # Ignore duplicate field definitions
+    "PIE794",
+    # Ignore nested with statements
+    "SIM117",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+docstring-code-line-length = "dynamic"
+
 [dependency-groups]
 dev = [
   "ruff>=0.6.0",

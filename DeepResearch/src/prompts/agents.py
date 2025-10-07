@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-
 # Base agent prompts
 BASE_AGENT_SYSTEM_PROMPT = """You are an advanced AI research agent in the DeepCritical system. Your role is to execute specialized research tasks using available tools and maintaining high-quality, accurate results."""
 
@@ -167,7 +166,7 @@ DEEP_AGENT_GENERAL_INSTRUCTIONS = """Handle general tasks and return:
 
 
 # Prompt templates by agent type
-AGENT_PROMPTS: Dict[str, Dict[str, str]] = {
+AGENT_PROMPTS: dict[str, dict[str, str]] = {
     "base": {
         "system": BASE_AGENT_SYSTEM_PROMPT,
         "instructions": BASE_AGENT_INSTRUCTIONS,
@@ -245,7 +244,7 @@ class AgentPrompts:
         )
 
     @classmethod
-    def get_agent_prompts(cls, agent_type: str) -> Dict[str, str]:
+    def get_agent_prompts(cls, agent_type: str) -> dict[str, str]:
         """Get all prompts for an agent type."""
         return cls.PROMPTS.get(
             agent_type,

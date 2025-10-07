@@ -3,10 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-
-from .prime_parser import StructuredProblem, ScientificIntent
-from ..datatypes.tool_specs import ToolSpec, ToolCategory
-from ..datatypes.execution import WorkflowStep, WorkflowDAG
+from ..datatypes.execution import WorkflowDAG, WorkflowStep
+from ..datatypes.tool_specs import ToolCategory, ToolSpec
+from .prime_parser import ScientificIntent, StructuredProblem
 
 
 @dataclass
@@ -54,7 +53,7 @@ class PlanGenerator:
             metadata=metadata,
         )
 
-    def _build_tool_library(self) -> Dict[str, ToolSpec]:
+    def _build_tool_library(self) -> dict[str, ToolSpec]:
         """Build the PRIME tool library with 65+ tools."""
         return {
             # Knowledge Query Tools
@@ -156,7 +155,7 @@ class PlanGenerator:
             ),
         }
 
-    def _build_domain_heuristics(self) -> Dict[ScientificIntent, List[str]]:
+    def _build_domain_heuristics(self) -> dict[ScientificIntent, list[str]]:
         """Build domain-specific heuristics for tool selection."""
         return {
             ScientificIntent.PROTEIN_DESIGN: [
@@ -204,7 +203,7 @@ class PlanGenerator:
             ],
         }
 
-    def _select_tools(self, problem: StructuredProblem) -> List[str]:
+    def _select_tools(self, problem: StructuredProblem) -> list[str]:
         """Select appropriate tools based on problem characteristics."""
         # Get base tools for the intent
         base_tools = self.domain_heuristics.get(problem.intent, [])
@@ -235,8 +234,8 @@ class PlanGenerator:
         return selected
 
     def _generate_workflow_steps(
-        self, problem: StructuredProblem, tools: List[str]
-    ) -> List[WorkflowStep]:
+        self, problem: StructuredProblem, tools: list[str]
+    ) -> list[WorkflowStep]:
         """Generate workflow steps from selected tools."""
         steps = []
 
@@ -275,7 +274,7 @@ class PlanGenerator:
 
     def _generate_parameters(
         self, tool_spec: ToolSpec, problem: StructuredProblem
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate parameters for a tool based on problem requirements."""
         params = tool_spec.parameters.copy()
 
@@ -293,7 +292,7 @@ class PlanGenerator:
 
     def _define_inputs(
         self, tool_spec: ToolSpec, problem: StructuredProblem, step_index: int
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Define input mappings for a workflow step."""
         inputs = {}
 
@@ -312,7 +311,7 @@ class PlanGenerator:
 
         return inputs
 
-    def _define_outputs(self, tool_spec: ToolSpec, step_index: int) -> Dict[str, str]:
+    def _define_outputs(self, tool_spec: ToolSpec, step_index: int) -> dict[str, str]:
         """Define output mappings for a workflow step."""
         outputs = {}
 
@@ -321,7 +320,7 @@ class PlanGenerator:
 
         return outputs
 
-    def _resolve_dependencies(self, steps: List[WorkflowStep]) -> Dict[str, List[str]]:
+    def _resolve_dependencies(self, steps: list[WorkflowStep]) -> dict[str, list[str]]:
         """Resolve dependencies between workflow steps."""
         dependencies = {}
 
@@ -340,10 +339,10 @@ class PlanGenerator:
 
         return dependencies
 
-    def _topological_sort(self, dependencies: Dict[str, List[str]]) -> List[str]:
+    def _topological_sort(self, dependencies: dict[str, list[str]]) -> list[str]:
         """Perform topological sort to determine execution order."""
         # Simple topological sort implementation
-        in_degree = {step: 0 for step in dependencies.keys()}
+        in_degree = {step: 0 for step in dependencies}
 
         # Calculate in-degrees
         for step, deps in dependencies.items():

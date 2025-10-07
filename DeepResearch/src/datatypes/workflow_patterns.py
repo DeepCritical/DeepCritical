@@ -9,19 +9,20 @@ Pydantic AI and Pydantic Graph integration.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 # Optional import for pydantic_graph - may not be available in all environments
 try:
-    from pydantic_graph import BaseNode, End, Graph, GraphRunContext, Edge
+    from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
 except ImportError:
     # Create placeholder classes for when pydantic_graph is not available
-    from typing import TypeVar, Generic
+    from typing import Generic, TypeVar
 
     T = TypeVar("T")
 
@@ -47,8 +48,8 @@ except ImportError:
 
 
 # Import existing DeepCritical types
-from .agents import AgentType, AgentStatus
 from ..utils.execution_status import ExecutionStatus
+from .agents import AgentStatus, AgentType
 from .deep_agent_state import DeepAgentState
 
 
@@ -95,14 +96,14 @@ class InteractionMessage:
 
     message_id: str = field(default_factory=lambda: str(uuid4()))
     sender_id: str = ""
-    receiver_id: Optional[str] = None  # None for broadcast
+    receiver_id: str | None = None  # None for broadcast
     message_type: MessageType = MessageType.DATA
     content: Any = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
     priority: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "message_id": self.message_id,
@@ -116,7 +117,7 @@ class InteractionMessage:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "InteractionMessage":
+    def from_dict(cls, data: dict[str, Any]) -> InteractionMessage:
         """Create from dictionary."""
         return cls(
             message_id=data.get("message_id", str(uuid4())),
@@ -139,13 +140,13 @@ class AgentInteractionState:
     mode: AgentInteractionMode = AgentInteractionMode.SYNC
 
     # Agent management
-    agents: Dict[str, AgentType] = field(default_factory=dict)
-    active_agents: List[str] = field(default_factory=list)
-    agent_states: Dict[str, AgentStatus] = field(default_factory=dict)
+    agents: dict[str, AgentType] = field(default_factory=dict)
+    active_agents: list[str] = field(default_factory=list)
+    agent_states: dict[str, AgentStatus] = field(default_factory=dict)
 
     # Message management
-    messages: List[InteractionMessage] = field(default_factory=list)
-    message_queue: List[InteractionMessage] = field(default_factory=list)
+    messages: list[InteractionMessage] = field(default_factory=list)
+    message_queue: list[InteractionMessage] = field(default_factory=list)
 
     # Execution state
     current_round: int = 0
@@ -154,14 +155,14 @@ class AgentInteractionState:
     execution_status: ExecutionStatus = ExecutionStatus.PENDING
 
     # Results
-    results: Dict[str, Any] = field(default_factory=dict)
-    final_result: Optional[Any] = None
+    results: dict[str, Any] = field(default_factory=dict)
+    final_result: Any | None = None
     consensus_reached: bool = False
 
     # Metadata
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
-    errors: List[str] = field(default_factory=list)
+    end_time: float | None = None
+    errors: list[str] = field(default_factory=list)
 
     def add_agent(self, agent_id: str, agent_type: AgentType) -> None:
         """Add an agent to the interaction."""
@@ -186,11 +187,11 @@ class AgentInteractionState:
         if message.receiver_id:
             self.message_queue.append(message)
 
-    def get_messages_for_agent(self, agent_id: str) -> List[InteractionMessage]:
+    def get_messages_for_agent(self, agent_id: str) -> list[InteractionMessage]:
         """Get messages addressed to a specific agent."""
         return [msg for msg in self.message_queue if msg.receiver_id == agent_id]
 
-    def get_broadcast_messages(self) -> List[InteractionMessage]:
+    def get_broadcast_messages(self) -> list[InteractionMessage]:
         """Get broadcast messages."""
         return [msg for msg in self.message_queue if msg.receiver_id is None]
 
@@ -218,7 +219,7 @@ class AgentInteractionState:
         self.end_time = time.time()
         self.execution_status = ExecutionStatus.SUCCESS
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get a summary of the interaction state."""
         return {
             "interaction_id": self.interaction_id,
@@ -240,7 +241,7 @@ class WorkflowOrchestrator:
 
     def __init__(self, interaction_state: AgentInteractionState):
         self.state = interaction_state
-        self.executors: Dict[str, Callable] = {}
+        self.executors: dict[str, Callable] = {}
 
     def register_agent_executor(self, agent_id: str, executor: Callable) -> None:
         """Register an executor for an agent."""
@@ -322,7 +323,7 @@ class WorkflowOrchestrator:
         self.state.finalize()
         return self.state.results
 
-    async def _execute_agents_parallel(self) -> Dict[str, Dict[str, Any]]:
+    async def _execute_agents_parallel(self) -> dict[str, dict[str, Any]]:
         """Execute all active agents in parallel."""
 
         tasks = []
@@ -341,7 +342,7 @@ class WorkflowOrchestrator:
 
         return results
 
-    async def _execute_single_agent(self, agent_id: str) -> Dict[str, Any]:
+    async def _execute_single_agent(self, agent_id: str) -> dict[str, Any]:
         """Execute a single agent."""
         if agent_id not in self.executors:
             return {"success": False, "error": f"No executor for agent {agent_id}"}
@@ -359,8 +360,8 @@ class WorkflowOrchestrator:
             return {"success": False, "error": str(e)}
 
     def _process_collaborative_results(
-        self, results: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, results: dict[str, dict[str, Any]]
+    ) -> dict[str, Any]:
         """Process results from collaborative agents."""
         successful_results = {}
         all_results = []
@@ -386,7 +387,7 @@ class WorkflowOrchestrator:
             "confidence": 0.0,
         }
 
-    def _check_consensus(self, results: List[Any]) -> bool:
+    def _check_consensus(self, results: list[Any]) -> bool:
         """Check if results reach consensus."""
         if len(results) < 2:
             return False
@@ -404,14 +405,14 @@ class WorkflowOrchestrator:
         # Simple string similarity check
         if isinstance(result1, str) and isinstance(result2, str):
             return result1.lower() == result2.lower()
-        elif isinstance(result1, dict) and isinstance(result2, dict):
+        if isinstance(result1, dict) and isinstance(result2, dict):
             return (
                 result1.get("answer", "").lower() == result2.get("answer", "").lower()
             )
 
         return result1 == result2
 
-    def _aggregate_results(self, results: List[Any]) -> Any:
+    def _aggregate_results(self, results: list[Any]) -> Any:
         """Aggregate multiple results."""
         if not results:
             return None
@@ -432,7 +433,7 @@ class WorkflowOrchestrator:
 
         return results[0]
 
-    def _calculate_consensus_confidence(self, results: List[Any]) -> float:
+    def _calculate_consensus_confidence(self, results: list[Any]) -> float:
         """Calculate confidence based on result agreement."""
         if len(results) < 2:
             return 0.0
@@ -445,12 +446,12 @@ class WorkflowOrchestrator:
 
     def _execute_hierarchical_subordinates(
         self, coordinator_data: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute subordinate agents in hierarchical pattern."""
         # This would implement hierarchical execution logic
         return {}
 
-    def _get_next_agent(self, current_agent: str) -> Optional[str]:
+    def _get_next_agent(self, current_agent: str) -> str | None:
         """Get the next agent in sequential pattern."""
         agent_ids = list(self.state.agents.keys())
         try:
@@ -463,7 +464,7 @@ class WorkflowOrchestrator:
         except ValueError:
             return None
 
-    def _get_coordinator_agent(self) -> Optional[str]:
+    def _get_coordinator_agent(self) -> str | None:
         """Get the coordinator agent in hierarchical pattern."""
         # In a real implementation, this would identify the coordinator
         # For now, return the first agent
@@ -494,12 +495,12 @@ class InteractionConfig(BaseModel):
 class AgentInteractionRequest(BaseModel):
     """Request for agent interaction execution."""
 
-    agents: List[str] = Field(..., description="Agent IDs to include")
+    agents: list[str] = Field(..., description="Agent IDs to include")
     interaction_pattern: InteractionPattern = Field(
         InteractionPattern.COLLABORATIVE, description="Interaction pattern"
     )
-    input_data: Dict[str, Any] = Field(..., description="Input data for agents")
-    config: Optional[InteractionConfig] = Field(
+    input_data: dict[str, Any] = Field(..., description="Input data for agents")
+    config: InteractionConfig | None = Field(
         None, description="Interaction configuration"
     )
 
@@ -520,7 +521,7 @@ class AgentInteractionResponse(BaseModel):
     result: Any = Field(..., description="Interaction result")
     execution_time: float = Field(..., description="Execution time in seconds")
     rounds_executed: int = Field(..., description="Number of rounds executed")
-    errors: List[str] = Field(
+    errors: list[str] = Field(
         default_factory=list, description="Any errors encountered"
     )
 
@@ -539,8 +540,8 @@ class AgentInteractionResponse(BaseModel):
 # Factory functions for creating interaction patterns
 def create_interaction_state(
     pattern: InteractionPattern = InteractionPattern.COLLABORATIVE,
-    agents: Optional[List[str]] = None,
-    agent_types: Optional[Dict[str, AgentType]] = None,
+    agents: list[str] | None = None,
+    agent_types: dict[str, AgentType] | None = None,
 ) -> AgentInteractionState:
     """Create a new interaction state."""
     state = AgentInteractionState(pattern=pattern)
@@ -555,7 +556,7 @@ def create_interaction_state(
 
 def create_workflow_orchestrator(
     interaction_state: AgentInteractionState,
-    agent_executors: Optional[Dict[str, Callable]] = None,
+    agent_executors: dict[str, Callable] | None = None,
 ) -> WorkflowOrchestrator:
     """Create a workflow orchestrator."""
     orchestrator = WorkflowOrchestrator(interaction_state)
@@ -577,7 +578,6 @@ class WorkflowPatternNode(BaseNode[DeepAgentState]):  # type: ignore[unsupported
     async def run(self, ctx: GraphRunContext[DeepAgentState]) -> Any:
         """Execute the workflow pattern."""
         # This would be implemented by specific pattern nodes
-        pass
 
 
 class CollaborativePatternNode(WorkflowPatternNode):
@@ -642,7 +642,7 @@ class SequentialPatternNode(WorkflowPatternNode):
 
 # Utility functions for integration
 def create_pattern_graph(
-    pattern: InteractionPattern, agents: List[str]
+    pattern: InteractionPattern, agents: list[str]
 ) -> Graph[DeepAgentState]:
     """Create a Pydantic Graph for the given interaction pattern."""
 
@@ -659,9 +659,9 @@ def create_pattern_graph(
 
 async def execute_interaction_pattern(
     pattern: InteractionPattern,
-    agents: List[str],
-    input_data: Dict[str, Any],
-    agent_executors: Dict[str, Callable],
+    agents: list[str],
+    input_data: dict[str, Any],
+    agent_executors: dict[str, Callable],
 ) -> AgentInteractionResponse:
     """Execute an interaction pattern with the given agents and data."""
 

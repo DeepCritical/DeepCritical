@@ -11,10 +11,11 @@ import importlib
 import sys
 from pathlib import Path
 from typing import Optional
+
 import pytest
 
 
-def safe_import(module_name: str, fallback_module_name: Optional[str] = None) -> bool:
+def safe_import(module_name: str, fallback_module_name: str | None = None) -> bool:
     """Safely import a module, handling different environments.
 
     Args:
@@ -60,29 +61,29 @@ class TestMainSrcImports:
         success = safe_import("DeepResearch.src.agents")
         if success:
             from DeepResearch.src.agents import (
-                QueryParser,
-                StructuredProblem,
-                ScientificIntent,
                 DataType,
-                parse_query,
-                PlanGenerator,
-                WorkflowDAG,
-                WorkflowStep,
-                ToolSpec,
-                ToolCategory,
-                generate_plan,
-                ToolExecutor,
                 ExecutionContext,
-                execute_workflow,
                 Orchestrator,
+                PlanGenerator,
                 Planner,
                 PydAIToolsetBuilder,
+                QueryParser,
                 ResearchAgent,
                 ResearchOutcome,
-                StepResult,
-                run,
-                ToolCaller,
+                ScientificIntent,
                 SearchAgent,
+                StepResult,
+                StructuredProblem,
+                ToolCaller,
+                ToolCategory,
+                ToolExecutor,
+                ToolSpec,
+                WorkflowDAG,
+                WorkflowStep,
+                execute_workflow,
+                generate_plan,
+                parse_query,
+                run,
             )
 
             # Verify they are all accessible
@@ -119,125 +120,125 @@ class TestMainSrcImports:
         success = safe_import("DeepResearch.src.datatypes")
         if success:
             from DeepResearch.src.datatypes import (
-                # Bioinformatics types
-                EvidenceCode,
-                GOTerm,
-                GOAnnotation,
-                PubMedPaper,
-                GEOPlatform,
-                GEOSeries,
-                GeneExpressionProfile,
-                DrugTarget,
-                PerturbationProfile,
-                ProteinStructure,
-                ProteinInteraction,
-                FusedDataset,
-                ReasoningTask,
-                DataFusionRequest,
-                # Agent types
-                AgentType,
-                AgentStatus,
+                ActionType,
                 AgentDependencies,
                 AgentResult,
-                ExecutionHistory,
-                # RAG types
-                SearchType,
-                EmbeddingModelType,
-                LLMModelType,
-                VectorStoreType,
-                Document,
-                EmbeddingsConfig,
-                VLLMConfig,
-                VectorStoreConfig,
-                RAGQuery,
-                RAGResponse,
-                RAGConfig,
-                IntegratedSearchRequest,
-                IntegratedSearchResponse,
-                Embeddings,
-                VectorStore,
-                LLMProvider,
-                RAGSystem,
-                RAGWorkflowState,
-                # Search agent types
-                SearchAgentConfig,
-                SearchQuery,
-                SearchAgentDependencies,
-                # VLLM integration types
-                VLLMEmbeddings,
-                VLLMLLMProvider,
-                VLLMServerConfig,
-                VLLMEmbeddingServerConfig,
-                VLLMDeployment,
-                VLLMRAGSystem,
+                AgentStatus,
+                # Agent types
+                AgentType,
+                AnalyticsDataRequest,
+                AnalyticsDataResponse,
                 # Analytics types
                 AnalyticsRequest,
                 AnalyticsResponse,
-                AnalyticsDataRequest,
-                AnalyticsDataResponse,
+                BaseMiddleware,
+                BreakConditionCheck,
+                CodeExecBuiltinRunner,
+                DataFusionRequest,
+                DeepSearchSchemas,
+                DockerExecutionRequest,
+                DockerExecutionResult,
+                # Docker sandbox types
+                DockerSandboxConfig,
+                DockerSandboxContainerInfo,
+                DockerSandboxEnvironment,
+                DockerSandboxMetrics,
+                DockerSandboxPolicies,
+                DockerSandboxRequest,
+                DockerSandboxResponse,
+                Document,
+                DrugTarget,
+                EditFileRequest,
+                EditFileResponse,
+                EmbeddingModelType,
+                Embeddings,
+                EmbeddingsConfig,
+                # Deep search types
+                EvaluationType,
+                # Bioinformatics types
+                EvidenceCode,
+                ExecutionContext,
+                ExecutionHistory,
+                ExecutionResult,
+                FilesystemMiddleware,
+                FusedDataset,
+                GeneExpressionProfile,
+                GEOPlatform,
+                GEOSeries,
+                GOAnnotation,
+                GOTerm,
+                IntegratedSearchRequest,
+                IntegratedSearchResponse,
+                ListFilesResponse,
+                LLMModelType,
+                LLMProvider,
                 # Middleware types
                 MiddlewareConfig,
-                MiddlewareResult,
-                BaseMiddleware,
-                PlanningMiddleware,
-                FilesystemMiddleware,
-                SubAgentMiddleware,
-                SummarizationMiddleware,
-                PromptCachingMiddleware,
                 MiddlewarePipeline,
+                MiddlewareResult,
+                MockToolRunner,
+                NestedLoopRequest,
+                OrchestrationResult,
+                Orchestrator,
+                # Workflow orchestration types
+                OrchestratorDependencies,
+                PerturbationProfile,
+                Planner,
+                PlanningMiddleware,
+                PromptCachingMiddleware,
+                PromptPair,
+                ProteinInteraction,
+                ProteinStructure,
+                PubMedPaper,
+                RAGConfig,
+                RAGQuery,
+                RAGResponse,
+                RAGSystem,
+                RAGWorkflowState,
+                ReadFileRequest,
+                ReadFileResponse,
+                ReasoningTask,
+                ReflectionQuestion,
+                # Search agent types
+                SearchAgentConfig,
+                SearchAgentDependencies,
+                SearchQuery,
+                SearchResult,
+                SearchTimeFilter,
+                # RAG types
+                SearchType,
+                SubAgentMiddleware,
+                SubgraphSpawnRequest,
+                SummarizationMiddleware,
+                TaskRequestModel,
+                TaskResponse,
+                # Core tool types
+                ToolMetadata,
+                ToolRunner,
+                UrlContextBuiltinRunner,
+                URLVisitResult,
+                VectorStore,
+                VectorStoreConfig,
+                VectorStoreType,
+                VLLMConfig,
+                VLLMDeployment,
+                # VLLM integration types
+                VLLMEmbeddings,
+                VLLMEmbeddingServerConfig,
+                VLLMLLMProvider,
+                VLLMRAGSystem,
+                VLLMServerConfig,
+                # Pydantic AI tools types
+                WebSearchBuiltinRunner,
+                WebSearchRequest,
+                WorkflowDAG,
+                # Execution types
+                WorkflowStep,
+                WriteFileRequest,
+                WriteFileResponse,
                 # DeepAgent tools types
                 WriteTodosRequest,
                 WriteTodosResponse,
-                ListFilesResponse,
-                ReadFileRequest,
-                ReadFileResponse,
-                WriteFileRequest,
-                WriteFileResponse,
-                EditFileRequest,
-                EditFileResponse,
-                TaskRequestModel,
-                TaskResponse,
-                # Deep search types
-                EvaluationType,
-                ActionType,
-                SearchTimeFilter,
-                SearchResult,
-                WebSearchRequest,
-                URLVisitResult,
-                ReflectionQuestion,
-                PromptPair,
-                DeepSearchSchemas,
-                # Docker sandbox types
-                DockerSandboxConfig,
-                DockerExecutionRequest,
-                DockerExecutionResult,
-                DockerSandboxEnvironment,
-                DockerSandboxPolicies,
-                DockerSandboxContainerInfo,
-                DockerSandboxMetrics,
-                DockerSandboxRequest,
-                DockerSandboxResponse,
-                # Pydantic AI tools types
-                WebSearchBuiltinRunner,
-                CodeExecBuiltinRunner,
-                UrlContextBuiltinRunner,
-                # Core tool types
-                ToolMetadata,
-                ExecutionResult,
-                ToolRunner,
-                MockToolRunner,
-                # Workflow orchestration types
-                OrchestratorDependencies,
-                NestedLoopRequest,
-                SubgraphSpawnRequest,
-                BreakConditionCheck,
-                OrchestrationResult,
-                # Execution types
-                WorkflowStep,
-                WorkflowDAG,
-                ExecutionContext,
-                Orchestrator,
-                Planner,
             )
 
             # Verify they are all accessible
@@ -407,10 +408,10 @@ class TestSubmoduleImports:
         if success:
             # Test individual agent modules
             from DeepResearch.src.agents import (
+                agent_orchestrator,
+                prime_executor,
                 prime_parser,
                 prime_planner,
-                prime_executor,
-                agent_orchestrator,
                 pyd_ai_toolsets,
                 research_agent,
                 tool_caller,
@@ -433,18 +434,18 @@ class TestSubmoduleImports:
         if success:
             from DeepResearch.src.datatypes import (
                 bioinformatics,
-                rag,
-                vllm_integration,
-                chunk_dataclass,
-                document_dataclass,
                 chroma_dataclass,
-                postgres_dataclass,
-                vllm_dataclass,
-                markdown,
+                chunk_dataclass,
                 deep_agent_state,
                 deep_agent_types,
-                workflow_orchestration,
+                document_dataclass,
+                markdown,
+                postgres_dataclass,
                 pydantic_ai_tools,
+                rag,
+                vllm_dataclass,
+                vllm_integration,
+                workflow_orchestration,
             )
 
             # Verify they are all accessible
@@ -469,17 +470,17 @@ class TestSubmoduleImports:
         success = safe_import("DeepResearch.src.tools.base")
         if success:
             from DeepResearch.src.tools import (
+                analytics_tools,
                 base,
-                mock_tools,
-                workflow_tools,
-                pyd_ai_tools,
                 code_sandbox,
-                docker_sandbox,
                 deepsearch_tools,
                 deepsearch_workflow_tool,
-                websearch_tools,
-                analytics_tools,
+                docker_sandbox,
                 integrated_search_tools,
+                mock_tools,
+                pyd_ai_tools,
+                websearch_tools,
+                workflow_tools,
             )
 
             # Verify they are all accessible
@@ -502,14 +503,14 @@ class TestSubmoduleImports:
         success = safe_import("DeepResearch.src.utils.config_loader")
         if success:
             from DeepResearch.src.utils import (
+                analytics,
                 config_loader,
+                deepsearch_schemas,
+                deepsearch_utils,
                 execution_history,
                 execution_status,
                 tool_registry,
                 tool_specs,
-                analytics,
-                deepsearch_schemas,
-                deepsearch_utils,
             )
 
             # Verify they are all accessible

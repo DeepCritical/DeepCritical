@@ -9,17 +9,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any, Dict, List, Optional
+
 import aiohttp
 from pydantic import BaseModel, Field
 
 from .rag import (
+    EmbeddingModelType,
     Embeddings,
     EmbeddingsConfig,
-    EmbeddingModelType,
+    LLMModelType,
     LLMProvider,
     VLLMConfig,
-    LLMModelType,
 )
 
 
@@ -29,7 +31,7 @@ class VLLMEmbeddings(Embeddings):
     def __init__(self, config: EmbeddingsConfig):
         super().__init__(config)
         self.base_url = f"http://{config.base_url or 'localhost:8000'}"
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -42,8 +44,8 @@ class VLLMEmbeddings(Embeddings):
             await self.session.close()
 
     async def _make_request(
-        self, endpoint: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, endpoint: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """Make HTTP request to VLLM server."""
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -61,8 +63,8 @@ class VLLMEmbeddings(Embeddings):
             return await response.json()
 
     async def vectorize_documents(
-        self, document_chunks: List[str]
-    ) -> List[List[float]]:
+        self, document_chunks: list[str]
+    ) -> list[list[float]]:
         """Generate document embeddings for a list of chunks."""
         if not document_chunks:
             return []
@@ -91,16 +93,16 @@ class VLLMEmbeddings(Embeddings):
 
         return embeddings
 
-    async def vectorize_query(self, text: str) -> List[float]:
+    async def vectorize_query(self, text: str) -> list[float]:
         """Generate embeddings for the query string."""
         embeddings = await self.vectorize_documents([text])
         return embeddings[0] if embeddings else []
 
-    def vectorize_documents_sync(self, document_chunks: List[str]) -> List[List[float]]:
+    def vectorize_documents_sync(self, document_chunks: list[str]) -> list[list[float]]:
         """Synchronous version of vectorize_documents()."""
         return asyncio.run(self.vectorize_documents(document_chunks))
 
-    def vectorize_query_sync(self, text: str) -> List[float]:
+    def vectorize_query_sync(self, text: str) -> list[float]:
         """Synchronous version of vectorize_query()."""
         return asyncio.run(self.vectorize_query(text))
 
@@ -111,7 +113,7 @@ class VLLMLLMProvider(LLMProvider):
     def __init__(self, config: VLLMConfig):
         super().__init__(config)
         self.base_url = f"http://{config.host}:{config.port}"
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -124,8 +126,8 @@ class VLLMLLMProvider(LLMProvider):
             await self.session.close()
 
     async def _make_request(
-        self, endpoint: str, payload: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, endpoint: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
         """Make HTTP request to VLLM server."""
         if not self.session:
             self.session = aiohttp.ClientSession()
@@ -143,7 +145,7 @@ class VLLMLLMProvider(LLMProvider):
             return await response.json()
 
     async def generate(
-        self, prompt: str, context: Optional[str] = None, **kwargs: Any
+        self, prompt: str, context: str | None = None, **kwargs: Any
     ) -> str:
         """Generate text using the LLM."""
         full_prompt = prompt
@@ -173,7 +175,7 @@ class VLLMLLMProvider(LLMProvider):
             raise RuntimeError(f"Failed to generate text: {e}")
 
     async def generate_stream(
-        self, prompt: str, context: Optional[str] = None, **kwargs: Any
+        self, prompt: str, context: str | None = None, **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Generate streaming text using the LLM."""
         full_prompt = prompt
@@ -240,9 +242,7 @@ class VLLMServerConfig(BaseModel):
     max_model_len: int = Field(4096, description="Maximum model length")
     dtype: str = Field("auto", description="Data type for model")
     trust_remote_code: bool = Field(False, description="Trust remote code")
-    download_dir: Optional[str] = Field(
-        None, description="Download directory for models"
-    )
+    download_dir: str | None = Field(None, description="Download directory for models")
     load_format: str = Field("auto", description="Model loading format")
     tensor_parallel_size: int = Field(1, description="Tensor parallel size")
     pipeline_parallel_size: int = Field(1, description="Pipeline parallel size")
@@ -250,9 +250,9 @@ class VLLMServerConfig(BaseModel):
     max_num_batched_tokens: int = Field(8192, description="Maximum batched tokens")
     max_paddings: int = Field(256, description="Maximum paddings")
     disable_log_stats: bool = Field(False, description="Disable log statistics")
-    revision: Optional[str] = Field(None, description="Model revision")
-    code_revision: Optional[str] = Field(None, description="Code revision")
-    tokenizer: Optional[str] = Field(None, description="Tokenizer name")
+    revision: str | None = Field(None, description="Model revision")
+    code_revision: str | None = Field(None, description="Code revision")
+    tokenizer: str | None = Field(None, description="Tokenizer name")
     tokenizer_mode: str = Field("auto", description="Tokenizer mode")
     trust_remote_code: bool = Field(False, description="Trust remote code")
     skip_tokenizer_init: bool = Field(
@@ -285,9 +285,7 @@ class VLLMEmbeddingServerConfig(BaseModel):
     max_model_len: int = Field(512, description="Maximum model length for embeddings")
     dtype: str = Field("auto", description="Data type for model")
     trust_remote_code: bool = Field(False, description="Trust remote code")
-    download_dir: Optional[str] = Field(
-        None, description="Download directory for models"
-    )
+    download_dir: str | None = Field(None, description="Download directory for models")
     load_format: str = Field("auto", description="Model loading format")
     tensor_parallel_size: int = Field(1, description="Tensor parallel size")
     pipeline_parallel_size: int = Field(1, description="Pipeline parallel size")
@@ -312,7 +310,7 @@ class VLLMDeployment(BaseModel):
     """VLLM deployment configuration and management."""
 
     llm_config: VLLMServerConfig = Field(..., description="LLM server configuration")
-    embedding_config: Optional[VLLMEmbeddingServerConfig] = Field(
+    embedding_config: VLLMEmbeddingServerConfig | None = Field(
         None, description="Embedding server configuration"
     )
     auto_start: bool = Field(True, description="Automatically start servers")
@@ -391,10 +389,10 @@ class VLLMRAGSystem(BaseModel):
     """VLLM-based RAG system implementation."""
 
     deployment: VLLMDeployment = Field(..., description="VLLM deployment configuration")
-    embeddings: Optional[VLLMEmbeddings] = Field(
+    embeddings: VLLMEmbeddings | None = Field(
         None, description="VLLM embeddings provider"
     )
-    llm: Optional[VLLMLLMProvider] = Field(None, description="VLLM LLM provider")
+    llm: VLLMLLMProvider | None = Field(None, description="VLLM LLM provider")
 
     async def initialize(self) -> None:
         """Initialize the VLLM RAG system."""

@@ -1,7 +1,8 @@
 """Custom base types for Chonkie."""
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 from uuid import uuid4
 
 if TYPE_CHECKING:
@@ -34,8 +35,8 @@ class Chunk:
     start_index: int = field(default=0)
     end_index: int = field(default=0)
     token_count: int = field(default=0)
-    context: Optional[str] = field(default=None)
-    embedding: Union[List[float], "np.ndarray", None] = field(default=None)
+    context: str | None = field(default=None)
+    embedding: Union[list[float], "np.ndarray", None] = field(default=None)
 
     def __len__(self) -> int:
         """Return the length of the text."""
@@ -76,8 +77,7 @@ class Chunk:
                     preview += f" shape={self.embedding.shape}"
 
                 return preview
-            else:
-                return str(self.embedding)
+            return str(self.embedding)
         except Exception:
             return "<embedding>"
 
@@ -122,8 +122,8 @@ class Chunk:
             start_index=data["start_index"],
             end_index=data["end_index"],
             token_count=data["token_count"],
-            context=data.get("context", None),
-            embedding=data.get("embedding", None),
+            context=data.get("context"),
+            embedding=data.get("embedding"),
         )
 
     def copy(self) -> "Chunk":

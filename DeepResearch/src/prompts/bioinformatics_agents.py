@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 # Data Fusion Agent System Prompt
 DATA_FUSION_SYSTEM_PROMPT = """You are a bioinformatics data fusion specialist. Your role is to:
 1. Analyze data fusion requests and identify relevant data sources
@@ -56,7 +55,7 @@ Focus on:
 - Source reliability and curation standards"""
 
 # Prompt templates for agent methods
-BIOINFORMATICS_AGENT_PROMPTS: Dict[str, str] = {
+BIOINFORMATICS_AGENT_PROMPTS: dict[str, str] = {
     "data_fusion": """Fuse bioinformatics data according to the following request:
 
 Fusion Type: {fusion_type}

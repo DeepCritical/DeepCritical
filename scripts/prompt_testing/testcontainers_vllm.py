@@ -83,11 +83,11 @@ class VLLMPromptTester:
 
     def __init__(
         self,
-        config: Optional[DictConfig] = None,
-        model_name: Optional[str] = None,
-        container_timeout: Optional[int] = None,
-        max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None,
+        config: DictConfig | None = None,
+        model_name: str | None = None,
+        container_timeout: int | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
     ):
         """Initialize VLLM prompt tester with Hydra configuration.
 
@@ -104,8 +104,9 @@ class VLLMPromptTester:
 
         # Use provided config or create default
         if config is None:
-            from hydra import compose, initialize_config_dir
             from pathlib import Path
+
+            from hydra import compose, initialize_config_dir
 
             config_dir = Path("configs")
             if config_dir.exists():
@@ -152,7 +153,7 @@ class VLLMPromptTester:
         )
 
         # Container and artifact settings
-        self.container: Optional[VLLMContainer] = None
+        self.container: VLLMContainer | None = None
         artifacts_config = vllm_config.get("artifacts", {})
         self.artifacts_dir = Path(
             artifacts_config.get("base_directory", "test_artifacts/vllm_tests")
@@ -305,7 +306,7 @@ class VLLMPromptTester:
             self.container.stop()
             self.container = None
 
-    def _wait_for_ready(self, timeout: Optional[int] = None):
+    def _wait_for_ready(self, timeout: int | None = None):
         """Wait for VLLM container to be ready."""
         import requests
 
@@ -401,9 +402,9 @@ class VLLMPromptTester:
         self,
         prompt: str,
         prompt_name: str,
-        dummy_data: Dict[str, Any],
+        dummy_data: dict[str, Any],
         **generation_kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test a prompt with VLLM and parse reasoning using configuration.
 
         Args:
@@ -554,23 +555,22 @@ class VLLMPromptTester:
 
         if "hello" in prompt_lower or "hi" in prompt_lower:
             return "Hello! I'm a mock AI assistant. How can I help you today?"
-        elif "what is" in prompt_lower:
+        if "what is" in prompt_lower:
             return "Based on the mock analysis, this appears to be a question about something. The mock system suggests that the answer involves understanding the fundamental concepts and applying them in practice."
-        elif "how" in prompt_lower:
+        if "how" in prompt_lower:
             return "This is a mock response to a 'how' question. The mock system suggests following these steps: 1) Understand the problem, 2) Gather information, 3) Apply the solution, 4) Verify the results."
-        elif "why" in prompt_lower:
+        if "why" in prompt_lower:
             return "This is a mock response to a 'why' question. The mock reasoning suggests that this happens because of underlying principles and mechanisms that can be explained through careful analysis."
-        else:
-            # Generic mock response
-            responses = [
-                "This is a mock response generated for testing purposes. The system is working correctly but using simulated data.",
-                "Mock AI response: I understand your query and I'm processing it with mock data. The result suggests a comprehensive approach is needed.",
-                "Testing mode: This response is generated as a placeholder. In a real scenario, this would contain actual AI-generated content based on the prompt.",
-                "Mock analysis complete. The system has processed your request and generated this placeholder response for testing validation.",
-            ]
-            return random.choice(responses)
+        # Generic mock response
+        responses = [
+            "This is a mock response generated for testing purposes. The system is working correctly but using simulated data.",
+            "Mock AI response: I understand your query and I'm processing it with mock data. The result suggests a comprehensive approach is needed.",
+            "Testing mode: This response is generated as a placeholder. In a real scenario, this would contain actual AI-generated content based on the prompt.",
+            "Mock analysis complete. The system has processed your request and generated this placeholder response for testing validation.",
+        ]
+        return random.choice(responses)
 
-    def _parse_reasoning(self, response: str) -> Dict[str, Any]:
+    def _parse_reasoning(self, response: str) -> dict[str, Any]:
         """Parse reasoning and tool calls from response.
 
         This implements basic reasoning parsing based on VLLM reasoning outputs.
@@ -636,7 +636,7 @@ class VLLMPromptTester:
 
         return reasoning_data
 
-    def _save_artifact(self, result: Dict[str, Any]):
+    def _save_artifact(self, result: dict[str, Any]):
         """Save test result as artifact."""
         timestamp = int(result.get("timestamp", time.time()))
         filename = f"{result['prompt_name']}_{timestamp}.json"
@@ -649,8 +649,8 @@ class VLLMPromptTester:
         logger.info(f"Saved artifact: {artifact_path}")
 
     def batch_test_prompts(
-        self, prompts: List[Tuple[str, str, Dict[str, Any]]], **generation_kwargs
-    ) -> List[Dict[str, Any]]:
+        self, prompts: list[tuple[str, str, dict[str, Any]]], **generation_kwargs
+    ) -> list[dict[str, Any]]:
         """Test multiple prompts in batch.
 
         Args:
@@ -670,7 +670,7 @@ class VLLMPromptTester:
 
         return results
 
-    def get_container_info(self) -> Dict[str, Any]:
+    def get_container_info(self) -> dict[str, Any]:
         """Get information about the VLLM container."""
         if not self.vllm_available or not self.docker_available:
             reason = (
@@ -698,8 +698,8 @@ class VLLMPromptTester:
 
 
 def create_dummy_data_for_prompt(
-    prompt: str, config: Optional[DictConfig] = None
-) -> Dict[str, Any]:
+    prompt: str, config: DictConfig | None = None
+) -> dict[str, Any]:
     """Create dummy data for a prompt based on its placeholders, configurable through Hydra.
 
     Args:
@@ -743,116 +743,116 @@ def _create_realistic_dummy_data(placeholder: str) -> Any:
 
     if "query" in placeholder_lower:
         return "What is the meaning of life?"
-    elif "context" in placeholder_lower:
+    if "context" in placeholder_lower:
         return "This is some context information for testing."
-    elif "code" in placeholder_lower:
+    if "code" in placeholder_lower:
         return "print('Hello, World!')"
-    elif "text" in placeholder_lower:
+    if "text" in placeholder_lower:
         return "This is sample text for testing."
-    elif "content" in placeholder_lower:
+    if "content" in placeholder_lower:
         return "Sample content for testing purposes."
-    elif "question" in placeholder_lower:
+    if "question" in placeholder_lower:
         return "What is machine learning?"
-    elif "answer" in placeholder_lower:
+    if "answer" in placeholder_lower:
         return "Machine learning is a subset of AI."
-    elif "task" in placeholder_lower:
+    if "task" in placeholder_lower:
         return "Complete this research task."
-    elif "description" in placeholder_lower:
+    if "description" in placeholder_lower:
         return "A detailed description of the task."
-    elif "error" in placeholder_lower:
+    if "error" in placeholder_lower:
         return "An error occurred during processing."
-    elif "sequence" in placeholder_lower:
+    if "sequence" in placeholder_lower:
         return "Step 1: Analyze, Step 2: Process, Step 3: Complete"
-    elif "results" in placeholder_lower:
+    if "results" in placeholder_lower:
         return "Search results from web query."
-    elif "data" in placeholder_lower:
+    if "data" in placeholder_lower:
         return {"key": "value", "number": 42}
-    elif "examples" in placeholder_lower:
+    if "examples" in placeholder_lower:
         return "Example 1, Example 2, Example 3"
-    elif "articles" in placeholder_lower:
+    if "articles" in placeholder_lower:
         return "Article content for aggregation."
-    elif "topic" in placeholder_lower:
+    if "topic" in placeholder_lower:
         return "artificial intelligence"
-    elif "problem" in placeholder_lower:
+    if "problem" in placeholder_lower:
         return "Solve this complex problem."
-    elif "solution" in placeholder_lower:
+    if "solution" in placeholder_lower:
         return "The solution involves multiple steps."
-    elif "system" in placeholder_lower:
+    if "system" in placeholder_lower:
         return "You are a helpful assistant."
-    elif "user" in placeholder_lower:
+    if "user" in placeholder_lower:
         return "Please help me with this task."
-    elif "current_time" in placeholder_lower:
+    if "current_time" in placeholder_lower:
         return "2024-01-01T12:00:00Z"
-    elif "current_date" in placeholder_lower:
+    if "current_date" in placeholder_lower:
         return "Mon, 01 Jan 2024 12:00:00 GMT"
-    elif "current_year" in placeholder_lower:
+    if "current_year" in placeholder_lower:
         return "2024"
-    elif "current_month" in placeholder_lower:
+    if "current_month" in placeholder_lower:
         return "1"
-    elif "language" in placeholder_lower:
+    if "language" in placeholder_lower:
         return "en"
-    elif "style" in placeholder_lower:
+    if "style" in placeholder_lower:
         return "formal"
-    elif "team_size" in placeholder_lower:
+    if "team_size" in placeholder_lower:
         return "5"
-    elif "available_vars" in placeholder_lower:
+    if "available_vars" in placeholder_lower:
         return "numbers, threshold"
-    elif "knowledge" in placeholder_lower:
+    if "knowledge" in placeholder_lower:
         return "General knowledge about the topic."
-    elif "knowledge_str" in placeholder_lower:
+    if "knowledge_str" in placeholder_lower:
         return "String representation of knowledge."
-    elif "knowledge_items" in placeholder_lower:
+    if "knowledge_items" in placeholder_lower:
         return "Item 1, Item 2, Item 3"
-    elif "serp_data" in placeholder_lower:
+    if "serp_data" in placeholder_lower:
         return "Search engine results page data."
-    elif "workflow_description" in placeholder_lower:
+    if "workflow_description" in placeholder_lower:
         return "A comprehensive research workflow."
-    elif "coordination_strategy" in placeholder_lower:
+    if "coordination_strategy" in placeholder_lower:
         return "collaborative"
-    elif "agent_count" in placeholder_lower:
+    if "agent_count" in placeholder_lower:
         return "3"
-    elif "max_rounds" in placeholder_lower:
+    if "max_rounds" in placeholder_lower:
         return "5"
-    elif "consensus_threshold" in placeholder_lower:
+    if "consensus_threshold" in placeholder_lower:
         return "0.8"
-    elif "task_description" in placeholder_lower:
+    if "task_description" in placeholder_lower:
         return "Complete the assigned task."
-    elif "workflow_type" in placeholder_lower:
+    if "workflow_type" in placeholder_lower:
         return "research"
-    elif "workflow_name" in placeholder_lower:
+    if "workflow_name" in placeholder_lower:
         return "test_workflow"
-    elif "input_data" in placeholder_lower:
+    if "input_data" in placeholder_lower:
         return {"test": "data"}
-    elif "evaluation_criteria" in placeholder_lower:
+    if "evaluation_criteria" in placeholder_lower:
         return "quality, accuracy, completeness"
-    elif "selected_workflows" in placeholder_lower:
+    if "selected_workflows" in placeholder_lower:
         return "workflow1, workflow2"
-    elif "name" in placeholder_lower:
+    if "name" in placeholder_lower:
         return "test_name"
-    elif "hypothesis" in placeholder_lower:
+    if "hypothesis" in placeholder_lower:
         return "Test hypothesis for validation."
-    elif "messages" in placeholder_lower:
+    if "messages" in placeholder_lower:
         return [{"role": "user", "content": "Hello"}]
-    elif "model" in placeholder_lower:
+    if "model" in placeholder_lower:
         return "test-model"
-    elif "top_p" in placeholder_lower:
+    if "top_p" in placeholder_lower:
         return "0.9"
-    elif "frequency_penalty" in placeholder_lower:
+    if (
+        "frequency_penalty" in placeholder_lower
+        or "presence_penalty" in placeholder_lower
+    ):
         return "0.0"
-    elif "presence_penalty" in placeholder_lower:
-        return "0.0"
-    elif "texts" in placeholder_lower:
+    if "texts" in placeholder_lower:
         return ["Text 1", "Text 2"]
-    elif "model_name" in placeholder_lower:
+    if "model_name" in placeholder_lower:
         return "test-model"
-    elif "token_ids" in placeholder_lower:
+    if "token_ids" in placeholder_lower:
         return "[1, 2, 3, 4, 5]"
-    elif "server_url" in placeholder_lower:
+    if "server_url" in placeholder_lower:
         return "http://localhost:8000"
-    elif "timeout" in placeholder_lower:
+    if "timeout" in placeholder_lower:
         return "30"
-    else:
-        return f"dummy_{placeholder_lower}"
+    return f"dummy_{placeholder_lower}"
 
 
 def _create_minimal_dummy_data(placeholder: str) -> Any:
@@ -861,16 +861,15 @@ def _create_minimal_dummy_data(placeholder: str) -> Any:
 
     if "data" in placeholder_lower or "content" in placeholder_lower:
         return {"key": "value"}
-    elif "list" in placeholder_lower or "items" in placeholder_lower:
+    if "list" in placeholder_lower or "items" in placeholder_lower:
         return ["item1", "item2"]
-    elif "text" in placeholder_lower or "description" in placeholder_lower:
+    if "text" in placeholder_lower or "description" in placeholder_lower:
         return f"Test {placeholder_lower}"
-    elif "number" in placeholder_lower or "count" in placeholder_lower:
+    if "number" in placeholder_lower or "count" in placeholder_lower:
         return 42
-    elif "boolean" in placeholder_lower or "flag" in placeholder_lower:
+    if "boolean" in placeholder_lower or "flag" in placeholder_lower:
         return True
-    else:
-        return f"test_{placeholder_lower}"
+    return f"test_{placeholder_lower}"
 
 
 def _create_comprehensive_dummy_data(placeholder: str) -> Any:
@@ -879,9 +878,9 @@ def _create_comprehensive_dummy_data(placeholder: str) -> Any:
 
     if "query" in placeholder_lower:
         return "What is the fundamental nature of consciousness and how does it relate to quantum mechanics in biological systems?"
-    elif "context" in placeholder_lower:
+    if "context" in placeholder_lower:
         return "This analysis examines the intersection of quantum biology and consciousness studies, focusing on microtubule-based quantum computation theories and their implications for understanding subjective experience."
-    elif "code" in placeholder_lower:
+    if "code" in placeholder_lower:
         return '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -909,9 +908,9 @@ def quantum_gate_operation(state):
 result = quantum_consciousness_simulation()
 print(f"Final quantum state norm: {np.linalg.norm(result)}")
 '''
-    elif "text" in placeholder_lower:
+    if "text" in placeholder_lower:
         return "This is a comprehensive text sample for testing purposes, containing multiple sentences and demonstrating various linguistic patterns that might be encountered in real-world applications of natural language processing systems."
-    elif "data" in placeholder_lower:
+    if "data" in placeholder_lower:
         return {
             "research_findings": [
                 {
@@ -936,7 +935,7 @@ print(f"Final quantum state norm: {np.linalg.norm(result)}")
                 "Integration of physics and neuroscience needed",
             ],
         }
-    elif "examples" in placeholder_lower:
+    if "examples" in placeholder_lower:
         return [
             "Quantum microtubule theory of consciousness",
             "Orchestrated objective reduction (Orch-OR)",
@@ -944,7 +943,7 @@ print(f"Final quantum state norm: {np.linalg.norm(result)}")
             "Quantum effects in biological systems",
             "Consciousness and quantum mechanics",
         ]
-    elif "articles" in placeholder_lower:
+    if "articles" in placeholder_lower:
         return [
             {
                 "title": "Quantum Aspects of Consciousness",
@@ -961,11 +960,10 @@ print(f"Final quantum state norm: {np.linalg.norm(result)}")
                 "abstract": "Exploration of microtubule-based quantum computation in neurons.",
             },
         ]
-    else:
-        return _create_realistic_dummy_data(placeholder)
+    return _create_realistic_dummy_data(placeholder)
 
 
-def get_all_prompts_with_modules() -> List[Tuple[str, str, str]]:
+def get_all_prompts_with_modules() -> list[tuple[str, str, str]]:
     """Get all prompts from all prompt modules.
 
     Returns:

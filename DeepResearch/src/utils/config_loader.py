@@ -7,82 +7,83 @@ configurations from Hydra config files.
 
 from __future__ import annotations
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from omegaconf import DictConfig, OmegaConf
 
 
 class BioinformaticsConfigLoader:
     """Loader for bioinformatics configurations."""
 
-    def __init__(self, config: Optional[DictConfig] = None):
+    def __init__(self, config: DictConfig | None = None):
         """Initialize config loader."""
         self.config = config or {}
         self.bioinformatics_config = self._extract_bioinformatics_config()
 
-    def _extract_bioinformatics_config(self) -> Dict[str, Any]:
+    def _extract_bioinformatics_config(self) -> dict[str, Any]:
         """Extract bioinformatics configuration from main config."""
         result = OmegaConf.to_container(
             self.config.get("bioinformatics", {}), resolve=True
         )
         return result if isinstance(result, dict) else {}
 
-    def get_model_config(self) -> Dict[str, Any]:
+    def get_model_config(self) -> dict[str, Any]:
         """Get model configuration."""
         return self.bioinformatics_config.get("model", {})
 
-    def get_quality_config(self) -> Dict[str, Any]:
+    def get_quality_config(self) -> dict[str, Any]:
         """Get quality configuration."""
         return self.bioinformatics_config.get("quality", {})
 
-    def get_evidence_codes_config(self) -> Dict[str, Any]:
+    def get_evidence_codes_config(self) -> dict[str, Any]:
         """Get evidence codes configuration."""
         return self.bioinformatics_config.get("evidence_codes", {})
 
-    def get_temporal_config(self) -> Dict[str, Any]:
+    def get_temporal_config(self) -> dict[str, Any]:
         """Get temporal configuration."""
         return self.bioinformatics_config.get("temporal", {})
 
-    def get_limits_config(self) -> Dict[str, Any]:
+    def get_limits_config(self) -> dict[str, Any]:
         """Get limits configuration."""
         return self.bioinformatics_config.get("limits", {})
 
-    def get_data_sources_config(self) -> Dict[str, Any]:
+    def get_data_sources_config(self) -> dict[str, Any]:
         """Get data sources configuration."""
         return self.bioinformatics_config.get("data_sources", {})
 
-    def get_fusion_config(self) -> Dict[str, Any]:
+    def get_fusion_config(self) -> dict[str, Any]:
         """Get fusion configuration."""
         return self.bioinformatics_config.get("fusion", {})
 
-    def get_reasoning_config(self) -> Dict[str, Any]:
+    def get_reasoning_config(self) -> dict[str, Any]:
         """Get reasoning configuration."""
         return self.bioinformatics_config.get("reasoning", {})
 
-    def get_agents_config(self) -> Dict[str, Any]:
+    def get_agents_config(self) -> dict[str, Any]:
         """Get agents configuration."""
         return self.bioinformatics_config.get("agents", {})
 
-    def get_tools_config(self) -> Dict[str, Any]:
+    def get_tools_config(self) -> dict[str, Any]:
         """Get tools configuration."""
         return self.bioinformatics_config.get("tools", {})
 
-    def get_workflow_config(self) -> Dict[str, Any]:
+    def get_workflow_config(self) -> dict[str, Any]:
         """Get workflow configuration."""
         return self.bioinformatics_config.get("workflow", {})
 
-    def get_performance_config(self) -> Dict[str, Any]:
+    def get_performance_config(self) -> dict[str, Any]:
         """Get performance configuration."""
         return self.bioinformatics_config.get("performance", {})
 
-    def get_validation_config(self) -> Dict[str, Any]:
+    def get_validation_config(self) -> dict[str, Any]:
         """Get validation configuration."""
         return self.bioinformatics_config.get("validation", {})
 
-    def get_output_config(self) -> Dict[str, Any]:
+    def get_output_config(self) -> dict[str, Any]:
         """Get output configuration."""
         return self.bioinformatics_config.get("output", {})
 
-    def get_error_handling_config(self) -> Dict[str, Any]:
+    def get_error_handling_config(self) -> dict[str, Any]:
         """Get error handling configuration."""
         return self.bioinformatics_config.get("error_handling", {})
 
@@ -111,7 +112,7 @@ class BioinformaticsConfigLoader:
         temporal_config = self.get_temporal_config()
         return temporal_config.get(filter_type, 2022)
 
-    def get_data_source_config(self, source: str) -> Dict[str, Any]:
+    def get_data_source_config(self, source: str) -> dict[str, Any]:
         """Get configuration for specific data source."""
         data_sources_config = self.get_data_sources_config()
         return data_sources_config.get(source, {})
@@ -121,7 +122,7 @@ class BioinformaticsConfigLoader:
         source_config = self.get_data_source_config(source)
         return source_config.get("enabled", False)
 
-    def get_agent_config(self, agent_type: str) -> Dict[str, Any]:
+    def get_agent_config(self, agent_type: str) -> dict[str, Any]:
         """Get configuration for specific agent type."""
         agents_config = self.get_agents_config()
         return agents_config.get(agent_type, {})
@@ -136,17 +137,17 @@ class BioinformaticsConfigLoader:
         agent_config = self.get_agent_config(agent_type)
         return agent_config.get("system_prompt", "")
 
-    def get_tool_config(self, tool_name: str) -> Dict[str, Any]:
+    def get_tool_config(self, tool_name: str) -> dict[str, Any]:
         """Get configuration for specific tool."""
         tools_config = self.get_tools_config()
         return tools_config.get(tool_name, {})
 
-    def get_tool_defaults(self, tool_name: str) -> Dict[str, Any]:
+    def get_tool_defaults(self, tool_name: str) -> dict[str, Any]:
         """Get defaults for specific tool."""
         tool_config = self.get_tool_config(tool_name)
         return tool_config.get("defaults", {})
 
-    def get_workflow_config_section(self, section: str) -> Dict[str, Any]:
+    def get_workflow_config_section(self, section: str) -> dict[str, Any]:
         """Get specific workflow configuration section."""
         workflow_config = self.get_workflow_config()
         return workflow_config.get(section, {})
@@ -171,18 +172,18 @@ class BioinformaticsConfigLoader:
         error_config = self.get_error_handling_config()
         return error_config.get(setting)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return self.bioinformatics_config
 
-    def update_config(self, updates: Dict[str, Any]) -> None:
+    def update_config(self, updates: dict[str, Any]) -> None:
         """Update configuration with new values."""
         self.bioinformatics_config.update(updates)
 
-    def merge_config(self, other_config: Dict[str, Any]) -> None:
+    def merge_config(self, other_config: dict[str, Any]) -> None:
         """Merge with another configuration."""
 
-        def deep_merge(base: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, Any]:
+        def deep_merge(base: dict[str, Any], update: dict[str, Any]) -> dict[str, Any]:
             """Deep merge two dictionaries."""
             for key, value in update.items():
                 if (
@@ -201,7 +202,7 @@ class BioinformaticsConfigLoader:
 
 
 def load_bioinformatics_config(
-    config: Optional[DictConfig] = None,
+    config: DictConfig | None = None,
 ) -> BioinformaticsConfigLoader:
     """Load bioinformatics configuration from Hydra config."""
     return BioinformaticsConfigLoader(config)

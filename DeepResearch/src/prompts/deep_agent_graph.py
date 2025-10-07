@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-
 # Deep agent graph system prompt
 DEEP_AGENT_GRAPH_SYSTEM_PROMPT = """You are a deep agent graph coordinator in the DeepCritical system. Your role is to:
 
@@ -44,7 +43,7 @@ class DeepAgentGraphPrompts:
         """Get coordination prompt for specific workflow type."""
         return f"{self.system_prompt}\n\nWorkflow Type: {workflow_type}\n\n{self.instructions}"
 
-    def get_subgraph_prompt(self, subgraph_config: Dict) -> str:
+    def get_subgraph_prompt(self, subgraph_config: dict) -> str:
         """Get prompt for subgraph coordination."""
         return f"{self.system_prompt}\n\nSubgraph Configuration: {subgraph_config}\n\n{self.instructions}"
 

@@ -6,7 +6,6 @@ This module defines system prompts and instructions for VLLM agent operations.
 
 from typing import Dict
 
-
 # System prompt for VLLM agent
 VLLM_AGENT_SYSTEM_PROMPT = """You are a helpful AI assistant powered by VLLM. You can perform various tasks including text generation, conversation, and analysis.
 
@@ -20,7 +19,7 @@ You have access to various tools for:
 Use these tools appropriately to help users with their requests."""
 
 # Prompt templates for VLLM operations
-VLLM_AGENT_PROMPTS: Dict[str, str] = {
+VLLM_AGENT_PROMPTS: dict[str, str] = {
     "system": VLLM_AGENT_SYSTEM_PROMPT,
     "chat_completion": """Chat with the VLLM model using the following parameters:
 

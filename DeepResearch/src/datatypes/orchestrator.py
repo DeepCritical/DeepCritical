@@ -2,28 +2,27 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class OrchestratorDependencies(BaseModel):
     """Dependencies for the agent orchestrator."""
 
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
     user_input: str = Field(..., description="User input/query")
-    context: Dict[str, Any] = Field(default_factory=dict)
-    available_subgraphs: List[str] = Field(default_factory=list)
-    available_agents: List[str] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+    available_subgraphs: list[str] = Field(default_factory=list)
+    available_agents: list[str] = Field(default_factory=list)
     current_iteration: int = Field(0, description="Current iteration number")
-    parent_loop_id: Optional[str] = Field(None, description="Parent loop ID if nested")
+    parent_loop_id: str | None = Field(None, description="Parent loop ID if nested")
 
 
 @dataclass
 class Orchestrator:
     """Placeholder orchestrator that would sequence subflows based on config."""
 
-    def build_plan(
-        self, question: str, flows_cfg: Optional[Dict[str, Any]]
-    ) -> List[str]:
+    def build_plan(self, question: str, flows_cfg: dict[str, Any] | None) -> list[str]:
         enabled = [
             k
             for k, v in (flows_cfg or {}).items()

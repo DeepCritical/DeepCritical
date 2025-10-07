@@ -9,30 +9,27 @@ break conditions and loss functions.
 from __future__ import annotations
 
 import time
-from datetime import datetime
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass, field
-from omegaconf import DictConfig
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from omegaconf import DictConfig
 from pydantic_ai import Agent, RunContext
 
 from ..datatypes.workflow_orchestration import (
     AgentOrchestratorConfig,
-    NestedReactConfig,
-    SubgraphConfig,
-    BreakCondition,
-    MultiStateMachineMode,
-    SubgraphType,
-    LossFunctionType,
     AgentRole,
-    OrchestratorDependencies,
+    BreakCondition,
     BreakConditionCheck,
+    LossFunctionType,
+    MultiStateMachineMode,
+    NestedReactConfig,
     OrchestrationResult,
+    OrchestratorDependencies,
+    SubgraphConfig,
+    SubgraphType,
 )
 from ..prompts.orchestrator import OrchestratorPrompts
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclass
@@ -40,10 +37,10 @@ class AgentOrchestrator:
     """Agent-based orchestrator that can spawn nested REACT loops and manage subgraphs."""
 
     config: AgentOrchestratorConfig
-    nested_loops: Dict[str, NestedReactConfig] = field(default_factory=dict)
-    subgraphs: Dict[str, SubgraphConfig] = field(default_factory=dict)
-    active_loops: Dict[str, Any] = field(default_factory=dict)
-    execution_history: List[Dict[str, Any]] = field(default_factory=list)
+    nested_loops: dict[str, NestedReactConfig] = field(default_factory=dict)
+    subgraphs: dict[str, SubgraphConfig] = field(default_factory=dict)
+    active_loops: dict[str, Any] = field(default_factory=dict)
+    execution_history: list[dict[str, Any]] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize the agent orchestrator."""
@@ -69,7 +66,7 @@ class AgentOrchestrator:
             can_spawn_agents=self.config.can_spawn_agents,
         )
 
-    def _get_orchestrator_instructions(self) -> List[str]:
+    def _get_orchestrator_instructions(self) -> list[str]:
         """Get instructions for the orchestrator agent."""
         prompts = OrchestratorPrompts()
         return prompts.get_instructions()
@@ -83,11 +80,11 @@ class AgentOrchestrator:
             loop_id: str,
             state_machine_mode: str,
             max_iterations: int = 10,
-            subgraphs: Optional[List[str]] = None,
-            agent_roles: Optional[List[str]] = None,
-            tools: Optional[List[str]] = None,
+            subgraphs: list[str] | None = None,
+            agent_roles: list[str] | None = None,
+            tools: list[str] | None = None,
             priority: int = 0,
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Spawn a nested REACT loop."""
             try:
                 # Create nested loop configuration
@@ -128,11 +125,11 @@ class AgentOrchestrator:
             ctx: RunContext[OrchestratorDependencies],
             subgraph_id: str,
             subgraph_type: str,
-            parameters: Optional[Dict[str, Any]] = None,
+            parameters: dict[str, Any] | None = None,
             entry_node: str = "start",
             max_execution_time: float = 300.0,
-            tools: Optional[List[str]] = None,
-        ) -> Dict[str, Any]:
+            tools: list[str] | None = None,
+        ) -> dict[str, Any]:
             """Execute a subgraph."""
             try:
                 # Create subgraph configuration
@@ -172,8 +169,8 @@ class AgentOrchestrator:
         def check_break_conditions(
             ctx: RunContext[OrchestratorDependencies],
             current_iteration: int,
-            current_metrics: Dict[str, Any],
-        ) -> Dict[str, Any]:
+            current_metrics: dict[str, Any],
+        ) -> dict[str, Any]:
             """Check break conditions for the current loop."""
             try:
                 break_results = []
@@ -214,9 +211,9 @@ class AgentOrchestrator:
         def coordinate_agents(
             ctx: RunContext[OrchestratorDependencies],
             coordination_strategy: str,
-            agent_roles: List[str],
+            agent_roles: list[str],
             task_description: str,
-        ) -> Dict[str, Any]:
+        ) -> dict[str, Any]:
             """Coordinate agents using the specified strategy."""
             try:
                 # This would integrate with MultiAgentCoordinator
@@ -236,11 +233,11 @@ class AgentOrchestrator:
                     "success": False,
                     "coordination_strategy": coordination_strategy,
                     "error": str(e),
-                    "message": f"Agent coordination failed: {str(e)}",
+                    "message": f"Agent coordination failed: {e!s}",
                 }
 
     async def execute_orchestration(
-        self, user_input: str, config: DictConfig, max_iterations: Optional[int] = None
+        self, user_input: str, config: DictConfig, max_iterations: int | None = None
     ) -> OrchestrationResult:
         """Execute the orchestration with nested loops and subgraphs."""
         start_time = time.time()
@@ -282,15 +279,15 @@ class AgentOrchestrator:
             execution_time = time.time() - start_time
             return OrchestrationResult(
                 success=False,
-                final_answer=f"Orchestration failed: {str(e)}",
+                final_answer=f"Orchestration failed: {e!s}",
                 total_iterations=getattr(deps, "current_iteration", 0),
-                break_reason=f"Error: {str(e)}",
+                break_reason=f"Error: {e!s}",
                 execution_metadata={"execution_time": execution_time, "error": str(e)},
             )
 
     def _spawn_nested_loop(
         self, config: NestedReactConfig, deps: OrchestratorDependencies
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Spawn a nested REACT loop."""
         # This would create and execute a nested REACT loop
         # For now, return a placeholder
@@ -304,7 +301,7 @@ class AgentOrchestrator:
 
     def _execute_subgraph(
         self, config: SubgraphConfig, deps: OrchestratorDependencies
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a subgraph."""
         # This would execute the actual subgraph
         # For now, return a placeholder
@@ -320,7 +317,7 @@ class AgentOrchestrator:
         self,
         condition: BreakCondition,
         current_iteration: int,
-        current_metrics: Dict[str, Any],
+        current_metrics: dict[str, Any],
     ) -> BreakConditionCheck:
         """Evaluate a break condition."""
         current_value = 0.0
@@ -358,10 +355,10 @@ class AgentOrchestrator:
     def _coordinate_agents(
         self,
         coordination_strategy: str,
-        agent_roles: List[str],
+        agent_roles: list[str],
         task_description: str,
         deps: OrchestratorDependencies,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Coordinate agents using the specified strategy."""
         # This would integrate with MultiAgentCoordinator
         # For now, return a placeholder

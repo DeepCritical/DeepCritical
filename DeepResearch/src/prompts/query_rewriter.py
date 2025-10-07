@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 SYSTEM = (
     "You are an expert search query expander with deep psychological understanding.\n"
     "You optimize user queries by extensively analyzing potential user intents and generating comprehensive query variations.\n\n"
@@ -56,7 +55,7 @@ SYSTEM = (
 )
 
 
-QUERY_REWRITER_PROMPTS: Dict[str, str] = {
+QUERY_REWRITER_PROMPTS: dict[str, str] = {
     "system": SYSTEM,
     "rewrite_query": "Rewrite the following query with enhanced intent analysis: {query}",
     "expand_query": "Expand the query to cover multiple cognitive perspectives: {query}",

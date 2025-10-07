@@ -10,12 +10,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
+from ..utils.pydantic_ai_utils import (
+    build_agent as _build_agent,
+)
+from ..utils.pydantic_ai_utils import (
+    build_builtin_tools as _build_builtin_tools,
+)
+from ..utils.pydantic_ai_utils import (
+    build_toolsets as _build_toolsets,
+)
+
 # Import utility functions from utils module
 from ..utils.pydantic_ai_utils import (
     get_pydantic_ai_config as _get_cfg,
-    build_builtin_tools as _build_builtin_tools,
-    build_toolsets as _build_toolsets,
-    build_agent as _build_agent,
+)
+from ..utils.pydantic_ai_utils import (
     run_agent_sync as _run_sync,
 )
 
@@ -29,7 +38,7 @@ class WebSearchBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolSpec, ToolRunner
+        from ..tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,
@@ -41,7 +50,7 @@ class WebSearchBuiltinRunner:
             ),
         )
 
-    def run(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)
         if not ok:
             return {"success": False, "error": err}
@@ -97,7 +106,7 @@ class CodeExecBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolSpec, ToolRunner
+        from ..tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,
@@ -109,7 +118,7 @@ class CodeExecBuiltinRunner:
             ),
         )
 
-    def run(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)
         if not ok:
             return {"success": False, "error": err}
@@ -167,7 +176,7 @@ class UrlContextBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolSpec, ToolRunner
+        from ..tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,
@@ -179,7 +188,7 @@ class UrlContextBuiltinRunner:
             ),
         )
 
-    def run(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)
         if not ok:
             return {"success": False, "error": err}

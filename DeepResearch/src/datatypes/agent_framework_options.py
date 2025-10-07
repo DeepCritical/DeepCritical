@@ -5,6 +5,7 @@ This module provides chat options and tool configuration types.
 """
 
 from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field, field_validator
 
 from .agent_framework_enums import ToolMode
@@ -13,25 +14,25 @@ from .agent_framework_enums import ToolMode
 class ChatOptions(BaseModel):
     """Common request settings for AI services."""
 
-    model_id: Optional[str] = None
-    allow_multiple_tool_calls: Optional[bool] = None
-    conversation_id: Optional[str] = None
-    frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0)
-    instructions: Optional[str] = None
-    logit_bias: Optional[Dict[Union[str, int], float]] = None
-    max_tokens: Optional[int] = Field(None, gt=0)
-    metadata: Optional[Dict[str, str]] = None
-    presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0)
-    response_format: Optional[type] = None
-    seed: Optional[int] = None
-    stop: Optional[Union[str, List[str]]] = None
-    store: Optional[bool] = None
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    tool_choice: Optional[Union[ToolMode, str, Dict[str, Any]]] = None
-    tools: Optional[List[Any]] = None  # ToolProtocol | Callable | Dict
-    top_p: Optional[float] = Field(None, ge=0.0, le=1.0)
-    user: Optional[str] = None
-    additional_properties: Optional[Dict[str, Any]] = None
+    model_id: str | None = None
+    allow_multiple_tool_calls: bool | None = None
+    conversation_id: str | None = None
+    frequency_penalty: float | None = Field(None, ge=-2.0, le=2.0)
+    instructions: str | None = None
+    logit_bias: dict[str | int, float] | None = None
+    max_tokens: int | None = Field(None, gt=0)
+    metadata: dict[str, str] | None = None
+    presence_penalty: float | None = Field(None, ge=-2.0, le=2.0)
+    response_format: type | None = None
+    seed: int | None = None
+    stop: str | list[str] | None = None
+    store: bool | None = None
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    tool_choice: ToolMode | str | dict[str, Any] | None = None
+    tools: list[Any] | None = None  # ToolProtocol | Callable | Dict
+    top_p: float | None = Field(None, ge=0.0, le=1.0)
+    user: str | None = None
+    additional_properties: dict[str, Any] | None = None
 
     @field_validator("tool_choice", mode="before")
     @classmethod
@@ -42,12 +43,11 @@ class ChatOptions(BaseModel):
         if isinstance(v, str):
             if v == "auto":
                 return ToolMode(mode="auto")
-            elif v == "required":
+            if v == "required":
                 return ToolMode(mode="required")
-            elif v == "none":
+            if v == "none":
                 return ToolMode(mode="none")
-            else:
-                raise ValueError(f"Invalid tool choice: {v}")
+            raise ValueError(f"Invalid tool choice: {v}")
         if isinstance(v, dict):
             return ToolMode(mode=v.get("mode", "auto"))
         return v
@@ -63,8 +63,8 @@ class ChatOptions(BaseModel):
         return v
 
     def to_provider_settings(
-        self, by_alias: bool = True, exclude: Optional[set] = None
-    ) -> Dict[str, Any]:
+        self, by_alias: bool = True, exclude: set | None = None
+    ) -> dict[str, Any]:
         """Convert the ChatOptions to a dictionary suitable for provider requests."""
         default_exclude = {"additional_properties", "type"}
 

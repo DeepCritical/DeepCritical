@@ -8,12 +8,11 @@ integrating with the existing tool registry and datatypes.
 from __future__ import annotations
 
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
 from ..datatypes.workflow_patterns import (
-    InteractionPattern,
     InteractionMessage,
+    InteractionPattern,
     MessageType,
     create_interaction_state,
 )
@@ -25,6 +24,7 @@ from ..utils.workflow_patterns import (
     # create_sequential_orchestrator,
     # create_hierarchical_orchestrator,
 )
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 
 class WorkflowPatternToolRunner(ToolRunner):
@@ -51,7 +51,7 @@ class WorkflowPatternToolRunner(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute workflow pattern."""
         try:
             # Parse inputs
@@ -75,7 +75,7 @@ class WorkflowPatternToolRunner(ToolRunner):
                 )
             except json.JSONDecodeError as e:
                 return ExecutionResult(
-                    success=False, error=f"Invalid JSON input: {str(e)}"
+                    success=False, error=f"Invalid JSON input: {e!s}"
                 )
 
             # Create agent executors from string keys to callable functions
@@ -112,7 +112,7 @@ class WorkflowPatternToolRunner(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Pattern execution failed: {str(e)}"
+                success=False, error=f"Pattern execution failed: {e!s}"
             )
 
     def _create_placeholder_executor(self, agent_id: str):
@@ -236,7 +236,7 @@ class ConsensusTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Compute consensus from results."""
         try:
             results_str = params.get("results", "[]")
@@ -285,7 +285,7 @@ class ConsensusTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Consensus computation failed: {str(e)}"
+                success=False, error=f"Consensus computation failed: {e!s}"
             )
 
 
@@ -308,7 +308,7 @@ class MessageRoutingTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Route messages between agents."""
         try:
             messages_str = params.get("messages", "[]")
@@ -322,7 +322,7 @@ class MessageRoutingTool(ToolRunner):
                 routing_strategy = MessageRoutingStrategy(routing_strategy_str)
             except (json.JSONDecodeError, ValueError) as e:
                 return ExecutionResult(
-                    success=False, error=f"Invalid input format: {str(e)}"
+                    success=False, error=f"Invalid input format: {e!s}"
                 )
 
             # Create message objects
@@ -370,7 +370,7 @@ class MessageRoutingTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Message routing failed: {str(e)}"
+                success=False, error=f"Message routing failed: {e!s}"
             )
 
 
@@ -394,7 +394,7 @@ class WorkflowOrchestrationTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Orchestrate complete workflow."""
         try:
             workflow_config_str = params.get("workflow_config", "{}")
@@ -410,7 +410,7 @@ class WorkflowOrchestrationTool(ToolRunner):
                 )
             except json.JSONDecodeError as e:
                 return ExecutionResult(
-                    success=False, error=f"Invalid JSON input: {str(e)}"
+                    success=False, error=f"Invalid JSON input: {e!s}"
                 )
 
             # Create workflow orchestration
@@ -422,7 +422,7 @@ class WorkflowOrchestrationTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Workflow orchestration failed: {str(e)}"
+                success=False, error=f"Workflow orchestration failed: {e!s}"
             )
 
     def _orchestrate_workflow(self, workflow_config, input_data, pattern_configs):
@@ -478,7 +478,7 @@ class InteractionStateTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Manage interaction state."""
         try:
             operation = params.get("operation", "")
@@ -509,7 +509,7 @@ class InteractionStateTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"State management failed: {str(e)}"
+                success=False, error=f"State management failed: {e!s}"
             )
 
     def _create_interaction_state(self, state_data):
@@ -541,7 +541,7 @@ class InteractionStateTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Failed to create state: {str(e)}"
+                success=False, error=f"Failed to create state: {e!s}"
             )
 
     def _query_interaction_state(self, state_data, query):
@@ -584,14 +584,13 @@ class InteractionStateTool(ToolRunner):
                     "state_summary": json.dumps({"errors": errors}, indent=2),
                 },
             )
-        else:
-            return ExecutionResult(
-                success=True,
-                data={
-                    "result": "State validation passed",
-                    "state_summary": json.dumps({"valid": True}, indent=2),
-                },
-            )
+        return ExecutionResult(
+            success=True,
+            data={
+                "result": "State validation passed",
+                "state_summary": json.dumps({"valid": True}, indent=2),
+            },
+        )
 
 
 # Pydantic AI Tool Functions
@@ -620,8 +619,7 @@ def collaborative_pattern_tool(ctx: Any) -> str:
 
     if result.success:
         return json.dumps(result.data)
-    else:
-        return f"Collaborative pattern failed: {result.error}"
+    return f"Collaborative pattern failed: {result.error}"
 
 
 def sequential_pattern_tool(ctx: Any) -> str:
@@ -649,8 +647,7 @@ def sequential_pattern_tool(ctx: Any) -> str:
 
     if result.success:
         return json.dumps(result.data)
-    else:
-        return f"Sequential pattern failed: {result.error}"
+    return f"Sequential pattern failed: {result.error}"
 
 
 def hierarchical_pattern_tool(ctx: Any) -> str:
@@ -678,8 +675,7 @@ def hierarchical_pattern_tool(ctx: Any) -> str:
 
     if result.success:
         return json.dumps(result.data)
-    else:
-        return f"Hierarchical pattern failed: {result.error}"
+    return f"Hierarchical pattern failed: {result.error}"
 
 
 def consensus_tool(ctx: Any) -> str:
@@ -706,8 +702,7 @@ def consensus_tool(ctx: Any) -> str:
 
     if result.success:
         return result.data["consensus_result"]
-    else:
-        return f"Consensus computation failed: {result.error}"
+    return f"Consensus computation failed: {result.error}"
 
 
 def message_routing_tool(ctx: Any) -> str:
@@ -739,8 +734,7 @@ def message_routing_tool(ctx: Any) -> str:
                 "routing_summary": result.data["routing_summary"],
             }
         )
-    else:
-        return f"Message routing failed: {result.error}"
+    return f"Message routing failed: {result.error}"
 
 
 def workflow_orchestration_tool(ctx: Any) -> str:
@@ -767,8 +761,7 @@ def workflow_orchestration_tool(ctx: Any) -> str:
 
     if result.success:
         return json.dumps(result.data)
-    else:
-        return f"Workflow orchestration failed: {result.error}"
+    return f"Workflow orchestration failed: {result.error}"
 
 
 def interaction_state_tool(ctx: Any) -> str:
@@ -795,8 +788,7 @@ def interaction_state_tool(ctx: Any) -> str:
 
     if result.success:
         return json.dumps(result.data)
-    else:
-        return f"State management failed: {result.error}"
+    return f"State management failed: {result.error}"
 
 
 # Register all workflow pattern tools

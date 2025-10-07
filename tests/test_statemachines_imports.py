@@ -15,11 +15,11 @@ class TestStatemachinesModuleImports:
         """Test all imports from bioinformatics_workflow module."""
 
         from DeepResearch.src.statemachines.bioinformatics_workflow import (
-            BioinformaticsState,
-            ParseBioinformaticsQuery,
-            FuseDataSources,
             AssessDataQuality,
+            BioinformaticsState,
             CreateReasoningTask,
+            FuseDataSources,
+            ParseBioinformaticsQuery,
             PerformReasoning,
             SynthesizeResults,
         )
@@ -36,7 +36,6 @@ class TestStatemachinesModuleImports:
     def test_deepsearch_workflow_imports(self):
         """Test all imports from deepsearch_workflow module."""
         # Skip this test since deepsearch_workflow module is currently empty
-        pass
 
         # from DeepResearch.src.statemachines.deepsearch_workflow import (
         #     DeepSearchState,
@@ -65,14 +64,14 @@ class TestStatemachinesModuleImports:
         """Test all imports from rag_workflow module."""
 
         from DeepResearch.src.statemachines.rag_workflow import (
-            RAGState,
+            GenerateResponse,
             InitializeRAG,
             LoadDocuments,
             ProcessDocuments,
-            StoreDocuments,
             QueryRAG,
-            GenerateResponse,
             RAGError,
+            RAGState,
+            StoreDocuments,
         )
 
         # Verify they are all accessible and not None
@@ -89,12 +88,12 @@ class TestStatemachinesModuleImports:
         """Test all imports from search_workflow module."""
 
         from DeepResearch.src.statemachines.search_workflow import (
-            SearchWorkflowState,
+            GenerateFinalResponse,
             InitializeSearch,
             PerformWebSearch,
             ProcessResults,
-            GenerateFinalResponse,
             SearchWorkflowError,
+            SearchWorkflowState,
         )
 
         # Verify they are all accessible and not None
@@ -124,10 +123,10 @@ class TestStatemachinesCrossModuleImports:
     def test_datatypes_integration_imports(self):
         """Test that statemachines can import from datatypes module."""
         # This tests the import chain: statemachines -> datatypes
+        from DeepResearch.src.datatypes.bioinformatics import FusedDataset
         from DeepResearch.src.statemachines.bioinformatics_workflow import (
             BioinformaticsState,
         )
-        from DeepResearch.src.datatypes.bioinformatics import FusedDataset
 
         # If we get here without ImportError, the import chain works
         assert BioinformaticsState is not None
@@ -136,10 +135,10 @@ class TestStatemachinesCrossModuleImports:
     def test_agents_integration_imports(self):
         """Test that statemachines can import from agents module."""
         # This tests the import chain: statemachines -> agents
+        from DeepResearch.src.agents.bioinformatics_agents import BioinformaticsAgent
         from DeepResearch.src.statemachines.bioinformatics_workflow import (
             ParseBioinformaticsQuery,
         )
-        from DeepResearch.src.agents.bioinformatics_agents import BioinformaticsAgent
 
         # If we get here without ImportError, the import chain works
         assert ParseBioinformaticsQuery is not None
@@ -160,22 +159,22 @@ class TestStatemachinesComplexImportChains:
     def test_full_statemachines_initialization_chain(self):
         """Test the complete import chain for statemachines initialization."""
         try:
-            from DeepResearch.src.statemachines.bioinformatics_workflow import (
-                BioinformaticsState,
-                ParseBioinformaticsQuery,
-                FuseDataSources,
-            )
-            from DeepResearch.src.statemachines.rag_workflow import (
-                RAGState,
-                InitializeRAG,
-            )
-            from DeepResearch.src.statemachines.search_workflow import (
-                SearchWorkflowState,
-                InitializeSearch,
-            )
-            from DeepResearch.src.datatypes.bioinformatics import FusedDataset
             from DeepResearch.src.agents.bioinformatics_agents import (
                 BioinformaticsAgent,
+            )
+            from DeepResearch.src.datatypes.bioinformatics import FusedDataset
+            from DeepResearch.src.statemachines.bioinformatics_workflow import (
+                BioinformaticsState,
+                FuseDataSources,
+                ParseBioinformaticsQuery,
+            )
+            from DeepResearch.src.statemachines.rag_workflow import (
+                InitializeRAG,
+                RAGState,
+            )
+            from DeepResearch.src.statemachines.search_workflow import (
+                InitializeSearch,
+                SearchWorkflowState,
             )
 
             # If all imports succeed, the chain is working
@@ -274,5 +273,5 @@ class TestStatemachinesImportErrorHandling:
         # Test that common pydantic_graph attributes are available
         # (these might not exist if pydantic_graph is not installed)
         if hasattr(BaseNode, "__annotations__"):
-            annotations = getattr(BaseNode, "__annotations__")
+            annotations = BaseNode.__annotations__
             assert isinstance(annotations, dict)

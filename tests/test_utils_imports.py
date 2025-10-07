@@ -26,8 +26,8 @@ class TestUtilsModuleImports:
 
         from DeepResearch.src.utils.execution_history import (
             ExecutionHistory,
-            ExecutionStep,
             ExecutionMetrics,
+            ExecutionStep,
         )
 
         # Verify they are all accessible and not None
@@ -54,8 +54,8 @@ class TestUtilsModuleImports:
     def test_tool_registry_imports(self):
         """Test all imports from tool_registry module."""
 
-        from DeepResearch.src.utils.tool_registry import ToolRegistry
         from DeepResearch.src.datatypes.tools import ToolMetadata
+        from DeepResearch.src.utils.tool_registry import ToolRegistry
 
         # Verify they are all accessible and not None
         assert ToolRegistry is not None
@@ -65,9 +65,9 @@ class TestUtilsModuleImports:
         """Test all imports from tool_specs module."""
 
         from DeepResearch.src.datatypes.tool_specs import (
-            ToolSpec,
             ToolInput,
             ToolOutput,
+            ToolSpec,
         )
 
         # Verify they are all accessible and not None
@@ -92,9 +92,9 @@ class TestUtilsModuleImports:
 
         # These types are now imported from datatypes.deepsearch
         from DeepResearch.src.datatypes.deepsearch import (
+            ActionType,
             DeepSearchSchemas,
             EvaluationType,
-            ActionType,
         )
 
         # Verify they are all accessible and not None
@@ -140,8 +140,8 @@ class TestUtilsCrossModuleImports:
     def test_datatypes_integration_imports(self):
         """Test that utils can import from datatypes module."""
         # This tests the import chain: utils -> datatypes
-        from DeepResearch.src.datatypes.tool_specs import ToolSpec
         from DeepResearch.src.datatypes import Document
+        from DeepResearch.src.datatypes.tool_specs import ToolSpec
 
         # If we get here without ImportError, the import chain works
         assert ToolSpec is not None
@@ -150,8 +150,8 @@ class TestUtilsCrossModuleImports:
     def test_tools_integration_imports(self):
         """Test that utils can import from tools module."""
         # This tests the import chain: utils -> tools
-        from DeepResearch.src.utils.tool_registry import ToolRegistry
         from DeepResearch.src.tools.base import ToolSpec
+        from DeepResearch.src.utils.tool_registry import ToolRegistry
 
         # If we get here without ImportError, the import chain works
         assert ToolRegistry is not None
@@ -164,10 +164,10 @@ class TestUtilsComplexImportChains:
     def test_full_utils_initialization_chain(self):
         """Test the complete import chain for utils initialization."""
         try:
+            from DeepResearch.src.datatypes import Document
             from DeepResearch.src.utils.config_loader import BioinformaticsConfigLoader
             from DeepResearch.src.utils.execution_history import ExecutionHistory
             from DeepResearch.src.utils.tool_registry import ToolRegistry
-            from DeepResearch.src.datatypes import Document
 
             # If all imports succeed, the chain is working
             assert BioinformaticsConfigLoader is not None
@@ -181,6 +181,7 @@ class TestUtilsComplexImportChains:
     def test_execution_tracking_chain(self):
         """Test the complete import chain for execution tracking."""
         try:
+            from DeepResearch.src.utils.analytics import AnalyticsEngine
             from DeepResearch.src.utils.execution_history import (
                 ExecutionHistory,
                 ExecutionStep,
@@ -189,7 +190,6 @@ class TestUtilsComplexImportChains:
                 ExecutionStatus,
                 StatusType,
             )
-            from DeepResearch.src.utils.analytics import AnalyticsEngine
 
             # If all imports succeed, the chain is working
             assert ExecutionHistory is not None

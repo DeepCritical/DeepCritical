@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
@@ -48,8 +49,8 @@ class GOTerm(BaseModel):
         ...,
         description="GO namespace (biological_process, molecular_function, cellular_component)",
     )
-    definition: Optional[str] = Field(None, description="GO term definition")
-    synonyms: List[str] = Field(default_factory=list, description="Alternative names")
+    definition: str | None = Field(None, description="GO term definition")
+    synonyms: list[str] = Field(default_factory=list, description="Alternative names")
     is_obsolete: bool = Field(False, description="Whether the term is obsolete")
 
     class Config:
@@ -69,17 +70,15 @@ class GOAnnotation(BaseModel):
     pmid: str = Field(..., description="PubMed ID")
     title: str = Field(..., description="Paper title")
     abstract: str = Field(..., description="Paper abstract")
-    full_text: Optional[str] = Field(
-        None, description="Full text for open access papers"
-    )
+    full_text: str | None = Field(None, description="Full text for open access papers")
     gene_id: str = Field(..., description="Gene identifier (e.g., P04637)")
     gene_symbol: str = Field(..., description="Gene symbol (e.g., TP53)")
     go_term: GOTerm = Field(..., description="Associated GO term")
     evidence_code: EvidenceCode = Field(..., description="Evidence code")
-    annotation_note: Optional[str] = Field(None, description="Curator annotation note")
-    curator: Optional[str] = Field(None, description="Curator identifier")
-    annotation_date: Optional[datetime] = Field(None, description="Date of annotation")
-    confidence_score: Optional[float] = Field(
+    annotation_note: str | None = Field(None, description="Curator annotation note")
+    curator: str | None = Field(None, description="Curator identifier")
+    annotation_date: datetime | None = Field(None, description="Date of annotation")
+    confidence_score: float | None = Field(
         None, ge=0.0, le=1.0, description="Confidence score"
     )
 
@@ -108,15 +107,15 @@ class PubMedPaper(BaseModel):
     pmid: str = Field(..., description="PubMed ID")
     title: str = Field(..., description="Paper title")
     abstract: str = Field(..., description="Paper abstract")
-    authors: List[str] = Field(default_factory=list, description="Author names")
-    journal: Optional[str] = Field(None, description="Journal name")
-    publication_date: Optional[datetime] = Field(None, description="Publication date")
-    doi: Optional[str] = Field(None, description="Digital Object Identifier")
-    pmc_id: Optional[str] = Field(None, description="PMC ID for open access")
-    mesh_terms: List[str] = Field(default_factory=list, description="MeSH terms")
-    keywords: List[str] = Field(default_factory=list, description="Keywords")
+    authors: list[str] = Field(default_factory=list, description="Author names")
+    journal: str | None = Field(None, description="Journal name")
+    publication_date: datetime | None = Field(None, description="Publication date")
+    doi: str | None = Field(None, description="Digital Object Identifier")
+    pmc_id: str | None = Field(None, description="PMC ID for open access")
+    mesh_terms: list[str] = Field(default_factory=list, description="MeSH terms")
+    keywords: list[str] = Field(default_factory=list, description="Keywords")
     is_open_access: bool = Field(False, description="Whether paper is open access")
-    full_text_url: Optional[HttpUrl] = Field(None, description="URL to full text")
+    full_text_url: HttpUrl | None = Field(None, description="URL to full text")
 
     class Config:
         json_schema_extra = {
@@ -138,8 +137,8 @@ class GEOPlatform(BaseModel):
     title: str = Field(..., description="Platform title")
     organism: str = Field(..., description="Organism")
     technology: str = Field(..., description="Technology type")
-    manufacturer: Optional[str] = Field(None, description="Manufacturer")
-    description: Optional[str] = Field(None, description="Platform description")
+    manufacturer: str | None = Field(None, description="Manufacturer")
+    description: str | None = Field(None, description="Platform description")
 
 
 class GEOSample(BaseModel):
@@ -148,8 +147,8 @@ class GEOSample(BaseModel):
     sample_id: str = Field(..., description="GEO sample ID (e.g., GSM123456)")
     title: str = Field(..., description="Sample title")
     organism: str = Field(..., description="Organism")
-    source_name: Optional[str] = Field(None, description="Source name")
-    characteristics: Dict[str, str] = Field(
+    source_name: str | None = Field(None, description="Source name")
+    characteristics: dict[str, str] = Field(
         default_factory=dict, description="Sample characteristics"
     )
     platform_id: str = Field(..., description="Associated platform ID")
@@ -162,15 +161,15 @@ class GEOSeries(BaseModel):
     series_id: str = Field(..., description="GEO series ID (e.g., GSE12345)")
     title: str = Field(..., description="Series title")
     summary: str = Field(..., description="Series summary")
-    overall_design: Optional[str] = Field(None, description="Overall design")
+    overall_design: str | None = Field(None, description="Overall design")
     organism: str = Field(..., description="Organism")
-    platform_ids: List[str] = Field(default_factory=list, description="Platform IDs")
-    sample_ids: List[str] = Field(default_factory=list, description="Sample IDs")
-    submission_date: Optional[datetime] = Field(None, description="Submission date")
-    last_update_date: Optional[datetime] = Field(None, description="Last update date")
-    contact_name: Optional[str] = Field(None, description="Contact name")
-    contact_email: Optional[str] = Field(None, description="Contact email")
-    pubmed_ids: List[str] = Field(
+    platform_ids: list[str] = Field(default_factory=list, description="Platform IDs")
+    sample_ids: list[str] = Field(default_factory=list, description="Sample IDs")
+    submission_date: datetime | None = Field(None, description="Submission date")
+    last_update_date: datetime | None = Field(None, description="Last update date")
+    contact_name: str | None = Field(None, description="Contact name")
+    contact_email: str | None = Field(None, description="Contact email")
+    pubmed_ids: list[str] = Field(
         default_factory=list, description="Associated PubMed IDs"
     )
 
@@ -180,14 +179,12 @@ class GeneExpressionProfile(BaseModel):
 
     gene_id: str = Field(..., description="Gene identifier")
     gene_symbol: str = Field(..., description="Gene symbol")
-    expression_values: Dict[str, float] = Field(
+    expression_values: dict[str, float] = Field(
         ..., description="Expression values by sample ID"
     )
-    log2_fold_change: Optional[float] = Field(None, description="Log2 fold change")
-    p_value: Optional[float] = Field(None, description="P-value")
-    adjusted_p_value: Optional[float] = Field(
-        None, description="Adjusted p-value (FDR)"
-    )
+    log2_fold_change: float | None = Field(None, description="Log2 fold change")
+    p_value: float | None = Field(None, description="P-value")
+    adjusted_p_value: float | None = Field(None, description="Adjusted p-value (FDR)")
     series_id: str = Field(..., description="Associated GEO series ID")
 
 
@@ -199,14 +196,12 @@ class DrugTarget(BaseModel):
     target_id: str = Field(..., description="Target identifier")
     target_name: str = Field(..., description="Target name")
     target_type: str = Field(..., description="Target type (protein, gene, etc.)")
-    action: Optional[str] = Field(
+    action: str | None = Field(
         None, description="Drug action (inhibitor, activator, etc.)"
     )
-    mechanism: Optional[str] = Field(None, description="Mechanism of action")
-    indication: Optional[str] = Field(None, description="Therapeutic indication")
-    clinical_phase: Optional[str] = Field(
-        None, description="Clinical development phase"
-    )
+    mechanism: str | None = Field(None, description="Mechanism of action")
+    indication: str | None = Field(None, description="Therapeutic indication")
+    clinical_phase: str | None = Field(None, description="Clinical development phase")
 
 
 class PerturbationProfile(BaseModel):
@@ -215,13 +210,13 @@ class PerturbationProfile(BaseModel):
     compound_id: str = Field(..., description="Compound identifier")
     compound_name: str = Field(..., description="Compound name")
     cell_line: str = Field(..., description="Cell line")
-    concentration: Optional[float] = Field(None, description="Concentration")
-    time_point: Optional[str] = Field(None, description="Time point")
-    gene_expression_changes: Dict[str, float] = Field(
+    concentration: float | None = Field(None, description="Concentration")
+    time_point: str | None = Field(None, description="Time point")
+    gene_expression_changes: dict[str, float] = Field(
         ..., description="Gene expression changes"
     )
-    connectivity_score: Optional[float] = Field(None, description="Connectivity score")
-    p_value: Optional[float] = Field(None, description="P-value")
+    connectivity_score: float | None = Field(None, description="Connectivity score")
+    p_value: float | None = Field(None, description="P-value")
 
 
 class ProteinStructure(BaseModel):
@@ -230,15 +225,15 @@ class ProteinStructure(BaseModel):
     pdb_id: str = Field(..., description="PDB identifier")
     title: str = Field(..., description="Structure title")
     organism: str = Field(..., description="Organism")
-    resolution: Optional[float] = Field(None, description="Resolution in Angstroms")
-    method: Optional[str] = Field(None, description="Experimental method")
-    chains: List[str] = Field(default_factory=list, description="Chain identifiers")
-    sequence: Optional[str] = Field(None, description="Protein sequence")
-    secondary_structure: Optional[str] = Field(None, description="Secondary structure")
-    binding_sites: List[Dict[str, Any]] = Field(
+    resolution: float | None = Field(None, description="Resolution in Angstroms")
+    method: str | None = Field(None, description="Experimental method")
+    chains: list[str] = Field(default_factory=list, description="Chain identifiers")
+    sequence: str | None = Field(None, description="Protein sequence")
+    secondary_structure: str | None = Field(None, description="Secondary structure")
+    binding_sites: list[dict[str, Any]] = Field(
         default_factory=list, description="Binding sites"
     )
-    publication_date: Optional[datetime] = Field(None, description="Publication date")
+    publication_date: datetime | None = Field(None, description="Publication date")
 
 
 class ProteinInteraction(BaseModel):
@@ -248,12 +243,12 @@ class ProteinInteraction(BaseModel):
     interactor_a: str = Field(..., description="First interactor ID")
     interactor_b: str = Field(..., description="Second interactor ID")
     interaction_type: str = Field(..., description="Type of interaction")
-    detection_method: Optional[str] = Field(None, description="Detection method")
-    confidence_score: Optional[float] = Field(None, description="Confidence score")
-    pubmed_ids: List[str] = Field(
+    detection_method: str | None = Field(None, description="Detection method")
+    confidence_score: float | None = Field(None, description="Confidence score")
+    pubmed_ids: list[str] = Field(
         default_factory=list, description="Supporting PubMed IDs"
     )
-    species: Optional[str] = Field(None, description="Species")
+    species: str | None = Field(None, description="Species")
 
 
 class FusedDataset(BaseModel):
@@ -262,41 +257,41 @@ class FusedDataset(BaseModel):
     dataset_id: str = Field(..., description="Unique dataset identifier")
     name: str = Field(..., description="Dataset name")
     description: str = Field(..., description="Dataset description")
-    source_databases: List[str] = Field(..., description="Source databases")
+    source_databases: list[str] = Field(..., description="Source databases")
     creation_date: datetime = Field(
         default_factory=datetime.now, description="Creation date"
     )
 
     # Fused data components
-    go_annotations: List[GOAnnotation] = Field(
+    go_annotations: list[GOAnnotation] = Field(
         default_factory=list, description="GO annotations"
     )
-    pubmed_papers: List[PubMedPaper] = Field(
+    pubmed_papers: list[PubMedPaper] = Field(
         default_factory=list, description="PubMed papers"
     )
-    geo_series: List[GEOSeries] = Field(default_factory=list, description="GEO series")
-    gene_expression_profiles: List[GeneExpressionProfile] = Field(
+    geo_series: list[GEOSeries] = Field(default_factory=list, description="GEO series")
+    gene_expression_profiles: list[GeneExpressionProfile] = Field(
         default_factory=list, description="Gene expression profiles"
     )
-    drug_targets: List[DrugTarget] = Field(
+    drug_targets: list[DrugTarget] = Field(
         default_factory=list, description="Drug targets"
     )
-    perturbation_profiles: List[PerturbationProfile] = Field(
+    perturbation_profiles: list[PerturbationProfile] = Field(
         default_factory=list, description="Perturbation profiles"
     )
-    protein_structures: List[ProteinStructure] = Field(
+    protein_structures: list[ProteinStructure] = Field(
         default_factory=list, description="Protein structures"
     )
-    protein_interactions: List[ProteinInteraction] = Field(
+    protein_interactions: list[ProteinInteraction] = Field(
         default_factory=list, description="Protein interactions"
     )
 
     # Metadata
     total_entities: int = Field(0, description="Total number of entities")
-    cross_references: Dict[str, List[str]] = Field(
+    cross_references: dict[str, list[str]] = Field(
         default_factory=dict, description="Cross-references between entities"
     )
-    quality_metrics: Dict[str, float] = Field(
+    quality_metrics: dict[str, float] = Field(
         default_factory=dict, description="Quality metrics"
     )
 
@@ -337,13 +332,13 @@ class ReasoningTask(BaseModel):
     task_id: str = Field(..., description="Task identifier")
     task_type: str = Field(..., description="Type of reasoning task")
     question: str = Field(..., description="Reasoning question")
-    context: Dict[str, Any] = Field(default_factory=dict, description="Task context")
-    expected_answer: Optional[str] = Field(None, description="Expected answer")
+    context: dict[str, Any] = Field(default_factory=dict, description="Task context")
+    expected_answer: str | None = Field(None, description="Expected answer")
     difficulty_level: str = Field("medium", description="Difficulty level")
-    required_evidence: List[EvidenceCode] = Field(
+    required_evidence: list[EvidenceCode] = Field(
         default_factory=list, description="Required evidence codes"
     )
-    supporting_data: List[str] = Field(
+    supporting_data: list[str] = Field(
         default_factory=list, description="Supporting data identifiers"
     )
 
@@ -366,18 +361,18 @@ class DataFusionRequest(BaseModel):
     fusion_type: str = Field(
         ..., description="Type of fusion (GO+PubMed, GEO+CMAP, etc.)"
     )
-    source_databases: List[str] = Field(..., description="Source databases to fuse")
-    filters: Dict[str, Any] = Field(
+    source_databases: list[str] = Field(..., description="Source databases to fuse")
+    filters: dict[str, Any] = Field(
         default_factory=dict, description="Filtering criteria"
     )
     output_format: str = Field("fused_dataset", description="Output format")
     quality_threshold: float = Field(
         0.8, ge=0.0, le=1.0, description="Quality threshold"
     )
-    max_entities: Optional[int] = Field(None, description="Maximum number of entities")
+    max_entities: int | None = Field(None, description="Maximum number of entities")
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any], **kwargs) -> "DataFusionRequest":
+    def from_config(cls, config: dict[str, Any], **kwargs) -> DataFusionRequest:
         """Create DataFusionRequest from configuration."""
         bioinformatics_config = config.get("bioinformatics", {})
         fusion_config = bioinformatics_config.get("fusion", {})
@@ -403,12 +398,12 @@ class DataFusionRequest(BaseModel):
 class BioinformaticsAgentDeps(BaseModel):
     """Dependencies for bioinformatics agents."""
 
-    config: Dict[str, Any] = Field(default_factory=dict)
-    data_sources: List[str] = Field(default_factory=list)
+    config: dict[str, Any] = Field(default_factory=dict)
+    data_sources: list[str] = Field(default_factory=list)
     quality_threshold: float = Field(0.8, ge=0.0, le=1.0)
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any], **kwargs) -> "BioinformaticsAgentDeps":
+    def from_config(cls, config: dict[str, Any], **kwargs) -> BioinformaticsAgentDeps:
         """Create dependencies from configuration."""
         bioinformatics_config = config.get("bioinformatics", {})
         quality_config = bioinformatics_config.get("quality", {})
@@ -424,11 +419,11 @@ class DataFusionResult(BaseModel):
     """Result of data fusion operation."""
 
     success: bool = Field(..., description="Whether fusion was successful")
-    fused_dataset: Optional[FusedDataset] = Field(None, description="Fused dataset")
-    quality_metrics: Dict[str, float] = Field(
+    fused_dataset: FusedDataset | None = Field(None, description="Fused dataset")
+    quality_metrics: dict[str, float] = Field(
         default_factory=dict, description="Quality metrics"
     )
-    errors: List[str] = Field(default_factory=list, description="Error messages")
+    errors: list[str] = Field(default_factory=list, description="Error messages")
     processing_time: float = Field(0.0, description="Processing time in seconds")
 
 
@@ -438,9 +433,9 @@ class ReasoningResult(BaseModel):
     success: bool = Field(..., description="Whether reasoning was successful")
     answer: str = Field(..., description="Reasoning answer")
     confidence: float = Field(0.0, ge=0.0, le=1.0, description="Confidence score")
-    supporting_evidence: List[str] = Field(
+    supporting_evidence: list[str] = Field(
         default_factory=list, description="Supporting evidence"
     )
-    reasoning_chain: List[str] = Field(
+    reasoning_chain: list[str] = Field(
         default_factory=list, description="Reasoning steps"
     )

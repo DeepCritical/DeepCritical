@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 
 @dataclass
@@ -18,7 +18,7 @@ class SearchTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         ok, err = self.validate(params)
         if not ok:
             return ExecutionResult(success=False, error=err)
@@ -42,7 +42,7 @@ class SummarizeTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         ok, err = self.validate(params)
         if not ok:
             return ExecutionResult(success=False, error=err)
@@ -66,7 +66,7 @@ class MockTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         return ExecutionResult(
             success=True, data={"output": f"Mock result for: {params.get('input', '')}"}
         )
@@ -86,7 +86,7 @@ class MockWebSearchTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         query = params.get("query", "")
         return ExecutionResult(
             success=True,
@@ -109,7 +109,7 @@ class MockBioinformaticsTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         sequence = params.get("sequence", "")
         return ExecutionResult(
             success=True,

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from datetime import datetime
 import json
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from .execution_status import ExecutionStatus
 
@@ -15,11 +15,11 @@ class ExecutionItem:
     step_name: str
     tool: str
     status: ExecutionStatus
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
     timestamp: float = field(default_factory=lambda: datetime.now().timestamp())
-    parameters: Optional[Dict[str, Any]] = None
-    duration: Optional[float] = None
+    parameters: dict[str, Any] | None = None
+    duration: float | None = None
     retry_count: int = 0
 
 
@@ -29,32 +29,32 @@ class ExecutionStep:
 
     step_id: str
     status: str
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    start_time: float | None = None
+    end_time: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ExecutionHistory:
     """History of workflow execution for adaptive re-planning."""
 
-    items: List[ExecutionItem] = field(default_factory=list)
+    items: list[ExecutionItem] = field(default_factory=list)
     start_time: float = field(default_factory=lambda: datetime.now().timestamp())
-    end_time: Optional[float] = None
+    end_time: float | None = None
 
     def add_item(self, item: ExecutionItem) -> None:
         """Add an execution item to the history."""
         self.items.append(item)
 
-    def get_successful_steps(self) -> List[ExecutionItem]:
+    def get_successful_steps(self) -> list[ExecutionItem]:
         """Get all successfully executed steps."""
         return [item for item in self.items if item.status == ExecutionStatus.SUCCESS]
 
-    def get_failed_steps(self) -> List[ExecutionItem]:
+    def get_failed_steps(self) -> list[ExecutionItem]:
         """Get all failed steps."""
         return [item for item in self.items if item.status == ExecutionStatus.FAILED]
 
-    def get_step_by_name(self, step_name: str) -> Optional[ExecutionItem]:
+    def get_step_by_name(self, step_name: str) -> ExecutionItem | None:
         """Get execution item by step name."""
         for item in self.items:
             if item.step_name == step_name:
@@ -65,7 +65,7 @@ class ExecutionHistory:
         """Get the number of times a tool has been used."""
         return sum(1 for item in self.items if item.tool == tool_name)
 
-    def get_failure_patterns(self) -> Dict[str, int]:
+    def get_failure_patterns(self) -> dict[str, int]:
         """Analyze failure patterns to inform re-planning."""
         failure_patterns = {}
         for item in self.get_failed_steps():
@@ -73,7 +73,7 @@ class ExecutionHistory:
             failure_patterns[error_type] = failure_patterns.get(error_type, 0) + 1
         return failure_patterns
 
-    def _categorize_error(self, error: Optional[str]) -> str:
+    def _categorize_error(self, error: str | None) -> str:
         """Categorize error types for pattern analysis."""
         if not error:
             return "unknown"
@@ -81,16 +81,15 @@ class ExecutionHistory:
         error_lower = error.lower()
         if "timeout" in error_lower or "network" in error_lower:
             return "network_error"
-        elif "validation" in error_lower or "schema" in error_lower:
+        if "validation" in error_lower or "schema" in error_lower:
             return "validation_error"
-        elif "parameter" in error_lower or "config" in error_lower:
+        if "parameter" in error_lower or "config" in error_lower:
             return "parameter_error"
-        elif "success_criteria" in error_lower:
+        if "success_criteria" in error_lower:
             return "criteria_failure"
-        else:
-            return "execution_error"
+        return "execution_error"
 
-    def get_execution_summary(self) -> Dict[str, Any]:
+    def get_execution_summary(self) -> dict[str, Any]:
         """Get a summary of the execution history."""
         total_steps = len(self.items)
         successful_steps = len(self.get_successful_steps())
@@ -114,7 +113,7 @@ class ExecutionHistory:
         """Mark the execution as finished."""
         self.end_time = datetime.now().timestamp()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert history to dictionary for serialization."""
         return {
             "items": [
@@ -144,7 +143,7 @@ class ExecutionHistory:
     @classmethod
     def load_from_file(cls, filepath: str) -> ExecutionHistory:
         """Load execution history from a JSON file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         history = cls()
@@ -226,7 +225,7 @@ class ExecutionTracker:
 
         return perf["successes"] / perf["uses"]
 
-    def get_most_reliable_tools(self, limit: int = 5) -> List[tuple[str, float]]:
+    def get_most_reliable_tools(self, limit: int = 5) -> list[tuple[str, float]]:
         """Get the most reliable tools based on historical performance."""
         tool_scores = [
             (tool, self.get_tool_reliability(tool))
@@ -235,7 +234,7 @@ class ExecutionTracker:
         tool_scores.sort(key=lambda x: x[1], reverse=True)
         return tool_scores[:limit]
 
-    def get_common_failure_modes(self) -> List[tuple[str, int]]:
+    def get_common_failure_modes(self) -> list[tuple[str, int]]:
         """Get the most common failure modes."""
         failure_modes = list(self.metrics["error_frequency"].items())
         failure_modes.sort(key=lambda x: x[1], reverse=True)
@@ -251,8 +250,8 @@ class ExecutionMetrics:
     failed_steps: int = 0
     total_duration: float = 0.0
     avg_step_duration: float = 0.0
-    tool_usage_count: Dict[str, int] = field(default_factory=dict)
-    error_frequency: Dict[str, int] = field(default_factory=dict)
+    tool_usage_count: dict[str, int] = field(default_factory=dict)
+    error_frequency: dict[str, int] = field(default_factory=dict)
 
     def add_step_result(self, step_name: str, success: bool, duration: float) -> None:
         """Add a step result to the metrics."""

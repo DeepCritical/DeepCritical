@@ -6,18 +6,19 @@ for intelligent search and retrieval operations.
 """
 
 from typing import Any, Dict
+
 from pydantic_ai import Agent
 
-from ..tools.websearch_tools import web_search_tool, chunked_search_tool
-from ..tools.analytics_tools import record_request_tool, get_analytics_data_tool
-from ..tools.integrated_search_tools import integrated_search_tool, rag_search_tool
 from ..datatypes.search_agent import (
     SearchAgentConfig,
+    SearchAgentDependencies,
     SearchQuery,
     SearchResult,
-    SearchAgentDependencies,
 )
 from ..prompts.search_agent import SearchAgentPrompts
+from ..tools.analytics_tools import get_analytics_data_tool, record_request_tool
+from ..tools.integrated_search_tools import integrated_search_tool, rag_search_tool
+from ..tools.websearch_tools import chunked_search_tool, web_search_tool
 
 
 class SearchAgent:
@@ -81,7 +82,7 @@ class SearchAgent:
                 query=query.query, content="", success=False, error=str(e)
             )
 
-    async def get_analytics(self, days: int = 30) -> Dict[str, Any]:
+    async def get_analytics(self, days: int = 30) -> dict[str, Any]:
         """Get analytics data for the specified number of days."""
         try:
             deps = {"days": days}

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
 from enum import Enum
+from typing import Any, Dict, List
 
 
 class ToolCategory(Enum):
@@ -46,8 +46,8 @@ class ToolSpec:
 
     name: str
     category: ToolCategory
-    input_schema: Dict[str, Any]
-    output_schema: Dict[str, Any]
-    dependencies: List[str] = field(default_factory=list)
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    success_criteria: Dict[str, Any] = field(default_factory=dict)
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any]
+    dependencies: list[str] = field(default_factory=list)
+    parameters: dict[str, Any] = field(default_factory=dict)
+    success_criteria: dict[str, Any] = field(default_factory=dict)

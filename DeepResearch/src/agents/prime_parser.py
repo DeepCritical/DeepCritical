@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
 from enum import Enum
+from typing import Any, Dict, List, Tuple
 
 
 class ScientificIntent(Enum):
@@ -38,10 +38,10 @@ class StructuredProblem:
     """Structured representation of a research problem."""
 
     intent: ScientificIntent
-    input_data: Dict[str, Any]
-    output_requirements: Dict[str, Any]
-    constraints: List[str]
-    success_criteria: List[str]
+    input_data: dict[str, Any]
+    output_requirements: dict[str, Any]
+    constraints: list[str]
+    success_criteria: list[str]
     domain: str
     complexity: str  # "simple", "moderate", "complex"
 
@@ -117,7 +117,7 @@ class QueryParser:
 
     def _analyze_syntactic_formats(
         self, query: str
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Extract and validate input/output data formats."""
         input_data = {}
         output_requirements = {}
@@ -144,7 +144,7 @@ class QueryParser:
 
         return input_data, output_requirements
 
-    def _extract_constraints(self, query: str) -> List[str]:
+    def _extract_constraints(self, query: str) -> list[str]:
         """Extract constraints from the query."""
         constraints = []
         query_lower = query.lower()
@@ -163,7 +163,7 @@ class QueryParser:
 
         return constraints
 
-    def _extract_success_criteria(self, query: str) -> List[str]:
+    def _extract_success_criteria(self, query: str) -> list[str]:
         """Extract success criteria from the query."""
         criteria = []
         query_lower = query.lower()
@@ -217,13 +217,12 @@ class QueryParser:
             ScientificIntent.MOLECULAR_DOCKING,
         ]:
             return "complex"
-        elif intent in [
+        if intent in [
             ScientificIntent.PROTEIN_DESIGN,
             ScientificIntent.BINDING_ANALYSIS,
         ]:
             return "moderate"
-        else:
-            return "simple"
+        return "simple"
 
 
 def parse_query(query: str) -> StructuredProblem:

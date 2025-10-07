@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Dict
 
-
 HEADER = (
     "Current date: ${current_date_utc}\n\n"
     "You are an advanced AI research agent from Jina AI. You are specialized in multistep reasoning.\n"
@@ -112,7 +111,7 @@ class AgentPrompts:
 
 
 # Prompt constants dictionary for easy access
-AGENT_PROMPTS: Dict[str, str] = {
+AGENT_PROMPTS: dict[str, str] = {
     "header": HEADER,
     "actions_wrapper": ACTIONS_WRAPPER,
     "action_visit": ACTION_VISIT,

@@ -6,10 +6,10 @@ for backward compatibility and easier access.
 """
 
 from ..datatypes.tool_specs import (
-    ToolSpec,
     ToolCategory,
     ToolInput,
     ToolOutput,
+    ToolSpec,
 )
 
 __all__ = [

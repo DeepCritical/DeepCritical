@@ -9,16 +9,16 @@ from dataclasses import dataclass
 from hashlib import md5
 from pathlib import Path
 from time import sleep
-from typing import Any, Dict, Optional, ClassVar
+from typing import Any, ClassVar, Dict, Optional
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
 from ..datatypes.docker_sandbox_datatypes import (
-    DockerSandboxConfig,
     DockerExecutionRequest,
     DockerExecutionResult,
+    DockerSandboxConfig,
     DockerSandboxEnvironment,
     DockerSandboxPolicies,
 )
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT_MSG = "Execution timed out after the specified timeout period."
 
 
-def _get_cfg_value(cfg: Dict[str, Any], path: str, default: Any) -> Any:
+def _get_cfg_value(cfg: dict[str, Any], path: str, default: Any) -> Any:
     """Get nested configuration value using dot notation."""
     cur: Any = cfg
     for key in path.split("."):
@@ -38,7 +38,7 @@ def _get_cfg_value(cfg: Dict[str, Any], path: str, default: Any) -> Any:
     return cur
 
 
-def _get_file_name_from_content(code: str, work_dir: Path) -> Optional[str]:
+def _get_file_name_from_content(code: str, work_dir: Path) -> str | None:
     """Extract filename from code content comments, similar to AutoGen implementation."""
     lines = code.split("\n")
     for line in lines[:10]:  # Check first 10 lines
@@ -56,12 +56,11 @@ def _cmd(language: str) -> str:
     language = language.lower()
     if language == "python":
         return "python"
-    elif language in ["bash", "shell", "sh"]:
+    if language in ["bash", "shell", "sh"]:
         return "sh"
-    elif language in ["pwsh", "powershell", "ps1"]:
+    if language in ["pwsh", "powershell", "ps1"]:
         return "pwsh"
-    else:
-        return language
+    return language
 
 
 def _wait_for_ready(container, timeout: int = 60, stop_time: float = 0.1) -> None:
@@ -81,7 +80,7 @@ class DockerSandboxRunner(ToolRunner):
     """Enhanced Docker sandbox runner using Testcontainers with AutoGen-inspired patterns."""
 
     # Default execution policies similar to AutoGen
-    DEFAULT_EXECUTION_POLICY: ClassVar[Dict[str, bool]] = {
+    DEFAULT_EXECUTION_POLICY: ClassVar[dict[str, bool]] = {
         "bash": True,
         "shell": True,
         "sh": True,
@@ -95,7 +94,7 @@ class DockerSandboxRunner(ToolRunner):
     }
 
     # Language aliases
-    LANGUAGE_ALIASES: ClassVar[Dict[str, str]] = {"py": "python", "js": "javascript"}
+    LANGUAGE_ALIASES: ClassVar[dict[str, str]] = {"py": "python", "js": "javascript"}
 
     def __init__(self):
         super().__init__(
@@ -122,7 +121,7 @@ class DockerSandboxRunner(ToolRunner):
         # Initialize execution policies
         self.execution_policies = self.DEFAULT_EXECUTION_POLICY.copy()
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute code in a Docker container with enhanced error handling and execution policies."""
         ok, err = self.validate(params)
         if not ok:
@@ -139,7 +138,7 @@ class DockerSandboxRunner(ToolRunner):
         # Parse environment variables
         env_json = str(params.get("env", "")).strip()
         try:
-            env_map: Dict[str, str] = json.loads(env_json) if env_json else {}
+            env_map: dict[str, str] = json.loads(env_json) if env_json else {}
             execution_request.environment = env_map
         except Exception:
             execution_request.environment = {}
@@ -156,7 +155,7 @@ class DockerSandboxRunner(ToolRunner):
 
         # Load hydra config if accessible to configure container image and limits
         try:
-            cfg: Dict[str, Any] = {}
+            cfg: dict[str, Any] = {}
         except Exception:
             cfg = {}
 
@@ -205,7 +204,7 @@ class DockerSandboxRunner(ToolRunner):
             )
 
         # Prepare working directory
-        temp_dir: Optional[str] = None
+        temp_dir: str | None = None
         work_path = Path(tempfile.mkdtemp(prefix="docker-sandbox-"))
         files_created = []
 
@@ -375,12 +374,10 @@ class DockerSandboxRunner(ToolRunner):
         """Restart the container (for persistent containers)."""
         # This would be useful for persistent containers
         # For now, we create fresh containers each time
-        pass
 
     def stop(self) -> None:
         """Stop the container and cleanup resources."""
         # Cleanup is handled in the run method's finally block
-        pass
 
     def __enter__(self):
         """Context manager entry."""
@@ -405,7 +402,7 @@ class DockerSandboxTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         code = params.get("code", "")
         language = params.get("language", "python")
         timeout = int(params.get("timeout", "30"))
@@ -418,15 +415,14 @@ class DockerSandboxTool(ToolRunner):
             runner = DockerSandboxRunner()
             result = runner.run({"code": code, "timeout": timeout})
             return result
-        else:
-            return ExecutionResult(
-                success=True,
-                data={
-                    "result": f"Docker execution for {language}: {code[:50]}...",
-                    "success": True,
-                },
-                metrics={"language": language, "timeout": timeout},
-            )
+        return ExecutionResult(
+            success=True,
+            data={
+                "result": f"Docker execution for {language}: {code[:50]}...",
+                "success": True,
+            },
+            metrics={"language": language, "timeout": timeout},
+        )
 
 
 # Register tool

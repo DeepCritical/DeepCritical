@@ -22,13 +22,13 @@ class TestToolsModuleImports:
     def test_base_imports(self):
         """Test all imports from base module."""
 
-        from DeepResearch.src.tools.base import (
-            ToolSpec,
-            ToolRegistry,
-        )
         from DeepResearch.src.datatypes.tools import (
             ExecutionResult,
             ToolRunner,
+        )
+        from DeepResearch.src.tools.base import (
+            ToolRegistry,
+            ToolSpec,
         )
 
         # Verify they are all accessible and not None
@@ -46,10 +46,10 @@ class TestToolsModuleImports:
         """Test all imports from tools datatypes module."""
 
         from DeepResearch.src.datatypes.tools import (
-            ToolMetadata,
             ExecutionResult,
-            ToolRunner,
             MockToolRunner,
+            ToolMetadata,
+            ToolRunner,
         )
 
         # Verify they are all accessible and not None
@@ -61,7 +61,7 @@ class TestToolsModuleImports:
         # Test that they can be instantiated
         try:
             # Use string literal and cast to avoid import issues
-            from typing import cast, Any
+            from typing import Any, cast
 
             metadata = ToolMetadata(
                 name="test_tool",
@@ -77,7 +77,7 @@ class TestToolsModuleImports:
             assert result.data["test"] == "data"
 
             # Test that MockToolRunner inherits from ToolRunner
-            from DeepResearch.src.datatypes.tool_specs import ToolSpec, ToolCategory
+            from DeepResearch.src.datatypes.tool_specs import ToolCategory, ToolSpec
 
             spec = ToolSpec(
                 name="mock_tool",
@@ -96,9 +96,9 @@ class TestToolsModuleImports:
         """Test all imports from mock_tools module."""
 
         from DeepResearch.src.tools.mock_tools import (
+            MockBioinformaticsTool,
             MockTool,
             MockWebSearchTool,
-            MockBioinformaticsTool,
         )
 
         # Verify they are all accessible and not None
@@ -110,8 +110,8 @@ class TestToolsModuleImports:
         """Test all imports from workflow_tools module."""
 
         from DeepResearch.src.tools.workflow_tools import (
-            WorkflowTool,
             WorkflowStepTool,
+            WorkflowTool,
         )
 
         # Verify they are all accessible and not None
@@ -122,9 +122,9 @@ class TestToolsModuleImports:
         """Test all imports from pyd_ai_tools module."""
 
         from DeepResearch.src.datatypes.pydantic_ai_tools import (
-            WebSearchBuiltinRunner,
             CodeExecBuiltinRunner,
             UrlContextBuiltinRunner,
+            WebSearchBuiltinRunner,
         )
 
         # Verify they are all accessible and not None
@@ -186,12 +186,12 @@ class TestToolsModuleImports:
         """Test all imports from deepsearch_tools module."""
 
         from DeepResearch.src.tools.deepsearch_tools import (
-            DeepSearchTool,
-            WebSearchTool,
-            URLVisitTool,
-            ReflectionTool,
             AnswerGeneratorTool,
+            DeepSearchTool,
             QueryRewriterTool,
+            ReflectionTool,
+            URLVisitTool,
+            WebSearchTool,
         )
 
         # Verify they are all accessible and not None
@@ -277,21 +277,21 @@ class TestToolsModuleImports:
         """Test all imports from deep_agent_middleware module."""
 
         from DeepResearch.src.tools.deep_agent_middleware import (
-            MiddlewareConfig,
-            MiddlewareResult,
             BaseMiddleware,
-            PlanningMiddleware,
             FilesystemMiddleware,
+            MiddlewareConfig,
+            MiddlewarePipeline,
+            MiddlewareResult,
+            PlanningMiddleware,
+            PromptCachingMiddleware,
             SubAgentMiddleware,
             SummarizationMiddleware,
-            PromptCachingMiddleware,
-            MiddlewarePipeline,
-            create_planning_middleware,
+            create_default_middleware_pipeline,
             create_filesystem_middleware,
+            create_planning_middleware,
+            create_prompt_caching_middleware,
             create_subagent_middleware,
             create_summarization_middleware,
-            create_prompt_caching_middleware,
-            create_default_middleware_pipeline,
         )
 
         # Verify they are all accessible and not None
@@ -312,16 +312,20 @@ class TestToolsModuleImports:
         assert create_default_middleware_pipeline is not None
 
         # Test that they are the same types as imported from datatypes
+        from DeepResearch.src.datatypes import (
+            ReflectionQuestion,
+            SearchResult,
+            URLVisitResult,
+            WebSearchRequest,
+        )
         from DeepResearch.src.datatypes.middleware import (
-            MiddlewareConfig as DTCfg,
-            MiddlewareResult as DTRes,
             BaseMiddleware as DTBase,
         )
-        from DeepResearch.src.datatypes import (
-            SearchResult,
-            WebSearchRequest,
-            URLVisitResult,
-            ReflectionQuestion,
+        from DeepResearch.src.datatypes.middleware import (
+            MiddlewareConfig as DTCfg,
+        )
+        from DeepResearch.src.datatypes.middleware import (
+            MiddlewareResult as DTRes,
         )
 
         assert MiddlewareConfig is DTCfg
@@ -340,8 +344,8 @@ class TestToolsCrossModuleImports:
     def test_tools_internal_dependencies(self):
         """Test that tool modules can import from each other correctly."""
         # Test that tools can import base classes
-        from DeepResearch.src.tools.mock_tools import MockTool
         from DeepResearch.src.tools.base import ToolSpec
+        from DeepResearch.src.tools.mock_tools import MockTool
 
         # This should work without circular imports
         assert MockTool is not None
@@ -350,8 +354,8 @@ class TestToolsCrossModuleImports:
     def test_datatypes_integration_imports(self):
         """Test that tools can import from datatypes module."""
         # This tests the import chain: tools -> datatypes
-        from DeepResearch.src.tools.base import ToolSpec
         from DeepResearch.src.datatypes import Document
+        from DeepResearch.src.tools.base import ToolSpec
 
         # If we get here without ImportError, the import chain works
         assert ToolSpec is not None
@@ -372,10 +376,10 @@ class TestToolsComplexImportChains:
     def test_full_tool_initialization_chain(self):
         """Test the complete import chain for tool initialization."""
         try:
+            from DeepResearch.src.datatypes import Document
             from DeepResearch.src.tools.base import ToolRegistry, ToolSpec
             from DeepResearch.src.tools.mock_tools import MockTool
             from DeepResearch.src.tools.workflow_tools import WorkflowTool
-            from DeepResearch.src.datatypes import Document
 
             # If all imports succeed, the chain is working
             assert ToolRegistry is not None
@@ -390,9 +394,9 @@ class TestToolsComplexImportChains:
     def test_tool_execution_chain(self):
         """Test the complete import chain for tool execution."""
         try:
+            from DeepResearch.src.agents.prime_executor import ToolExecutor
             from DeepResearch.src.datatypes.tools import ExecutionResult, ToolRunner
             from DeepResearch.src.tools.websearch_tools import WebSearchTool
-            from DeepResearch.src.agents.prime_executor import ToolExecutor
 
             # If all imports succeed, the chain is working
             assert ExecutionResult is not None

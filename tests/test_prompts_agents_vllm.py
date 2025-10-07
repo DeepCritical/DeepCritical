@@ -37,8 +37,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_base_agent_prompts(self, vllm_tester):
         """Test base agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            BASE_AGENT_SYSTEM_PROMPT,
             BASE_AGENT_INSTRUCTIONS,
+            BASE_AGENT_SYSTEM_PROMPT,
         )
 
         # Test base system prompt
@@ -70,8 +70,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_parser_agent_prompts(self, vllm_tester):
         """Test parser agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            PARSER_AGENT_SYSTEM_PROMPT,
             PARSER_AGENT_INSTRUCTIONS,
+            PARSER_AGENT_SYSTEM_PROMPT,
         )
 
         # Test parser system prompt
@@ -103,8 +103,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_planner_agent_prompts(self, vllm_tester):
         """Test planner agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            PLANNER_AGENT_SYSTEM_PROMPT,
             PLANNER_AGENT_INSTRUCTIONS,
+            PLANNER_AGENT_SYSTEM_PROMPT,
         )
 
         # Test planner system prompt
@@ -134,8 +134,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_executor_agent_prompts(self, vllm_tester):
         """Test executor agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            EXECUTOR_AGENT_SYSTEM_PROMPT,
             EXECUTOR_AGENT_INSTRUCTIONS,
+            EXECUTOR_AGENT_SYSTEM_PROMPT,
         )
 
         # Test executor system prompt
@@ -165,8 +165,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_search_agent_prompts(self, vllm_tester):
         """Test search agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            SEARCH_AGENT_SYSTEM_PROMPT,
             SEARCH_AGENT_INSTRUCTIONS,
+            SEARCH_AGENT_SYSTEM_PROMPT,
         )
 
         # Test search system prompt
@@ -196,8 +196,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_rag_agent_prompts(self, vllm_tester):
         """Test RAG agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            RAG_AGENT_SYSTEM_PROMPT,
             RAG_AGENT_INSTRUCTIONS,
+            RAG_AGENT_SYSTEM_PROMPT,
         )
 
         # Test RAG system prompt
@@ -227,8 +227,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_bioinformatics_agent_prompts(self, vllm_tester):
         """Test bioinformatics agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            BIOINFORMATICS_AGENT_SYSTEM_PROMPT,
             BIOINFORMATICS_AGENT_INSTRUCTIONS,
+            BIOINFORMATICS_AGENT_SYSTEM_PROMPT,
         )
 
         # Test bioinformatics system prompt
@@ -258,8 +258,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_deepsearch_agent_prompts(self, vllm_tester):
         """Test deepsearch agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            DEEPSEARCH_AGENT_SYSTEM_PROMPT,
             DEEPSEARCH_AGENT_INSTRUCTIONS,
+            DEEPSEARCH_AGENT_SYSTEM_PROMPT,
         )
 
         # Test deepsearch system prompt
@@ -289,8 +289,8 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
     def test_evaluator_agent_prompts(self, vllm_tester):
         """Test evaluator agent prompts specifically."""
         from DeepResearch.src.prompts.agents import (
-            EVALUATOR_AGENT_SYSTEM_PROMPT,
             EVALUATOR_AGENT_INSTRUCTIONS,
+            EVALUATOR_AGENT_SYSTEM_PROMPT,
         )
 
         # Test evaluator system prompt

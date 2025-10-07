@@ -14,20 +14,21 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
+
 import requests
 from bs4 import BeautifulSoup
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
 from ..datatypes.deepsearch import (
-    SearchTimeFilter,
-    MAX_URLS_PER_STEP,
     MAX_QUERIES_PER_STEP,
     MAX_REFLECT_PER_STEP,
-    SearchResult,
-    WebSearchRequest,
-    URLVisitResult,
+    MAX_URLS_PER_STEP,
     ReflectionQuestion,
+    SearchResult,
+    SearchTimeFilter,
+    URLVisitResult,
+    WebSearchRequest,
 )
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class WebSearchTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute web search."""
         ok, err = self.validate(params)
         if not ok:
@@ -103,9 +104,9 @@ class WebSearchTool(ToolRunner):
 
         except Exception as e:
             logger.error(f"Web search failed: {e}")
-            return ExecutionResult(success=False, error=f"Web search failed: {str(e)}")
+            return ExecutionResult(success=False, error=f"Web search failed: {e!s}")
 
-    def _perform_search(self, request: WebSearchRequest) -> List[SearchResult]:
+    def _perform_search(self, request: WebSearchRequest) -> list[SearchResult]:
         """Perform the actual web search."""
         # Mock implementation - in real implementation, this would use
         # Google Search API, Bing API, or other search engines
@@ -135,7 +136,7 @@ class WebSearchTool(ToolRunner):
         # Limit results
         return mock_results[: request.max_results]
 
-    def _result_to_dict(self, result: SearchResult) -> Dict[str, Any]:
+    def _result_to_dict(self, result: SearchResult) -> dict[str, Any]:
         """Convert SearchResult to dictionary."""
         return {
             "title": result.title,
@@ -166,7 +167,7 @@ class URLVisitTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute URL visits."""
         ok, err = self.validate(params)
         if not ok:
@@ -218,7 +219,7 @@ class URLVisitTool(ToolRunner):
 
         except Exception as e:
             logger.error(f"URL visit failed: {e}")
-            return ExecutionResult(success=False, error=f"URL visit failed: {str(e)}")
+            return ExecutionResult(success=False, error=f"URL visit failed: {e!s}")
 
     def _visit_url(
         self, url: str, max_content_length: int, timeout: int
@@ -305,7 +306,7 @@ class URLVisitTool(ToolRunner):
         lines = [line for line in lines if line]  # Remove empty lines
         return "\n".join(lines)
 
-    def _result_to_dict(self, result: URLVisitResult) -> Dict[str, Any]:
+    def _result_to_dict(self, result: URLVisitResult) -> dict[str, Any]:
         """Convert URLVisitResult to dictionary."""
         return {
             "url": result.url,
@@ -334,7 +335,7 @@ class ReflectionTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Generate reflection questions."""
         ok, err = self.validate(params)
         if not ok:
@@ -380,15 +381,15 @@ class ReflectionTool(ToolRunner):
         except Exception as e:
             logger.error(f"Reflection generation failed: {e}")
             return ExecutionResult(
-                success=False, error=f"Reflection generation failed: {str(e)}"
+                success=False, error=f"Reflection generation failed: {e!s}"
             )
 
     def _generate_reflection_questions(
         self,
         original_question: str,
         current_knowledge: str,
-        search_results: List[Dict[str, Any]],
-    ) -> List[ReflectionQuestion]:
+        search_results: list[dict[str, Any]],
+    ) -> list[ReflectionQuestion]:
         """Generate reflection questions based on current state."""
         questions = []
 
@@ -465,8 +466,8 @@ class ReflectionTool(ToolRunner):
         self,
         original_question: str,
         current_knowledge: str,
-        search_results: List[Dict[str, Any]],
-    ) -> List[str]:
+        search_results: list[dict[str, Any]],
+    ) -> list[str]:
         """Identify specific knowledge gaps."""
         gaps = []
 
@@ -490,7 +491,7 @@ class ReflectionTool(ToolRunner):
 
         return gaps
 
-    def _question_to_dict(self, question: ReflectionQuestion) -> Dict[str, Any]:
+    def _question_to_dict(self, question: ReflectionQuestion) -> dict[str, Any]:
         """Convert ReflectionQuestion to dictionary."""
         return {
             "question": question.question,
@@ -517,7 +518,7 @@ class AnswerGeneratorTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Generate comprehensive answer."""
         ok, err = self.validate(params)
         if not ok:
@@ -564,16 +565,16 @@ class AnswerGeneratorTool(ToolRunner):
         except Exception as e:
             logger.error(f"Answer generation failed: {e}")
             return ExecutionResult(
-                success=False, error=f"Answer generation failed: {str(e)}"
+                success=False, error=f"Answer generation failed: {e!s}"
             )
 
     def _generate_answer(
         self,
         original_question: str,
-        collected_knowledge: Dict[str, Any],
-        search_results: List[Dict[str, Any]],
-        visited_urls: List[Dict[str, Any]],
-    ) -> tuple[str, float, List[Dict[str, Any]]]:
+        collected_knowledge: dict[str, Any],
+        search_results: list[dict[str, Any]],
+        visited_urls: list[dict[str, Any]],
+    ) -> tuple[str, float, list[dict[str, Any]]]:
         """Generate comprehensive answer from collected information."""
 
         # Build answer components
@@ -655,7 +656,7 @@ class AnswerGeneratorTool(ToolRunner):
         return final_answer, overall_confidence, sources
 
     def _extract_main_answer(
-        self, collected_knowledge: Dict[str, Any], question: str
+        self, collected_knowledge: dict[str, Any], question: str
     ) -> str:
         """Extract main answer from collected knowledge."""
         # This would use AI to synthesize the collected knowledge
@@ -695,7 +696,7 @@ class QueryRewriterTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Rewrite search queries."""
         ok, err = self.validate(params)
         if not ok:
@@ -729,12 +730,12 @@ class QueryRewriterTool(ToolRunner):
         except Exception as e:
             logger.error(f"Query rewriting failed: {e}")
             return ExecutionResult(
-                success=False, error=f"Query rewriting failed: {str(e)}"
+                success=False, error=f"Query rewriting failed: {e!s}"
             )
 
     def _rewrite_queries(
-        self, original_query: str, search_context: str, target_language: Optional[str]
-    ) -> List[Dict[str, Any]]:
+        self, original_query: str, search_context: str, target_language: str | None
+    ) -> list[dict[str, Any]]:
         """Rewrite queries for better search results."""
         queries = []
 
@@ -782,7 +783,7 @@ class QueryRewriterTool(ToolRunner):
             return " ".join(words[:3])
         return query
 
-    def _generate_search_strategies(self, original_query: str) -> List[str]:
+    def _generate_search_strategies(self, original_query: str) -> list[str]:
         """Generate search strategies for the query."""
         strategies = [
             "Direct keyword search",
@@ -808,7 +809,7 @@ class DeepSearchTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         query = params.get("query", "")
         max_steps = int(params.get("max_steps", "10"))
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 
-def get_pydantic_ai_config() -> Dict[str, Any]:
+def get_pydantic_ai_config() -> dict[str, Any]:
     """Get configuration from Hydra or environment."""
     try:
         # Lazy import Hydra/OmegaConf if available via app context; fall back to env-less defaults
@@ -20,23 +20,23 @@ def get_pydantic_ai_config() -> Dict[str, Any]:
         return {}
 
 
-def build_builtin_tools(cfg: Dict[str, Any]) -> List[Any]:
+def build_builtin_tools(cfg: dict[str, Any]) -> list[Any]:
     """Build Pydantic AI builtin tools from configuration."""
     try:
         # Import from Pydantic AI (exported at package root)
-        from pydantic_ai import WebSearchTool, CodeExecutionTool, UrlContextTool
+        from pydantic_ai import CodeExecutionTool, UrlContextTool, WebSearchTool
     except Exception:
         return []
 
     pyd_cfg = (cfg or {}).get("pyd_ai", {})
     builtin_cfg = pyd_cfg.get("builtin_tools", {})
 
-    tools: List[Any] = []
+    tools: list[Any] = []
 
     # Web Search
     ws_cfg = builtin_cfg.get("web_search", {})
     if ws_cfg.get("enabled", True):
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if ws_cfg.get("search_context_size"):
             kwargs["search_context_size"] = ws_cfg.get("search_context_size")
         if ws_cfg.get("user_location"):
@@ -71,9 +71,9 @@ def build_builtin_tools(cfg: Dict[str, Any]) -> List[Any]:
     return tools
 
 
-def build_toolsets(cfg: Dict[str, Any]) -> List[Any]:
+def build_toolsets(cfg: dict[str, Any]) -> list[Any]:
     """Build Pydantic AI toolsets from configuration."""
-    toolsets: List[Any] = []
+    toolsets: list[Any] = []
     pyd_cfg = (cfg or {}).get("pyd_ai", {})
     ts_cfg = pyd_cfg.get("toolsets", {})
 
@@ -108,9 +108,9 @@ def build_toolsets(cfg: Dict[str, Any]) -> List[Any]:
 
 
 def build_agent(
-    cfg: Dict[str, Any],
-    builtin_tools: Optional[List[Any]] = None,
-    toolsets: Optional[List[Any]] = None,
+    cfg: dict[str, Any],
+    builtin_tools: list[Any] | None = None,
+    toolsets: list[Any] | None = None,
 ):
     """Build Pydantic AI agent from configuration."""
     try:
@@ -145,7 +145,7 @@ def build_agent(
     return agent, pyd_cfg
 
 
-def run_agent_sync(agent, prompt: str) -> Optional[Any]:
+def run_agent_sync(agent, prompt: str) -> Any | None:
     """Run agent synchronously and return result."""
     try:
         return agent.run_sync(prompt)

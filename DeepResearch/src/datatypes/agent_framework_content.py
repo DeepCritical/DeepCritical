@@ -7,8 +7,8 @@ This module provides content types for AI agent interactions with minimal extern
 import json
 import re
 from typing import Any, Dict, List, Literal, Optional, Union
-from pydantic import BaseModel, field_validator
 
+from pydantic import BaseModel, field_validator
 
 # Constants
 URI_PATTERN = re.compile(
@@ -47,28 +47,28 @@ class TextSpanRegion(BaseModel):
     """Represents a region of text that has been annotated."""
 
     type: Literal["text_span"] = "text_span"
-    start_index: Optional[int] = None
-    end_index: Optional[int] = None
+    start_index: int | None = None
+    end_index: int | None = None
 
 
 class CitationAnnotation(BaseModel):
     """Represents a citation annotation."""
 
     type: Literal["citation"] = "citation"
-    title: Optional[str] = None
-    url: Optional[str] = None
-    file_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    snippet: Optional[str] = None
-    annotated_regions: Optional[List[TextSpanRegion]] = None
+    title: str | None = None
+    url: str | None = None
+    file_id: str | None = None
+    tool_name: str | None = None
+    snippet: str | None = None
+    annotated_regions: list[TextSpanRegion] | None = None
 
 
 class BaseContent(BaseModel):
     """Base class for all content types."""
 
-    annotations: Optional[List[CitationAnnotation]] = None
-    additional_properties: Optional[Dict[str, Any]] = None
-    raw_representation: Optional[Any] = None
+    annotations: list[CitationAnnotation] | None = None
+    additional_properties: dict[str, Any] | None = None
+    raw_representation: Any | None = None
 
 
 class TextContent(BaseContent):
@@ -144,7 +144,7 @@ class DataContent(BaseContent):
 
     type: Literal["data"] = "data"
     uri: str
-    media_type: Optional[str] = None
+    media_type: str | None = None
 
     @field_validator("uri", mode="before")
     @classmethod
@@ -205,9 +205,9 @@ class ErrorContent(BaseContent):
     """Represents an error."""
 
     type: Literal["error"] = "error"
-    message: Optional[str] = None
-    error_code: Optional[str] = None
-    details: Optional[str] = None
+    message: str | None = None
+    error_code: str | None = None
+    details: str | None = None
 
     def __str__(self) -> str:
         """Returns a string representation of the error."""
@@ -224,10 +224,10 @@ class FunctionCallContent(BaseContent):
     type: Literal["function_call"] = "function_call"
     call_id: str
     name: str
-    arguments: Optional[Union[str, Dict[str, Any]]] = None
-    exception: Optional[Any] = None  # Exception - avoiding Pydantic schema issues
+    arguments: str | dict[str, Any] | None = None
+    exception: Any | None = None  # Exception - avoiding Pydantic schema issues
 
-    def parse_arguments(self) -> Optional[Dict[str, Any]]:
+    def parse_arguments(self) -> dict[str, Any] | None:
         """Parse arguments from string or return dict."""
         if isinstance(self.arguments, str):
             try:
@@ -245,8 +245,8 @@ class FunctionResultContent(BaseContent):
 
     type: Literal["function_result"] = "function_result"
     call_id: str
-    result: Optional[Any] = None
-    exception: Optional[Any] = None  # Exception - avoiding Pydantic schema issues
+    result: Any | None = None
+    exception: Any | None = None  # Exception - avoiding Pydantic schema issues
 
 
 class UsageContent(BaseContent):
@@ -314,7 +314,7 @@ Content = Union[
 
 
 def prepare_function_call_results(
-    content: Union[Content, Any, List[Union[Content, Any]]],
+    content: Content | Any | list[Content | Any],
 ) -> str:
     """Prepare the values of the function call results."""
     if isinstance(content, BaseContent):

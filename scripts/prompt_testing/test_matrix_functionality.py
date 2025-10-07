@@ -107,7 +107,7 @@ def test_json_test_data():
     if test_data_file.exists():
         import json
 
-        with open(test_data_file, "r") as f:
+        with open(test_data_file) as f:
             data = json.load(f)
 
         assert "test_scenarios" in data
@@ -137,15 +137,15 @@ def main():
         print("\n📋 Usage Examples:")
         print("  # Run full test matrix")
         print("  ./scripts/prompt_testing/vllm_test_matrix.sh --full-matrix")
-        print("")
+        print()
         print("  # Run specific configurations")
         print("  ./scripts/prompt_testing/vllm_test_matrix.sh baseline fast quality")
-        print("")
+        print()
         print("  # Test specific modules")
         print(
             "  ./scripts/prompt_testing/vllm_test_matrix.sh --modules agents,code_exec baseline"
         )
-        print("")
+        print()
         print("  # Use Hydra configuration")
         print(
             "  ./scripts/prompt_testing/vllm_test_matrix.sh --full-matrix --use-matrix-config"

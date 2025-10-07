@@ -8,8 +8,8 @@ collaborative, sequential, hierarchical, and peer-to-peer coordination strategie
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,12 +44,12 @@ class AgentState(BaseModel):
     agent_id: str = Field(..., description="Agent identifier")
     role: str = Field(..., description="Agent role")
     status: str = Field("pending", description="Agent status")
-    current_task: Optional[str] = Field(None, description="Current task")
-    input_data: Dict[str, Any] = Field(default_factory=dict, description="Input data")
-    output_data: Dict[str, Any] = Field(default_factory=dict, description="Output data")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
-    start_time: Optional[datetime] = Field(None, description="Start time")
-    end_time: Optional[datetime] = Field(None, description="End time")
+    current_task: str | None = Field(None, description="Current task")
+    input_data: dict[str, Any] = Field(default_factory=dict, description="Input data")
+    output_data: dict[str, Any] = Field(default_factory=dict, description="Output data")
+    error_message: str | None = Field(None, description="Error message if failed")
+    start_time: datetime | None = Field(None, description="Start time")
+    end_time: datetime | None = Field(None, description="End time")
     iteration_count: int = Field(0, description="Number of iterations")
     max_iterations: int = Field(10, description="Maximum iterations")
 
@@ -59,11 +59,11 @@ class CoordinationMessage(BaseModel):
 
     message_id: str = Field(..., description="Message identifier")
     sender_id: str = Field(..., description="Sender agent ID")
-    receiver_id: Optional[str] = Field(
+    receiver_id: str | None = Field(
         None, description="Receiver agent ID (None for broadcast)"
     )
     message_type: str = Field(..., description="Message type")
-    content: Dict[str, Any] = Field(..., description="Message content")
+    content: dict[str, Any] = Field(..., description="Message content")
     timestamp: datetime = Field(
         default_factory=datetime.now, description="Message timestamp"
     )
@@ -78,11 +78,11 @@ class CoordinationRound(BaseModel):
     start_time: datetime = Field(
         default_factory=datetime.now, description="Round start time"
     )
-    end_time: Optional[datetime] = Field(None, description="Round end time")
-    messages: List[CoordinationMessage] = Field(
+    end_time: datetime | None = Field(None, description="Round end time")
+    messages: list[CoordinationMessage] = Field(
         default_factory=list, description="Messages in this round"
     )
-    agent_states: Dict[str, AgentState] = Field(
+    agent_states: dict[str, AgentState] = Field(
         default_factory=dict, description="Agent states"
     )
     consensus_reached: bool = Field(False, description="Whether consensus was reached")
@@ -97,16 +97,16 @@ class CoordinationResult(BaseModel):
     strategy: CoordinationStrategy = Field(..., description="Coordination strategy")
     success: bool = Field(..., description="Whether coordination was successful")
     total_rounds: int = Field(..., description="Total coordination rounds")
-    final_result: Dict[str, Any] = Field(..., description="Final coordination result")
-    agent_results: Dict[str, Dict[str, Any]] = Field(
+    final_result: dict[str, Any] = Field(..., description="Final coordination result")
+    agent_results: dict[str, dict[str, Any]] = Field(
         default_factory=dict, description="Individual agent results"
     )
     consensus_score: float = Field(0.0, description="Final consensus score")
-    coordination_rounds: List[CoordinationRound] = Field(
+    coordination_rounds: list[CoordinationRound] = Field(
         default_factory=list, description="Coordination rounds"
     )
     execution_time: float = Field(0.0, description="Total execution time")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
+    error_message: str | None = Field(None, description="Error message if failed")
 
 
 class MultiAgentCoordinatorConfig(BaseModel):

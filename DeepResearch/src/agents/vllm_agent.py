@@ -10,13 +10,13 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, List, Optional, Union
 
-from ..datatypes.vllm_agent import VLLMAgentDependencies, VLLMAgentConfig
+from ..datatypes.vllm_agent import VLLMAgentConfig, VLLMAgentDependencies
 from ..datatypes.vllm_dataclass import (
     ChatCompletionRequest,
     CompletionRequest,
     EmbeddingRequest,
-    VllmConfig,
     QuantizationMethod,
+    VllmConfig,
 )
 from ..utils.vllm_client import VLLMClient
 
@@ -44,7 +44,7 @@ class VLLMAgent:
             raise
 
     async def chat(
-        self, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs
+        self, messages: list[dict[str, str]], model: str | None = None, **kwargs
     ) -> str:
         """Chat with the VLLM model."""
         model = model or self.config.default_model
@@ -61,7 +61,7 @@ class VLLMAgent:
         response = await self.client.chat_completions(request)
         return response.choices[0].message.content
 
-    async def complete(self, prompt: str, model: Optional[str] = None, **kwargs) -> str:
+    async def complete(self, prompt: str, model: str | None = None, **kwargs) -> str:
         """Complete text with the VLLM model."""
         model = model or self.config.default_model
 
@@ -78,8 +78,8 @@ class VLLMAgent:
         return response.choices[0].text
 
     async def embed(
-        self, texts: Union[str, List[str]], model: Optional[str] = None, **kwargs
-    ) -> List[List[float]]:
+        self, texts: str | list[str], model: str | None = None, **kwargs
+    ) -> list[list[float]]:
         """Generate embeddings for texts."""
         if isinstance(texts, str):
             texts = [texts]
@@ -94,7 +94,7 @@ class VLLMAgent:
         return [item.embedding for item in response.data]
 
     async def chat_stream(
-        self, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs
+        self, messages: list[dict[str, str]], model: str | None = None, **kwargs
     ) -> str:
         """Stream chat completion."""
         model = model or self.config.default_model
@@ -119,6 +119,7 @@ class VLLMAgent:
     def to_pydantic_ai_agent(self):
         """Convert to Pydantic AI agent."""
         from pydantic_ai import Agent
+
         from ..prompts.vllm_agent import VLLMAgentPrompts
 
         agent = Agent(
@@ -130,7 +131,7 @@ class VLLMAgent:
         # Chat completion tool
         @agent.tool
         async def chat_completion(
-            ctx, messages: List[Dict[str, str]], model: Optional[str] = None, **kwargs
+            ctx, messages: list[dict[str, str]], model: str | None = None, **kwargs
         ) -> str:
             """Chat with the VLLM model."""
             return (
@@ -148,7 +149,7 @@ class VLLMAgent:
         # Text completion tool
         @agent.tool
         async def text_completion(
-            ctx, prompt: str, model: Optional[str] = None, **kwargs
+            ctx, prompt: str, model: str | None = None, **kwargs
         ) -> str:
             """Complete text with the VLLM model."""
             return (
@@ -164,8 +165,8 @@ class VLLMAgent:
         # Embedding generation tool
         @agent.tool
         async def generate_embeddings(
-            ctx, texts: Union[str, List[str]], model: Optional[str] = None, **kwargs
-        ) -> List[List[float]]:
+            ctx, texts: str | list[str], model: str | None = None, **kwargs
+        ) -> list[list[float]]:
             """Generate embeddings using VLLM."""
             if isinstance(texts, str):
                 texts = [texts]
@@ -191,22 +192,20 @@ class VLLMAgent:
 
         # Model information tool
         @agent.tool
-        async def get_model_info(ctx, model_name: str) -> Dict[str, Any]:
+        async def get_model_info(ctx, model_name: str) -> dict[str, Any]:
             """Get information about a specific model."""
             return await ctx.deps.vllm_client.get_model_info(model_name)
 
         # List models tool
         @agent.tool
-        async def list_models(ctx) -> List[str]:
+        async def list_models(ctx) -> list[str]:
             """List available models."""
             response = await ctx.deps.vllm_client.models()
             return [model.id for model in response.data]
 
         # Tokenization tools
         @agent.tool
-        async def tokenize(
-            ctx, text: str, model: Optional[str] = None
-        ) -> Dict[str, Any]:
+        async def tokenize(ctx, text: str, model: str | None = None) -> dict[str, Any]:
             """Tokenize text."""
             return await ctx.deps.vllm_client.tokenize(
                 text, model or ctx.deps.default_model
@@ -214,8 +213,8 @@ class VLLMAgent:
 
         @agent.tool
         async def detokenize(
-            ctx, token_ids: List[int], model: Optional[str] = None
-        ) -> Dict[str, Any]:
+            ctx, token_ids: list[int], model: str | None = None
+        ) -> dict[str, Any]:
             """Detokenize token IDs."""
             return await ctx.deps.vllm_client.detokenize(
                 token_ids, model or ctx.deps.default_model
@@ -223,7 +222,7 @@ class VLLMAgent:
 
         # Health check tool
         @agent.tool
-        async def health_check(ctx) -> Dict[str, Any]:
+        async def health_check(ctx) -> dict[str, Any]:
             """Check server health."""
             return await ctx.deps.vllm_client.health()
 
@@ -233,8 +232,8 @@ class VLLMAgent:
 def create_vllm_agent(
     model_name: str = "microsoft/DialoGPT-medium",
     base_url: str = "http://localhost:8000",
-    api_key: Optional[str] = None,
-    embedding_model: Optional[str] = None,
+    api_key: str | None = None,
+    embedding_model: str | None = None,
     **kwargs,
 ) -> VLLMAgent:
     """Create a VLLM agent with default configuration."""
@@ -251,7 +250,7 @@ def create_vllm_agent(
 def create_advanced_vllm_agent(
     model_name: str = "microsoft/DialoGPT-medium",
     base_url: str = "http://localhost:8000",
-    quantization: Optional[QuantizationMethod] = None,
+    quantization: QuantizationMethod | None = None,
     tensor_parallel_size: int = 1,
     gpu_memory_utilization: float = 0.9,
     **kwargs,
@@ -260,12 +259,12 @@ def create_advanced_vllm_agent(
 
     # Create VLLM configuration
     from ..datatypes.vllm_dataclass import (
-        ModelConfig,
         CacheConfig,
+        DeviceConfig,
         LoadConfig,
+        ModelConfig,
         ParallelConfig,
         SchedulerConfig,
-        DeviceConfig,
     )
 
     model_config = ModelConfig(

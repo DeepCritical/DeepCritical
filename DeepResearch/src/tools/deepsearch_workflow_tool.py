@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # from ..statemachines.deepsearch_workflow import run_deepsearch_workflow
 
@@ -41,7 +41,7 @@ class DeepSearchWorkflowTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute complete deep search workflow."""
         ok, err = self.validate(params)
         if not ok:
@@ -99,10 +99,10 @@ class DeepSearchWorkflowTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, data={}, error=f"Deep search workflow failed: {str(e)}"
+                success=False, data={}, error=f"Deep search workflow failed: {e!s}"
             )
 
-    def _parse_workflow_output(self, output: str) -> Dict[str, Any]:
+    def _parse_workflow_output(self, output: str) -> dict[str, Any]:
         """Parse the workflow output to extract structured information."""
         lines = output.split("\n")
         parsed = {
@@ -193,7 +193,7 @@ class DeepSearchAgentTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute deep search with agent behavior."""
         ok, err = self.validate(params)
         if not ok:
@@ -242,12 +242,12 @@ class DeepSearchAgentTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, data={}, error=f"Deep search agent failed: {str(e)}"
+                success=False, data={}, error=f"Deep search agent failed: {e!s}"
             )
 
     def _create_agent_config(
         self, personality: str, depth: str, format_type: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create configuration based on agent parameters."""
         config = {
             "deepsearch": {
@@ -327,7 +327,7 @@ class DeepSearchAgentTool(ToolRunner):
 
         return "\n".join(enhanced_lines)
 
-    def _parse_agent_output(self, output: str) -> Dict[str, Any]:
+    def _parse_agent_output(self, output: str) -> dict[str, Any]:
         """Parse agent output to extract structured information."""
         return {
             "research_notes": [

@@ -12,22 +12,23 @@ This script demonstrates all the workflow pattern implementations including:
 
 import asyncio
 
+from DeepResearch.src.datatypes.agents import AgentType
+from DeepResearch.src.datatypes.workflow_patterns import (
+    MessageType,
+    create_interaction_state,
+)
+
 # Prefer absolute imports for static checkers
 from DeepResearch.src.workflow_patterns import (
     InteractionPattern,
-    WorkflowPatternUtils,
     WorkflowPatternExecutor,
-    execute_collaborative_workflow,
-    execute_sequential_workflow,
-    execute_hierarchical_workflow,
-    demonstrate_workflow_patterns,
     WorkflowPatternFactory,
+    WorkflowPatternUtils,
     agent_registry,
-)
-from DeepResearch.src.datatypes.agents import AgentType
-from DeepResearch.src.datatypes.workflow_patterns import (
-    create_interaction_state,
-    MessageType,
+    demonstrate_workflow_patterns,
+    execute_collaborative_workflow,
+    execute_hierarchical_workflow,
+    execute_sequential_workflow,
 )
 
 
@@ -50,35 +51,34 @@ class MockAgentExecutor:
                 "confidence": 0.9,
                 "entities": ["entity1", "entity2"],
             }
-        elif self.agent_type == AgentType.PLANNER:
+        if self.agent_type == AgentType.PLANNER:
             return {
                 "result": f"Created plan for {self.agent_id}",
                 "confidence": 0.85,
                 "steps": ["step1", "step2", "step3"],
             }
-        elif self.agent_type == AgentType.SEARCH:
+        if self.agent_type == AgentType.SEARCH:
             return {
                 "result": f"Performed search for {self.agent_id}",
                 "confidence": 0.8,
                 "results": ["result1", "result2"],
             }
-        elif self.agent_type == AgentType.EXECUTOR:
+        if self.agent_type == AgentType.EXECUTOR:
             return {
                 "result": f"Executed task for {self.agent_id}",
                 "confidence": 0.9,
                 "output": "Task completed successfully",
             }
-        elif self.agent_type == AgentType.ORCHESTRATOR:
+        if self.agent_type == AgentType.ORCHESTRATOR:
             return {
                 "result": f"Orchestrated workflow for {self.agent_id}",
                 "confidence": 0.95,
                 "coordination": "Workflow coordinated",
             }
-        else:
-            return {
-                "result": f"Generic processing for {self.agent_id}",
-                "confidence": 0.7,
-            }
+        return {
+            "result": f"Generic processing for {self.agent_id}",
+            "confidence": 0.7,
+        }
 
 
 async def demonstrate_advanced_patterns():
@@ -165,8 +165,10 @@ async def demonstrate_advanced_patterns():
 
     # 5. Test executor with custom config
     print("\n5. Testing Workflow Executor with Custom Config:")
-    from DeepResearch.src.workflow_patterns import WorkflowPatternConfig
-    from DeepResearch.src.workflow_patterns import InteractionPattern
+    from DeepResearch.src.workflow_patterns import (
+        InteractionPattern,
+        WorkflowPatternConfig,
+    )
 
     config = WorkflowPatternConfig(
         pattern=InteractionPattern.COLLABORATIVE,

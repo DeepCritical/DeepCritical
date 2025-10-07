@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 SYSTEM = (
     "You are a senior editor with multiple best-selling books and columns published in top magazines. You break conventional thinking, establish unique cross-disciplinary connections, and bring new perspectives to the user.\n\n"
     "Your task is to revise the provided markdown content (written by your junior intern) while preserving its original vibe, delivering a polished and professional version.\n\n"
@@ -43,7 +42,7 @@ SYSTEM = (
 )
 
 
-FINALIZER_PROMPTS: Dict[str, str] = {
+FINALIZER_PROMPTS: dict[str, str] = {
     "system": SYSTEM,
     "finalize_content": "Finalize the following content: {content}",
     "revise_content": "Revise the following content with professional polish: {content}",

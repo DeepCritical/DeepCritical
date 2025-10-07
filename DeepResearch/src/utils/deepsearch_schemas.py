@@ -7,10 +7,10 @@ for deep search functionality based on Jina AI DeepResearch patterns.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional, List
-import re
+from typing import Any, Dict, List, Optional
 
 
 class EvaluationType(str, Enum):
@@ -73,7 +73,7 @@ class DeepSearchSchemas:
     def __init__(self):
         self.language_style: str = "formal English"
         self.language_code: str = "en"
-        self.search_language_code: Optional[str] = None
+        self.search_language_code: str | None = None
 
         # Language mapping equivalent to TypeScript version
         self.language_iso6391_map = {
@@ -186,30 +186,28 @@ Evaluation: {
         # Simple pattern matching for common languages
         if re.search(r"[\u4e00-\u9fff]", query):  # Chinese characters
             return LanguageDetection("zh", "formal Chinese")
-        elif re.search(r"[\u3040-\u309f\u30a0-\u30ff]", query):  # Japanese
+        if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", query):  # Japanese
             return LanguageDetection("ja", "formal Japanese")
-        elif re.search(r"[äöüß]", query):  # German
+        if re.search(r"[äöüß]", query):  # German
             return LanguageDetection("de", "formal German")
-        elif re.search(r"[àâäéèêëïîôöùûüÿç]", query):  # French
+        if re.search(r"[àâäéèêëïîôöùûüÿç]", query):  # French
             return LanguageDetection("fr", "formal French")
-        elif re.search(r"[ñáéíóúü]", query):  # Spanish
+        if re.search(r"[ñáéíóúü]", query):  # Spanish
             return LanguageDetection("es", "formal Spanish")
-        else:
-            # Default to English with style detection
-            if any(word in query_lower for word in ["fam", "tmrw", "asap", "pls"]):
-                return LanguageDetection("en", "casual English")
-            elif any(
-                word in query_lower for word in ["please", "could", "would", "analysis"]
-            ):
-                return LanguageDetection("en", "formal English")
-            else:
-                return LanguageDetection("en", "neutral English")
+        # Default to English with style detection
+        if any(word in query_lower for word in ["fam", "tmrw", "asap", "pls"]):
+            return LanguageDetection("en", "casual English")
+        if any(
+            word in query_lower for word in ["please", "could", "would", "analysis"]
+        ):
+            return LanguageDetection("en", "formal English")
+        return LanguageDetection("en", "neutral English")
 
     def get_language_prompt_text(self) -> str:
         """Get language prompt text for use in other schemas."""
         return f'Must in the first-person in "lang:{self.language_code}"; in the style of "{self.language_style}".'
 
-    def get_language_schema(self) -> Dict[str, Any]:
+    def get_language_schema(self) -> dict[str, Any]:
         """Get language detection schema."""
         return {
             "langCode": {
@@ -224,7 +222,7 @@ Evaluation: {
             },
         }
 
-    def get_question_evaluate_schema(self) -> Dict[str, Any]:
+    def get_question_evaluate_schema(self) -> dict[str, Any]:
         """Get question evaluation schema."""
         return {
             "think": {
@@ -238,7 +236,7 @@ Evaluation: {
             "needsCompleteness": {"type": "boolean"},
         }
 
-    def get_code_generator_schema(self) -> Dict[str, Any]:
+    def get_code_generator_schema(self) -> dict[str, Any]:
         """Get code generator schema."""
         return {
             "think": {
@@ -252,7 +250,7 @@ Evaluation: {
             },
         }
 
-    def get_error_analysis_schema(self) -> Dict[str, Any]:
+    def get_error_analysis_schema(self) -> dict[str, Any]:
         """Get error analysis schema."""
         return {
             "recap": {
@@ -272,7 +270,7 @@ Evaluation: {
             },
         }
 
-    def get_research_plan_schema(self, team_size: int = 3) -> Dict[str, Any]:
+    def get_research_plan_schema(self, team_size: int = 3) -> dict[str, Any]:
         """Get research plan schema."""
         return {
             "think": {
@@ -293,7 +291,7 @@ Evaluation: {
             },
         }
 
-    def get_serp_cluster_schema(self) -> Dict[str, Any]:
+    def get_serp_cluster_schema(self) -> dict[str, Any]:
         """Get SERP clustering schema."""
         return {
             "think": {
@@ -332,7 +330,7 @@ Evaluation: {
             },
         }
 
-    def get_query_rewriter_schema(self) -> Dict[str, Any]:
+    def get_query_rewriter_schema(self) -> dict[str, Any]:
         """Get query rewriter schema."""
         return {
             "think": {
@@ -367,7 +365,7 @@ Evaluation: {
             },
         }
 
-    def get_evaluator_schema(self, eval_type: EvaluationType) -> Dict[str, Any]:
+    def get_evaluator_schema(self, eval_type: EvaluationType) -> dict[str, Any]:
         """Get evaluator schema based on evaluation type."""
         base_schema_before = {
             "think": {
@@ -389,7 +387,7 @@ Evaluation: {
                 **base_schema_before,
                 **base_schema_after,
             }
-        elif eval_type == EvaluationType.FRESHNESS:
+        if eval_type == EvaluationType.FRESHNESS:
             return {
                 "type": {"const": "freshness"},
                 **base_schema_before,
@@ -410,7 +408,7 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        elif eval_type == EvaluationType.PLURALITY:
+        if eval_type == EvaluationType.PLURALITY:
             return {
                 "type": {"const": "plurality"},
                 **base_schema_before,
@@ -430,7 +428,7 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        elif eval_type == EvaluationType.ATTRIBUTION:
+        if eval_type == EvaluationType.ATTRIBUTION:
             return {
                 "type": {"const": "attribution"},
                 **base_schema_before,
@@ -441,7 +439,7 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        elif eval_type == EvaluationType.COMPLETENESS:
+        if eval_type == EvaluationType.COMPLETENESS:
             return {
                 "type": {"const": "completeness"},
                 **base_schema_before,
@@ -463,7 +461,7 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        elif eval_type == EvaluationType.STRICT:
+        if eval_type == EvaluationType.STRICT:
             return {
                 "type": {"const": "strict"},
                 **base_schema_before,
@@ -474,8 +472,7 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        else:
-            raise ValueError(f"Unknown evaluation type: {eval_type}")
+        raise ValueError(f"Unknown evaluation type: {eval_type}")
 
     def get_agent_schema(
         self,
@@ -484,8 +481,8 @@ Evaluation: {
         allow_answer: bool = True,
         allow_search: bool = True,
         allow_coding: bool = True,
-        current_question: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        current_question: str | None = None,
+    ) -> dict[str, Any]:
         """Get agent action schema."""
         action_schemas = {}
 
@@ -607,7 +604,7 @@ class DeepSearchQuery:
     max_results: int = 10
     search_type: str = "web"
     include_images: bool = False
-    filters: Optional[Dict[str, Any]] = None
+    filters: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.filters is None:
@@ -619,10 +616,10 @@ class DeepSearchResult:
     """Result from deep search operations."""
 
     query: str
-    results: List[Dict[str, Any]]
+    results: list[dict[str, Any]]
     total_found: int
     execution_time: float
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.metadata is None:

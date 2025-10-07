@@ -10,76 +10,73 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import Any, Dict, List, Optional, Union, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any, Dict, List, Optional, Union
+
 import aiohttp
 from pydantic import BaseModel, Field
+
+from ..datatypes.rag import VLLMConfig as RAGVLLMConfig
 from ..datatypes.vllm_dataclass import (
-    # Core configurations
-    VllmConfig,
-    ModelConfig,
-    CacheConfig,
-    ParallelConfig,
-    SchedulerConfig,
-    DeviceConfig,
-    ObservabilityConfig,
-    ChatCompletionRequest,
-    ChatCompletionResponse,
-    ChatCompletionChoice,
-    ChatMessage,
-    CompletionRequest,
-    CompletionResponse,
-    CompletionChoice,
-    EmbeddingRequest,
-    EmbeddingResponse,
-    EmbeddingData,
-    UsageStats,
-    ModelInfo,
-    ModelListResponse,
-    HealthCheck,
     BatchRequest,
     BatchResponse,
+    CacheConfig,
+    ChatCompletionChoice,
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    ChatMessage,
+    CompletionChoice,
+    CompletionRequest,
+    CompletionResponse,
+    DeviceConfig,
+    EmbeddingData,
+    EmbeddingRequest,
+    EmbeddingResponse,
+    HealthCheck,
+    ModelConfig,
+    ModelInfo,
+    ModelListResponse,
+    ObservabilityConfig,
+    ParallelConfig,
     # Sampling parameters
     QuantizationMethod,
+    SchedulerConfig,
+    UsageStats,
+    # Core configurations
+    VllmConfig,
 )
-from ..datatypes.rag import VLLMConfig as RAGVLLMConfig
 
 
 class VLLMClientError(Exception):
     """Base exception for VLLM client errors."""
 
-    pass
-
 
 class VLLMConnectionError(VLLMClientError):
     """Connection-related errors."""
 
-    pass
-
 
 class VLLMAPIError(VLLMClientError):
     """API-related errors."""
-
-    pass
 
 
 class VLLMClient(BaseModel):
     """Comprehensive VLLM client with OpenAI API compatibility."""
 
     base_url: str = Field("http://localhost:8000", description="VLLM server base URL")
-    api_key: Optional[str] = Field(None, description="API key for authentication")
+    api_key: str | None = Field(None, description="API key for authentication")
     timeout: float = Field(60.0, description="Request timeout in seconds")
     max_retries: int = Field(3, description="Maximum number of retries")
     retry_delay: float = Field(1.0, description="Delay between retries in seconds")
 
     # VLLM-specific configuration
-    vllm_config: Optional[VllmConfig] = Field(None, description="VLLM configuration")
+    vllm_config: VllmConfig | None = Field(None, description="VLLM configuration")
 
     class Config:
         arbitrary_types_allowed = True
 
     def __init__(self, **data):
         super().__init__(**data)
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -105,9 +102,9 @@ class VLLMClient(BaseModel):
         self,
         method: str,
         endpoint: str,
-        payload: Optional[Dict[str, Any]] = None,
+        payload: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make HTTP request to VLLM server with retry logic."""
         session = await self._get_session()
         url = f"{self.base_url}/v1/{endpoint}"
@@ -124,7 +121,7 @@ class VLLMClient(BaseModel):
                 ) as response:
                     if response.status == 200:
                         return await response.json()
-                    elif response.status == 429:  # Rate limited
+                    if response.status == 429:  # Rate limited
                         if attempt < self.max_retries - 1:
                             await asyncio.sleep(self.retry_delay * (2**attempt))
                             continue
@@ -238,17 +235,17 @@ class VLLMClient(BaseModel):
         response_data = await self._make_request("GET", f"models/{model_name}")
         return ModelInfo(**response_data)
 
-    async def tokenize(self, text: str, model: str) -> Dict[str, Any]:
+    async def tokenize(self, text: str, model: str) -> dict[str, Any]:
         """Tokenize text using the specified model."""
         payload = {"text": text, "model": model}
         return await self._make_request("POST", "tokenize", payload)
 
-    async def detokenize(self, token_ids: List[int], model: str) -> Dict[str, Any]:
+    async def detokenize(self, token_ids: list[int], model: str) -> dict[str, Any]:
         """Detokenize token IDs using the specified model."""
         payload = {"tokens": token_ids, "model": model}
         return await self._make_request("POST", "detokenize", payload)
 
-    async def get_metrics(self) -> Dict[str, Any]:
+    async def get_metrics(self) -> dict[str, Any]:
         """Get server metrics (VLLM-specific)."""
         return await self._make_request("GET", "metrics")
 
@@ -368,22 +365,22 @@ class VLLMClient(BaseModel):
     # VLLM Configuration and Management
     # ============================================================================
 
-    def with_config(self, config: VllmConfig) -> "VLLMClient":
+    def with_config(self, config: VllmConfig) -> VLLMClient:
         """Set VLLM configuration."""
         self.vllm_config = config
         return self
 
-    def with_base_url(self, base_url: str) -> "VLLMClient":
+    def with_base_url(self, base_url: str) -> VLLMClient:
         """Set base URL."""
         self.base_url = base_url
         return self
 
-    def with_api_key(self, api_key: str) -> "VLLMClient":
+    def with_api_key(self, api_key: str) -> VLLMClient:
         """Set API key."""
         self.api_key = api_key
         return self
 
-    def with_timeout(self, timeout: float) -> "VLLMClient":
+    def with_timeout(self, timeout: float) -> VLLMClient:
         """Set request timeout."""
         self.timeout = timeout
         return self
@@ -391,7 +388,7 @@ class VLLMClient(BaseModel):
     @classmethod
     def from_config(
         cls, model_name: str, base_url: str = "http://localhost:8000", **kwargs
-    ) -> "VLLMClient":
+    ) -> VLLMClient:
         """Create client from model configuration."""
         # Create basic VLLM config
         model_config = ModelConfig(model=model_name)
@@ -413,7 +410,7 @@ class VLLMClient(BaseModel):
         return cls(base_url=base_url, vllm_config=vllm_config, **kwargs)
 
     @classmethod
-    def from_rag_config(cls, rag_config: RAGVLLMConfig) -> "VLLMClient":
+    def from_rag_config(cls, rag_config: RAGVLLMConfig) -> VLLMClient:
         """Create client from RAG VLLM configuration."""
         return cls(
             base_url=f"http://{rag_config.host}:{rag_config.port}",
@@ -428,7 +425,7 @@ class VLLMAgent:
     def __init__(self, vllm_client: VLLMClient):
         self.client = vllm_client
 
-    async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def chat(self, messages: list[dict[str, str]], **kwargs) -> str:
         """Chat with the VLLM model."""
         request = ChatCompletionRequest(
             model="vllm-model",  # This would be configured
@@ -444,7 +441,7 @@ class VLLMAgent:
         response = await self.client.completions(request)
         return response.choices[0].text
 
-    async def embed(self, texts: Union[str, List[str]], **kwargs) -> List[List[float]]:
+    async def embed(self, texts: str | list[str], **kwargs) -> list[list[float]]:
         """Generate embeddings for texts."""
         if isinstance(texts, str):
             texts = [texts]
@@ -466,7 +463,7 @@ class VLLMAgent:
 
         # Add tools for VLLM functionality
         @agent.tool
-        async def chat_completion(ctx, messages: List[Dict[str, str]], **kwargs) -> str:
+        async def chat_completion(ctx, messages: list[dict[str, str]], **kwargs) -> str:
             """Chat completion using VLLM."""
             return await ctx.deps.chat(messages, **kwargs)
 
@@ -477,8 +474,8 @@ class VLLMAgent:
 
         @agent.tool
         async def generate_embeddings(
-            ctx, texts: Union[str, List[str]], **kwargs
-        ) -> List[List[float]]:
+            ctx, texts: str | list[str], **kwargs
+        ) -> list[list[float]]:
             """Generate embeddings using VLLM."""
             return await ctx.deps.embed(texts, **kwargs)
 
@@ -497,30 +494,30 @@ class VLLMClientBuilder:
         }
         self._vllm_config = None
 
-    def with_base_url(self, base_url: str) -> "VLLMClientBuilder":
+    def with_base_url(self, base_url: str) -> VLLMClientBuilder:
         """Set base URL."""
         self._config["base_url"] = base_url
         return self
 
-    def with_api_key(self, api_key: str) -> "VLLMClientBuilder":
+    def with_api_key(self, api_key: str) -> VLLMClientBuilder:
         """Set API key."""
         self._config["api_key"] = api_key
         return self
 
-    def with_timeout(self, timeout: float) -> "VLLMClientBuilder":
+    def with_timeout(self, timeout: float) -> VLLMClientBuilder:
         """Set timeout."""
         self._config["timeout"] = timeout
         return self
 
     def with_retries(
         self, max_retries: int, retry_delay: float = 1.0
-    ) -> "VLLMClientBuilder":
+    ) -> VLLMClientBuilder:
         """Set retry configuration."""
         self._config["max_retries"] = max_retries
         self._config["retry_delay"] = retry_delay
         return self
 
-    def with_vllm_config(self, config: VllmConfig) -> "VLLMClientBuilder":
+    def with_vllm_config(self, config: VllmConfig) -> VLLMClientBuilder:
         """Set VLLM configuration."""
         self._vllm_config = config
         return self
@@ -528,11 +525,11 @@ class VLLMClientBuilder:
     def with_model_config(
         self,
         model: str,
-        tokenizer: Optional[str] = None,
+        tokenizer: str | None = None,
         trust_remote_code: bool = False,
-        max_model_len: Optional[int] = None,
-        quantization: Optional[QuantizationMethod] = None,
-    ) -> "VLLMClientBuilder":
+        max_model_len: int | None = None,
+        quantization: QuantizationMethod | None = None,
+    ) -> VLLMClientBuilder:
         """Configure model settings."""
         if self._vllm_config is None:
             self._vllm_config = VllmConfig(
@@ -564,7 +561,7 @@ class VLLMClientBuilder:
         block_size: int = 16,
         gpu_memory_utilization: float = 0.9,
         swap_space: int = 4,
-    ) -> "VLLMClientBuilder":
+    ) -> VLLMClientBuilder:
         """Configure cache settings."""
         if self._vllm_config is None:
             self._vllm_config = VllmConfig(
@@ -591,7 +588,7 @@ class VLLMClientBuilder:
         self,
         tensor_parallel_size: int = 1,
         pipeline_parallel_size: int = 1,
-    ) -> "VLLMClientBuilder":
+    ) -> VLLMClientBuilder:
         """Configure parallel settings."""
         if self._vllm_config is None:
             self._vllm_config = VllmConfig(
@@ -625,7 +622,7 @@ class VLLMClientBuilder:
 def create_vllm_client(
     model_name: str,
     base_url: str = "http://localhost:8000",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     **kwargs,
 ) -> VLLMClient:
     """Create a VLLM client with sensible defaults."""
@@ -643,7 +640,7 @@ async def test_vllm_connection(client: VLLMClient) -> bool:
         return False
 
 
-async def list_vllm_models(client: VLLMClient) -> List[str]:
+async def list_vllm_models(client: VLLMClient) -> list[str]:
     """List available models on the VLLM server."""
     try:
         response = await client.models()

@@ -1,32 +1,34 @@
-import os
 import asyncio
-import time
 import json
-from typing import Optional, List, Dict, Any
+import os
+import time
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import httpx
 import trafilatura
 from dateutil import parser as dateparser
 from limits import parse
 from limits.aio.storage import MemoryStorage
 from limits.aio.strategies import MovingWindowRateLimiter
+
 from ..utils.analytics import record_request
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
-from dataclasses import dataclass
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configuration
 SERPER_API_KEY_ENV = os.getenv("SERPER_API_KEY")
-SERPER_API_KEY_OVERRIDE: Optional[str] = None
+SERPER_API_KEY_OVERRIDE: str | None = None
 SERPER_SEARCH_ENDPOINT = "https://google.serper.dev/search"
 SERPER_NEWS_ENDPOINT = "https://google.serper.dev/news"
 
 
-def _get_serper_api_key() -> Optional[str]:
+def _get_serper_api_key() -> str | None:
     """Return the currently active Serper API key (override wins, else env)."""
     return SERPER_API_KEY_OVERRIDE or SERPER_API_KEY_ENV or None
 
 
-def _get_headers() -> Dict[str, str]:
+def _get_headers() -> dict[str, str]:
     api_key = _get_serper_api_key()
     return {"X-API-KEY": api_key or "", "Content-Type": "application/json"}
 
@@ -38,7 +40,7 @@ rate_limit = parse("360/hour")
 
 
 async def search_web(
-    query: str, search_type: str = "search", num_results: Optional[int] = 4
+    query: str, search_type: str = "search", num_results: int | None = 4
 ) -> str:
     """
     Search the web for information or fresh news, returning extracted content.
@@ -142,7 +144,7 @@ async def search_web(
         chunks = []
         successful_extractions = 0
 
-        for meta, response in zip(results, responses):
+        for meta, response in zip(results, responses, strict=False):
             if isinstance(response, Exception):
                 continue
 
@@ -214,13 +216,13 @@ async def search_web(
     except Exception as e:
         # Record failed request with duration
         duration = time.time() - start_time
-        return f"Error occurred while searching: {str(e)}. Please try again or check your query."
+        return f"Error occurred while searching: {e!s}. Please try again or check your query."
 
 
 async def search_and_chunk(
     query: str,
     search_type: str,
-    num_results: Optional[int],
+    num_results: int | None,
     tokenizer_or_token_counter: str,
     chunk_size: int,
     chunk_overlap: int,
@@ -284,9 +286,9 @@ async def search_and_chunk(
                 *[client.get(u) for u in urls], return_exceptions=True
             )
 
-        all_chunks: List[Dict[str, Any]] = []
+        all_chunks: list[dict[str, Any]] = []
 
-        for meta, response in zip(results, responses):
+        for meta, response in zip(results, responses, strict=False):
             if isinstance(response, Exception):
                 continue
 
@@ -372,7 +374,7 @@ def _run_markdown_chunker(
     min_characters_per_chunk: int = 50,
     max_characters_per_section: int = 4000,
     clean_text: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Use chonkie's MarkdownChunker or MarkdownParser to chunk markdown text and
     return a List[Dict] with useful fields.
@@ -455,12 +457,12 @@ def _run_markdown_chunker(
             return [{"error": "Unknown MarkdownChunker interface"}]
 
     # Normalize chunks to list of dicts
-    normalized: List[Dict[str, Any]] = []
+    normalized: list[dict[str, Any]] = []
     for c in chunks or []:
         if isinstance(c, dict):
             normalized.append(c)
             continue
-        item: Dict[str, Any] = {}
+        item: dict[str, Any] = {}
         for field in (
             "text",
             "start_index",
@@ -499,7 +501,7 @@ class WebSearchCleanedTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         query = params.get("query", "")
         search_type = params.get("search_type", "search")
         num_results = int(params.get("num_results", "4"))
@@ -522,7 +524,7 @@ class WebSearchCleanedTool(ToolRunner):
                 metrics={"search_type": search_type, "num_results": num_results},
             )
         except Exception as e:
-            return ExecutionResult(success=False, error=f"Search failed: {str(e)}")
+            return ExecutionResult(success=False, error=f"Search failed: {e!s}")
 
 
 # Register tool

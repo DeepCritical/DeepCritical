@@ -8,7 +8,6 @@ coordination strategies.
 
 from typing import Dict, List
 
-
 # Default system prompts for different agent roles
 DEFAULT_SYSTEM_PROMPTS = {
     "coordinator": "You are a coordinator agent responsible for managing and coordinating other agents.",
@@ -67,13 +66,13 @@ def get_system_prompt(role: str) -> str:
     return DEFAULT_SYSTEM_PROMPTS.get(role, DEFAULT_SYSTEM_PROMPTS["default"])
 
 
-def get_instructions(role: str) -> List[str]:
+def get_instructions(role: str) -> list[str]:
     """Get default instructions for an agent role."""
     return DEFAULT_INSTRUCTIONS.get(role, DEFAULT_INSTRUCTIONS["default"])
 
 
 # Prompt templates for multi-agent coordination
-MULTI_AGENT_COORDINATOR_PROMPTS: Dict[str, str] = {
+MULTI_AGENT_COORDINATOR_PROMPTS: dict[str, str] = {
     "coordination_system": """You are an advanced multi-agent coordination system. Your role is to:
 
 1. Coordinate multiple specialized agents to achieve complex objectives
@@ -165,8 +164,8 @@ class MultiAgentCoordinatorPrompts:
         agent_role: str,
         task_description: str,
         round_number: int,
-        input_data: Dict,
-        instructions: List[str],
+        input_data: dict,
+        instructions: list[str],
     ) -> str:
         """Get agent execution prompt with parameters."""
         return cls.PROMPTS["agent_execution"].format(

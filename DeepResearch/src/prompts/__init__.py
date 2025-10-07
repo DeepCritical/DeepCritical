@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict
 import importlib
 import re
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict
 
 from omegaconf import DictConfig
 
-# Import agent prompts
-from .agent import AgentPrompts, HEADER, ACTIONS_WRAPPER
 from . import deep_agent_graph
+
+# Import agent prompts
+from .agent import ACTIONS_WRAPPER, HEADER, AgentPrompts
 
 
 @dataclass
@@ -40,7 +41,7 @@ class PromptLoader:
             pass
 
         # 2) Fallback to Hydra/YAML-configured prompts to keep configuration centralized
-        block: Dict[str, Any] = getattr(self.cfg, key, {})
+        block: dict[str, Any] = getattr(self.cfg, key, {})
         if subkey:
             return self._substitute(key, str(block.get(subkey, "")))
         return self._substitute(key, str(block.get("system", "")))
@@ -49,7 +50,7 @@ class PromptLoader:
         if not template:
             return template
         # Collect variables: key-level vars, global prompt vars, and time vars
-        vars_map: Dict[str, Any] = {}
+        vars_map: dict[str, Any] = {}
         try:
             block = getattr(self.cfg, key, {})
             vars_map.update(block.get("vars", {}) or {})  # type: ignore[attr-defined]

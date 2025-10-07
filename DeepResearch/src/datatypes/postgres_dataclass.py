@@ -12,8 +12,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Tuple
-
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # ============================================================================
 # Core Enums and Types
@@ -127,7 +126,7 @@ class SchemaVisibility(str, Enum):
 class PostgRESTID:
     """PostgREST resource ID structure."""
 
-    value: Union[str, int]
+    value: str | int
 
     def __post_init__(self):
         if self.value is None:
@@ -146,9 +145,9 @@ class Column:
     is_nullable: bool = True
     is_primary_key: bool = False
     is_foreign_key: bool = False
-    default_value: Optional[Any] = None
-    constraints: List[str] = field(default_factory=list)
-    description: Optional[str] = None
+    default_value: Any | None = None
+    constraints: list[str] = field(default_factory=list)
+    description: str | None = None
 
 
 @dataclass
@@ -157,13 +156,13 @@ class Table:
 
     name: str
     schema: str = "public"
-    columns: List[Column] = field(default_factory=list)
-    primary_keys: List[str] = field(default_factory=list)
-    foreign_keys: Dict[str, str] = field(default_factory=dict)
-    indexes: List[str] = field(default_factory=list)
-    description: Optional[str] = None
+    columns: list[Column] = field(default_factory=list)
+    primary_keys: list[str] = field(default_factory=list)
+    foreign_keys: dict[str, str] = field(default_factory=dict)
+    indexes: list[str] = field(default_factory=list)
+    description: str | None = None
 
-    def get_column(self, name: str) -> Optional[Column]:
+    def get_column(self, name: str) -> Column | None:
         """Get column by name."""
         for col in self.columns:
             if col.name == name:
@@ -178,9 +177,9 @@ class View:
     name: str
     definition: str
     schema: str = "public"
-    columns: List[Column] = field(default_factory=list)
+    columns: list[Column] = field(default_factory=list)
     is_updatable: bool = False
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass
@@ -190,12 +189,12 @@ class Function:
     name: str
     return_type: str
     schema: str = "public"
-    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    parameters: list[dict[str, Any]] = field(default_factory=list)
     is_volatile: bool = False
     is_security_definer: bool = False
     language: str = "sql"
-    definition: Optional[str] = None
-    description: Optional[str] = None
+    definition: str | None = None
+    description: str | None = None
 
 
 @dataclass
@@ -203,12 +202,12 @@ class Schema:
     """Database schema structure."""
 
     name: str
-    owner: Optional[str] = None
-    tables: List[Table] = field(default_factory=list)
-    views: List[View] = field(default_factory=list)
-    functions: List[Function] = field(default_factory=list)
+    owner: str | None = None
+    tables: list[Table] = field(default_factory=list)
+    views: list[View] = field(default_factory=list)
+    functions: list[Function] = field(default_factory=list)
     visibility: SchemaVisibility = SchemaVisibility.PUBLIC
-    description: Optional[str] = None
+    description: str | None = None
 
 
 # ============================================================================
@@ -228,20 +227,19 @@ class Filter:
         """Convert to query parameter format."""
         if self.operator == FilterOperator.IN and isinstance(self.value, list):
             return f"{self.column}={self.operator.value}.({','.join(map(str, self.value))})"
-        elif self.operator == FilterOperator.IS:
+        if self.operator == FilterOperator.IS:
             return f"{self.column}={self.operator.value}.{self.value}"
-        else:
-            return f"{self.column}={self.operator.value}.{self.value}"
+        return f"{self.column}={self.operator.value}.{self.value}"
 
 
 @dataclass
 class CompositeFilter:
     """Composite filter combining multiple conditions."""
 
-    and_conditions: Optional[List[Filter]] = None
-    or_conditions: Optional[List[Filter]] = None
+    and_conditions: list[Filter] | None = None
+    or_conditions: list[Filter] | None = None
 
-    def to_query_params(self) -> List[str]:
+    def to_query_params(self) -> list[str]:
         """Convert to query parameters."""
         params = []
         if self.and_conditions:
@@ -259,7 +257,7 @@ class OrderBy:
 
     column: str
     direction: OrderDirection = OrderDirection.ASCENDING
-    nulls_first: Optional[bool] = None
+    nulls_first: bool | None = None
 
     def to_query_param(self) -> str:
         """Convert to query parameter."""
@@ -282,7 +280,7 @@ class OrderBy:
 class SelectClause:
     """SELECT clause specification."""
 
-    columns: List[str] = field(default_factory=lambda: ["*"])
+    columns: list[str] = field(default_factory=lambda: ["*"])
     distinct: bool = False
 
     def to_query_param(self) -> str:
@@ -297,11 +295,11 @@ class Embedding:
     """Resource embedding specification."""
 
     relation: str
-    columns: Optional[List[str]] = None
-    filters: Optional[List[Filter]] = None
-    order_by: Optional[List[OrderBy]] = None
-    limit: Optional[int] = None
-    offset: Optional[int] = None
+    columns: list[str] | None = None
+    filters: list[Filter] | None = None
+    order_by: list[OrderBy] | None = None
+    limit: int | None = None
+    offset: int | None = None
 
     def to_query_param(self) -> str:
         """Convert to query parameter."""
@@ -329,7 +327,7 @@ class ComputedField:
 
     name: str
     expression: str
-    alias: Optional[str] = None
+    alias: str | None = None
 
     def to_query_param(self) -> str:
         """Convert to query parameter."""
@@ -347,12 +345,12 @@ class ComputedField:
 class Pagination:
     """Pagination specification."""
 
-    limit: Optional[int] = None
-    offset: Optional[int] = None
-    page: Optional[int] = None
-    page_size: Optional[int] = None
+    limit: int | None = None
+    offset: int | None = None
+    page: int | None = None
+    page_size: int | None = None
 
-    def to_query_params(self) -> List[str]:
+    def to_query_params(self) -> list[str]:
         """Convert to query parameters."""
         params = []
         if self.limit:
@@ -378,9 +376,9 @@ class CountHeader:
         """Convert to header value."""
         if self.exact:
             return "exact"
-        elif self.planned:
+        if self.planned:
             return "planned"
-        elif self.estimated:
+        if self.estimated:
             return "estimated"
         return "none"
 
@@ -396,16 +394,16 @@ class QueryRequest:
 
     table: str
     schema: str = "public"
-    select: Optional[SelectClause] = None
-    filters: Optional[List[Filter]] = None
-    order_by: Optional[List[OrderBy]] = None
-    pagination: Optional[Pagination] = None
-    embeddings: Optional[List[Embedding]] = None
-    computed_fields: Optional[List[ComputedField]] = None
-    aggregates: Optional[Dict[str, AggregateFunction]] = None
+    select: SelectClause | None = None
+    filters: list[Filter] | None = None
+    order_by: list[OrderBy] | None = None
+    pagination: Pagination | None = None
+    embeddings: list[Embedding] | None = None
+    computed_fields: list[ComputedField] | None = None
+    aggregates: dict[str, AggregateFunction] | None = None
     method: HTTPMethod = HTTPMethod.GET
-    headers: Dict[str, str] = field(default_factory=dict)
-    prefer: Optional[PreferHeader] = None
+    headers: dict[str, str] = field(default_factory=dict)
+    prefer: PreferHeader | None = None
 
     def __post_init__(self):
         if self.select is None:
@@ -448,14 +446,14 @@ class QueryRequest:
 class QueryResponse:
     """Query response structure."""
 
-    data: List[Dict[str, Any]]
-    count: Optional[int] = None
-    content_range: Optional[str] = None
+    data: list[dict[str, Any]]
+    count: int | None = None
+    content_range: str | None = None
     content_type: MediaType = MediaType.JSON
     status_code: int = 200
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
-    def get_total_count(self) -> Optional[int]:
+    def get_total_count(self) -> int | None:
         """Extract total count from content-range header."""
         if self.content_range:
             # Format: "0-9/100" or "items 0-9/100"
@@ -478,13 +476,13 @@ class InsertRequest:
     """Insert operation request."""
 
     table: str
-    data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    data: dict[str, Any] | list[dict[str, Any]]
     schema: str = "public"
-    columns: Optional[List[str]] = None
+    columns: list[str] | None = None
     prefer: PreferHeader = PreferHeader.RETURN_REPRESENTATION
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
-    def to_json(self) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    def to_json(self) -> dict[str, Any] | list[dict[str, Any]]:
         """Convert to JSON format."""
         if isinstance(self.data, list):
             if self.columns:
@@ -492,10 +490,9 @@ class InsertRequest:
                     {col: item.get(col) for col in self.columns} for item in self.data
                 ]
             return self.data
-        else:
-            if self.columns:
-                return {col: self.data.get(col) for col in self.columns}
-            return self.data
+        if self.columns:
+            return {col: self.data.get(col) for col in self.columns}
+        return self.data
 
 
 @dataclass
@@ -503,11 +500,11 @@ class UpdateRequest:
     """Update operation request."""
 
     table: str
-    data: Dict[str, Any]
-    filters: List[Filter]
+    data: dict[str, Any]
+    filters: list[Filter]
     schema: str = "public"
     prefer: PreferHeader = PreferHeader.RETURN_REPRESENTATION
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
     def to_url_params(self) -> str:
         """Convert filters to URL parameters."""
@@ -519,10 +516,10 @@ class DeleteRequest:
     """Delete operation request."""
 
     table: str
-    filters: List[Filter]
+    filters: list[Filter]
     schema: str = "public"
     prefer: PreferHeader = PreferHeader.RETURN_MINIMAL
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
     def to_url_params(self) -> str:
         """Convert filters to URL parameters."""
@@ -534,11 +531,11 @@ class UpsertRequest:
     """Upsert operation request."""
 
     table: str
-    data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    data: dict[str, Any] | list[dict[str, Any]]
     schema: str = "public"
-    on_conflict: Optional[str] = None
+    on_conflict: str | None = None
     prefer: PreferHeader = PreferHeader.RESOLUTION_MERGE_DUPLICATES
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -552,12 +549,12 @@ class RPCRequest:
 
     function: str
     schema: str = "public"
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
     method: HTTPMethod = HTTPMethod.POST
     prefer: PreferHeader = PreferHeader.RETURN_REPRESENTATION
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         """Convert parameters to JSON format."""
         return self.parameters
 
@@ -569,7 +566,7 @@ class RPCResponse:
     data: Any
     content_type: MediaType = MediaType.JSON
     status_code: int = 200
-    headers: Dict[str, str] = field(default_factory=dict)
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -582,24 +579,24 @@ class AuthConfig:
     """Authentication configuration."""
 
     auth_type: str = "bearer"  # bearer, basic, api_key
-    token: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    api_key: Optional[str] = None
+    token: str | None = None
+    username: str | None = None
+    password: str | None = None
+    api_key: str | None = None
     api_key_header: str = "X-API-Key"
 
-    def get_auth_header(self) -> Optional[Tuple[str, str]]:
+    def get_auth_header(self) -> tuple[str, str] | None:
         """Get authentication header."""
         if self.auth_type == "bearer" and self.token:
             return ("Authorization", f"Bearer {self.token}")
-        elif self.auth_type == "basic" and self.username and self.password:
+        if self.auth_type == "basic" and self.username and self.password:
             import base64
 
             credentials = base64.b64encode(
                 f"{self.username}:{self.password}".encode()
             ).decode()
             return ("Authorization", f"Basic {credentials}")
-        elif self.auth_type == "api_key" and self.api_key:
+        if self.auth_type == "api_key" and self.api_key:
             return (self.api_key_header, self.api_key)
         return None
 
@@ -609,9 +606,9 @@ class RoleConfig:
     """Database role configuration."""
 
     role: str
-    permissions: List[str] = field(default_factory=list)
+    permissions: list[str] = field(default_factory=list)
     row_level_security: bool = False
-    policies: List[str] = field(default_factory=list)
+    policies: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -625,8 +622,8 @@ class PostgRESTConfig:
 
     base_url: str
     schema: str = "public"
-    auth: Optional[AuthConfig] = None
-    default_headers: Dict[str, str] = field(default_factory=dict)
+    auth: AuthConfig | None = None
+    default_headers: dict[str, str] = field(default_factory=dict)
     timeout: float = 30.0
     max_retries: int = 3
     verify_ssl: bool = True
@@ -647,20 +644,20 @@ class PostgRESTClient:
     """Main PostgREST client structure."""
 
     config: PostgRESTConfig
-    schemas: Dict[str, Schema] = field(default_factory=dict)
+    schemas: dict[str, Schema] = field(default_factory=dict)
 
     def __post_init__(self):
         if self.config.auth is None:
             self.config.auth = AuthConfig()
 
-    def get_url(self, resource: str, schema: Optional[str] = None) -> str:
+    def get_url(self, resource: str, schema: str | None = None) -> str:
         """Get full URL for a resource."""
         schema = schema or self.config.schema
         return f"{self.config.base_url}{schema}/{resource}"
 
     def get_headers(
-        self, additional_headers: Optional[Dict[str, str]] = None
-    ) -> Dict[str, str]:
+        self, additional_headers: dict[str, str] | None = None
+    ) -> dict[str, str]:
         """Get request headers."""
         headers = self.config.default_headers.copy()
 
@@ -705,17 +702,17 @@ class PostgRESTClient:
         # This would be implemented by the actual PostgREST client
         return RPCResponse(data=[], status_code=501)
 
-    def get_schema(self, schema_name: str) -> Optional[Schema]:
+    def get_schema(self, schema_name: str) -> Schema | None:
         """Get schema by name."""
         return self.schemas.get(schema_name)
 
-    def list_schemas(self) -> List[Schema]:
+    def list_schemas(self) -> list[Schema]:
         """List all available schemas."""
         return list(self.schemas.values())
 
     def get_table(
-        self, table_name: str, schema_name: Optional[str] = None
-    ) -> Optional[Table]:
+        self, table_name: str, schema_name: str | None = None
+    ) -> Table | None:
         """Get table by name."""
         schema_name = schema_name or self.config.schema
         schema = self.get_schema(schema_name)
@@ -725,9 +722,7 @@ class PostgRESTClient:
                     return table
         return None
 
-    def get_view(
-        self, view_name: str, schema_name: Optional[str] = None
-    ) -> Optional[View]:
+    def get_view(self, view_name: str, schema_name: str | None = None) -> View | None:
         """Get view by name."""
         schema_name = schema_name or self.config.schema
         schema = self.get_schema(schema_name)
@@ -738,8 +733,8 @@ class PostgRESTClient:
         return None
 
     def get_function(
-        self, function_name: str, schema_name: Optional[str] = None
-    ) -> Optional[Function]:
+        self, function_name: str, schema_name: str | None = None
+    ) -> Function | None:
         """Get function by name."""
         schema_name = schema_name or self.config.schema
         schema = self.get_schema(schema_name)
@@ -761,11 +756,11 @@ class PostgRESTError:
 
     code: str
     message: str
-    details: Optional[str] = None
-    hint: Optional[str] = None
+    details: str | None = None
+    hint: str | None = None
     status_code: int = 400
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "code": self.code,
@@ -792,7 +787,7 @@ class PostgRESTException(Exception):
 
 
 def create_client(
-    base_url: str, schema: str = "public", auth: Optional[AuthConfig] = None, **kwargs
+    base_url: str, schema: str = "public", auth: AuthConfig | None = None, **kwargs
 ) -> PostgRESTClient:
     """Create a new PostgREST client."""
     config = PostgRESTConfig(base_url=base_url, schema=schema, auth=auth, **kwargs)
@@ -812,7 +807,7 @@ def create_order_by(
 
 
 def create_pagination(
-    limit: Optional[int] = None, offset: Optional[int] = None
+    limit: int | None = None, offset: int | None = None
 ) -> Pagination:
     """Create pagination specification."""
     return Pagination(limit=limit, offset=offset)
@@ -820,8 +815,8 @@ def create_pagination(
 
 def create_embedding(
     relation: str,
-    columns: Optional[List[str]] = None,
-    filters: Optional[List[Filter]] = None,
+    columns: list[str] | None = None,
+    filters: list[Filter] | None = None,
 ) -> Embedding:
     """Create an embedding specification."""
     return Embedding(relation=relation, columns=columns, filters=filters)
@@ -895,10 +890,10 @@ class PostgresDocument:
 
     id: str
     content: str
-    metadata: Optional[Dict[str, Any]] = None
-    embedding: Optional[List[float]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    metadata: dict[str, Any] | None = None
+    embedding: list[float] | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     def __post_init__(self):
         if self.metadata is None:

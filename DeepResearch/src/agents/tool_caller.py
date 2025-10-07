@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from ..tools.base import registry, ExecutionResult
+from ..tools.base import ExecutionResult, registry
 
 
 @dataclass
 class ToolCaller:
     retries: int = 2
 
-    def call(self, tool: str, params: Dict[str, Any]) -> ExecutionResult:
+    def call(self, tool: str, params: dict[str, Any]) -> ExecutionResult:
         runner = registry.make(tool)
         result = runner.run(params)
         if result.success:
@@ -21,11 +21,11 @@ class ToolCaller:
             attempts += 1
         return result
 
-    def execute(self, plan: List[Dict[str, Any]]) -> Dict[str, Any]:
-        bag: Dict[str, Any] = {}
+    def execute(self, plan: list[dict[str, Any]]) -> dict[str, Any]:
+        bag: dict[str, Any] = {}
 
-        def materialize(p: Dict[str, Any]) -> Dict[str, Any]:
-            out: Dict[str, Any] = {}
+        def materialize(p: dict[str, Any]) -> dict[str, Any]:
+            out: dict[str, Any] = {}
             for k, v in p.items():
                 if isinstance(v, str) and v.startswith("${") and v.endswith("}"):
                     key = v[2:-1]

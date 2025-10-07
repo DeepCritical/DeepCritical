@@ -7,15 +7,16 @@ request tracking, data retrieval, and metrics collection.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class AnalyticsRequest(BaseModel):
     """Request model for analytics operations."""
 
-    duration: Optional[float] = Field(None, description="Request duration in seconds")
-    num_results: Optional[int] = Field(None, description="Number of results processed")
+    duration: float | None = Field(None, description="Request duration in seconds")
+    num_results: int | None = Field(None, description="Number of results processed")
 
     class Config:
         json_schema_extra = {"example": {"duration": 2.5, "num_results": 4}}
@@ -26,7 +27,7 @@ class AnalyticsResponse(BaseModel):
 
     success: bool = Field(..., description="Whether the operation was successful")
     message: str = Field(..., description="Operation result message")
-    error: Optional[str] = Field(None, description="Error message if operation failed")
+    error: str | None = Field(None, description="Error message if operation failed")
 
     class Config:
         json_schema_extra = {
@@ -50,9 +51,9 @@ class AnalyticsDataRequest(BaseModel):
 class AnalyticsDataResponse(BaseModel):
     """Response model for analytics data retrieval."""
 
-    data: List[Dict[str, Any]] = Field(..., description="Analytics data")
+    data: list[dict[str, Any]] = Field(..., description="Analytics data")
     success: bool = Field(..., description="Whether the operation was successful")
-    error: Optional[str] = Field(None, description="Error message if operation failed")
+    error: str | None = Field(None, description="Error message if operation failed")
 
     class Config:
         json_schema_extra = {

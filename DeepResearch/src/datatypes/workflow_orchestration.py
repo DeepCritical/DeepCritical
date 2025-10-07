@@ -7,14 +7,12 @@ including RAG, bioinformatics, search, and multi-agent systems.
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
-from pydantic import BaseModel, Field, field_validator
-import uuid
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-if TYPE_CHECKING:
-    pass
+from pydantic import BaseModel, Field, field_validator
 
 
 class WorkflowType(str, Enum):
@@ -92,11 +90,11 @@ class WorkflowConfig(BaseModel):
     enabled: bool = Field(True, description="Whether workflow is enabled")
     priority: int = Field(0, description="Execution priority (higher = more priority)")
     max_retries: int = Field(3, description="Maximum retry attempts")
-    timeout: Optional[float] = Field(None, description="Timeout in seconds")
-    dependencies: List[str] = Field(
+    timeout: float | None = Field(None, description="Timeout in seconds")
+    dependencies: list[str] = Field(
         default_factory=list, description="Dependent workflow names"
     )
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Workflow-specific parameters"
     )
     output_format: str = Field("default", description="Expected output format")
@@ -124,8 +122,8 @@ class AgentConfig(BaseModel):
     agent_id: str = Field(..., description="Unique agent identifier")
     role: AgentRole = Field(..., description="Agent role")
     model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model to use")
-    system_prompt: Optional[str] = Field(None, description="Custom system prompt")
-    tools: List[str] = Field(default_factory=list, description="Available tools")
+    system_prompt: str | None = Field(None, description="Custom system prompt")
+    tools: list[str] = Field(default_factory=list, description="Available tools")
     max_iterations: int = Field(10, description="Maximum iterations")
     temperature: float = Field(0.7, description="Model temperature")
     enabled: bool = Field(True, description="Whether agent is enabled")
@@ -148,7 +146,7 @@ class DataLoaderConfig(BaseModel):
     loader_type: DataLoaderType = Field(..., description="Type of data loader")
     name: str = Field(..., description="Loader name")
     enabled: bool = Field(True, description="Whether loader is enabled")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Loader parameters"
     )
     output_collection: str = Field(..., description="Output collection name")
@@ -178,19 +176,19 @@ class WorkflowExecution(BaseModel):
     )
     workflow_config: WorkflowConfig = Field(..., description="Workflow configuration")
     status: WorkflowStatus = Field(WorkflowStatus.PENDING, description="Current status")
-    start_time: Optional[datetime] = Field(None, description="Start time")
-    end_time: Optional[datetime] = Field(None, description="End time")
-    input_data: Dict[str, Any] = Field(default_factory=dict, description="Input data")
-    output_data: Dict[str, Any] = Field(default_factory=dict, description="Output data")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
+    start_time: datetime | None = Field(None, description="Start time")
+    end_time: datetime | None = Field(None, description="End time")
+    input_data: dict[str, Any] = Field(default_factory=dict, description="Input data")
+    output_data: dict[str, Any] = Field(default_factory=dict, description="Output data")
+    error_message: str | None = Field(None, description="Error message if failed")
     retry_count: int = Field(0, description="Number of retries attempted")
-    parent_execution_id: Optional[str] = Field(None, description="Parent execution ID")
-    child_execution_ids: List[str] = Field(
+    parent_execution_id: str | None = Field(None, description="Parent execution ID")
+    child_execution_ids: list[str] = Field(
         default_factory=list, description="Child execution IDs"
     )
 
     @property
-    def duration(self) -> Optional[float]:
+    def duration(self) -> float | None:
         """Get execution duration in seconds."""
         if self.start_time and self.end_time:
             return (self.end_time - self.start_time).total_seconds()
@@ -223,7 +221,7 @@ class MultiAgentSystemConfig(BaseModel):
 
     system_id: str = Field(..., description="System identifier")
     name: str = Field(..., description="System name")
-    agents: List[AgentConfig] = Field(..., description="Agent configurations")
+    agents: list[AgentConfig] = Field(..., description="Agent configurations")
     coordination_strategy: str = Field(
         "sequential", description="Coordination strategy"
     )
@@ -250,7 +248,7 @@ class JudgeConfig(BaseModel):
     judge_id: str = Field(..., description="Judge identifier")
     name: str = Field(..., description="Judge name")
     model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model to use")
-    evaluation_criteria: List[str] = Field(..., description="Evaluation criteria")
+    evaluation_criteria: list[str] = Field(..., description="Evaluation criteria")
     scoring_scale: str = Field("1-10", description="Scoring scale")
     enabled: bool = Field(True, description="Whether judge is enabled")
 
@@ -271,23 +269,21 @@ class WorkflowOrchestrationConfig(BaseModel):
     primary_workflow: WorkflowConfig = Field(
         ..., description="Primary REACT workflow config"
     )
-    sub_workflows: List[WorkflowConfig] = Field(
+    sub_workflows: list[WorkflowConfig] = Field(
         default_factory=list, description="Sub-workflow configs"
     )
-    data_loaders: List[DataLoaderConfig] = Field(
+    data_loaders: list[DataLoaderConfig] = Field(
         default_factory=list, description="Data loader configs"
     )
-    multi_agent_systems: List[MultiAgentSystemConfig] = Field(
+    multi_agent_systems: list[MultiAgentSystemConfig] = Field(
         default_factory=list, description="Multi-agent system configs"
     )
-    judges: List[JudgeConfig] = Field(default_factory=list, description="Judge configs")
+    judges: list[JudgeConfig] = Field(default_factory=list, description="Judge configs")
     execution_strategy: str = Field(
         "parallel", description="Execution strategy (parallel, sequential, hybrid)"
     )
     max_concurrent_workflows: int = Field(5, description="Maximum concurrent workflows")
-    global_timeout: Optional[float] = Field(
-        None, description="Global timeout in seconds"
-    )
+    global_timeout: float | None = Field(None, description="Global timeout in seconds")
     enable_monitoring: bool = Field(True, description="Enable execution monitoring")
     enable_caching: bool = Field(True, description="Enable result caching")
 
@@ -322,15 +318,13 @@ class WorkflowResult(BaseModel):
     execution_id: str = Field(..., description="Execution ID")
     workflow_name: str = Field(..., description="Workflow name")
     status: WorkflowStatus = Field(..., description="Final status")
-    output_data: Dict[str, Any] = Field(..., description="Output data")
-    metadata: Dict[str, Any] = Field(
+    output_data: dict[str, Any] = Field(..., description="Output data")
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Execution metadata"
     )
-    quality_score: Optional[float] = Field(
-        None, description="Quality score from judges"
-    )
+    quality_score: float | None = Field(None, description="Quality score from judges")
     execution_time: float = Field(..., description="Execution time in seconds")
-    error_details: Optional[Dict[str, Any]] = Field(
+    error_details: dict[str, Any] | None = Field(
         None, description="Error details if failed"
     )
 
@@ -355,14 +349,14 @@ class HypothesisDataset(BaseModel):
     )
     name: str = Field(..., description="Dataset name")
     description: str = Field(..., description="Dataset description")
-    hypotheses: List[Dict[str, Any]] = Field(..., description="Generated hypotheses")
-    metadata: Dict[str, Any] = Field(
+    hypotheses: list[dict[str, Any]] = Field(..., description="Generated hypotheses")
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Dataset metadata"
     )
     creation_date: datetime = Field(
         default_factory=datetime.now, description="Creation date"
     )
-    source_workflows: List[str] = Field(
+    source_workflows: list[str] = Field(
         default_factory=list, description="Source workflow names"
     )
 
@@ -390,12 +384,12 @@ class HypothesisTestingEnvironment(BaseModel):
         default_factory=lambda: str(uuid.uuid4()), description="Environment ID"
     )
     name: str = Field(..., description="Environment name")
-    hypothesis: Dict[str, Any] = Field(..., description="Hypothesis to test")
-    test_configuration: Dict[str, Any] = Field(..., description="Test configuration")
-    expected_outcomes: List[str] = Field(..., description="Expected outcomes")
-    success_criteria: Dict[str, Any] = Field(..., description="Success criteria")
-    test_data: Dict[str, Any] = Field(default_factory=dict, description="Test data")
-    results: Optional[Dict[str, Any]] = Field(None, description="Test results")
+    hypothesis: dict[str, Any] = Field(..., description="Hypothesis to test")
+    test_configuration: dict[str, Any] = Field(..., description="Test configuration")
+    expected_outcomes: list[str] = Field(..., description="Expected outcomes")
+    success_criteria: dict[str, Any] = Field(..., description="Success criteria")
+    test_data: dict[str, Any] = Field(default_factory=dict, description="Test data")
+    results: dict[str, Any] | None = Field(None, description="Test results")
     status: WorkflowStatus = Field(WorkflowStatus.PENDING, description="Test status")
 
     class Config:
@@ -423,12 +417,12 @@ class ReasoningResult(BaseModel):
     )
     question: str = Field(..., description="Reasoning question")
     answer: str = Field(..., description="Reasoning answer")
-    reasoning_chain: List[str] = Field(..., description="Reasoning steps")
+    reasoning_chain: list[str] = Field(..., description="Reasoning steps")
     confidence: float = Field(..., description="Confidence score")
-    supporting_evidence: List[Dict[str, Any]] = Field(
+    supporting_evidence: list[dict[str, Any]] = Field(
         ..., description="Supporting evidence"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Reasoning metadata"
     )
 
@@ -455,12 +449,12 @@ class WorkflowComposition(BaseModel):
         default_factory=lambda: str(uuid.uuid4()), description="Composition ID"
     )
     user_input: str = Field(..., description="User input/query")
-    selected_workflows: List[str] = Field(..., description="Selected workflow names")
-    workflow_dependencies: Dict[str, List[str]] = Field(
+    selected_workflows: list[str] = Field(..., description="Selected workflow names")
+    workflow_dependencies: dict[str, list[str]] = Field(
         default_factory=dict, description="Workflow dependencies"
     )
-    execution_order: List[str] = Field(..., description="Execution order")
-    expected_outputs: Dict[str, str] = Field(
+    execution_order: list[str] = Field(..., description="Execution order")
+    expected_outputs: dict[str, str] = Field(
         default_factory=dict, description="Expected outputs by workflow"
     )
     composition_strategy: str = Field("adaptive", description="Composition strategy")
@@ -490,19 +484,19 @@ class OrchestrationState(BaseModel):
     state_id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="State ID"
     )
-    active_executions: List[WorkflowExecution] = Field(
+    active_executions: list[WorkflowExecution] = Field(
         default_factory=list, description="Active executions"
     )
-    completed_executions: List[WorkflowResult] = Field(
+    completed_executions: list[WorkflowResult] = Field(
         default_factory=list, description="Completed executions"
     )
-    pending_workflows: List[WorkflowConfig] = Field(
+    pending_workflows: list[WorkflowConfig] = Field(
         default_factory=list, description="Pending workflows"
     )
-    current_composition: Optional[WorkflowComposition] = Field(
+    current_composition: WorkflowComposition | None = Field(
         None, description="Current composition"
     )
-    system_metrics: Dict[str, Any] = Field(
+    system_metrics: dict[str, Any] = Field(
         default_factory=dict, description="System metrics"
     )
     last_updated: datetime = Field(
@@ -513,12 +507,12 @@ class OrchestrationState(BaseModel):
 class OrchestratorDependencies(BaseModel):
     """Dependencies for the workflow orchestrator."""
 
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
     user_input: str = Field(..., description="User input/query")
-    context: Dict[str, Any] = Field(default_factory=dict)
-    available_workflows: List[str] = Field(default_factory=list)
-    available_agents: List[str] = Field(default_factory=list)
-    available_judges: List[str] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+    available_workflows: list[str] = Field(default_factory=list)
+    available_agents: list[str] = Field(default_factory=list)
+    available_judges: list[str] = Field(default_factory=list)
 
 
 class WorkflowSpawnRequest(BaseModel):
@@ -526,12 +520,12 @@ class WorkflowSpawnRequest(BaseModel):
 
     workflow_type: WorkflowType = Field(..., description="Type of workflow to spawn")
     workflow_name: str = Field(..., description="Name of the workflow")
-    input_data: Dict[str, Any] = Field(..., description="Input data for the workflow")
-    parameters: Dict[str, Any] = Field(
+    input_data: dict[str, Any] = Field(..., description="Input data for the workflow")
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Workflow parameters"
     )
     priority: int = Field(0, description="Execution priority")
-    dependencies: List[str] = Field(
+    dependencies: list[str] = Field(
         default_factory=list, description="Dependent workflow names"
     )
 
@@ -543,7 +537,7 @@ class WorkflowSpawnResult(BaseModel):
     execution_id: str = Field(..., description="Execution ID of the spawned workflow")
     workflow_name: str = Field(..., description="Name of the spawned workflow")
     status: WorkflowStatus = Field(..., description="Initial status")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
+    error_message: str | None = Field(None, description="Error message if failed")
 
 
 class MultiAgentCoordinationRequest(BaseModel):
@@ -551,7 +545,7 @@ class MultiAgentCoordinationRequest(BaseModel):
 
     system_id: str = Field(..., description="Multi-agent system ID")
     task_description: str = Field(..., description="Task description")
-    input_data: Dict[str, Any] = Field(..., description="Input data")
+    input_data: dict[str, Any] = Field(..., description="Input data")
     coordination_strategy: str = Field(
         "collaborative", description="Coordination strategy"
     )
@@ -563,9 +557,9 @@ class MultiAgentCoordinationResult(BaseModel):
 
     success: bool = Field(..., description="Whether coordination was successful")
     system_id: str = Field(..., description="System ID")
-    final_result: Dict[str, Any] = Field(..., description="Final coordination result")
+    final_result: dict[str, Any] = Field(..., description="Final coordination result")
     coordination_rounds: int = Field(..., description="Number of coordination rounds")
-    agent_results: Dict[str, Any] = Field(
+    agent_results: dict[str, Any] = Field(
         default_factory=dict, description="Individual agent results"
     )
     consensus_score: float = Field(0.0, description="Consensus score")
@@ -575,9 +569,9 @@ class JudgeEvaluationRequest(BaseModel):
     """Request for judge evaluation."""
 
     judge_id: str = Field(..., description="Judge ID")
-    content_to_evaluate: Dict[str, Any] = Field(..., description="Content to evaluate")
-    evaluation_criteria: List[str] = Field(..., description="Evaluation criteria")
-    context: Dict[str, Any] = Field(
+    content_to_evaluate: dict[str, Any] = Field(..., description="Content to evaluate")
+    evaluation_criteria: list[str] = Field(..., description="Evaluation criteria")
+    context: dict[str, Any] = Field(
         default_factory=dict, description="Evaluation context"
     )
 
@@ -588,11 +582,11 @@ class JudgeEvaluationResult(BaseModel):
     success: bool = Field(..., description="Whether evaluation was successful")
     judge_id: str = Field(..., description="Judge ID")
     overall_score: float = Field(..., description="Overall evaluation score")
-    criterion_scores: Dict[str, float] = Field(
+    criterion_scores: dict[str, float] = Field(
         default_factory=dict, description="Scores by criterion"
     )
     feedback: str = Field(..., description="Detailed feedback")
-    recommendations: List[str] = Field(
+    recommendations: list[str] = Field(
         default_factory=list, description="Improvement recommendations"
     )
 
@@ -658,7 +652,7 @@ class BreakCondition(BaseModel):
     threshold: float = Field(..., description="Threshold value for the condition")
     operator: str = Field(">=", description="Comparison operator (>=, <=, ==, !=)")
     enabled: bool = Field(True, description="Whether this condition is enabled")
-    custom_function: Optional[str] = Field(
+    custom_function: str | None = Field(
         None, description="Custom function for custom_loss type"
     )
 
@@ -667,21 +661,21 @@ class NestedReactConfig(BaseModel):
     """Configuration for nested REACT loops."""
 
     loop_id: str = Field(..., description="Unique identifier for the nested loop")
-    parent_loop_id: Optional[str] = Field(None, description="Parent loop ID if nested")
+    parent_loop_id: str | None = Field(None, description="Parent loop ID if nested")
     max_iterations: int = Field(10, description="Maximum iterations for this loop")
-    break_conditions: List[BreakCondition] = Field(
+    break_conditions: list[BreakCondition] = Field(
         default_factory=list, description="Break conditions"
     )
     state_machine_mode: MultiStateMachineMode = Field(
         MultiStateMachineMode.GROUP_CHAT, description="State machine mode"
     )
-    subgraphs: List[SubgraphType] = Field(
+    subgraphs: list[SubgraphType] = Field(
         default_factory=list, description="Subgraphs to include"
     )
-    agent_roles: List[AgentRole] = Field(
+    agent_roles: list[AgentRole] = Field(
         default_factory=list, description="Agent roles for this loop"
     )
-    tools: List[str] = Field(
+    tools: list[str] = Field(
         default_factory=list, description="Tools available to agents"
     )
     priority: int = Field(0, description="Execution priority")
@@ -697,7 +691,7 @@ class AgentOrchestratorConfig(BaseModel):
     model_name: str = Field(
         "anthropic:claude-sonnet-4-0", description="Model for the orchestrator"
     )
-    break_conditions: List[BreakCondition] = Field(
+    break_conditions: list[BreakCondition] = Field(
         default_factory=list, description="Break conditions"
     )
     max_nested_loops: int = Field(5, description="Maximum number of nested loops")
@@ -722,10 +716,10 @@ class SubgraphConfig(BaseModel):
     )
     entry_node: str = Field(..., description="Entry node for the subgraph")
     exit_node: str = Field(..., description="Exit node for the subgraph")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Subgraph parameters"
     )
-    tools: List[str] = Field(
+    tools: list[str] = Field(
         default_factory=list, description="Tools available in subgraph"
     )
     max_execution_time: float = Field(
@@ -749,21 +743,21 @@ class NestedLoopRequest(BaseModel):
     """Request to spawn a nested REACT loop."""
 
     loop_id: str = Field(..., description="Loop identifier")
-    parent_loop_id: Optional[str] = Field(None, description="Parent loop ID")
+    parent_loop_id: str | None = Field(None, description="Parent loop ID")
     max_iterations: int = Field(10, description="Maximum iterations")
-    break_conditions: List[BreakCondition] = Field(
+    break_conditions: list[BreakCondition] = Field(
         default_factory=list, description="Break conditions"
     )
     state_machine_mode: MultiStateMachineMode = Field(
         MultiStateMachineMode.GROUP_CHAT, description="State machine mode"
     )
-    subgraphs: List[SubgraphType] = Field(
+    subgraphs: list[SubgraphType] = Field(
         default_factory=list, description="Subgraphs to include"
     )
-    agent_roles: List[AgentRole] = Field(
+    agent_roles: list[AgentRole] = Field(
         default_factory=list, description="Agent roles"
     )
-    tools: List[str] = Field(default_factory=list, description="Available tools")
+    tools: list[str] = Field(default_factory=list, description="Available tools")
     priority: int = Field(0, description="Execution priority")
 
 
@@ -772,12 +766,12 @@ class SubgraphSpawnRequest(BaseModel):
 
     subgraph_id: str = Field(..., description="Subgraph identifier")
     subgraph_type: SubgraphType = Field(..., description="Type of subgraph")
-    parameters: Dict[str, Any] = Field(
+    parameters: dict[str, Any] = Field(
         default_factory=dict, description="Subgraph parameters"
     )
     entry_node: str = Field(..., description="Entry node")
     max_execution_time: float = Field(300.0, description="Maximum execution time")
-    tools: List[str] = Field(default_factory=list, description="Available tools")
+    tools: list[str] = Field(default_factory=list, description="Available tools")
 
 
 class BreakConditionCheck(BaseModel):
@@ -795,15 +789,15 @@ class OrchestrationResult(BaseModel):
 
     success: bool = Field(..., description="Whether orchestration was successful")
     final_answer: str = Field(..., description="Final answer")
-    nested_loops_spawned: List[str] = Field(
+    nested_loops_spawned: list[str] = Field(
         default_factory=list, description="Nested loops spawned"
     )
-    subgraphs_executed: List[str] = Field(
+    subgraphs_executed: list[str] = Field(
         default_factory=list, description="Subgraphs executed"
     )
     total_iterations: int = Field(..., description="Total iterations")
-    break_reason: Optional[str] = Field(None, description="Reason for breaking")
-    execution_metadata: Dict[str, Any] = Field(
+    break_reason: str | None = Field(None, description="Reason for breaking")
+    execution_metadata: dict[str, Any] = Field(
         default_factory=dict, description="Execution metadata"
     )
 
@@ -815,16 +809,16 @@ class AppConfiguration(BaseModel):
     primary_orchestrator: AgentOrchestratorConfig = Field(
         ..., description="Primary orchestrator config"
     )
-    nested_react_configs: List[NestedReactConfig] = Field(
+    nested_react_configs: list[NestedReactConfig] = Field(
         default_factory=list, description="Nested REACT configurations"
     )
-    subgraph_configs: List[SubgraphConfig] = Field(
+    subgraph_configs: list[SubgraphConfig] = Field(
         default_factory=list, description="Subgraph configurations"
     )
-    loss_functions: List[BreakCondition] = Field(
+    loss_functions: list[BreakCondition] = Field(
         default_factory=list, description="Loss functions for end conditions"
     )
-    global_break_conditions: List[BreakCondition] = Field(
+    global_break_conditions: list[BreakCondition] = Field(
         default_factory=list, description="Global break conditions"
     )
     execution_strategy: str = Field(
@@ -851,22 +845,20 @@ class WorkflowOrchestrationState(BaseModel):
     status: WorkflowStatus = Field(
         default=WorkflowStatus.PENDING, description="Current workflow status"
     )
-    current_step: Optional[str] = Field(None, description="Current execution step")
+    current_step: str | None = Field(None, description="Current execution step")
     progress: float = Field(
         default=0.0, ge=0.0, le=1.0, description="Execution progress (0-1)"
     )
-    results: Dict[str, Any] = Field(
+    results: dict[str, Any] = Field(
         default_factory=dict, description="Workflow execution results"
     )
-    errors: List[str] = Field(default_factory=list, description="Execution errors")
-    metadata: Dict[str, Any] = Field(
+    errors: list[str] = Field(default_factory=list, description="Execution errors")
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
-    started_at: Optional[datetime] = Field(None, description="Workflow start time")
-    completed_at: Optional[datetime] = Field(
-        None, description="Workflow completion time"
-    )
-    sub_workflows: List[Dict[str, Any]] = Field(
+    started_at: datetime | None = Field(None, description="Workflow start time")
+    completed_at: datetime | None = Field(None, description="Workflow completion time")
+    sub_workflows: list[dict[str, Any]] = Field(
         default_factory=list, description="Sub-workflow information"
     )
 

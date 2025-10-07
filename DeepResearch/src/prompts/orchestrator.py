@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-
 STYLE = "concise"
 MAX_STEPS = 3
 
@@ -42,7 +41,7 @@ ORCHESTRATOR_INSTRUCTIONS = [
     "Make decisions about when to terminate or continue execution",
 ]
 
-ORCHESTRATOR_PROMPTS: Dict[str, str] = {
+ORCHESTRATOR_PROMPTS: dict[str, str] = {
     "style": STYLE,
     "max_steps": str(MAX_STEPS),
     "orchestrate_workflow": "Orchestrate the following workflow: {workflow_description}",
@@ -76,6 +75,6 @@ class OrchestratorPrompts:
             can_spawn_agents=can_spawn_agents,
         )
 
-    def get_instructions(self) -> List[str]:
+    def get_instructions(self) -> list[str]:
         """Get the orchestrator instructions."""
         return self.INSTRUCTIONS.copy()

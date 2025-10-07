@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 SYSTEM = (
     "You are an expert at analyzing search and reasoning processes. Your task is to analyze the given sequence of steps and identify what went wrong in the search process.\n\n"
     "<rules>\n"
@@ -18,7 +17,7 @@ SYSTEM = (
 )
 
 
-ERROR_ANALYZER_PROMPTS: Dict[str, str] = {
+ERROR_ANALYZER_PROMPTS: dict[str, str] = {
     "system": SYSTEM,
     "analyze_error": "Analyze the following error sequence and provide improvement suggestions: {error_sequence}",
 }

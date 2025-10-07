@@ -15,16 +15,16 @@ class TestPromptsModuleImports:
         """Test all imports from agents prompts module."""
 
         from DeepResearch.src.prompts.agents import (
-            BASE_AGENT_SYSTEM_PROMPT,
             BASE_AGENT_INSTRUCTIONS,
-            PARSER_AGENT_SYSTEM_PROMPT,
-            PLANNER_AGENT_SYSTEM_PROMPT,
-            EXECUTOR_AGENT_SYSTEM_PROMPT,
-            SEARCH_AGENT_SYSTEM_PROMPT,
-            RAG_AGENT_SYSTEM_PROMPT,
+            BASE_AGENT_SYSTEM_PROMPT,
             BIOINFORMATICS_AGENT_SYSTEM_PROMPT,
             DEEPSEARCH_AGENT_SYSTEM_PROMPT,
             EVALUATOR_AGENT_SYSTEM_PROMPT,
+            EXECUTOR_AGENT_SYSTEM_PROMPT,
+            PARSER_AGENT_SYSTEM_PROMPT,
+            PLANNER_AGENT_SYSTEM_PROMPT,
+            RAG_AGENT_SYSTEM_PROMPT,
+            SEARCH_AGENT_SYSTEM_PROMPT,
             AgentPrompts,
         )
 
@@ -59,14 +59,14 @@ class TestPromptsModuleImports:
         """Test all imports from agent module."""
 
         from DeepResearch.src.prompts.agent import (
-            HEADER,
-            ACTIONS_WRAPPER,
-            ACTION_VISIT,
-            ACTION_SEARCH,
             ACTION_ANSWER,
             ACTION_BEAST,
             ACTION_REFLECT,
+            ACTION_SEARCH,
+            ACTION_VISIT,
+            ACTIONS_WRAPPER,
             FOOTER,
+            HEADER,
             AgentPrompts,
         )
 
@@ -281,8 +281,8 @@ class TestPromptsCrossModuleImports:
     def test_agents_integration_imports(self):
         """Test that prompts can import from agents module."""
         # This tests the import chain: prompts -> agents
-        from DeepResearch.src.prompts.agent import AgentPrompts
         from DeepResearch.src.agents.prime_parser import StructuredProblem
+        from DeepResearch.src.prompts.agent import AgentPrompts
 
         # If we get here without ImportError, the import chain works
         assert AgentPrompts is not None
@@ -295,12 +295,12 @@ class TestPromptsComplexImportChains:
     def test_full_prompts_initialization_chain(self):
         """Test the complete import chain for prompts initialization."""
         try:
-            from DeepResearch.src.prompts.agent import AgentPrompts, HEADER
-            from DeepResearch.src.prompts.planner import PlannerPrompts, PLANNER_PROMPTS
+            from DeepResearch.src.prompts.agent import HEADER, AgentPrompts
             from DeepResearch.src.prompts.evaluator import (
-                EvaluatorPrompts,
                 EVALUATOR_PROMPTS,
+                EvaluatorPrompts,
             )
+            from DeepResearch.src.prompts.planner import PLANNER_PROMPTS, PlannerPrompts
             from DeepResearch.src.utils.config_loader import BioinformaticsConfigLoader
 
             # If all imports succeed, the chain is working
@@ -318,10 +318,10 @@ class TestPromptsComplexImportChains:
     def test_workflow_prompts_chain(self):
         """Test the complete import chain for workflow prompts."""
         try:
-            from DeepResearch.src.prompts.orchestrator import OrchestratorPrompts
-            from DeepResearch.src.prompts.research_planner import ResearchPlannerPrompts
             from DeepResearch.src.prompts.finalizer import FinalizerPrompts
+            from DeepResearch.src.prompts.orchestrator import OrchestratorPrompts
             from DeepResearch.src.prompts.reducer import ReducerPrompts
+            from DeepResearch.src.prompts.research_planner import ResearchPlannerPrompts
 
             # If all imports succeed, the chain is working
             assert OrchestratorPrompts is not None
@@ -339,7 +339,7 @@ class TestPromptsImportErrorHandling:
     def test_missing_dependencies_handling(self):
         """Test that modules handle missing dependencies gracefully."""
         # Most prompt modules should work without external dependencies
-        from DeepResearch.src.prompts.agent import AgentPrompts, HEADER
+        from DeepResearch.src.prompts.agent import HEADER, AgentPrompts
         from DeepResearch.src.prompts.planner import PlannerPrompts
 
         # These should always be available
@@ -356,7 +356,7 @@ class TestPromptsImportErrorHandling:
 
     def test_prompt_content_validation(self):
         """Test that prompt content is properly structured."""
-        from DeepResearch.src.prompts.agent import HEADER, ACTIONS_WRAPPER
+        from DeepResearch.src.prompts.agent import ACTIONS_WRAPPER, HEADER
 
         # Test that prompts contain expected placeholders
         assert "${current_date_utc}" in HEADER

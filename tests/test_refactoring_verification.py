@@ -19,11 +19,11 @@ def test_refactoring_verification():
     # Test datatypes imports
     print("Testing datatypes imports...")
     from DeepResearch.src.datatypes.workflow_orchestration import (
-        OrchestratorDependencies,
-        NestedLoopRequest,
-        SubgraphSpawnRequest,
         BreakConditionCheck,
+        NestedLoopRequest,
         OrchestrationResult,
+        OrchestratorDependencies,
+        SubgraphSpawnRequest,
     )
 
     assert OrchestratorDependencies is not None
@@ -36,11 +36,19 @@ def test_refactoring_verification():
     # Test main datatypes package
     print("Testing main datatypes package...")
     from DeepResearch.src.datatypes import (
-        OrchestratorDependencies as OD1,
-        NestedLoopRequest as NLR1,
-        SubgraphSpawnRequest as SSR1,
         BreakConditionCheck as BCC1,
+    )
+    from DeepResearch.src.datatypes import (
+        NestedLoopRequest as NLR1,
+    )
+    from DeepResearch.src.datatypes import (
         OrchestrationResult as OR1,
+    )
+    from DeepResearch.src.datatypes import (
+        OrchestratorDependencies as OD1,
+    )
+    from DeepResearch.src.datatypes import (
+        SubgraphSpawnRequest as SSR1,
     )
 
     assert OD1 is not None
@@ -53,13 +61,13 @@ def test_refactoring_verification():
     # Test prompts
     print("Testing prompts...")
     from DeepResearch.src.prompts.orchestrator import (
-        ORCHESTRATOR_SYSTEM_PROMPT,
         ORCHESTRATOR_INSTRUCTIONS,
+        ORCHESTRATOR_SYSTEM_PROMPT,
         OrchestratorPrompts,
     )
     from DeepResearch.src.prompts.workflow_orchestrator import (
-        WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT,
         WORKFLOW_ORCHESTRATOR_INSTRUCTIONS,
+        WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT,
         WorkflowOrchestratorPrompts,
     )
 

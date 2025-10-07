@@ -7,7 +7,6 @@ that coordinates multiple specialized workflows using Pydantic AI patterns.
 
 from typing import Dict, List
 
-
 # System prompt for the primary workflow orchestrator
 WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT = """You are the primary orchestrator for a sophisticated workflow-of-workflows system.
 Your role is to:
@@ -36,7 +35,7 @@ WORKFLOW_ORCHESTRATOR_INSTRUCTIONS = [
 
 
 # Prompt templates for workflow orchestrator operations
-WORKFLOW_ORCHESTRATOR_PROMPTS: Dict[str, str] = {
+WORKFLOW_ORCHESTRATOR_PROMPTS: dict[str, str] = {
     "system": WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT,
     "instructions": "\n".join(WORKFLOW_ORCHESTRATOR_INSTRUCTIONS),
     "spawn_workflow": "Spawn a new workflow with the following parameters: {workflow_type}, {workflow_name}, {input_data}",
@@ -70,7 +69,7 @@ class WorkflowOrchestratorPrompts:
             can_spawn_agents=can_spawn_agents,
         )
 
-    def get_instructions(self) -> List[str]:
+    def get_instructions(self) -> list[str]:
         """Get the orchestrator instructions."""
         return self.INSTRUCTIONS.copy()
 

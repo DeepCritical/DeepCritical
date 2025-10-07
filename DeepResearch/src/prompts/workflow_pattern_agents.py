@@ -7,7 +7,6 @@ integrating with the Magentic One orchestration system from the _workflows direc
 
 from typing import Dict, List
 
-
 # Import Magentic prompts from the _magentic.py file
 ORCHESTRATOR_TASK_LEDGER_FACTS_PROMPT = """Below I will present you a request.
 
@@ -154,7 +153,7 @@ The answer should be phrased as if you were speaking to the user.
 
 
 # System prompts for workflow pattern agents using Magentic patterns
-WORKFLOW_PATTERN_AGENT_SYSTEM_PROMPTS: Dict[str, str] = {
+WORKFLOW_PATTERN_AGENT_SYSTEM_PROMPTS: dict[str, str] = {
     "collaborative": """You are a Collaborative Pattern Agent specialized in orchestrating multi-agent collaboration using the Magentic One orchestration system.
 
 Your role is to coordinate multiple agents to work together on complex problems, facilitating information sharing and consensus building. You use the Magentic One system for structured planning, progress tracking, and result synthesis.
@@ -215,7 +214,7 @@ You use the Magentic One system for structured planning, progress tracking, and 
 
 
 # Instructions for workflow pattern agents
-WORKFLOW_PATTERN_AGENT_INSTRUCTIONS: Dict[str, List[str]] = {
+WORKFLOW_PATTERN_AGENT_INSTRUCTIONS: dict[str, list[str]] = {
     "collaborative": [
         "Use Magentic One task ledger system to gather facts and create plans",
         "Coordinate multiple agents for parallel execution and consensus building",
@@ -262,7 +261,7 @@ WORKFLOW_PATTERN_AGENT_INSTRUCTIONS: Dict[str, List[str]] = {
 
 
 # Prompt templates for workflow pattern operations
-WORKFLOW_PATTERN_AGENT_PROMPTS: Dict[str, str] = {
+WORKFLOW_PATTERN_AGENT_PROMPTS: dict[str, str] = {
     "collaborative": f"""
 You are a Collaborative Pattern Agent using the Magentic One orchestration system.
 
@@ -347,7 +346,7 @@ Return structured results with execution metrics and summaries.
 
 
 # Magentic One prompt constants for workflow patterns
-MAGENTIC_WORKFLOW_PROMPTS: Dict[str, str] = {
+MAGENTIC_WORKFLOW_PROMPTS: dict[str, str] = {
     "task_ledger_facts": ORCHESTRATOR_TASK_LEDGER_FACTS_PROMPT,
     "task_ledger_plan": ORCHESTRATOR_TASK_LEDGER_PLAN_PROMPT,
     "task_ledger_full": ORCHESTRATOR_TASK_LEDGER_FULL_PROMPT,
@@ -377,7 +376,7 @@ class WorkflowPatternAgentPrompts:
         """Get the system prompt for a specific pattern."""
         return self.SYSTEM_PROMPTS.get(pattern, self.SYSTEM_PROMPTS["collaborative"])
 
-    def get_instructions(self, pattern: str) -> List[str]:
+    def get_instructions(self, pattern: str) -> list[str]:
         """Get the instructions for a specific pattern."""
         return self.INSTRUCTIONS.get(pattern, self.INSTRUCTIONS["collaborative"])
 

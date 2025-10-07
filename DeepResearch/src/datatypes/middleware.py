@@ -8,13 +8,15 @@ planning, filesystem, subagent orchestration, summarization, and prompt caching.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Union, Callable
+from collections.abc import Callable
+from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 
 # Import existing DeepCritical types
 from .deep_agent_state import DeepAgentState
-from .deep_agent_types import SubAgent, CustomSubAgent, TaskRequest, TaskResult
+from .deep_agent_types import CustomSubAgent, SubAgent, TaskRequest, TaskResult
 
 
 class MiddlewareConfig(BaseModel):
@@ -45,22 +47,22 @@ class MiddlewareResult(BaseModel):
 
     success: bool = Field(..., description="Whether middleware succeeded")
     modified_state: bool = Field(False, description="Whether state was modified")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Middleware metadata"
     )
-    error: Optional[str] = Field(None, description="Error message if failed")
+    error: str | None = Field(None, description="Error message if failed")
     execution_time: float = Field(0.0, description="Execution time in seconds")
 
 
 class BaseMiddleware:
     """Base class for all middleware components."""
 
-    def __init__(self, config: Optional[MiddlewareConfig] = None):
+    def __init__(self, config: MiddlewareConfig | None = None):
         self.config = config or MiddlewareConfig()
         self.name = self.__class__.__name__
 
     async def process(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
     ) -> MiddlewareResult:
         """Process the middleware logic."""
         start_time = time.time()
@@ -92,8 +94,8 @@ class BaseMiddleware:
             )
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute the middleware logic. Override in subclasses."""
         return {"modified_state": False, "metadata": {}}
 
@@ -101,7 +103,7 @@ class BaseMiddleware:
 class PlanningMiddleware(BaseMiddleware):
     """Middleware for planning operations and todo management."""
 
-    def __init__(self, config: Optional[MiddlewareConfig] = None):
+    def __init__(self, config: MiddlewareConfig | None = None):
         super().__init__(config)
         # Import here to avoid circular imports
         from ..tools.deep_agent_tools import write_todos_tool
@@ -109,8 +111,8 @@ class PlanningMiddleware(BaseMiddleware):
         self.tools = [write_todos_tool]
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute planning middleware logic."""
         # Register planning tools with the agent
         for tool in self.tools:
@@ -137,21 +139,21 @@ class PlanningMiddleware(BaseMiddleware):
 class FilesystemMiddleware(BaseMiddleware):
     """Middleware for filesystem operations."""
 
-    def __init__(self, config: Optional[MiddlewareConfig] = None):
+    def __init__(self, config: MiddlewareConfig | None = None):
         super().__init__(config)
         # Import here to avoid circular imports
         from ..tools.deep_agent_tools import (
+            edit_file_tool,
             list_files_tool,
             read_file_tool,
             write_file_tool,
-            edit_file_tool,
         )
 
         self.tools = [list_files_tool, read_file_tool, write_file_tool, edit_file_tool]
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute filesystem middleware logic."""
         # Register filesystem tools with the agent
         for tool in self.tools:
@@ -182,9 +184,9 @@ class SubAgentMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
-        default_tools: Optional[List[Callable]] = None,
-        config: Optional[MiddlewareConfig] = None,
+        subagents: list[SubAgent | CustomSubAgent] | None = None,
+        default_tools: list[Callable] | None = None,
+        config: MiddlewareConfig | None = None,
     ):
         super().__init__(config)
         self.subagents = subagents or []
@@ -193,11 +195,11 @@ class SubAgentMiddleware(BaseMiddleware):
         from ..tools.deep_agent_tools import task_tool
 
         self.tools = [task_tool]
-        self._agent_registry: Dict[str, "Agent"] = {}
+        self._agent_registry: dict[str, Agent] = {}
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute subagent middleware logic."""
         # Register task tool with the agent
         for tool in self.tools:
@@ -236,9 +238,7 @@ class SubAgentMiddleware(BaseMiddleware):
             except Exception as e:
                 print(f"Warning: Failed to initialize subagent {subagent.name}: {e}")
 
-    async def _create_subagent(
-        self, subagent: Union[SubAgent, CustomSubAgent]
-    ) -> "Agent":
+    async def _create_subagent(self, subagent: SubAgent | CustomSubAgent) -> Agent:
         """Create an agent instance for a subagent."""
         # This is a simplified implementation
         # In a real implementation, you would create proper Agent instances
@@ -316,15 +316,15 @@ class SummarizationMiddleware(BaseMiddleware):
         self,
         max_tokens_before_summary: int = 120000,
         messages_to_keep: int = 20,
-        config: Optional[MiddlewareConfig] = None,
+        config: MiddlewareConfig | None = None,
     ):
         super().__init__(config)
         self.max_tokens_before_summary = max_tokens_before_summary
         self.messages_to_keep = messages_to_keep
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute summarization middleware logic."""
         # Check if conversation history needs summarization
         conversation_history = ctx.deps.conversation_history
@@ -376,16 +376,16 @@ class PromptCachingMiddleware(BaseMiddleware):
         self,
         ttl: str = "5m",
         unsupported_model_behavior: str = "ignore",
-        config: Optional[MiddlewareConfig] = None,
+        config: MiddlewareConfig | None = None,
     ):
         super().__init__(config)
         self.ttl = ttl
         self.unsupported_model_behavior = unsupported_model_behavior
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
     async def _execute(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> Dict[str, Any]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> dict[str, Any]:
         """Execute prompt caching middleware logic."""
         # This is a simplified implementation
         # In practice, you would implement proper prompt caching
@@ -399,14 +399,13 @@ class PromptCachingMiddleware(BaseMiddleware):
                 "modified_state": False,
                 "metadata": {"cache_hit": True, "cache_key": cache_key},
             }
-        else:
-            # Cache miss - will be handled by the agent execution
-            return {
-                "modified_state": False,
-                "metadata": {"cache_hit": False, "cache_key": cache_key},
-            }
+        # Cache miss - will be handled by the agent execution
+        return {
+            "modified_state": False,
+            "metadata": {"cache_hit": False, "cache_key": cache_key},
+        }
 
-    def _generate_cache_key(self, ctx: "RunContext[DeepAgentState]") -> str:
+    def _generate_cache_key(self, ctx: RunContext[DeepAgentState]) -> str:
         """Generate a cache key for the current context."""
         # Simplified cache key generation
         # In practice, this would be more sophisticated
@@ -416,7 +415,7 @@ class PromptCachingMiddleware(BaseMiddleware):
 class MiddlewarePipeline:
     """Pipeline for managing multiple middleware components."""
 
-    def __init__(self, middleware: Optional[List[BaseMiddleware]] = None):
+    def __init__(self, middleware: list[BaseMiddleware] | None = None):
         self.middleware = middleware or []
         # Sort by priority (higher priority first)
         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
@@ -428,8 +427,8 @@ class MiddlewarePipeline:
         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
 
     async def process(
-        self, agent: "Agent", ctx: "RunContext[DeepAgentState]", **kwargs
-    ) -> List[MiddlewareResult]:
+        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    ) -> list[MiddlewareResult]:
         """Process all middleware in the pipeline."""
         results = []
 
@@ -446,7 +445,7 @@ class MiddlewarePipeline:
                 results.append(
                     MiddlewareResult(
                         success=False,
-                        error=f"Middleware {middleware.name} failed: {str(e)}",
+                        error=f"Middleware {middleware.name} failed: {e!s}",
                     )
                 )
 
@@ -455,23 +454,23 @@ class MiddlewarePipeline:
 
 # Factory functions for creating middleware
 def create_planning_middleware(
-    config: Optional[MiddlewareConfig] = None,
+    config: MiddlewareConfig | None = None,
 ) -> PlanningMiddleware:
     """Create a planning middleware instance."""
     return PlanningMiddleware(config)
 
 
 def create_filesystem_middleware(
-    config: Optional[MiddlewareConfig] = None,
+    config: MiddlewareConfig | None = None,
 ) -> FilesystemMiddleware:
     """Create a filesystem middleware instance."""
     return FilesystemMiddleware(config)
 
 
 def create_subagent_middleware(
-    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
-    default_tools: Optional[List[Callable]] = None,
-    config: Optional[MiddlewareConfig] = None,
+    subagents: list[SubAgent | CustomSubAgent] | None = None,
+    default_tools: list[Callable] | None = None,
+    config: MiddlewareConfig | None = None,
 ) -> SubAgentMiddleware:
     """Create a subagent middleware instance."""
     return SubAgentMiddleware(subagents, default_tools, config)
@@ -480,7 +479,7 @@ def create_subagent_middleware(
 def create_summarization_middleware(
     max_tokens_before_summary: int = 120000,
     messages_to_keep: int = 20,
-    config: Optional[MiddlewareConfig] = None,
+    config: MiddlewareConfig | None = None,
 ) -> SummarizationMiddleware:
     """Create a summarization middleware instance."""
     return SummarizationMiddleware(max_tokens_before_summary, messages_to_keep, config)
@@ -489,15 +488,15 @@ def create_summarization_middleware(
 def create_prompt_caching_middleware(
     ttl: str = "5m",
     unsupported_model_behavior: str = "ignore",
-    config: Optional[MiddlewareConfig] = None,
+    config: MiddlewareConfig | None = None,
 ) -> PromptCachingMiddleware:
     """Create a prompt caching middleware instance."""
     return PromptCachingMiddleware(ttl, unsupported_model_behavior, config)
 
 
 def create_default_middleware_pipeline(
-    subagents: Optional[List[Union[SubAgent, CustomSubAgent]]] = None,
-    default_tools: Optional[List[Callable]] = None,
+    subagents: list[SubAgent | CustomSubAgent] | None = None,
+    default_tools: list[Callable] | None = None,
 ) -> MiddlewarePipeline:
     """Create a default middleware pipeline with common middleware."""
     pipeline = MiddlewarePipeline()

@@ -12,7 +12,7 @@ import inspect
 import logging
 from collections.abc import Callable
 from types import UnionType
-from typing import Any, Generic, Union, cast, get_args, get_origin, TypeVar
+from typing import Any, Generic, TypeVar, Union, cast, get_args, get_origin
 
 logger = logging.getLogger(__name__)
 
@@ -148,14 +148,13 @@ def validate_workflow_context_annotation(
                         f"contains invalid type entries: {invalid_members}. "
                         f"Use proper types or typing generics"
                     )
-            else:
-                # Check if it's a valid type
-                if not _is_type_like(type_arg):
-                    raise ValueError(
-                        f"{context_description} {parameter_name} {param_description} "
-                        f"contains invalid type entry: {type_arg}. "
-                        f"Use proper types or typing generics"
-                    )
+            # Check if it's a valid type
+            elif not _is_type_like(type_arg):
+                raise ValueError(
+                    f"{context_description} {parameter_name} {param_description} "
+                    f"contains invalid type entry: {type_arg}. "
+                    f"Use proper types or typing generics"
+                )
 
     return infer_output_types_from_ctx_annotation(annotation)
 
@@ -245,17 +244,14 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
     async def send_message(self, message: T_Out, target_id: str | None = None) -> None:
         """Send a message to the workflow context."""
         # This would be implemented with the actual message sending logic
-        pass
 
     async def yield_output(self, output: T_W_Out) -> None:
         """Set the output of the workflow."""
         # This would be implemented with the actual output yielding logic
-        pass
 
     async def add_event(self, event: Any) -> None:
         """Add an event to the workflow context."""
         # This would be implemented with the actual event adding logic
-        pass
 
     async def get_shared_state(self, key: str) -> Any:
         """Get a value from the shared state."""
@@ -265,7 +261,6 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
     async def set_shared_state(self, key: str, value: Any) -> None:
         """Set a value in the shared state."""
         # This would be implemented with the actual shared state setting
-        pass
 
     def get_source_executor_id(self) -> str:
         """Get the ID of the source executor that sent the message to this executor."""
@@ -289,7 +284,6 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
     async def set_state(self, state: dict[str, Any]) -> None:
         """Persist this executors state into the checkpointable context."""
         # This would be implemented with the actual state persistence
-        pass
 
     async def get_state(self) -> dict[str, Any] | None:
         """Retrieve previously persisted state for this executor, if any."""

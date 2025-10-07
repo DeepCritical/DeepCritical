@@ -7,7 +7,6 @@ using Pydantic AI patterns that align with DeepCritical's architecture.
 
 from typing import Dict
 
-
 # System prompt for the main search agent
 SEARCH_AGENT_SYSTEM_PROMPT = """You are an intelligent search agent that helps users find information on the web.
 
@@ -39,7 +38,7 @@ Your role is to:
 Use rag_search_tool for all search operations to ensure compatibility with RAG systems."""
 
 # Prompt templates for search operations
-SEARCH_AGENT_PROMPTS: Dict[str, str] = {
+SEARCH_AGENT_PROMPTS: dict[str, str] = {
     "system": SEARCH_AGENT_SYSTEM_PROMPT,
     "rag_system": RAG_SEARCH_AGENT_SYSTEM_PROMPT,
     "search_request": """Please search for: "{query}"

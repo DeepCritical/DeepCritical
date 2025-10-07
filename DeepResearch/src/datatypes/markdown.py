@@ -20,7 +20,7 @@ class MarkdownCode:
     """MarkdownCode is a code block found in the middle of a markdown document."""
 
     content: str = field(default_factory=str)
-    language: Optional[str] = field(default=None)
+    language: str | None = field(default=None)
     start_index: int = field(default_factory=int)
     end_index: int = field(default_factory=int)
 
@@ -33,13 +33,13 @@ class MarkdownImage:
     content: str = field(default_factory=str)
     start_index: int = field(default_factory=int)
     end_index: int = field(default_factory=int)
-    link: Optional[str] = field(default=None)
+    link: str | None = field(default=None)
 
 
 @dataclass
 class MarkdownDocument(Document):
     """MarkdownDocument is a document that contains markdown content."""
 
-    tables: List[MarkdownTable] = field(default_factory=list)
-    code: List[MarkdownCode] = field(default_factory=list)
-    images: List[MarkdownImage] = field(default_factory=list)
+    tables: list[MarkdownTable] = field(default_factory=list)
+    code: list[MarkdownCode] = field(default_factory=list)
+    images: list[MarkdownImage] = field(default_factory=list)

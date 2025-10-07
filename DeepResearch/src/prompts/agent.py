@@ -7,7 +7,6 @@ in the DeepCritical system.
 
 from __future__ import annotations
 
-
 # Base header template
 HEADER = """DeepCritical Research Agent System
 Current Date: ${current_date_utc}

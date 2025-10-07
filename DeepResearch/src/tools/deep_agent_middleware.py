@@ -8,28 +8,25 @@ DeepCritical's architecture.
 
 from __future__ import annotations
 
-
 # Import existing DeepCritical types
-
 # Import middleware types from datatypes module
 from ..datatypes.middleware import (
-    MiddlewareConfig,
-    MiddlewareResult,
     BaseMiddleware,
-    PlanningMiddleware,
     FilesystemMiddleware,
+    MiddlewareConfig,
+    MiddlewarePipeline,
+    MiddlewareResult,
+    PlanningMiddleware,
+    PromptCachingMiddleware,
     SubAgentMiddleware,
     SummarizationMiddleware,
-    PromptCachingMiddleware,
-    MiddlewarePipeline,
-    create_planning_middleware,
+    create_default_middleware_pipeline,
     create_filesystem_middleware,
+    create_planning_middleware,
+    create_prompt_caching_middleware,
     create_subagent_middleware,
     create_summarization_middleware,
-    create_prompt_caching_middleware,
-    create_default_middleware_pipeline,
 )
-
 
 # Export all middleware components
 __all__ = [

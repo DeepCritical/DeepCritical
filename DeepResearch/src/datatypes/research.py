@@ -16,7 +16,7 @@ class StepResult:
     """Result of a single research step."""
 
     action: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
 
 
 @dataclass
@@ -24,5 +24,5 @@ class ResearchOutcome:
     """Outcome of a research workflow execution."""
 
     answer: str
-    references: List[str]
-    context: Dict[str, Any]
+    references: list[str]
+    context: dict[str, Any]

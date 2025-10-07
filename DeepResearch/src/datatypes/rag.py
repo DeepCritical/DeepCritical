@@ -8,9 +8,11 @@ vector stores, documents, and VLLM integration for local model hosting.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, AsyncGenerator, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field, HttpUrl, model_validator
 
 # Import existing dataclasses for alignment
@@ -73,29 +75,27 @@ class Document(BaseModel):
         description="Unique document identifier",
     )
     content: str = Field(..., description="Document content/text")
-    chunks: List[Chunk] = Field(default_factory=list, description="Document chunks")
-    metadata: Dict[str, Any] = Field(
+    chunks: list[Chunk] = Field(default_factory=list, description="Document chunks")
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Document metadata"
     )
-    embedding: Optional[Union[List[float], "np.ndarray"]] = Field(
+    embedding: list[float] | np.ndarray | None = Field(
         None, description="Document embedding vector"
     )
     created_at: datetime = Field(
         default_factory=datetime.now, description="Creation timestamp"
     )
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    updated_at: datetime | None = Field(None, description="Last update timestamp")
 
     # Bioinformatics-specific metadata fields
-    bioinformatics_type: Optional[str] = Field(
+    bioinformatics_type: str | None = Field(
         None, description="Type of bioinformatics data (GO, PubMed, GEO, etc.)"
     )
-    source_database: Optional[str] = Field(
-        None, description="Source database identifier"
-    )
-    cross_references: Dict[str, List[str]] = Field(
+    source_database: str | None = Field(None, description="Source database identifier")
+    cross_references: dict[str, list[str]] = Field(
         default_factory=dict, description="Cross-references to other entities"
     )
-    quality_score: Optional[float] = Field(
+    quality_score: float | None = Field(
         None, ge=0.0, le=1.0, description="Quality score for the document"
     )
 
@@ -111,7 +111,7 @@ class Document(BaseModel):
         """Add a chunk to the document."""
         self.chunks.append(chunk)
 
-    def get_chunk_by_id(self, chunk_id: str) -> Optional[Chunk]:
+    def get_chunk_by_id(self, chunk_id: str) -> Chunk | None:
         """Get a chunk by its ID."""
         for chunk in self.chunks:
             if chunk.id == chunk_id:
@@ -125,7 +125,7 @@ class Document(BaseModel):
         )
 
     @classmethod
-    def from_chonkie_document(cls, doc: ChonkieDocument, **kwargs) -> "Document":
+    def from_chonkie_document(cls, doc: ChonkieDocument, **kwargs) -> Document:
         """Create Document from ChonkieDocument."""
         return cls(
             id=doc.id,
@@ -136,9 +136,9 @@ class Document(BaseModel):
         )
 
     @classmethod
-    def from_bioinformatics_data(cls, data: Any, **kwargs) -> "Document":
+    def from_bioinformatics_data(cls, data: Any, **kwargs) -> Document:
         """Create Document from bioinformatics data types."""
-        from .bioinformatics import GOAnnotation, PubMedPaper, GEOSeries
+        from .bioinformatics import GEOSeries, GOAnnotation, PubMedPaper
 
         if isinstance(data, GOAnnotation):
             content = f"GO Annotation: {data.go_term.name}\nGene: {data.gene_symbol} ({data.gene_id})\nEvidence: {data.evidence_code.value}\nPaper: {data.title}\nAbstract: {data.abstract}"
@@ -244,8 +244,8 @@ class EmbeddingsConfig(BaseModel):
 
     model_type: EmbeddingModelType = Field(..., description="Type of embedding model")
     model_name: str = Field(..., description="Model name or identifier")
-    api_key: Optional[str] = Field(None, description="API key for external services")
-    base_url: Optional[HttpUrl] = Field(None, description="Base URL for API endpoints")
+    api_key: str | None = Field(None, description="API key for external services")
+    base_url: HttpUrl | None = Field(None, description="Base URL for API endpoints")
     num_dimensions: int = Field(
         1536, description="Number of dimensions in embedding vectors"
     )
@@ -271,13 +271,13 @@ class VLLMConfig(BaseModel):
     model_name: str = Field(..., description="Model name or path")
     host: str = Field("localhost", description="VLLM server host")
     port: int = Field(8000, description="VLLM server port")
-    api_key: Optional[str] = Field(None, description="API key if required")
+    api_key: str | None = Field(None, description="API key if required")
     max_tokens: int = Field(2048, description="Maximum tokens to generate")
     temperature: float = Field(0.7, description="Sampling temperature")
     top_p: float = Field(0.9, description="Top-p sampling parameter")
     frequency_penalty: float = Field(0.0, description="Frequency penalty")
     presence_penalty: float = Field(0.0, description="Presence penalty")
-    stop: Optional[List[str]] = Field(None, description="Stop sequences")
+    stop: list[str] | None = Field(None, description="Stop sequences")
     stream: bool = Field(False, description="Enable streaming responses")
 
     class Config:
@@ -297,17 +297,17 @@ class VectorStoreConfig(BaseModel):
     """Configuration for vector store connections."""
 
     store_type: VectorStoreType = Field(..., description="Type of vector store")
-    connection_string: Optional[str] = Field(
+    connection_string: str | None = Field(
         None, description="Database connection string"
     )
-    host: Optional[str] = Field(None, description="Vector store host")
-    port: Optional[int] = Field(None, description="Vector store port")
-    database: Optional[str] = Field(None, description="Database name")
-    collection_name: Optional[str] = Field(None, description="Collection/index name")
-    api_key: Optional[str] = Field(None, description="API key for cloud services")
+    host: str | None = Field(None, description="Vector store host")
+    port: int | None = Field(None, description="Vector store port")
+    database: str | None = Field(None, description="Database name")
+    collection_name: str | None = Field(None, description="Collection/index name")
+    api_key: str | None = Field(None, description="API key for cloud services")
     embedding_dimension: int = Field(1536, description="Embedding vector dimension")
     distance_metric: str = Field("cosine", description="Distance metric for similarity")
-    index_type: Optional[str] = Field(None, description="Index type (e.g., HNSW, IVF)")
+    index_type: str | None = Field(None, description="Index type (e.g., HNSW, IVF)")
 
     class Config:
         json_schema_extra = {
@@ -329,13 +329,11 @@ class RAGQuery(BaseModel):
         SearchType.SIMILARITY, description="Type of search to perform"
     )
     top_k: int = Field(5, description="Number of documents to retrieve")
-    score_threshold: Optional[float] = Field(
-        None, description="Minimum similarity score"
-    )
-    retrieval_query: Optional[str] = Field(
+    score_threshold: float | None = Field(None, description="Minimum similarity score")
+    retrieval_query: str | None = Field(
         None, description="Custom retrieval query for advanced stores"
     )
-    filters: Optional[Dict[str, Any]] = Field(None, description="Metadata filters")
+    filters: dict[str, Any] | None = Field(None, description="Metadata filters")
 
     class Config:
         json_schema_extra = {
@@ -352,14 +350,12 @@ class RAGResponse(BaseModel):
     """Response from RAG operations."""
 
     query: str = Field(..., description="Original query")
-    retrieved_documents: List[SearchResult] = Field(
+    retrieved_documents: list[SearchResult] = Field(
         ..., description="Retrieved documents"
     )
-    generated_answer: Optional[str] = Field(
-        None, description="Generated answer from LLM"
-    )
+    generated_answer: str | None = Field(None, description="Generated answer from LLM")
     context: str = Field(..., description="Context used for generation")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Response metadata"
     )
     processing_time: float = Field(..., description="Total processing time in seconds")
@@ -381,9 +377,7 @@ class IntegratedSearchRequest(BaseModel):
 
     query: str = Field(..., description="Search query")
     search_type: str = Field("search", description="Type of search: 'search' or 'news'")
-    num_results: Optional[int] = Field(
-        4, description="Number of results to fetch (1-20)"
-    )
+    num_results: int | None = Field(4, description="Number of results to fetch (1-20)")
     chunk_size: int = Field(1000, description="Chunk size for processing")
     chunk_overlap: int = Field(0, description="Overlap between chunks")
     enable_analytics: bool = Field(True, description="Whether to record analytics")
@@ -409,16 +403,16 @@ class IntegratedSearchResponse(BaseModel):
     """Response model for integrated search operations."""
 
     query: str = Field(..., description="Original search query")
-    documents: List[Document] = Field(
+    documents: list[Document] = Field(
         ..., description="RAG documents created from search results"
     )
-    chunks: List[Chunk] = Field(
+    chunks: list[Chunk] = Field(
         ..., description="RAG chunks created from search results"
     )
     analytics_recorded: bool = Field(..., description="Whether analytics were recorded")
     processing_time: float = Field(..., description="Total processing time in seconds")
     success: bool = Field(..., description="Whether the search was successful")
-    error: Optional[str] = Field(None, description="Error message if search failed")
+    error: str | None = Field(None, description="Error message if search failed")
 
     class Config:
         json_schema_extra = {
@@ -448,7 +442,7 @@ class RAGConfig(BaseModel):
     chunk_overlap: int = Field(200, description="Overlap between chunks")
     max_context_length: int = Field(4000, description="Maximum context length for LLM")
     enable_reranking: bool = Field(False, description="Enable document reranking")
-    reranker_model: Optional[str] = Field(None, description="Reranker model name")
+    reranker_model: str | None = Field(None, description="Reranker model name")
 
     @model_validator(mode="before")
     @classmethod
@@ -504,25 +498,21 @@ class Embeddings(ABC):
 
     @abstractmethod
     async def vectorize_documents(
-        self, document_chunks: List[str]
-    ) -> List[List[float]]:
+        self, document_chunks: list[str]
+    ) -> list[list[float]]:
         """Generate document embeddings for a list of chunks."""
-        pass
 
     @abstractmethod
-    async def vectorize_query(self, text: str) -> List[float]:
+    async def vectorize_query(self, text: str) -> list[float]:
         """Generate embeddings for the query string."""
-        pass
 
     @abstractmethod
-    def vectorize_documents_sync(self, document_chunks: List[str]) -> List[List[float]]:
+    def vectorize_documents_sync(self, document_chunks: list[str]) -> list[list[float]]:
         """Synchronous version of vectorize_documents()."""
-        pass
 
     @abstractmethod
-    def vectorize_query_sync(self, text: str) -> List[float]:
+    def vectorize_query_sync(self, text: str) -> list[float]:
         """Synchronous version of vectorize_query()."""
-        pass
 
 
 class VectorStore(ABC):
@@ -534,61 +524,53 @@ class VectorStore(ABC):
 
     @abstractmethod
     async def add_documents(
-        self, documents: List[Document], **kwargs: Any
-    ) -> List[str]:
+        self, documents: list[Document], **kwargs: Any
+    ) -> list[str]:
         """Add a list of documents to the vector store and return their unique identifiers."""
-        pass
 
     @abstractmethod
     async def add_document_chunks(
-        self, chunks: List[Chunk], **kwargs: Any
-    ) -> List[str]:
+        self, chunks: list[Chunk], **kwargs: Any
+    ) -> list[str]:
         """Add document chunks to the vector store."""
-        pass
 
     @abstractmethod
     async def add_document_text_chunks(
-        self, document_texts: List[str], **kwargs: Any
-    ) -> List[str]:
+        self, document_texts: list[str], **kwargs: Any
+    ) -> list[str]:
         """Add document text chunks to the vector store (legacy method)."""
-        pass
 
     @abstractmethod
-    async def delete_documents(self, document_ids: List[str]) -> bool:
+    async def delete_documents(self, document_ids: list[str]) -> bool:
         """Delete the specified list of documents by their record identifiers."""
-        pass
 
     @abstractmethod
     async def search(
         self,
         query: str,
         search_type: SearchType,
-        retrieval_query: Optional[str] = None,
+        retrieval_query: str | None = None,
         **kwargs: Any,
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """Search for documents using text query."""
-        pass
 
     @abstractmethod
     async def search_with_embeddings(
         self,
-        query_embedding: List[float],
+        query_embedding: list[float],
         search_type: SearchType,
-        retrieval_query: Optional[str] = None,
+        retrieval_query: str | None = None,
         **kwargs: Any,
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """Search for documents using embedding vector."""
-        pass
 
     @abstractmethod
-    async def get_document(self, document_id: str) -> Optional[Document]:
+    async def get_document(self, document_id: str) -> Document | None:
         """Retrieve a document by its ID."""
-        pass
 
     @abstractmethod
     async def update_document(self, document: Document) -> bool:
         """Update an existing document."""
-        pass
 
 
 class LLMProvider(ABC):
@@ -599,33 +581,30 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def generate(
-        self, prompt: str, context: Optional[str] = None, **kwargs: Any
+        self, prompt: str, context: str | None = None, **kwargs: Any
     ) -> str:
         """Generate text using the LLM."""
-        pass
 
     @abstractmethod
     async def generate_stream(
-        self, prompt: str, context: Optional[str] = None, **kwargs: Any
+        self, prompt: str, context: str | None = None, **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Generate streaming text using the LLM."""
-        pass
 
 
 class RAGSystem(BaseModel):
     """Complete RAG system implementation."""
 
     config: RAGConfig = Field(..., description="RAG system configuration")
-    embeddings: Optional[Embeddings] = Field(None, description="Embeddings provider")
-    vector_store: Optional[VectorStore] = Field(None, description="Vector store")
-    llm: Optional[LLMProvider] = Field(None, description="LLM provider")
+    embeddings: Embeddings | None = Field(None, description="Embeddings provider")
+    vector_store: VectorStore | None = Field(None, description="Vector store")
+    llm: LLMProvider | None = Field(None, description="LLM provider")
 
     async def initialize(self) -> None:
         """Initialize the RAG system components."""
         # This would be implemented by concrete classes
-        pass
 
-    async def add_documents(self, documents: List[Document]) -> List[str]:
+    async def add_documents(self, documents: list[Document]) -> list[str]:
         """Add documents to the vector store."""
         if not self.vector_store:
             raise RuntimeError("Vector store not initialized")
@@ -682,9 +661,9 @@ class BioinformaticsRAGSystem(RAGSystem):
 
     def __init__(self, config: RAGConfig, **kwargs):
         super().__init__(config=config, **kwargs)
-        self.bioinformatics_data_cache: Dict[str, Any] = {}
+        self.bioinformatics_data_cache: dict[str, Any] = {}
 
-    async def add_bioinformatics_data(self, data: List[Any]) -> List[str]:
+    async def add_bioinformatics_data(self, data: list[Any]) -> list[str]:
         """Add bioinformatics data to the vector store."""
         documents = []
         for item in data:
@@ -814,8 +793,8 @@ class BioinformaticsRAGSystem(RAGSystem):
         )
 
     async def fuse_bioinformatics_data(
-        self, data_sources: Dict[str, List[Any]]
-    ) -> List[Document]:
+        self, data_sources: dict[str, list[Any]]
+    ) -> list[Document]:
         """Fuse multiple bioinformatics data sources into unified documents."""
         fused_documents = []
 
@@ -830,7 +809,7 @@ class BioinformaticsRAGSystem(RAGSystem):
 
         return fused_documents
 
-    def _add_cross_references(self, documents: List[Document]) -> None:
+    def _add_cross_references(self, documents: list[Document]) -> None:
         """Add cross-references between related documents."""
         # Group documents by common identifiers
         gene_groups = {}
@@ -886,29 +865,25 @@ class BioinformaticsRAGQuery(BaseModel):
         SearchType.SIMILARITY, description="Type of search to perform"
     )
     top_k: int = Field(5, description="Number of documents to retrieve")
-    score_threshold: Optional[float] = Field(
-        None, description="Minimum similarity score"
-    )
-    retrieval_query: Optional[str] = Field(
+    score_threshold: float | None = Field(None, description="Minimum similarity score")
+    retrieval_query: str | None = Field(
         None, description="Custom retrieval query for advanced stores"
     )
-    filters: Optional[Dict[str, Any]] = Field(None, description="Metadata filters")
+    filters: dict[str, Any] | None = Field(None, description="Metadata filters")
 
     # Bioinformatics-specific filters
-    bioinformatics_types: Optional[List[str]] = Field(
+    bioinformatics_types: list[str] | None = Field(
         None, description="Filter by bioinformatics data types"
     )
-    source_databases: Optional[List[str]] = Field(
+    source_databases: list[str] | None = Field(
         None, description="Filter by source databases"
     )
-    evidence_codes: Optional[List[str]] = Field(
+    evidence_codes: list[str] | None = Field(
         None, description="Filter by GO evidence codes"
     )
-    organisms: Optional[List[str]] = Field(None, description="Filter by organisms")
-    gene_symbols: Optional[List[str]] = Field(
-        None, description="Filter by gene symbols"
-    )
-    quality_threshold: Optional[float] = Field(
+    organisms: list[str] | None = Field(None, description="Filter by organisms")
+    gene_symbols: list[str] | None = Field(None, description="Filter by gene symbols")
+    quality_threshold: float | None = Field(
         None, ge=0.0, le=1.0, description="Minimum quality score"
     )
 
@@ -930,26 +905,24 @@ class BioinformaticsRAGResponse(BaseModel):
     """Enhanced RAG response for bioinformatics data."""
 
     query: str = Field(..., description="Original query")
-    retrieved_documents: List[SearchResult] = Field(
+    retrieved_documents: list[SearchResult] = Field(
         ..., description="Retrieved documents"
     )
-    generated_answer: Optional[str] = Field(
-        None, description="Generated answer from LLM"
-    )
+    generated_answer: str | None = Field(None, description="Generated answer from LLM")
     context: str = Field(..., description="Context used for generation")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Response metadata"
     )
     processing_time: float = Field(..., description="Total processing time in seconds")
 
     # Bioinformatics-specific response data
-    bioinformatics_summary: Dict[str, Any] = Field(
+    bioinformatics_summary: dict[str, Any] = Field(
         default_factory=dict, description="Summary of bioinformatics data"
     )
-    cross_references: Dict[str, List[str]] = Field(
+    cross_references: dict[str, list[str]] = Field(
         default_factory=dict, description="Cross-references found"
     )
-    quality_metrics: Dict[str, float] = Field(
+    quality_metrics: dict[str, float] = Field(
         default_factory=dict, description="Quality metrics for retrieved data"
     )
 
@@ -975,26 +948,26 @@ class RAGWorkflowState(BaseModel):
 
     query: str = Field(..., description="Original query")
     rag_config: RAGConfig = Field(..., description="RAG system configuration")
-    documents: List[Document] = Field(
+    documents: list[Document] = Field(
         default_factory=list, description="Documents to process"
     )
-    chunks: List[Chunk] = Field(default_factory=list, description="Document chunks")
-    rag_response: Optional[RAGResponse] = Field(None, description="RAG response")
-    bioinformatics_response: Optional[BioinformaticsRAGResponse] = Field(
+    chunks: list[Chunk] = Field(default_factory=list, description="Document chunks")
+    rag_response: RAGResponse | None = Field(None, description="RAG response")
+    bioinformatics_response: BioinformaticsRAGResponse | None = Field(
         None, description="Bioinformatics RAG response"
     )
-    processing_steps: List[str] = Field(
+    processing_steps: list[str] = Field(
         default_factory=list, description="Processing steps completed"
     )
-    errors: List[str] = Field(
+    errors: list[str] = Field(
         default_factory=list, description="Any errors encountered"
     )
 
     # Bioinformatics-specific state
-    bioinformatics_data: Dict[str, Any] = Field(
+    bioinformatics_data: dict[str, Any] = Field(
         default_factory=dict, description="Bioinformatics data being processed"
     )
-    fusion_metadata: Dict[str, Any] = Field(
+    fusion_metadata: dict[str, Any] = Field(
         default_factory=dict, description="Data fusion metadata"
     )
 

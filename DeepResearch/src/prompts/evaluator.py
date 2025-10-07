@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 DEFINITIVE_SYSTEM = (
     "You are an evaluator of answer definitiveness. Analyze if the given answer provides a definitive response or not.\n\n"
     "<rules>\n"
@@ -194,7 +193,7 @@ QUESTION_EVALUATION_SYSTEM = (
 )
 
 
-EVALUATOR_PROMPTS: Dict[str, str] = {
+EVALUATOR_PROMPTS: dict[str, str] = {
     "definitive_system": DEFINITIVE_SYSTEM,
     "freshness_system": FRESHNESS_SYSTEM,
     "plurality_system": PLURALITY_SYSTEM,

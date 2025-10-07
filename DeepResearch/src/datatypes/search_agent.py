@@ -6,6 +6,7 @@ and results that align with DeepCritical's architecture.
 """
 
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -38,10 +39,10 @@ class SearchQuery(BaseModel):
     """Search query model."""
 
     query: str = Field(..., description="The search query")
-    search_type: Optional[str] = Field(
+    search_type: str | None = Field(
         None, description="Type of search: 'search' or 'news'"
     )
-    num_results: Optional[int] = Field(None, description="Number of results to fetch")
+    num_results: int | None = Field(None, description="Number of results to fetch")
     use_rag: bool = Field(False, description="Whether to use RAG-optimized search")
 
     class Config:
@@ -61,13 +62,13 @@ class SearchResult(BaseModel):
     query: str = Field(..., description="Original query")
     content: str = Field(..., description="Search results content")
     success: bool = Field(..., description="Whether the search was successful")
-    processing_time: Optional[float] = Field(
+    processing_time: float | None = Field(
         None, description="Processing time in seconds"
     )
     analytics_recorded: bool = Field(
         False, description="Whether analytics were recorded"
     )
-    error: Optional[str] = Field(None, description="Error message if search failed")
+    error: str | None = Field(None, description="Error message if search failed")
 
     class Config:
         json_schema_extra = {

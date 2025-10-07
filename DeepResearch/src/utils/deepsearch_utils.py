@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Set
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Set, cast
 
-from ..datatypes.deepsearch import DeepSearchSchemas, EvaluationType, ActionType
-from .execution_status import ExecutionStatus
+from ..datatypes.deepsearch import ActionType, DeepSearchSchemas, EvaluationType
 from .execution_history import ExecutionHistory, ExecutionItem
+from .execution_status import ExecutionStatus
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class SearchContext:
     """Context for deep search operations."""
 
-    def __init__(self, original_question: str, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, original_question: str, config: dict[str, Any] | None = None):
         self.original_question = original_question
         self.config = config or {}
         self.start_time = datetime.now()
@@ -33,15 +33,15 @@ class SearchContext:
         self.used_tokens = 0
 
         # Knowledge tracking
-        self.collected_knowledge: Dict[str, Any] = {}
-        self.search_results: List[Dict[str, Any]] = []
-        self.visited_urls: List[Dict[str, Any]] = []
-        self.reflection_questions: List[str] = []
+        self.collected_knowledge: dict[str, Any] = {}
+        self.search_results: list[dict[str, Any]] = []
+        self.visited_urls: list[dict[str, Any]] = []
+        self.reflection_questions: list[str] = []
 
         # State tracking
-        self.available_actions: Set[ActionType] = set(ActionType)
-        self.disabled_actions: Set[ActionType] = set()
-        self.current_gaps: List[str] = []
+        self.available_actions: set[ActionType] = set(ActionType)
+        self.disabled_actions: set[ActionType] = set()
+        self.current_gaps: list[str] = []
 
         # Performance tracking
         self.execution_history = ExecutionHistory()
@@ -64,7 +64,7 @@ class SearchContext:
 
         return True
 
-    def get_available_actions(self) -> Set[ActionType]:
+    def get_available_actions(self) -> set[ActionType]:
         """Get currently available actions."""
         return self.available_actions - self.disabled_actions
 
@@ -80,17 +80,17 @@ class SearchContext:
         """Add knowledge to the context."""
         self.collected_knowledge[key] = value
 
-    def add_search_results(self, results: List[Dict[str, Any]]) -> None:
+    def add_search_results(self, results: list[dict[str, Any]]) -> None:
         """Add search results to the context."""
         self.search_results.extend(results)
         self.search_count += 1
 
-    def add_visited_urls(self, urls: List[Dict[str, Any]]) -> None:
+    def add_visited_urls(self, urls: list[dict[str, Any]]) -> None:
         """Add visited URLs to the context."""
         self.visited_urls.extend(urls)
         self.visit_count += 1
 
-    def add_reflection_questions(self, questions: List[str]) -> None:
+    def add_reflection_questions(self, questions: list[str]) -> None:
         """Add reflection questions to the context."""
         self.reflection_questions.extend(questions)
         self.reflect_count += 1
@@ -105,7 +105,7 @@ class SearchContext:
         # Re-enable actions for next step
         self.disabled_actions.clear()
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get a summary of the current context."""
         return {
             "original_question": self.original_question,
@@ -128,10 +128,10 @@ class KnowledgeManager:
     """Manages knowledge collection and synthesis."""
 
     def __init__(self):
-        self.knowledge_base: Dict[str, Any] = {}
-        self.knowledge_sources: Dict[str, List[str]] = {}
-        self.knowledge_confidence: Dict[str, float] = {}
-        self.knowledge_timestamps: Dict[str, datetime] = {}
+        self.knowledge_base: dict[str, Any] = {}
+        self.knowledge_sources: dict[str, list[str]] = {}
+        self.knowledge_confidence: dict[str, float] = {}
+        self.knowledge_timestamps: dict[str, datetime] = {}
 
     def add_knowledge(
         self, key: str, value: Any, source: str, confidence: float = 0.8
@@ -144,11 +144,11 @@ class KnowledgeManager:
         )
         self.knowledge_timestamps[key] = datetime.now()
 
-    def get_knowledge(self, key: str) -> Optional[Any]:
+    def get_knowledge(self, key: str) -> Any | None:
         """Get knowledge by key."""
         return self.knowledge_base.get(key)
 
-    def get_knowledge_with_metadata(self, key: str) -> Optional[Dict[str, Any]]:
+    def get_knowledge_with_metadata(self, key: str) -> dict[str, Any] | None:
         """Get knowledge with metadata."""
         if key not in self.knowledge_base:
             return None
@@ -160,7 +160,7 @@ class KnowledgeManager:
             "timestamp": self.knowledge_timestamps.get(key),
         }
 
-    def search_knowledge(self, query: str) -> List[Dict[str, Any]]:
+    def search_knowledge(self, query: str) -> list[dict[str, Any]]:
         """Search knowledge base for relevant information."""
         results = []
         query_lower = query.lower()
@@ -196,7 +196,7 @@ class KnowledgeManager:
 
         return "\n".join(synthesis_parts)
 
-    def get_knowledge_summary(self) -> Dict[str, Any]:
+    def get_knowledge_summary(self) -> dict[str, Any]:
         """Get a summary of the knowledge base."""
         return {
             "total_knowledge_items": len(self.knowledge_base),
@@ -233,8 +233,8 @@ class SearchOrchestrator:
         self.schemas = DeepSearchSchemas()
 
     async def execute_search_step(
-        self, action: ActionType, parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, action: ActionType, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute a single search step."""
         start_time = time.time()
 
@@ -288,7 +288,7 @@ class SearchOrchestrator:
 
             return {"success": False, "error": str(e)}
 
-    async def _execute_search(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_search(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute search action."""
         # This would integrate with the actual search tools
         # For now, return mock result
@@ -304,7 +304,7 @@ class SearchOrchestrator:
             ],
         }
 
-    async def _execute_visit(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_visit(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute visit action."""
         # This would integrate with the actual URL visit tools
         return {
@@ -319,7 +319,7 @@ class SearchOrchestrator:
             ],
         }
 
-    async def _execute_reflect(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_reflect(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute reflect action."""
         # This would integrate with the actual reflection tools
         return {
@@ -331,7 +331,7 @@ class SearchOrchestrator:
             ],
         }
 
-    async def _execute_answer(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_answer(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute answer action."""
         # This would integrate with the actual answer generation tools
         return {
@@ -340,7 +340,7 @@ class SearchOrchestrator:
             "answer": "Mock comprehensive answer based on collected knowledge",
         }
 
-    async def _execute_coding(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_coding(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Execute coding action."""
         # This would integrate with the actual coding tools
         return {
@@ -351,7 +351,7 @@ class SearchOrchestrator:
         }
 
     def _update_context_after_action(
-        self, action: ActionType, result: Dict[str, Any]
+        self, action: ActionType, result: dict[str, Any]
     ) -> None:
         """Update context after action execution."""
         if not result.get("success", False):
@@ -412,7 +412,7 @@ class SearchOrchestrator:
 
         return True
 
-    def get_next_action(self) -> Optional[ActionType]:
+    def get_next_action(self) -> ActionType | None:
         """Determine the next action to take."""
         available_actions = self.context.get_available_actions()
 
@@ -434,7 +434,7 @@ class SearchOrchestrator:
 
         return None
 
-    def get_search_summary(self) -> Dict[str, Any]:
+    def get_search_summary(self) -> dict[str, Any]:
         """Get a summary of the search process."""
         return {
             "context_summary": self.context.get_summary(),
@@ -453,7 +453,7 @@ class DeepSearchEvaluator:
 
     def evaluate_answer_quality(
         self, question: str, answer: str, evaluation_type: EvaluationType
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate the quality of an answer."""
         self.schemas.get_evaluator_schema(evaluation_type)
 
@@ -476,7 +476,7 @@ class DeepSearchEvaluator:
                 "pass": is_definitive,
             }
 
-        elif evaluation_type == EvaluationType.FRESHNESS:
+        if evaluation_type == EvaluationType.FRESHNESS:
             # Check for recent information
             has_recent_info = any(year in answer for year in ["2024", "2023", "2022"])
             return {
@@ -489,7 +489,7 @@ class DeepSearchEvaluator:
                 "pass": has_recent_info,
             }
 
-        elif evaluation_type == EvaluationType.COMPLETENESS:
+        if evaluation_type == EvaluationType.COMPLETENESS:
             # Check if answer covers multiple aspects
             word_count = len(answer.split())
             is_comprehensive = word_count > 100
@@ -507,16 +507,15 @@ class DeepSearchEvaluator:
                 "pass": is_comprehensive,
             }
 
-        else:
-            return {
-                "type": evaluation_type.value,
-                "think": f"Evaluating {evaluation_type.value}",
-                "pass": True,
-            }
+        return {
+            "type": evaluation_type.value,
+            "think": f"Evaluating {evaluation_type.value}",
+            "pass": True,
+        }
 
     def evaluate_search_progress(
         self, context: SearchContext, knowledge_manager: KnowledgeManager
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate the progress of the search process."""
         progress_score = 0.0
         max_score = 100.0
@@ -557,7 +556,7 @@ class DeepSearchEvaluator:
 
     def _get_recommendations(
         self, context: SearchContext, knowledge_manager: KnowledgeManager
-    ) -> List[str]:
+    ) -> list[str]:
         """Get recommendations for improving search."""
         recommendations = []
 
@@ -589,7 +588,7 @@ class DeepSearchEvaluator:
 
 # Utility functions
 def create_search_context(
-    question: str, config: Optional[Dict[str, Any]] = None
+    question: str, config: dict[str, Any] | None = None
 ) -> SearchContext:
     """Create a new search context."""
     return SearchContext(question, config)
@@ -613,8 +612,8 @@ class SearchResultProcessor:
         self.schemas = schemas
 
     def process_search_results(
-        self, results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, results: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Process and clean search results."""
         processed = []
         for result in results:
@@ -629,7 +628,7 @@ class SearchResultProcessor:
         return processed
 
     def extract_relevant_content(
-        self, results: List[Dict[str, Any]], query: str
+        self, results: list[dict[str, Any]], query: str
     ) -> str:
         """Extract relevant content from search results."""
         if not results:
@@ -649,7 +648,7 @@ class DeepSearchUtils:
 
     @staticmethod
     def create_search_context(
-        question: str, config: Optional[Dict[str, Any]] = None
+        question: str, config: dict[str, Any] | None = None
     ) -> SearchContext:
         """Create a new search context."""
         return SearchContext(question, config)
@@ -657,11 +656,16 @@ class DeepSearchUtils:
     @staticmethod
     def create_search_orchestrator(schemas: DeepSearchSchemas) -> SearchOrchestrator:
         """Create a new search orchestrator."""
-        if hasattr(schemas, "model_dump") and callable(getattr(schemas, "model_dump")):
-            model_dump_method = getattr(schemas, "model_dump")
-            config = model_dump_method()
+        if hasattr(schemas, "model_dump") and callable(schemas.model_dump):
+            model_dump_method = schemas.model_dump
+            config_result = model_dump_method()
+            # Ensure config is a dict
+            if isinstance(config_result, dict):
+                config: dict[str, Any] = cast(dict[str, Any], config_result)
+            else:
+                config: dict[str, Any] = {}
         else:
-            config = {}
+            config: dict[str, Any] = {}
         context = SearchContext("", config)
         return SearchOrchestrator(context)
 
@@ -676,7 +680,7 @@ class DeepSearchUtils:
         return SearchResultProcessor(schemas)
 
     @staticmethod
-    def validate_search_config(config: Dict[str, Any]) -> bool:
+    def validate_search_config(config: dict[str, Any]) -> bool:
         """Validate search configuration."""
         required_keys = ["max_steps", "token_budget"]
         return all(key in config for key in required_keys)

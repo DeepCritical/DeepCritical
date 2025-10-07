@@ -39,5 +39,5 @@ class Document:
 
     id: str = field(default_factory=lambda: generate_id("doc"))
     content: str = field(default_factory=str)
-    chunks: List[Chunk] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    chunks: list[Chunk] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)

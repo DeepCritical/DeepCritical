@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
-import time
 
-
-from .prime_planner import WorkflowDAG, WorkflowStep
+from ..datatypes.execution import ExecutionContext
+from ..datatypes.tools import ExecutionResult
 from ..utils.execution_history import ExecutionHistory, ExecutionItem
 from ..utils.execution_status import ExecutionStatus
 from ..utils.tool_registry import ToolRegistry
-from ..datatypes.tools import ExecutionResult
-from ..datatypes.execution import ExecutionContext
+from .prime_planner import WorkflowDAG, WorkflowStep
 
 
 @dataclass
@@ -22,7 +21,7 @@ class ToolExecutor:
         self.retries = retries
         self.validation_enabled = True
 
-    def execute_workflow(self, context: ExecutionContext) -> Dict[str, Any]:
+    def execute_workflow(self, context: ExecutionContext) -> dict[str, Any]:
         """
         Execute a complete workflow with adaptive re-planning.
 
@@ -136,7 +135,7 @@ class ToolExecutor:
                 if attempt == self.retries:
                     return ExecutionResult(
                         success=False,
-                        error=f"Execution failed after {self.retries} retries: {str(e)}",
+                        error=f"Execution failed after {self.retries} retries: {e!s}",
                         data={},
                     )
 
@@ -232,7 +231,7 @@ class ToolExecutor:
 
     def _prepare_parameters(
         self, step: WorkflowStep, context: ExecutionContext
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepare parameters with data substitution."""
         parameters = step.parameters.copy()
 
@@ -275,7 +274,7 @@ class ToolExecutor:
         return result
 
     def _request_manual_confirmation(
-        self, step: WorkflowStep, parameters: Dict[str, Any]
+        self, step: WorkflowStep, parameters: dict[str, Any]
     ) -> bool:
         """Request manual confirmation for step execution."""
         print("\n=== Manual Confirmation Required ===")
@@ -288,7 +287,7 @@ class ToolExecutor:
 
     def _handle_failure_with_replanning(
         self, failed_step: WorkflowStep, context: ExecutionContext
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Handle step failure with adaptive re-planning."""
         # Strategic re-planning: substitute with alternative tool
         alternative_tool = self._find_alternative_tool(failed_step.tool)
@@ -334,7 +333,7 @@ class ToolExecutor:
 
         return None
 
-    def _find_alternative_tool(self, tool_name: str) -> Optional[str]:
+    def _find_alternative_tool(self, tool_name: str) -> str | None:
         """Find alternative tool for strategic re-planning."""
         alternatives = {
             "blast_search": "prot_trek",
@@ -349,7 +348,7 @@ class ToolExecutor:
 
     def _adjust_parameters_tactically(
         self, step: WorkflowStep
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Adjust parameters for tactical re-planning."""
         adjusted = step.parameters.copy()
 
@@ -395,7 +394,7 @@ def execute_workflow(
     registry: ToolRegistry,
     manual_confirmation: bool = False,
     adaptive_replanning: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convenience function to execute a workflow."""
     executor = ToolExecutor(registry)
     history = ExecutionHistory()

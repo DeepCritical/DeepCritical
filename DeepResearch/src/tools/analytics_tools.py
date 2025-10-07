@@ -7,15 +7,16 @@ integrating with the existing tool registry and datatypes.
 
 import json
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Any, Dict
+
 from pydantic_ai import RunContext
 
-from .base import ToolSpec, ToolRunner, ExecutionResult, registry
 from ..utils.analytics import (
-    record_request,
-    last_n_days_df,
     last_n_days_avg_time_df,
+    last_n_days_df,
+    record_request,
 )
+from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 
 class RecordRequestTool(ToolRunner):
@@ -30,7 +31,7 @@ class RecordRequestTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute request recording operation."""
         try:
             import asyncio
@@ -57,7 +58,7 @@ class RecordRequestTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Failed to record request: {str(e)}"
+                success=False, error=f"Failed to record request: {e!s}"
             )
 
 
@@ -73,7 +74,7 @@ class GetAnalyticsDataTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute analytics data retrieval operation."""
         try:
             days = params.get("days", 30)
@@ -88,7 +89,7 @@ class GetAnalyticsDataTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Failed to get analytics data: {str(e)}"
+                success=False, error=f"Failed to get analytics data: {e!s}"
             )
 
 
@@ -104,7 +105,7 @@ class GetAnalyticsTimeDataTool(ToolRunner):
         )
         super().__init__(spec)
 
-    def run(self, params: Dict[str, Any]) -> ExecutionResult:
+    def run(self, params: dict[str, Any]) -> ExecutionResult:
         """Execute analytics time data retrieval operation."""
         try:
             days = params.get("days", 30)
@@ -119,7 +120,7 @@ class GetAnalyticsTimeDataTool(ToolRunner):
 
         except Exception as e:
             return ExecutionResult(
-                success=False, error=f"Failed to get analytics time data: {str(e)}"
+                success=False, error=f"Failed to get analytics time data: {e!s}"
             )
 
 
@@ -147,8 +148,7 @@ def record_request_tool(ctx: RunContext[Any]) -> str:
 
     if result.success:
         return result.data.get("message", "Request recorded successfully")
-    else:
-        return f"Failed to record request: {result.error}"
+    return f"Failed to record request: {result.error}"
 
 
 def get_analytics_data_tool(ctx: RunContext[Any]) -> str:
@@ -173,8 +173,7 @@ def get_analytics_data_tool(ctx: RunContext[Any]) -> str:
 
     if result.success:
         return json.dumps(result.data.get("data", []))
-    else:
-        return f"Failed to get analytics data: {result.error}"
+    return f"Failed to get analytics data: {result.error}"
 
 
 def get_analytics_time_data_tool(ctx: RunContext[Any]) -> str:
@@ -199,8 +198,7 @@ def get_analytics_time_data_tool(ctx: RunContext[Any]) -> str:
 
     if result.success:
         return json.dumps(result.data.get("data", []))
-    else:
-        return f"Failed to get analytics time data: {result.error}"
+    return f"Failed to get analytics time data: {result.error}"
 
 
 @dataclass
@@ -217,7 +215,7 @@ class AnalyticsTool(ToolRunner):
             )
         )
 
-    def run(self, params: Dict[str, str]) -> ExecutionResult:
+    def run(self, params: dict[str, str]) -> ExecutionResult:
         operation = params.get("operation", "")
         days = int(params.get("days", "7"))
 
@@ -233,7 +231,7 @@ class AnalyticsTool(ToolRunner):
                 },
                 metrics={"days": days, "rate": rate},
             )
-        elif operation == "response_time":
+        if operation == "response_time":
             # Calculate average response time
             df = last_n_days_avg_time_df(days)
             avg_time = df["avg_time"].mean() if not df.empty else 0.0
@@ -245,10 +243,9 @@ class AnalyticsTool(ToolRunner):
                 },
                 metrics={"days": days, "avg_time": avg_time},
             )
-        else:
-            return ExecutionResult(
-                success=False, error=f"Unknown analytics operation: {operation}"
-            )
+        return ExecutionResult(
+            success=False, error=f"Unknown analytics operation: {operation}"
+        )
 
 
 # Register tools with the global registry
