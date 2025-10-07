@@ -94,7 +94,6 @@ def test_refactoring_verification():
     print(
         "All refactoring tests passed! The refactoring is complete and working correctly."
     )
-    return True
 
 
 if __name__ == "__main__":

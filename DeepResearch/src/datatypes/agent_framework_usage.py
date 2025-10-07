@@ -24,9 +24,11 @@ class UsageDetails(BaseModel):
                 self.input_token_count,
                 self.output_token_count,
                 self.total_token_count,
-                tuple(sorted(self.additional_counts.items()))
-                if self.additional_counts
-                else None,
+                (
+                    tuple(sorted(self.additional_counts.items()))
+                    if self.additional_counts
+                    else None
+                ),
             )
         )
 
