@@ -358,4 +358,4 @@ After trying these basic examples:
 3. **Advanced Examples**: Check out the [Advanced Workflows](advanced.md) section
 4. **Integration Examples**: See [Integration Examples](integration.md) for more complex scenarios
 
-For more detailed examples and tutorials, visit the [Examples Repository](https://github.com/your-username/DeepCritical/tree/main/example) and the [Advanced Workflows](advanced.md) section.
+For more detailed examples and tutorials, visit the [Examples Repository](https://github.com/DeepCritical/DeepCritical/tree/main/example) and the [Advanced Workflows](advanced.md) section.

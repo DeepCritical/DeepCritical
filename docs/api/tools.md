@@ -83,7 +83,13 @@ Response structure from tool execution.
 
 ### Web Search Tools
 
-::: deepresearch.tools.WebSearchTool
+::: DeepResearch.src.tools.websearch_tools.WebSearchTool
+    handler: python
+    options:
+      docstring_style: google
+      show_category_heading: true
+
+::: DeepResearch.src.tools.websearch_tools.ChunkedSearchTool
     handler: python
     options:
       docstring_style: google
@@ -91,13 +97,21 @@ Response structure from tool execution.
 
 ### Bioinformatics Tools
 
-::: deepresearch.tools.Neo4jRAGTool
+::: DeepResearch.src.tools.bioinformatics_tools.GOAnnotationTool
     handler: python
     options:
       docstring_style: google
       show_category_heading: true
 
-::: deepresearch.tools.GOAnnotationTool
+::: DeepResearch.src.tools.bioinformatics_tools.PubMedRetrievalTool
+    handler: python
+    options:
+      docstring_style: google
+      show_category_heading: true
+
+### Deep Search Tools
+
+::: DeepResearch.src.tools.deepsearch_tools.DeepSearchTool
     handler: python
     options:
       docstring_style: google
@@ -105,13 +119,7 @@ Response structure from tool execution.
 
 ### RAG Tools
 
-::: deepresearch.tools.VectorSearchTool
-    handler: python
-    options:
-      docstring_style: google
-      show_category_heading: true
-
-::: deepresearch.tools.DocumentProcessorTool
+::: DeepResearch.src.tools.integrated_search_tools.RAGSearchTool
     handler: python
     options:
       docstring_style: google

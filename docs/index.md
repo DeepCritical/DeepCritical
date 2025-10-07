@@ -49,7 +49,7 @@ graph TD
 - **[Architecture](architecture/overview.md)** - System design and components
 - **[Flows](user-guide/flows/prime.md)** - Available research workflows
 - **[Tools](user-guide/tools/registry.md)** - Tool ecosystem and registry
-- **[API Reference](api/agents.md)** - Complete API documentation
+- **[API Reference](core/index.md)** - Complete API documentation
 - **[Examples](examples/basic.md)** - Usage examples and tutorials
 
 ## 🤝 Contributing
@@ -62,6 +62,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Project Status
 
-[![CI](https://github.com/your-username/DeepCritical/workflows/CI/badge.svg)](https://github.com/your-username/DeepCritical/actions)
+[![CI](https://github.com/DeepCritical/DeepCritical/workflows/CI/badge.svg)](https://github.com/deepcritical/DeepCritical/actions)
 [![PyPI](https://img.shields.io/pypi/v/deepcritical.svg)](https://pypi.org/project/deepcritical/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

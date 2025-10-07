@@ -7,7 +7,7 @@ We welcome contributions to DeepCritical! This guide explains how to contribute 
 ### 1. Fork the Repository
 ```bash
 # Fork on GitHub, then clone your fork
-git clone https://github.com/your-username/DeepCritical.git
+git clone https://github.com/DeepCritical/DeepCritical.git
 cd DeepCritical
 
 # Add upstream remote

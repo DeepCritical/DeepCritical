@@ -109,9 +109,7 @@ class Plan(BaseNode[ResearchState]):
     or challenge mode.
     """
 
-    async def run(
-        self, ctx: GraphRunContext[ResearchState]
-    ) -> Union[
+    async def run(self, ctx: GraphRunContext[ResearchState]) -> Union[
         Search,
         PrimaryREACTWorkflow,
         EnhancedREACTWorkflow,

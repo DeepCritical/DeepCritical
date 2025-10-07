@@ -13,7 +13,7 @@ This guide covers setting up a development environment for DeepCritical.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/DeepCritical.git
+git clone https://github.com/DeepCritical/DeepCritical.git
 cd DeepCritical
 
 # 2. Install uv (if not already installed)
@@ -37,7 +37,7 @@ make test
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/DeepCritical.git
+git clone https://github.com/DeepCritical/DeepCritical.git
 cd DeepCritical
 
 # 2. Create virtual environment

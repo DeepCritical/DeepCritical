@@ -32,7 +32,7 @@ This project adheres to a code of conduct. By participating, you are expected to
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/your-username/DeepCritical.git
+   git clone https://github.com/DeepCritical/DeepCritical.git
    cd DeepCritical
    ```
 

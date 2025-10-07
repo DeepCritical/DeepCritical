@@ -1,7 +1,10 @@
+# Local development configuration
+# Use this for local development: mkdocs serve -f mkdocs.local.yml
+
 site_name: DeepCritical
 site_description: Hydra-configured, Pydantic Graph-based deep research workflow
 site_author: DeepCritical Team
-site_url: https://deepcritical.github.io/DeepCritical
+site_url: http://localhost:8001  # Local development URL
 site_dir: site
 
 repo_name: DeepCritical/DeepCritical
@@ -20,8 +23,8 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
-      accent: purple
+      primary: indigo
+      accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -88,6 +91,11 @@ plugins:
           tertiaryColor: '#fff'
   - git-revision-date-localized:
       enable_creation_date: true
+      enable_modification_date: true
+      type: timeago
+      timezone: UTC
+      locale: en
+      fallback_to_build_date: true
   - minify:
       minify_html: true
   - mkdocstrings:
@@ -117,53 +125,7 @@ plugins:
             show_symbol_type_toc: true
             signature_crossrefs: true
             summary: true
-
-markdown_extensions:
-  - abbr
-  - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-      title: On this page
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.magiclink:
-      normalize_issue_symbols: true
-      repo_url_shorthand: true
-      user: DeepCritical
-      repo: DeepCritical
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-      combine_header_slug: true
-      slugify: !!python/object/apply:pymdownx.slugs.slugify
-        kwds:
-          case: lower
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.tilde
+            use_autosummary: true
 
 nav:
   - Home: index.md
