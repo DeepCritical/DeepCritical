@@ -1,5 +1,7 @@
 # 🚀 DeepCritical: Building a Highly Configurable Deep Research Agent Ecosystem
 
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://deepcritical.github.io/DeepCritical)
+
 ## Vision: From Single Questions to Research Field Generation
 
 **DeepCritical** isn't just another research assistant—it's a framework for building entire research ecosystems. While a typical user asks one question, DeepCritical generates datasets of hypotheses, tests them systematically, runs simulations, and produces comprehensive reports—all through configurable Hydra-based workflows.

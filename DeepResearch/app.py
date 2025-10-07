@@ -48,6 +48,24 @@ from .src.tools import pyd_ai_tools  # noqa: F401 ensure registration
 # --- State for the deep research workflow ---
 @dataclass
 class ResearchState:
+    """State object for the research workflow.
+
+    This dataclass maintains the state of a research workflow execution,
+    containing the original question, planning results, intermediate notes,
+    and final answers.
+
+    Attributes:
+        question: The original research question being answered.
+        plan: High-level plan steps (optional).
+        full_plan: Detailed execution plan with parameters.
+        notes: Intermediate notes and observations.
+        answers: Final answers and results.
+        structured_problem: PRIME-specific structured problem representation.
+        workflow_dag: PRIME workflow DAG for execution.
+        execution_results: Results from tool execution.
+        config: Global configuration object.
+    """
+
     question: str
     plan: Optional[List[str]] = field(default_factory=list)
     full_plan: Optional[List[Dict[str, Any]]] = field(default_factory=list)
@@ -83,7 +101,17 @@ class ResearchState:
 # --- Nodes ---
 @dataclass
 class Plan(BaseNode[ResearchState]):
-    async def run(self, ctx: GraphRunContext[ResearchState]) -> Union[
+    """Planning node for research workflow.
+
+    This node analyzes the research question and determines the appropriate
+    workflow path based on configuration flags and question characteristics.
+    Routes to different execution paths including search, REACT workflows,
+    or challenge mode.
+    """
+
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Union[
         Search,
         PrimaryREACTWorkflow,
         EnhancedREACTWorkflow,

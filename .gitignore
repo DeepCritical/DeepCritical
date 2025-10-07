@@ -1,7 +1,7 @@
 example
 .cursor
 outputs
-docs
+notes
 .claude/
 test_artifacts/
 bandit-report.json
@@ -82,3 +82,6 @@ outputs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# MkDocs site
+site/

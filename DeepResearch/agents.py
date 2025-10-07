@@ -44,7 +44,32 @@ from .src.agents.deep_agent_implementations import (
 
 
 class BaseAgent(ABC):
-    """Base class for all DeepCritical agents following Pydantic AI patterns."""
+    """
+    Base class for all DeepCritical agents following Pydantic AI patterns.
+
+    This abstract base class provides the foundation for all agent implementations
+    in DeepCritical, integrating Pydantic AI agents with the existing tool ecosystem
+    and state management systems.
+
+    Attributes:
+        agent_type (AgentType): The type of agent (search, rag, bioinformatics, etc.)
+        model_name (str): The AI model to use for this agent
+        _agent (Agent): The underlying Pydantic AI agent instance
+        _prompts (AgentPrompts): Agent-specific prompt templates
+
+    Examples:
+        Creating a custom agent:
+
+        ```python
+        class MyCustomAgent(BaseAgent):
+            def __init__(self):
+                super().__init__(AgentType.CUSTOM, "anthropic:claude-sonnet-4-0")
+
+            async def execute(self, input_data: str, deps: AgentDependencies) -> AgentResult:
+                result = await self._agent.run(input_data, deps=deps)
+                return AgentResult(success=True, data=result.data)
+        ```
+    """
 
     def __init__(
         self,
@@ -84,22 +109,113 @@ class BaseAgent(ABC):
             self._agent = None
 
     def _get_default_system_prompt(self) -> str:
-        """Get default system prompt for this agent type."""
+        """
+        Get default system prompt for this agent type.
+
+        Retrieves the default system prompt template for the specific agent type
+        from the agent prompts configuration.
+
+        Returns:
+            str: The system prompt template for this agent type.
+
+        Examples:
+            ```python
+            agent = SearchAgent()
+            prompt = agent._get_default_system_prompt()
+            print(f"System prompt: {prompt}")
+            ```
+        """
         return AgentPrompts.get_system_prompt(self.agent_type.value)
 
     def _get_default_instructions(self) -> str:
-        """Get default instructions for this agent type."""
+        """
+        Get default instructions for this agent type.
+
+        Retrieves the default instruction template for the specific agent type
+        from the agent prompts configuration.
+
+        Returns:
+            str: The instruction template for this agent type.
+
+        Examples:
+            ```python
+            agent = SearchAgent()
+            instructions = agent._get_default_instructions()
+            print(f"Instructions: {instructions}")
+            ```
+        """
         return AgentPrompts.get_instructions(self.agent_type.value)
 
     @abstractmethod
     def _register_tools(self):
-        """Register tools with the agent."""
+        """
+        Register tools with the agent.
+
+        Abstract method that must be implemented by subclasses to register
+        the appropriate tools for this agent type with the underlying
+        Pydantic AI agent instance.
+
+        This method should use the @agent.tool decorator to register
+        tool functions that can be called by the agent.
+
+        Examples:
+            ```python
+            def _register_tools(self):
+                @self._agent.tool
+                def web_search_tool(ctx, query: str) -> str:
+                    return self._perform_web_search(query)
+            ```
+        """
         pass
 
     async def execute(
         self, input_data: Any, deps: Optional[AgentDependencies] = None
     ) -> AgentResult:
-        """Execute the agent with input data."""
+        """
+        Execute the agent with input data.
+
+        This is the main entry point for executing an agent. It handles
+        initialization, execution, and result processing while tracking
+        execution metrics and errors.
+
+        Args:
+            input_data: The input data to process. Can be a string, dict,
+                       or any structured data appropriate for the agent type.
+            deps: Optional agent dependencies. If not provided, uses
+                 the agent's default dependencies.
+
+        Returns:
+            AgentResult: The execution result containing success status,
+                       processed data, execution metrics, and any errors.
+
+        Raises:
+            RuntimeError: If the agent is not properly initialized.
+
+        Examples:
+            Basic execution:
+
+            ```python
+            agent = SearchAgent()
+            deps = AgentDependencies.from_config(config)
+            result = await agent.execute("machine learning", deps)
+
+            if result.success:
+                print(f"Results: {result.data}")
+            else:
+                print(f"Error: {result.error}")
+            ```
+
+            With custom dependencies:
+
+            ```python
+            custom_deps = AgentDependencies(
+                model_name="openai:gpt-4",
+                api_keys={"openai": "your-key"},
+                config={"temperature": 0.8}
+            )
+            result = await agent.execute("research query", custom_deps)
+            ```
+        """
         start_time = time.time()
         self.status = AgentStatus.RUNNING
 

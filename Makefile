@@ -225,3 +225,20 @@ full: quality test-cov
 venv:
 	python -m venv .venv
 	.venv/bin/activate && pip install uv && uv sync --dev
+
+# Documentation commands
+docs-serve:
+	@echo "🚀 Starting MkDocs development server..."
+	uv run mkdocs serve
+
+docs-build:
+	@echo "📚 Building documentation..."
+	uv run mkdocs build
+
+docs-deploy:
+	@echo "🚀 Deploying documentation..."
+	uv run mkdocs gh-deploy
+
+docs-check:
+	@echo "🔍 Checking documentation links..."
+	uv run mkdocs build --strict
