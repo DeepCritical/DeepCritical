@@ -465,39 +465,39 @@ def format_template(name: str, **kwargs) -> str:
 
 # Export all components
 __all__ = [
-    # Enums
-    "PromptType",
-    # Models
-    "PromptTemplate",
-    "PromptManager",
-    # Tool descriptions
-    "WRITE_TODOS_TOOL_DESCRIPTION",
-    "TASK_TOOL_DESCRIPTION",
+    "BASE_AGENT_PROMPT",
+    "BASE_AGENT_TEMPLATE",
+    # Prompt constants and classes
+    "DEEP_AGENT_PROMPTS",
+    "EDIT_FILE_TOOL_DESCRIPTION",
+    "FILESYSTEM_SYSTEM_PROMPT",
+    "FILESYSTEM_SYSTEM_TEMPLATE",
     "LIST_FILES_TOOL_DESCRIPTION",
     "READ_FILE_TOOL_DESCRIPTION",
-    "EDIT_FILE_TOOL_DESCRIPTION",
+    "TASK_SYSTEM_PROMPT",
+    "TASK_SYSTEM_TEMPLATE",
+    "TASK_TOOL_DESCRIPTION",
+    "TASK_TOOL_DESCRIPTION_TEMPLATE",
     "WRITE_FILE_TOOL_DESCRIPTION",
     # System prompts
     "WRITE_TODOS_SYSTEM_PROMPT",
-    "TASK_SYSTEM_PROMPT",
-    "FILESYSTEM_SYSTEM_PROMPT",
-    "BASE_AGENT_PROMPT",
     # Templates
     "WRITE_TODOS_SYSTEM_TEMPLATE",
-    "TASK_SYSTEM_TEMPLATE",
-    "FILESYSTEM_SYSTEM_TEMPLATE",
-    "BASE_AGENT_TEMPLATE",
-    "TASK_TOOL_DESCRIPTION_TEMPLATE",
-    # Global instance
-    "prompt_manager",
+    # Tool descriptions
+    "WRITE_TODOS_TOOL_DESCRIPTION",
+    "DeepAgentPrompts",
+    "PromptManager",
+    # Models
+    "PromptTemplate",
+    # Enums
+    "PromptType",
     # Factory functions
     "create_prompt_template",
+    "format_template",
     "get_system_prompt",
     "get_tool_description",
-    "format_template",
-    # Prompt constants and classes
-    "DEEP_AGENT_PROMPTS",
-    "DeepAgentPrompts",
+    # Global instance
+    "prompt_manager",
 ]
 
 

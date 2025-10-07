@@ -827,60 +827,60 @@ def create_embedding(
 # ============================================================================
 
 __all__ = [
-    # Enums
-    "HTTPMethod",
-    "MediaType",
-    "PreferHeader",
-    "FilterOperator",
-    "OrderDirection",
     "AggregateFunction",
-    "SchemaVisibility",
-    # Core structures
-    "PostgRESTID",
-    "Column",
-    "Table",
-    "View",
-    "Function",
-    "Schema",
-    # Filter structures
-    "Filter",
-    "CompositeFilter",
-    "OrderBy",
-    # Select and embedding structures
-    "SelectClause",
-    "Embedding",
-    "ComputedField",
-    # Pagination structures
-    "Pagination",
-    "CountHeader",
-    # Query structures
-    "QueryRequest",
-    "QueryResponse",
-    # CRUD structures
-    "InsertRequest",
-    "UpdateRequest",
-    "DeleteRequest",
-    "UpsertRequest",
-    # RPC structures
-    "RPCRequest",
-    "RPCResponse",
     # Authentication structures
     "AuthConfig",
-    "RoleConfig",
+    "Column",
+    "CompositeFilter",
+    "ComputedField",
+    "CountHeader",
+    "DeleteRequest",
+    "Embedding",
+    # Filter structures
+    "Filter",
+    "FilterOperator",
+    "Function",
+    # Enums
+    "HTTPMethod",
+    # CRUD structures
+    "InsertRequest",
+    "MediaType",
+    "OrderBy",
+    "OrderDirection",
+    # Pagination structures
+    "Pagination",
+    "PostgRESTClient",
     # Client structures
     "PostgRESTConfig",
-    "PostgRESTClient",
     # Error structures
     "PostgRESTError",
     "PostgRESTException",
+    # Core structures
+    "PostgRESTID",
     # Document structures
     "PostgresDocument",
+    "PreferHeader",
+    # Query structures
+    "QueryRequest",
+    "QueryResponse",
+    # RPC structures
+    "RPCRequest",
+    "RPCResponse",
+    "RoleConfig",
+    "Schema",
+    "SchemaVisibility",
+    # Select and embedding structures
+    "SelectClause",
+    "Table",
+    "UpdateRequest",
+    "UpsertRequest",
+    "View",
     # Utility functions
     "create_client",
+    "create_embedding",
     "create_filter",
     "create_order_by",
     "create_pagination",
-    "create_embedding",
 ]
 
 

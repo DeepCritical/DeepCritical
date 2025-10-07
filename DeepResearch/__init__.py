@@ -1,13 +1,13 @@
 __all__ = [
-    "app",
-    "tools",
-    "WebSearchTool",
     "ChunkedSearchTool",
+    "DeepSearchTool",
     "GOAnnotationTool",
     "PubMedRetrievalTool",
-    "DeepSearchTool",
     "RAGSearchTool",
+    "WebSearchTool",
+    "app",
     "registry",
+    "tools",
 ]
 
 # Direct import for tools to make them available for documentation

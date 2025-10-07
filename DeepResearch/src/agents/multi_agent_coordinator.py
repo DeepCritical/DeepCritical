@@ -919,11 +919,11 @@ class MultiAgentCoordinator:
 
                 except Exception as e:
                     # Handle subgraph execution errors
-                    for agent_id in agent_states:
-                        if agent_states[agent_id].status != WorkflowStatus.FAILED:
-                            agent_states[
-                                agent_id
-                            ].error_message = f"Subgraph {subgraph} failed: {e!s}"
+                    for agent_id, agent_state in agent_states.items():
+                        if agent_state.status != WorkflowStatus.FAILED:
+                            agent_state.error_message = (
+                                f"Subgraph {subgraph} failed: {e!s}"
+                            )
 
             coordination_round.end_time = datetime.now()
             coordination_round.agent_states = agent_states.copy()

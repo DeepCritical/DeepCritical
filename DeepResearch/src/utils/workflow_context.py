@@ -47,7 +47,7 @@ def infer_output_types_from_ctx_annotation(
         t = args[0]
         t_origin = get_origin(t)
         if t is Any:
-            return [cast(type[Any], Any)], []
+            return [cast("type[Any]", Any)], []
 
         if t_origin in (Union, UnionType):
             message_types = [arg for arg in get_args(t) if arg is not Any]
@@ -62,7 +62,7 @@ def infer_output_types_from_ctx_annotation(
     message_types = []
     t_out_origin = get_origin(t_out)
     if t_out is Any:
-        message_types = [cast(type[Any], Any)]
+        message_types = [cast("type[Any]", Any)]
     elif t_out is not type(None):  # Avoid None type
         if t_out_origin in (Union, UnionType):
             message_types = [arg for arg in get_args(t_out) if arg is not Any]
@@ -73,7 +73,7 @@ def infer_output_types_from_ctx_annotation(
     workflow_output_types = []
     t_w_out_origin = get_origin(t_w_out)
     if t_w_out is Any:
-        workflow_output_types = [cast(type[Any], Any)]
+        workflow_output_types = [cast("type[Any]", Any)]
     elif t_w_out is not type(None):  # Avoid None type
         if t_w_out_origin in (Union, UnionType):
             workflow_output_types = [arg for arg in get_args(t_w_out) if arg is not Any]
@@ -293,9 +293,9 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
 
 # Export all workflow context components
 __all__ = [
-    "infer_output_types_from_ctx_annotation",
-    "_is_workflow_context_type",
-    "validate_workflow_context_annotation",
-    "validate_function_signature",
     "WorkflowContext",
+    "_is_workflow_context_type",
+    "infer_output_types_from_ctx_annotation",
+    "validate_function_signature",
+    "validate_workflow_context_annotation",
 ]

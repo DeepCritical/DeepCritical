@@ -648,15 +648,15 @@ def create_adaptive_pattern_agent(
 
 # Export all agents
 __all__ = [
-    "WorkflowPatternAgent",
+    "AdaptivePatternAgent",
     "CollaborativePatternAgent",
-    "SequentialPatternAgent",
     "HierarchicalPatternAgent",
     "PatternOrchestratorAgent",
-    "AdaptivePatternAgent",
+    "SequentialPatternAgent",
+    "WorkflowPatternAgent",
+    "create_adaptive_pattern_agent",
     "create_collaborative_agent",
-    "create_sequential_agent",
     "create_hierarchical_agent",
     "create_pattern_orchestrator",
-    "create_adaptive_pattern_agent",
+    "create_sequential_agent",
 ]

@@ -661,7 +661,7 @@ class DeepSearchUtils:
             config_result = model_dump_method()
             # Ensure config is a dict
             if isinstance(config_result, dict):
-                config: dict[str, Any] = cast(dict[str, Any], config_result)
+                config: dict[str, Any] = cast("dict[str, Any]", config_result)
             else:
                 config: dict[str, Any] = {}
         else:

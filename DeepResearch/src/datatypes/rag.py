@@ -752,12 +752,12 @@ class BioinformaticsRAGSystem(RAGSystem):
                     cross_references[ref_type].update(refs)
 
         # Convert sets to lists for JSON serialization
-        for key in bioinformatics_summary:
-            if isinstance(bioinformatics_summary[key], set):
-                bioinformatics_summary[key] = list(bioinformatics_summary[key])
+        for key, value in bioinformatics_summary.items():
+            if isinstance(value, set):
+                bioinformatics_summary[key] = list(value)
 
-        for key in cross_references:
-            cross_references[key] = list(cross_references[key])
+        for key, value in cross_references.items():
+            cross_references[key] = list(value)
 
         context = "\n\n".join(context_parts)
 

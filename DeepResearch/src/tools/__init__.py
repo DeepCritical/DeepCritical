@@ -20,11 +20,11 @@ from .integrated_search_tools import RAGSearchTool
 from .websearch_tools import ChunkedSearchTool, WebSearchTool
 
 __all__ = [
-    "registry",
-    "WebSearchTool",
     "ChunkedSearchTool",
+    "DeepSearchTool",
     "GOAnnotationTool",
     "PubMedRetrievalTool",
-    "DeepSearchTool",
     "RAGSearchTool",
+    "WebSearchTool",
+    "registry",
 ]

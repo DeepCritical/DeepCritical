@@ -17,6 +17,19 @@ class UsageDetails(BaseModel):
     total_token_count: int | None = None
     additional_counts: dict[str, int] | None = None
 
+    def __hash__(self) -> int:
+        """Generate hash for the usage details."""
+        return hash(
+            (
+                self.input_token_count,
+                self.output_token_count,
+                self.total_token_count,
+                tuple(sorted(self.additional_counts.items()))
+                if self.additional_counts
+                else None,
+            )
+        )
+
     def __init__(self, **kwargs):
         # Extract additional counts from kwargs
         additional_counts = {}

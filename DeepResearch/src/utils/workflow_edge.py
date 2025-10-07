@@ -426,16 +426,16 @@ class SwitchCaseEdgeGroup(FanOutEdgeGroup):
 
 # Export all edge components
 __all__ = [
+    "Case",
+    "Default",
     "Edge",
     "EdgeGroup",
-    "SingleEdgeGroup",
-    "FanOutEdgeGroup",
     "FanInEdgeGroup",
+    "FanOutEdgeGroup",
+    "SingleEdgeGroup",
     "SwitchCaseEdgeGroup",
     "SwitchCaseEdgeGroupCase",
     "SwitchCaseEdgeGroupDefault",
-    "Case",
-    "Default",
     "_extract_function_name",
     "_missing_callable",
 ]

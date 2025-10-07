@@ -342,7 +342,7 @@ class PlanGenerator:
     def _topological_sort(self, dependencies: dict[str, list[str]]) -> list[str]:
         """Perform topological sort to determine execution order."""
         # Simple topological sort implementation
-        in_degree = {step: 0 for step in dependencies}
+        in_degree = dict.fromkeys(dependencies, 0)
 
         # Calculate in-degrees
         for step, deps in dependencies.items():

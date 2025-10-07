@@ -65,7 +65,7 @@ class TestToolsModuleImports:
 
             metadata = ToolMetadata(
                 name="test_tool",
-                category=cast(Any, "search"),  # type: ignore
+                category=cast("Any", "search"),  # type: ignore
                 description="Test tool",
             )
             assert metadata.name == "test_tool"

@@ -27,9 +27,9 @@ registry.register("pyd_url_context", lambda: UrlContextBuiltinRunner())
 
 # Export the functions for external use
 __all__ = [
+    "_build_agent",
     "_build_builtin_tools",
     "_build_toolsets",
-    "_build_agent",
-    "_run_sync",
     "_get_cfg",
+    "_run_sync",
 ]

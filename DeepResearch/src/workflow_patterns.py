@@ -584,51 +584,51 @@ if __name__ == "__main__":
 
 # Export all public APIs
 __all__ = [
-    # Core types
-    "InteractionPattern",
-    "MessageType",
-    "AgentInteractionState",
-    "InteractionMessage",
-    "WorkflowOrchestrator",
-    "InteractionConfig",
+    "AdaptivePatternAgent",
+    "AgentExecutorRegistry",
     "AgentInteractionRequest",
     "AgentInteractionResponse",
-    # Utilities
-    "WorkflowPatternUtils",
-    "ConsensusAlgorithm",
-    "MessageRoutingStrategy",
-    "InteractionMetrics",
-    # Factory classes
-    "WorkflowPatternFactory",
-    "WorkflowPatternExecutor",
-    "AgentExecutorRegistry",
-    # Execution functions
-    "execute_workflow_pattern",
-    "execute_collaborative_workflow",
-    "execute_sequential_workflow",
-    "execute_hierarchical_workflow",
+    "AgentInteractionState",
     # Agent classes
     "CollaborativePatternAgent",
-    "SequentialPatternAgent",
+    "ConsensusAlgorithm",
     "HierarchicalPatternAgent",
+    "InteractionConfig",
+    "InteractionMessage",
+    "InteractionMetrics",
+    # Core types
+    "InteractionPattern",
+    "MessageRoutingStrategy",
+    "MessageType",
     "PatternOrchestratorAgent",
-    "AdaptivePatternAgent",
-    # Factory functions for agents
-    "create_collaborative_agent",
-    "create_sequential_agent",
-    "create_hierarchical_agent",
-    "create_pattern_orchestrator",
-    "create_adaptive_pattern_agent",
+    "SequentialPatternAgent",
+    "WorkflowOrchestrator",
     # Configuration
     "WorkflowPatternConfig",
-    # Global instances
-    "workflow_executor",
+    "WorkflowPatternExecutor",
+    # Factory classes
+    "WorkflowPatternFactory",
+    # Utilities
+    "WorkflowPatternUtils",
     "agent_registry",
+    "create_adaptive_pattern_agent",
+    # Factory functions for agents
+    "create_collaborative_agent",
+    "create_hierarchical_agent",
+    "create_pattern_orchestrator",
+    "create_sequential_agent",
     # Demo functions
     "demonstrate_workflow_patterns",
     "example_collaborative_workflow",
-    "example_sequential_workflow",
     "example_hierarchical_workflow",
+    "example_sequential_workflow",
+    "execute_collaborative_workflow",
+    "execute_hierarchical_workflow",
+    "execute_sequential_workflow",
+    # Execution functions
+    "execute_workflow_pattern",
     # CLI
     "main",
+    # Global instances
+    "workflow_executor",
 ]

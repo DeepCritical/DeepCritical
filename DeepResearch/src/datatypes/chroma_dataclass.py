@@ -615,43 +615,43 @@ def create_embedding_function(
 # ============================================================================
 
 __all__ = [
-    # Enums
-    "DistanceFunction",
-    "IncludeType",
-    "AuthType",
-    "EmbeddingFunctionType",
     # Core structures
     "ID",
-    "Metadata",
-    "Embedding",
-    "Document",
-    # Filter structures
-    "WhereFilter",
-    "WhereDocumentFilter",
-    "CompositeFilter",
-    # Include structure
-    "Include",
-    # Query structures
-    "QueryRequest",
-    "QueryResult",
-    "QueryResponse",
+    # Authentication structures
+    "AuthConfig",
+    "AuthType",
+    "ChromaClient",
+    # Aliases
+    "ChromaDocument",
+    # Client structures
+    "ClientConfig",
+    "Collection",
     # Collection structures
     "CollectionMetadata",
+    "CompositeFilter",
     "CreateCollectionRequest",
-    "Collection",
+    # Enums
+    "DistanceFunction",
+    "Document",
+    "Embedding",
     # Embedding function structures
     "EmbeddingFunction",
     "EmbeddingFunctionConfig",
-    # Authentication structures
-    "AuthConfig",
-    # Client structures
-    "ClientConfig",
-    "ChromaClient",
+    "EmbeddingFunctionType",
+    # Include structure
+    "Include",
+    "IncludeType",
+    "Metadata",
+    # Query structures
+    "QueryRequest",
+    "QueryResponse",
+    "QueryResult",
+    "WhereDocumentFilter",
+    # Filter structures
+    "WhereFilter",
     # Utility functions
     "create_client",
     "create_embedding_function",
-    # Aliases
-    "ChromaDocument",
 ]
 
 

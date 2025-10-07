@@ -517,25 +517,25 @@ __all__ = [
     # Configuration and results
     "AgentConfig",
     "AgentExecutionResult",
-    # Base class
-    "BaseDeepAgent",
-    # Specialized agents
-    "PlanningAgent",
-    "FilesystemAgent",
-    "ResearchAgent",
-    "TaskOrchestrationAgent",
-    "GeneralPurposeAgent",
     # Orchestrator
     "AgentOrchestrator",
-    # Factory functions
-    "create_planning_agent",
-    "create_filesystem_agent",
-    "create_research_agent",
-    "create_task_orchestration_agent",
-    "create_general_purpose_agent",
-    "create_agent_orchestrator",
+    # Base class
+    "BaseDeepAgent",
     # Main implementation class
     "DeepAgentImplementation",
+    "FilesystemAgent",
+    "GeneralPurposeAgent",
+    # Specialized agents
+    "PlanningAgent",
+    "ResearchAgent",
+    "TaskOrchestrationAgent",
+    "create_agent_orchestrator",
+    "create_filesystem_agent",
+    "create_general_purpose_agent",
+    # Factory functions
+    "create_planning_agent",
+    "create_research_agent",
+    "create_task_orchestration_agent",
 ]
 
 
