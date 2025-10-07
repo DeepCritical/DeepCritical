@@ -8,7 +8,7 @@ on:
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
@@ -44,6 +44,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Set site configuration based on branch
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "Building dev branch documentation (preview)"
+            # Add dev indicator to site name
+            sed -i 's/site_name: DeepCritical/site_name: DeepCritical (Dev)/g' mkdocs.yml
+          else
+            echo "Building main branch documentation"
+          fi
+
       - name: Build documentation
         run: mkdocs build
 
@@ -58,7 +68,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    # Deploy both main and dev branches (dev temporarily overrides main for preview)
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

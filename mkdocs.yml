@@ -1,7 +1,7 @@
 site_name: DeepCritical
 site_description: Hydra-configured, Pydantic Graph-based deep research workflow
 site_author: DeepCritical Team
-site_url: https://deepcritical.github.io/DeepCritical
+site_url: https://deepcritical.github.io/DeepCritical/
 site_dir: site
 
 repo_name: DeepCritical/DeepCritical
