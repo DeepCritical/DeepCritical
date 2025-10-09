@@ -35,6 +35,8 @@ dev = [
   "pytest>=7.0.0",
   "pytest-asyncio>=0.21.0",
   "pytest-cov>=4.0.0",
+  "requests-mock>=1.12.1",
+  "pytest-mock>=3.15.1",
 ]
 
 [project.scripts]
@@ -219,4 +221,6 @@ dev = [
   "mkdocs-minify-plugin>=0.7.0",
   "mkdocstrings>=0.24.0",
   "mkdocstrings-python>=1.7.0",
+  "requests-mock>=1.11.0",
+  "pytest-mock>=3.12.0",
 ]
