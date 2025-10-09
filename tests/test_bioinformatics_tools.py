@@ -100,7 +100,7 @@ def test_pubmed_paper_retriever_api_error(requests_mock):
     papers = pubmed_paper_retriever("test query")
     assert len(papers) == 0
 
-
+@pytest.mark.usefixtures("disable_ratelimiter")
 def test_get_metadata_success(mock_requests):
     """Test successful metadata retrieval."""
     metadata = _get_metadata(12345)
@@ -116,7 +116,7 @@ def test_get_metadata_error(requests_mock):
     metadata = _get_metadata(12345)
     assert metadata is None
 
-
+@pytest.mark.usefixtures("disable_ratelimiter")
 def test_get_fulltext_success(mock_requests):
     """Test successful full-text retrieval."""
     fulltext = _get_fulltext(12345)
