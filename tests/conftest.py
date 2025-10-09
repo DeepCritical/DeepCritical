@@ -8,7 +8,7 @@ RATELIMITER_TARGETS = [
 ]
 
 
-@pytest.fixture()
+@pytest.fixture
 def disable_ratelimiter():
     """Disable the ratelimiter for tests."""
     with ExitStack() as stack:
