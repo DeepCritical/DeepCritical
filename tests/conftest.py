@@ -6,8 +6,9 @@ from unittest.mock import patch
 from contextlib import ExitStack
 
 RATELIMITER_TARGETS = [
-    'DeepResearch.src.tools.bioinformatics_tools.limiter.hit',
+    "DeepResearch.src.tools.bioinformatics_tools.limiter.hit",
 ]
+
 
 @pytest.fixture()
 def disable_ratelimiter():

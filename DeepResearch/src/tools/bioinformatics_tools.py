@@ -42,6 +42,7 @@ storage = MemoryStorage()
 limiter = MovingWindowRateLimiter(storage)
 rate_limit = parse("3/second")
 
+
 class BioinformaticsToolDeps(BaseModel):
     """Dependencies for bioinformatics tools."""
 
@@ -80,7 +81,6 @@ def go_annotation_processor(
     return []
 
 
-
 def _get_metadata(pmid: int) -> Optional[Dict[str, str]]:
     """
     Call the esummary API to get article metadata.
@@ -117,7 +117,7 @@ def _get_fulltext(pmid: int) -> Optional[Dict[str, str]]:
         return None
 
 
-def _get_figures(pmcid: str) -> Dict[str,str]:
+def _get_figures(pmcid: str) -> Dict[str, str]:
     """
     This will download a zipfile containing all the figures and supplementary files for an article.
     NB: Needs to use PMCNNNNNNN for the ID, i.e. pubmed central ID, not pubmed ID.
@@ -131,18 +131,21 @@ def _get_figures(pmcid: str) -> Dict[str,str]:
         suppl_response.raise_for_status()
         IMAGE_EXTENSIONS = set(["png", "jpg", "jpeg", "tiff"])
         figures = {}
-        with closing(suppl_response), zipfile.ZipFile(io.BytesIO(suppl_response.content)) as zip_data:
+        with (
+            closing(suppl_response),
+            zipfile.ZipFile(io.BytesIO(suppl_response.content)) as zip_data,
+        ):
             for zipped_file in zip_data.infolist():
                 ## Check file extensions in image type set
-                if zipped_file.filename.split('.') in IMAGE_EXTENSIONS:
+                if zipped_file.filename.split(".") in IMAGE_EXTENSIONS:
                     ## Reads raw bytes of the file and encode as base64 encoded string
-                    figures[zipped_file.filename] = base64.b64encode(zip_data.read(zipped_file)).decode('utf-8')
+                    figures[zipped_file.filename] = base64.b64encode(
+                        zip_data.read(zipped_file)
+                    ).decode("utf-8")
         return figures
     except requests.exceptions.RequestException as e:
         print(f"Failed to get figures/supplementary data for {pmcid}")
         return {}
-
-    
 
 
 def _extract_text_from_bioc(bioc_data: Dict[str, Any]) -> str:
