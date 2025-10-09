@@ -11,14 +11,13 @@ import asyncio
 import base64
 import io
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-import requests
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import requests
 from limits import parse
 from limits.storage import MemoryStorage
 from limits.strategies import MovingWindowRateLimiter
-
-
 from pydantic import BaseModel, Field
 
 from ..agents.bioinformatics_agents import DataFusionResult, ReasoningResult

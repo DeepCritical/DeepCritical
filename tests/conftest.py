@@ -1,9 +1,7 @@
-import pytest
+from contextlib import ExitStack
 from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
-from contextlib import ExitStack
 
 RATELIMITER_TARGETS = [
     "DeepResearch.src.tools.bioinformatics_tools.limiter.hit",
