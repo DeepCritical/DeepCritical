@@ -10,15 +10,18 @@ from __future__ import annotations
 import asyncio
 import base64
 import io
+import zipfile
+from contextlib import closing
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+from typing import Any, List
 
 import requests
 from limits import parse
 from limits.storage import MemoryStorage
 from limits.strategies import MovingWindowRateLimiter
 from pydantic import BaseModel, Field
+from requests.exceptions import RequestException
 
 from ..agents.bioinformatics_agents import DataFusionResult, ReasoningResult
 from ..datatypes.bioinformatics import (
@@ -80,7 +83,7 @@ def go_annotation_processor(
     return []
 
 
-def _get_metadata(pmid: int) -> Optional[Dict[str, str]]:
+def _get_metadata(pmid: int) -> dict[str, Any] | None:
     """
     Call the esummary API to get article metadata.
     Ratelimit is to abide by NIH API rules
@@ -94,12 +97,12 @@ def _get_metadata(pmid: int) -> Optional[Dict[str, str]]:
         response = requests.get(ESUMMARY_URL, params=params)
         response.raise_for_status()
         return response.json()
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         print(f"An error occurred: {e}")
         return None
 
 
-def _get_fulltext(pmid: int) -> Optional[Dict[str, str]]:
+def _get_fulltext(pmid: int) -> dict[str, Any] | None:
     """
     Get the full text of a paper in BioC format
     """
@@ -111,12 +114,12 @@ def _get_fulltext(pmid: int) -> Optional[Dict[str, str]]:
         paper_response = requests.get(pmid_url)
         paper_response.raise_for_status()
         return paper_response.json()
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         print(f"Fetching paper {pmid} failed: {e}")
         return None
 
 
-def _get_figures(pmcid: str) -> Dict[str, str]:
+def _get_figures(pmcid: str) -> dict[str, str]:
     """
     This will download a zipfile containing all the figures and supplementary files for an article.
     NB: Needs to use PMCNNNNNNN for the ID, i.e. pubmed central ID, not pubmed ID.
@@ -128,7 +131,7 @@ def _get_figures(pmcid: str) -> Dict[str, str]:
             return {}
         suppl_response = requests.get(suppl_url)
         suppl_response.raise_for_status()
-        IMAGE_EXTENSIONS = set(["png", "jpg", "jpeg", "tiff"])
+        IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "tiff"}
         figures = {}
         with (
             closing(suppl_response),
@@ -142,12 +145,13 @@ def _get_figures(pmcid: str) -> Dict[str, str]:
                         zip_data.read(zipped_file)
                     ).decode("utf-8")
         return figures
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         print(f"Failed to get figures/supplementary data for {pmcid}")
+        print(f"Error: {e}")
         return {}
 
 
-def _extract_text_from_bioc(bioc_data: Dict[str, Any]) -> str:
+def _extract_text_from_bioc(bioc_data: dict[str, Any]) -> str:
     """
     Extracts and concatenates text from a BioC JSON structure.
     """
@@ -161,12 +165,12 @@ def _extract_text_from_bioc(bioc_data: Dict[str, Any]) -> str:
     return "\n".join(full_text)
 
 
-def _build_paper(pmid: int) -> Optional[PubMedPaper]:
+def _build_paper(pmid: int) -> PubMedPaper | None:
     """
     Build the paper from a series of API calls
     """
     metadata = _get_metadata(pmid)
-    if not metadata:
+    if not isinstance(metadata, dict):
         return None
 
     # Assuming the structure of the metadata response
@@ -179,7 +183,7 @@ def _build_paper(pmid: int) -> Optional[PubMedPaper]:
     try:
         # Attempt to parse the year, and create a datetime object
         year = int(pubdate_str.split()[0])
-        publication_date = datetime(year, 1, 1)
+        publication_date = datetime(year, 1, 1, tzinfo=timezone.utc)
     except (ValueError, IndexError):
         publication_date = None
 
@@ -197,8 +201,8 @@ def _build_paper(pmid: int) -> Optional[PubMedPaper]:
 
 # @defer - not available in current pydantic-ai version
 def pubmed_paper_retriever(
-    query: str, max_results: int = 100, year_min: Optional[int] = None
-) -> List[PubMedPaper]:
+    query: str, max_results: int = 100, year_min: int | None = None
+) -> list[PubMedPaper]:
     """Retrieve PubMed papers based on query."""
     PUBMED_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
@@ -215,7 +219,7 @@ def pubmed_paper_retriever(
         response = requests.get(PUBMED_SEARCH_URL, params=params)
         response.raise_for_status()
         data = response.json()
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         print(f"An error occurred: {e}")
         return []
 

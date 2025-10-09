@@ -1,8 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 import requests
-import requests_mock
 
 from DeepResearch.src.datatypes.bioinformatics import PubMedPaper
 from DeepResearch.src.tools.bioinformatics_tools import (
@@ -16,8 +15,7 @@ from DeepResearch.src.tools.bioinformatics_tools import (
 # Mock Data
 
 
-@pytest.fixture
-def mock_requests(requests_mock):
+def setup_mock_requests(requests_mock):
     """Fixture to mock requests to NCBI and other APIs."""
     # Mock for pubmed_paper_retriever (esearch)
     requests_mock.get(
@@ -81,8 +79,9 @@ def mock_requests(requests_mock):
     return requests_mock
 
 
-def test_pubmed_paper_retriever_success(mock_requests):
+def test_pubmed_paper_retriever_success(requests_mock):
     """Test successful retrieval of papers."""
+    setup_mock_requests(requests_mock)
     papers = pubmed_paper_retriever("test query")
     assert len(papers) == 2
     assert papers[0].pmid == "12345"
@@ -102,9 +101,11 @@ def test_pubmed_paper_retriever_api_error(requests_mock):
 
 
 @pytest.mark.usefixtures("disable_ratelimiter")
-def test_get_metadata_success(mock_requests):
+def test_get_metadata_success(requests_mock):
     """Test successful metadata retrieval."""
+    setup_mock_requests(requests_mock)
     metadata = _get_metadata(12345)
+    assert metadata is not None
     assert metadata["result"]["12345"]["title"] == "Test Paper 1"
 
 
@@ -119,14 +120,17 @@ def test_get_metadata_error(requests_mock):
 
 
 @pytest.mark.usefixtures("disable_ratelimiter")
-def test_get_fulltext_success(mock_requests):
+def test_get_fulltext_success(requests_mock):
     """Test successful full-text retrieval."""
+    setup_mock_requests(requests_mock)
     fulltext = _get_fulltext(12345)
+    assert fulltext is not None
     assert "documents" in fulltext
 
 
-def test_get_fulltext_error(mock_requests):
+def test_get_fulltext_error(requests_mock):
     """Test error during full-text retrieval."""
+    setup_mock_requests(requests_mock)
     fulltext = _get_fulltext(67890)
     assert fulltext is None
 
@@ -187,7 +191,7 @@ def test_build_paper(monkeypatch):
     assert paper.title == "Built Paper"
     assert paper.abstract == "Abstract of built paper."
     assert paper.is_open_access
-    assert paper.publication_date == datetime(2025, 1, 1)
+    assert paper.publication_date == datetime(2025, 1, 1, tzinfo=timezone.utc)
 
 
 def test_build_paper_no_metadata(monkeypatch):
