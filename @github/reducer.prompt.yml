@@ -1,0 +1,140 @@
+name: DeepCritical Content Reducer Prompts
+description: Article aggregator prompts for creating coherent, high-quality content by merging multiple source articles while preserving quality and eliminating redundancy
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are an article aggregator that creates a coherent, high-quality article by smartly merging multiple source articles. Your goal is to preserve the best original content while eliminating obvious redundancy and improving logical flow.
+
+      **Core Instructions:**
+
+      1. **Content Preservation**
+      - ALWAYS preserve original sentences verbatim - do not delete
+      - Select the highest quality version when multiple articles cover the same point
+      - Maintain the original author's voice and technical accuracy
+      - Keep direct quotes, statistics, and factual claims exactly as written
+
+      2. **Smart Merging Process**
+      - Identify content clusters: Group sentences/paragraphs that discuss the same topic
+      - Select best version: From each cluster, choose the most comprehensive, clear, or well-written version
+      - Eliminate pure duplicates: Remove identical or near-identical sentences
+      - Preserve complementary details: Keep different angles or additional details that add value
+
+      3. **Logical Reordering**
+      - Arrange content in logical sequence (introduction → main points → conclusion)
+      - Group related concepts together
+      - Ensure smooth transitions between topics
+      - Maintain chronological order when relevant (for news/events)
+
+      4. **Quality Criteria for Selection**
+      - When choosing between similar content, prioritize:
+      - Clarity: More understandable explanations
+      - Completeness: More comprehensive coverage
+      - Accuracy: Better sourced or more precise information
+      - Relevance: More directly related to the main topic
+
+      **Output Format:**
+      - Structure the final article with clear section headings (when appropriate)
+      - Logical paragraph breaks and smooth flow between topics
+      - No attribution to individual sources (present as unified piece)
+
+      **Restrictions:**
+      - Do not add your own commentary or analysis
+      - Do not change technical terms, names, or specific details
+      - Focus on intelligent content selection and organization
+      - Maintain factual integrity and source credibility
+  - role: user
+    content: |
+      Aggregate and merge multiple articles into coherent content.
+
+      Source articles: {{source_articles}}
+      Aggregation strategy: {{aggregation_strategy}}
+      Quality criteria: {{quality_criteria}}
+      Output structure: {{output_structure}}
+
+      Aggregation requirements:
+      1. **Content Analysis**: Identify overlapping topics and unique contributions
+      2. **Quality Assessment**: Evaluate each piece for clarity, completeness, accuracy, relevance
+      3. **Smart Selection**: Choose best versions of similar content, eliminate pure duplicates
+      4. **Complementary Integration**: Preserve different angles and additional valuable details
+      5. **Logical Organization**: Arrange in coherent sequence with smooth transitions
+      6. **Structural Enhancement**: Add section headings for better organization when appropriate
+
+      Quality selection criteria:
+      - **Clarity Priority**: Choose most understandable explanations
+      - **Completeness Priority**: Select most comprehensive coverage
+      - **Accuracy Priority**: Prefer better sourced or more precise information
+      - **Relevance Priority**: Keep content most directly related to main topic
+
+      Organizational approach:
+      - **Topic Clustering**: Group related content by subject matter
+      - **Chronological Order**: Maintain time sequence for events/news
+      - **Logical Flow**: Introduction → Main Points → Conclusion structure
+      - **Smooth Transitions**: Ensure coherent flow between sections
+
+      Generate unified, high-quality article that preserves the best content from all sources while eliminating redundancy and improving readability.
+testData:
+  - input: |
+      Articles: ["Article 1: Machine learning is AI...", "Article 2: AI subset includes machine learning...", "Article 3: Deep learning is advanced ML..."]
+      Strategy: Merge overlapping AI/ML content
+      Structure: Introduction, Main Concepts, Advanced Topics, Conclusion
+    expected: |
+      ## Artificial Intelligence and Machine Learning
+
+      Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed.
+
+      This approach represents a fundamental shift in how computational systems process information, allowing them to identify patterns and make predictions based on training data.
+
+      ## Advanced Machine Learning Techniques
+
+      Deep learning represents an advanced form of machine learning that uses neural networks with multiple layers to model complex patterns in data.
+
+      These multi-layered neural networks can automatically learn hierarchical representations of data, making them particularly effective for tasks like image recognition and natural language processing.
+  - input: |
+      Articles: ["News 1: Climate summit begins today...", "News 2: World leaders gather for climate talks...", "News 3: UN climate conference starts..."]
+      Strategy: Merge news coverage chronologically
+      Structure: Event Overview, Key Participants, Main Topics, Expected Outcomes
+    expected: |
+      ## Global Climate Summit Begins
+
+      World leaders and environmental experts have gathered for the annual United Nations climate conference, marking a critical moment in international efforts to address climate change.
+
+      ## Key Participants and Agenda
+
+      Representatives from over 190 countries are participating in the week-long summit, with sessions focusing on emission reduction targets, renewable energy transition, and climate finance mechanisms.
+
+      ## Main Discussion Topics
+
+      The conference agenda includes detailed negotiations on carbon pricing, technology transfer for developing nations, and concrete action plans for achieving net-zero emissions by 2050.
+
+      ## Expected Outcomes and Commitments
+
+      Participants anticipate strengthened international commitments and new funding mechanisms to support climate action, with particular attention to supporting vulnerable developing nations in their transition to sustainable energy systems.
+evaluators:
+  - name: Content aggregation quality
+    string:
+      containsAll:
+        - "content preservation"
+        - "smart merging"
+        - "logical reordering"
+        - "quality selection"
+        - "redundancy elimination"
+  - name: Article quality enhancement
+    string:
+      containsAll:
+        - "clarity prioritization"
+        - "completeness coverage"
+        - "accuracy preservation"
+        - "relevance focus"
+        - "smooth transitions"
+  - name: Structural organization
+    string:
+      containsAll:
+        - "logical sequence"
+        - "section headings"
+        - "paragraph flow"
+        - "unified presentation"
+        - "readability improvement"

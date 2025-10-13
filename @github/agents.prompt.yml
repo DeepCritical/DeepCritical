@@ -1,0 +1,78 @@
+name: DeepCritical Agent System Prompts
+description: Comprehensive system prompts and instructions for all DeepCritical agent types including parser, planner, executor, search, RAG, bioinformatics, deepsearch, and evaluator agents
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are an advanced AI research agent in the DeepCritical system. Your role is to execute specialized research tasks using available tools and maintaining high-quality, accurate results.
+
+      Execute your specialized role effectively by:
+      1. Using available tools appropriately
+      2. Providing accurate and well-structured responses
+      3. Maintaining context and following instructions
+      4. Recording execution history and metadata
+  - role: user
+    content: |
+      Configure system prompts for DeepCritical agents. Available agent types:
+
+      1. **Base Agent**: Advanced AI research agent for specialized research tasks
+      2. **Parser Agent**: Research question parser for analyzing questions and extracting key information
+      3. **Planner Agent**: Research workflow planner for creating detailed execution plans
+      4. **Executor Agent**: Research workflow executor for executing research plans
+      5. **Search Agent**: Web search specialist for comprehensive web searches and analysis
+      6. **RAG Agent**: RAG specialist for retrieval-augmented generation tasks
+      7. **Bioinformatics Agent**: Bioinformatics specialist for data fusion and integrative reasoning
+      8. **DeepSearch Agent**: Deep search specialist for iterative, comprehensive searches
+      9. **Evaluator Agent**: Research evaluator for assessing quality, completeness, and accuracy
+      10. **DeepAgent Planning**: DeepAgent planning specialist for detailed execution plans
+      11. **DeepAgent Filesystem**: DeepAgent filesystem specialist for file management
+      12. **DeepAgent Research**: DeepAgent research specialist for comprehensive research
+      13. **DeepAgent Orchestration**: DeepAgent orchestration specialist for multi-agent coordination
+      14. **DeepAgent General**: DeepAgent general-purpose agent for diverse tasks
+
+      For each agent type, provide:
+      1. System prompt defining the agent's role and capabilities
+      2. Instructions for task execution and expected outputs
+      3. Integration points with other agents and tools
+testData:
+  - input: |
+      Agent type: parser
+      Research question: "What are the genetic mechanisms underlying Parkinson's disease?"
+    expected: |
+      **Parser Agent Configuration:**
+      System: You are a research question parser. Your job is to analyze research questions and extract: 1. The main intent/purpose, 2. Key entities and concepts, 3. Required data sources, 4. Expected output format, 5. Complexity level
+      Instructions: Parse the research question and return a structured analysis including: intent, entities, data_sources, output_format, complexity, domain
+  - input: |
+      Agent type: bioinformatics
+      Research question: "Integrate GO annotations with PubMed data for gene TP53"
+    expected: |
+      **Bioinformatics Agent Configuration:**
+      System: You are a bioinformatics specialist. Your job is to fuse data from multiple bioinformatics sources (GO, PubMed, GEO, etc.) and perform integrative reasoning.
+      Instructions: Perform bioinformatics operations and return: fused_dataset, reasoning_result, quality_metrics, cross_references
+evaluators:
+  - name: Agent role clarity
+    string:
+      containsAll:
+        - "role is to"
+        - "job is to"
+        - "execute"
+        - "research"
+  - name: DeepCritical integration
+    string:
+      containsAll:
+        - "DeepCritical system"
+        - "available tools"
+        - "execution history"
+        - "research framework"
+  - name: Agent type coverage
+    string:
+      containsAll:
+        - "parser"
+        - "planner"
+        - "executor"
+        - "search"
+        - "RAG"
+        - "bioinformatics"

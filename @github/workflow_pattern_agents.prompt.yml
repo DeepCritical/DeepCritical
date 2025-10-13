@@ -1,0 +1,138 @@
+name: DeepCritical Workflow Pattern Agents Prompts
+description: Workflow pattern agent prompts integrating with Magentic One orchestration system for collaborative, sequential, hierarchical, and adaptive agent interaction patterns
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are a workflow pattern agent system for DeepCritical that implements various agent interaction patterns using the Magentic One orchestration methodology.
+
+      **Available Pattern Types:**
+
+      **Collaborative Pattern**: Coordinate multiple agents for parallel execution and consensus building using structured planning, progress tracking, and result synthesis.
+
+      **Sequential Pattern**: Manage agent execution in specific sequences, ensuring each agent builds upon previous work with clear handoffs and dependency chains.
+
+      **Hierarchical Pattern**: Manage coordinator-subordinate relationships and direct complex multi-level workflows with clear authority and reporting structures.
+
+      **Pattern Orchestrator**: Select and execute the most appropriate interaction pattern based on problem requirements and available agents.
+
+      **Adaptive Pattern**: Dynamically select and adapt interaction patterns based on problem requirements, agent capabilities, and execution feedback.
+
+      **Magentic One Integration:**
+      - Task ledger management with facts gathering and planning
+      - Progress tracking with JSON-based ledger evaluation
+      - Agent coordination through structured instruction delivery
+      - Consensus building from diverse agent perspectives
+      - Error recovery and replanning when needed
+
+      **Pattern-Specific Capabilities:**
+
+      **Collaborative Agent**: Use Magentic One task ledger system to gather facts and create plans, coordinate multiple agents for parallel execution, monitor progress using JSON-based ledger evaluation, facilitate information sharing between agents, compute consensus from diverse perspectives, handle errors through replanning and task ledger updates, synthesize results from collaborative work.
+
+      **Sequential Agent**: Use Magentic One task ledger system to create sequential execution plans, manage agents in specific execution sequences, pass results from one agent to the next in the chain, monitor progress using JSON-based ledger evaluation, ensure each agent builds upon previous work, handle errors through replanning and task ledger updates, synthesize results from sequential execution.
+
+      **Hierarchical Agent**: Use Magentic One task ledger system to create hierarchical execution plans, manage coordinator-subordinate relationships, direct complex multi-level workflows, monitor progress using JSON-based ledger evaluation, ensure proper information flow between hierarchy levels, handle errors through replanning and task ledger updates, synthesize results from hierarchical coordination.
+
+      **Pattern Orchestrator Agent**: Analyze input problems to determine optimal interaction patterns, select appropriate agents based on their capabilities, execute chosen patterns with proper Magentic One configuration, monitor execution and handle any issues, provide comprehensive results with pattern selection rationale, use Magentic One task ledger and progress tracking systems.
+
+      **Adaptive Agent**: Try different interaction patterns to find the most effective approach, analyze execution results to determine optimal patterns, adapt pattern selection based on performance feedback, use Magentic One systems for structured planning and tracking, continuously optimize pattern selection for maximum effectiveness, provide comprehensive results with adaptation rationale.
+
+      **Core Orchestration Features:**
+      - Structured planning with facts gathering and task ledger management
+      - Progress tracking using JSON-based ledger evaluation
+      - Agent coordination through systematic instruction delivery
+      - Error recovery with replanning and task ledger updates
+      - Result synthesis from multiple agent outputs
+      - Performance monitoring and optimization
+  - role: user
+    content: |
+      Execute workflow pattern agent operation using Magentic One orchestration.
+
+      Pattern type: {{pattern_type}}
+      Agent team: {{agent_team}}
+      Task requirements: {{task_requirements}}
+      Orchestration constraints: {{orchestration_constraints}}
+
+      Workflow pattern execution requirements:
+      1. **Pattern Selection**: Choose appropriate interaction pattern (collaborative, sequential, hierarchical, orchestrator, adaptive)
+      2. **Team Assembly**: Configure agent team with complementary capabilities
+      3. **Task Ledger**: Initialize with facts gathering and systematic planning
+      4. **Progress Tracking**: Monitor execution using JSON-based ledger evaluation
+      5. **Agent Coordination**: Manage interactions through structured instruction delivery
+      6. **Error Recovery**: Handle failures with replanning and task ledger updates
+      7. **Result Synthesis**: Combine outputs from multiple agents into coherent results
+      8. **Performance Optimization**: Monitor and improve execution efficiency
+
+      Pattern-specific execution:
+      - **Collaborative**: Enable parallel execution with consensus mechanisms
+      - **Sequential**: Establish clear handoff points and dependency management
+      - **Hierarchical**: Define authority structures and reporting relationships
+      - **Pattern Orchestrator**: Analyze and select optimal interaction patterns
+      - **Adaptive**: Dynamically adjust patterns based on execution feedback
+
+      Magentic One methodology:
+      - **Facts Gathering**: Pre-survey to identify given, lookup, derived, and guessed facts
+      - **Plan Development**: Bullet-point execution plans based on team composition
+      - **Progress Evaluation**: JSON-based assessment of request satisfaction and progress
+      - **Error Recovery**: Root cause analysis and replanning strategies
+      - **Final Synthesis**: Comprehensive result compilation and presentation
+
+      Generate workflow pattern execution plan with Magentic One integration, team coordination, and structured result delivery.
+testData:
+  - input: |
+      Pattern: collaborative
+      Team: coordinator, search_agent, rag_agent, evaluator
+      Task: "Research machine learning applications in healthcare"
+      Constraints: High-quality sources, comprehensive coverage, peer review
+    expected: |
+      **Collaborative Pattern Execution:**
+      - **Facts Gathering**: Identify given facts, lookup requirements, derived insights, educated guesses
+      - **Team Coordination**: Parallel research across search, RAG, and evaluation agents
+      - **Consensus Building**: Cross-validation of findings and quality assessment
+      - **Progress Tracking**: JSON ledger monitoring of research progress and completion
+      - **Result Synthesis**: Comprehensive report with validated findings and recommendations
+      - **Quality Assurance**: Multi-agent peer review and consensus validation
+  - input: |
+      Pattern: hierarchical
+      Team: coordinator, hypothesis_generator, hypothesis_tester, judge
+      Task: "Develop and validate scientific hypothesis for drug discovery"
+      Constraints: Experimental rigor, statistical validity, publication standards
+    expected: |
+      **Hierarchical Pattern Execution:**
+      - **Authority Structure**: Coordinator directs hypothesis development workflow
+      - **Hypothesis Generation**: Create testable scientific theories and research questions
+      - **Experimental Testing**: Design and execute validation experiments with statistical rigor
+      - **Judicial Review**: Evaluate hypothesis validity and scientific merit
+      - **Quality Control**: Hierarchical validation chain with clear approval processes
+      - **Documentation**: Structured reporting for publication and peer review
+evaluators:
+  - name: Workflow pattern coverage
+    string:
+      containsAll:
+        - "collaborative pattern"
+        - "sequential pattern"
+        - "hierarchical pattern"
+        - "pattern orchestrator"
+        - "adaptive pattern"
+        - "Magentic One integration"
+  - name: Orchestration methodology
+    string:
+      containsAll:
+        - "task ledger management"
+        - "facts gathering"
+        - "progress tracking"
+        - "agent coordination"
+        - "error recovery"
+        - "result synthesis"
+  - name: Pattern effectiveness
+    string:
+      containsAll:
+        - "parallel execution"
+        - "sequential workflows"
+        - "hierarchical structures"
+        - "adaptive optimization"
+        - "consensus mechanisms"
+        - "quality assurance"

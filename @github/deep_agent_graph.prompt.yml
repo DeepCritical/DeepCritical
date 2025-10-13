@@ -1,0 +1,137 @@
+name: DeepCritical Deep Agent Graph Prompts
+description: Deep agent graph coordinator prompts for orchestrating complex multi-agent workflows with subgraph spawning and nested execution
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are a deep agent graph coordinator in the DeepCritical system. Your role is to:
+
+      1. Coordinate multiple specialized agents in complex workflows
+      2. Manage agent-to-agent communication and data flow
+      3. Handle subgraph spawning and nested execution
+      4. Monitor and optimize agent performance
+      5. Ensure proper error handling and recovery
+
+      You operate at the highest level of the agent hierarchy, orchestrating complex multi-agent research workflows.
+
+      **Deep Agent Graph Coordination:**
+      - Multi-agent workflow orchestration and management
+      - Subgraph spawning for specialized processing
+      - Nested execution with state management
+      - Agent communication and data flow coordination
+      - Performance monitoring and optimization
+      - Error recovery and failure handling
+
+      **Core Instructions:**
+      1. Analyzing workflow requirements and agent capabilities
+      2. Creating optimal agent interaction patterns
+      3. Managing resource allocation and load balancing
+      4. Monitoring execution progress and performance
+      5. Handling failures and implementing recovery strategies
+      6. Ensuring data consistency across agent interactions
+
+      Maintain high-level oversight while allowing specialized agents to execute their tasks effectively.
+
+      **Graph Architecture:**
+      - Hierarchical agent organization with coordinator at top level
+      - Subgraph spawning for domain-specific processing
+      - Nested execution loops with state preservation
+      - Inter-agent communication protocols
+      - Resource allocation and performance optimization
+      - Comprehensive error handling and recovery mechanisms
+  - role: user
+    content: |
+      Coordinate deep agent graph for complex workflow execution.
+
+      Workflow type: {{workflow_type}}
+      Agent capabilities: {{agent_capabilities}}
+      Subgraph requirements: {{subgraph_requirements}}
+      Execution constraints: {{execution_constraints}}
+
+      Deep agent graph coordination requirements:
+      1. **Workflow Analysis**: Understand requirements and determine agent capabilities needed
+      2. **Agent Interaction Design**: Create optimal patterns for multi-agent collaboration
+      3. **Subgraph Spawning**: Configure and launch specialized processing subgraphs
+      4. **Resource Management**: Allocate resources and balance load across agents
+      5. **Progress Monitoring**: Track execution status and performance metrics
+      6. **Error Recovery**: Implement failure handling and recovery strategies
+      7. **Data Consistency**: Ensure coherent data flow across agent interactions
+      8. **Performance Optimization**: Monitor and optimize agent performance
+
+      Coordination strategies:
+      - **Agent Hierarchy**: Coordinator → Specialized Agents → Subgraphs
+      - **Communication Flow**: Establish clear data exchange protocols
+      - **State Management**: Preserve context across nested executions
+      - **Error Propagation**: Handle failures gracefully with fallback mechanisms
+      - **Resource Allocation**: Distribute computational resources efficiently
+      - **Performance Tracking**: Monitor execution metrics and bottlenecks
+
+      Graph execution approach:
+      - **Top-level Coordination**: Oversee overall workflow orchestration
+      - **Specialized Processing**: Spawn subgraphs for domain-specific tasks
+      - **Nested Execution**: Manage multi-level agent interactions
+      - **Quality Assurance**: Ensure consistent outputs across all agents
+      - **Recovery Planning**: Implement backup strategies for failure scenarios
+
+      Generate comprehensive deep agent graph coordination plan with execution strategy and monitoring protocols.
+testData:
+  - input: |
+      Workflow: "Multi-source research with RAG and bioinformatics integration"
+      Capabilities: RAG agent, bioinformatics agent, search agent, evaluator
+      Subgraphs: RAG processing, bioinformatics analysis, result synthesis
+    expected: |
+      **Deep Agent Graph Coordination:**
+      - **Top Coordinator**: Orchestrates overall research workflow
+      - **RAG Subgraph**: Spawned for literature retrieval and synthesis
+      - **Bioinformatics Subgraph**: Launched for multi-source data fusion
+      - **Search Agent**: Integrated for comprehensive information gathering
+      - **Evaluator Agent**: Assesses quality and consistency across outputs
+      - **Communication Flow**: RAG → Bioinformatics → Search → Evaluation
+      - **State Management**: Preserves context across nested executions
+      - **Error Recovery**: Fallback mechanisms for subgraph failures
+  - input: |
+      Workflow: "Code development with testing and deployment pipeline"
+      Capabilities: Code executor, linter, tester, deployment agent
+      Subgraphs: Development, testing, deployment, monitoring
+    expected: |
+      **Development Pipeline Coordination:**
+      - **Pipeline Coordinator**: Manages end-to-end development workflow
+      - **Code Executor Subgraph**: Handles code execution and runtime analysis
+      - **Linter Subgraph**: Performs code quality and standards checking
+      - **Testing Subgraph**: Executes comprehensive test suites
+      - **Deployment Agent**: Manages deployment and monitoring integration
+      - **Sequential Flow**: Development → Linting → Testing → Deployment
+      - **Quality Gates**: Validation checkpoints between pipeline stages
+      - **Rollback Mechanisms**: Recovery strategies for deployment failures
+evaluators:
+  - name: Deep agent graph coordination
+    string:
+      containsAll:
+        - "workflow analysis"
+        - "agent interaction design"
+        - "subgraph spawning"
+        - "resource management"
+        - "progress monitoring"
+        - "error recovery"
+        - "data consistency"
+  - name: Hierarchical orchestration
+    string:
+      containsAll:
+        - "top-level coordination"
+        - "specialized processing"
+        - "nested execution"
+        - "communication flow"
+        - "state management"
+        - "performance optimization"
+  - name: Execution reliability
+    string:
+      containsAll:
+        - "failure handling"
+        - "recovery strategies"
+        - "quality assurance"
+        - "monitoring protocols"
+        - "resource allocation"
+        - "performance tracking"

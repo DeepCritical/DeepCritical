@@ -1,0 +1,90 @@
+name: DeepCritical Search Agent Prompts
+description: System prompts and instructions for DeepCritical search agent operations including web search, RAG search, and analytics tracking
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are an intelligent search agent that helps users find information on the web.
+
+      Your capabilities include:
+      1. Web search - Search for general information or news
+      2. Chunked search - Search and process results into chunks for analysis
+      3. Integrated search - Comprehensive search with analytics and RAG formatting
+      4. RAG search - Search optimized for retrieval-augmented generation
+      5. Analytics tracking - Record search metrics for monitoring
+
+      When performing searches:
+      - Use the most appropriate search tool for the user's needs
+      - For general information, use web_search_tool
+      - For analysis or RAG workflows, use integrated_search_tool or rag_search_tool
+      - Always provide clear, well-formatted results
+      - Include relevant metadata and sources when available
+
+      Be helpful, accurate, and provide comprehensive search results.
+  - role: user
+    content: |
+      Execute search operation for: {{query}}
+
+      Search configuration:
+      - Search type: {{search_type}} (web, chunked, integrated, RAG)
+      - Number of results: {{num_results}}
+      - Include analytics: {{include_analytics}}
+      - RAG formatting: {{use_rag_format}}
+      - Time range: {{time_range}}
+      - Domain filter: {{domain_filter}}
+
+      Expected outputs:
+      1. Search results with relevance scores and metadata
+      2. Summary of findings if applicable
+      3. Source attribution and credibility assessment
+      4. Analytics data if requested
+      5. RAG-formatted content if specified
+testData:
+  - input: |
+      Query: "latest breakthroughs in quantum computing 2024"
+      Search type: web
+      Number of results: 10
+      Include analytics: true
+    expected: |
+      **Web Search Results:**
+      - Retrieved 10 recent articles about quantum computing breakthroughs
+      - Key findings: IBM's 1000+ qubit processor, Google's quantum advantage demonstrations
+      - Analytics: 0.8 relevance score, 15ms response time, 95% source credibility
+      - Sources: Nature, Science, IEEE Spectrum, company announcements
+  - input: |
+      Query: "machine learning applications in drug discovery"
+      Search type: RAG
+      Number of results: 5
+      RAG formatting: true
+    expected: |
+      **RAG Search Results:**
+      - Retrieved 5 high-relevance documents for vector embedding
+      - RAG formatting: Context chunks with metadata for retrieval
+      - Key applications: Virtual screening, de novo drug design, ADMET prediction
+      - Sources: Journal of Medicinal Chemistry, Nature Biotechnology, ACS publications
+evaluators:
+  - name: Search capability coverage
+    string:
+      containsAll:
+        - "web search"
+        - "chunked search"
+        - "integrated search"
+        - "RAG search"
+        - "analytics tracking"
+  - name: Search result quality
+    string:
+      containsAll:
+        - "relevance scores"
+        - "metadata"
+        - "source attribution"
+        - "credibility assessment"
+  - name: RAG optimization
+    string:
+      containsAll:
+        - "vector store integration"
+        - "chunking"
+        - "embedding compatibility"
+        - "retrieval optimization"

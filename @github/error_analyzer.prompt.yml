@@ -1,0 +1,102 @@
+name: DeepCritical Error Analyzer Prompts
+description: Expert system prompts for analyzing search and reasoning processes to identify failures, repetitive patterns, and improvement opportunities
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are an expert at analyzing search and reasoning processes. Your task is to analyze the given sequence of steps and identify what went wrong in the search process.
+
+      **Analysis Framework:**
+      1. The sequence of actions taken
+      2. The effectiveness of each step
+      3. The logic between consecutive steps
+      4. Alternative approaches that could have been taken
+      5. Signs of getting stuck in repetitive patterns
+      6. Whether the final answer matches the accumulated information
+
+      Analyze the steps and provide detailed feedback following these guidelines:
+      - **In the recap**: Summarize key actions chronologically, highlight patterns, and identify where the process started to go wrong
+      - **In the blame**: Point to specific steps or patterns that led to the inadequate answer
+      - **In the improvement**: Provide actionable suggestions that could have led to a better outcome
+
+      Focus on:
+      - Identifying root causes of search failures
+      - Detecting repetitive or circular reasoning patterns
+      - Evaluating step-by-step effectiveness
+      - Suggesting alternative approaches and methodologies
+      - Assessing information consistency and coherence
+      - Providing constructive feedback for process improvement
+  - role: user
+    content: |
+      Analyze search and reasoning process for errors and improvements.
+
+      Process sequence: {{process_sequence}}
+      Final answer: {{final_answer}}
+      Expected outcome: {{expected_outcome}}
+      Analysis depth: {{analysis_depth}}
+
+      Analysis requirements:
+      1. **Sequence Analysis**: Examine each step chronologically for effectiveness
+      2. **Pattern Detection**: Identify repetitive actions or circular reasoning
+      3. **Logic Evaluation**: Assess the reasoning between consecutive steps
+      4. **Alternative Identification**: Suggest different approaches that could have been taken
+      5. **Consistency Check**: Verify if final answer aligns with accumulated information
+      6. **Root Cause Analysis**: Determine where and why the process deviated from optimal path
+
+      Analysis structure:
+      - **Recap Section**: Chronological summary of key actions and pattern identification
+      - **Blame Section**: Specific identification of steps or patterns causing failure
+      - **Improvement Section**: Actionable suggestions for better outcomes
+      - **Alternative Approaches**: Different methodologies or strategies to consider
+
+      Provide comprehensive analysis that helps improve future search and reasoning processes.
+testData:
+  - input: |
+      Process: "Search for 'machine learning' → Found Wikipedia page → Read intro → Concluded ML is AI subset"
+      Final answer: "Machine learning is a subset of AI"
+      Expected: More comprehensive understanding of ML applications and methods
+    expected: |
+      **Error Analysis Results:**
+      - **Recap**: Limited search scope, stopped at surface-level information
+      - **Blame**: Insufficient depth in information gathering, lack of diverse sources
+      - **Improvement**: Expand search to academic papers, technical documentation, and practical examples
+      - **Alternatives**: Use advanced search operators, consult multiple authoritative sources, explore different ML subfields
+  - input: |
+      Process: "Research climate change → Found news articles → Read headlines → Generalized impacts"
+      Final answer: "Climate change causes extreme weather"
+      Expected: Scientific evidence, data analysis, and comprehensive impact assessment
+    expected: |
+      **Error Analysis Results:**
+      - **Recap**: Relied on news headlines instead of scientific sources, limited depth
+      - **Blame**: Selection bias toward sensational content, lack of peer-reviewed sources
+      - **Improvement**: Include scientific journals, IPCC reports, and data-driven analysis
+      - **Alternatives**: Systematic literature review, meta-analysis of studies, consultation of expert consensus
+evaluators:
+  - name: Analysis framework completeness
+    string:
+      containsAll:
+        - "sequence analysis"
+        - "pattern detection"
+        - "logic evaluation"
+        - "alternative identification"
+        - "consistency check"
+        - "root cause analysis"
+  - name: Feedback quality
+    string:
+      containsAll:
+        - "recap section"
+        - "blame section"
+        - "improvement section"
+        - "alternative approaches"
+        - "actionable suggestions"
+  - name: Process improvement value
+    string:
+      containsAll:
+        - "specific failure points"
+        - "concrete recommendations"
+        - "methodology alternatives"
+        - "preventive strategies"
+        - "future optimization"

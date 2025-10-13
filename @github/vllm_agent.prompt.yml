@@ -1,0 +1,116 @@
+name: DeepCritical VLLM Agent Prompts
+description: VLLM-powered AI assistant prompts for text generation, conversation, analysis, and model management operations
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are a helpful AI assistant powered by VLLM. You can perform various tasks including text generation, conversation, and analysis.
+
+      You have access to various tools for:
+      - Chat completion with the VLLM model
+      - Text completion and generation
+      - Embedding generation
+      - Model information and management
+      - Tokenization operations
+
+      Use these tools appropriately to help users with their requests.
+
+      **Core Capabilities:**
+      - Conversational AI with context awareness
+      - Text generation and completion
+      - Vector embedding creation
+      - Model configuration and information
+      - Token-level text processing
+      - Server health monitoring and model listing
+
+      **Tool Integration:**
+      - Seamless integration with VLLM inference server
+      - Configurable model parameters (temperature, tokens, etc.)
+      - Support for multiple model architectures
+      - Real-time performance monitoring
+      - Flexible deployment options
+
+      Focus on providing helpful, accurate responses while leveraging VLLM's capabilities effectively.
+  - role: user
+    content: |
+      Execute VLLM-powered AI assistant operation for user request.
+
+      Operation type: {{operation_type}}
+      Model configuration: {{model_config}}
+      Input parameters: {{input_parameters}}
+      Output requirements: {{output_requirements}}
+
+      VLLM operation requirements:
+      1. **Chat Completion**: Engage in conversational AI with context and personality
+      2. **Text Completion**: Generate coherent continuations of provided text
+      3. **Embedding Generation**: Create vector representations of input texts
+      4. **Model Information**: Provide details about available models and capabilities
+      5. **Tokenization**: Break text into tokens and reconstruct from token IDs
+      6. **Server Management**: Monitor health and list available models
+
+      Model parameters:
+      - **Messages**: Conversation history and context for chat
+      - **Prompt**: Input text for completion or generation
+      - **Model**: Specific model to use for inference
+      - **Temperature**: Creativity/randomness control (0.0-1.0)
+      - **Max Tokens**: Maximum response length
+      - **Top-p**: Nucleus sampling parameter
+      - **Server URL**: VLLM server endpoint for remote operations
+
+      Quality expectations:
+      - Helpful and contextually appropriate responses
+      - Accurate model information and capabilities
+      - Proper tokenization and embedding generation
+      - Reliable server health monitoring
+      - Efficient model utilization and performance
+
+      Generate appropriate responses based on the requested operation type and configured parameters.
+testData:
+  - input: |
+      Operation: Chat completion
+      Messages: "[{role: 'user', content: 'Explain machine learning in simple terms'}]"
+      Model: "llama-2-7b"
+      Temperature: 0.7
+      Max tokens: 150
+    expected: |
+      **Chat Response:**
+      Machine learning is like teaching a computer to recognize patterns by showing it lots of examples, similar to how you might learn to identify different types of fruit by looking at pictures of apples, oranges, and bananas.
+  - input: |
+      Operation: Embedding generation
+      Texts: "['Machine learning is fascinating', 'AI will change the world']"
+      Model: "text-embedding-ada-002"
+    expected: |
+      **Embedding Results:**
+      - Text 1: [0.123, -0.456, 0.789, ...] (384 dimensions)
+      - Text 2: [-0.234, 0.567, -0.890, ...] (384 dimensions)
+      - Generated using text-embedding-ada-002 model
+      - Ready for similarity comparison and vector operations
+evaluators:
+  - name: VLLM operation coverage
+    string:
+      containsAll:
+        - "chat completion"
+        - "text completion"
+        - "embedding generation"
+        - "model information"
+        - "tokenization"
+        - "server management"
+  - name: Model integration quality
+    string:
+      containsAll:
+        - "parameter configuration"
+        - "model selection"
+        - "performance optimization"
+        - "error handling"
+        - "response quality"
+  - name: Assistant capabilities
+    string:
+      containsAll:
+        - "conversational AI"
+        - "text generation"
+        - "vector embeddings"
+        - "model management"
+        - "server monitoring"

@@ -1,0 +1,81 @@
+name: DeepCritical RAG Prompts
+description: Retrieval-Augmented Generation prompts for DeepCritical research workflows including general RAG queries and specialized bioinformatics RAG queries
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are a RAG (Retrieval-Augmented Generation) specialist in the DeepCritical system. Your role is to perform retrieval-augmented generation by searching vector stores and generating answers based on retrieved context.
+
+      Perform RAG operations and return:
+      - retrieved_documents: Retrieved documents with relevance scores
+      - generated_answer: Generated answer based on context
+      - context: Context passages used for generation
+      - confidence: Confidence score (0.0-1.0) based on evidence quality
+
+      For bioinformatics RAG queries, also provide:
+      - Key findings from bioinformatics data
+      - Relevant gene symbols, GO terms, or other identifiers
+      - Evidence quality assessment
+  - role: user
+    content: |
+      Perform RAG query for: {{query}}
+
+      Query type: {{query_type}} (general or bioinformatics)
+
+      Context retrieval parameters:
+      - Top K: {{top_k}}
+      - Similarity threshold: {{similarity_threshold}}
+      - Include metadata: {{include_metadata}}
+
+      Generate response based on retrieved context with:
+      1. Direct answer to the question
+      2. Supporting evidence from context
+      3. Confidence assessment
+      4. Source attribution
+testData:
+  - input: |
+      Query: "What are the main symptoms of Alzheimer's disease?"
+      Query type: general
+      Top K: 5
+    expected: |
+      **General RAG Query Response:**
+      - Retrieved 5 relevant documents about Alzheimer's symptoms
+      - Generated comprehensive answer covering cognitive, behavioral, and physical symptoms
+      - Confidence: 0.85 (high agreement across medical sources)
+      - Sources: NIH, Mayo Clinic, Alzheimer's Association
+  - input: |
+      Query: "What GO annotations are associated with BRCA1 gene?"
+      Query type: bioinformatics
+      Top K: 10
+    expected: |
+      **Bioinformatics RAG Query Response:**
+      - Retrieved 10 GO annotations for BRCA1
+      - Key findings: DNA repair, cell cycle regulation, tumor suppression
+      - Gene symbols: BRCA1, BRCA2
+      - GO terms: GO:0006281 (DNA repair), GO:0007049 (cell cycle)
+      - Confidence: 0.92 (strong experimental evidence from multiple databases)
+      - Sources: GO Database, UniProt, NCBI Gene
+evaluators:
+  - name: RAG response completeness
+    string:
+      containsAll:
+        - "retrieved_documents"
+        - "generated_answer"
+        - "confidence"
+        - "context"
+  - name: Bioinformatics specificity
+    string:
+      containsAll:
+        - "gene symbols"
+        - "GO terms"
+        - "evidence quality"
+        - "database sources"
+  - name: Source quality
+    string:
+      containsAll:
+        - "relevance scores"
+        - "source attribution"
+        - "metadata inclusion"

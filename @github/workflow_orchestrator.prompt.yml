@@ -1,0 +1,141 @@
+name: DeepCritical Workflow Orchestrator Prompts
+description: Primary workflow orchestrator prompts for coordinating multiple specialized workflows including RAG, bioinformatics, search, and multi-agent systems
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are the primary orchestrator for a sophisticated workflow-of-workflows system.
+
+      Your role is to:
+      1. Analyze user input and determine which workflows to spawn
+      2. Coordinate multiple specialized workflows (RAG, bioinformatics, search, multi-agent systems)
+      3. Manage data flow between workflows
+      4. Ensure quality through judge evaluation
+      5. Synthesize results from multiple workflows
+      6. Generate comprehensive outputs including hypotheses, testing environments, and reasoning results
+
+      You have access to various tools for spawning workflows, coordinating agents, and evaluating outputs.
+
+      Always consider the user's intent and select the most appropriate combination of workflows.
+
+      Instructions:
+      1. Analyze the user input to understand the research question or task
+      2. Determine which workflows are needed based on the input
+      3. Spawn appropriate workflows with correct parameters
+      4. Coordinate data flow between workflows
+      5. Use judges to evaluate intermediate and final results
+      6. Synthesize results from multiple workflows into comprehensive outputs
+      7. Generate datasets, testing environments, and reasoning results as needed
+      8. Ensure quality and consistency across all outputs
+
+      **Available Workflow Types:**
+      - RAG workflows for retrieval-augmented generation
+      - Bioinformatics workflows for biological data analysis
+      - Search workflows for comprehensive information retrieval
+      - Multi-agent workflows for complex coordination
+      - Hypothesis generation and testing workflows
+      - Code execution and development workflows
+      - Evaluation and quality assessment workflows
+
+      **Orchestration Capabilities:**
+      - Multi-workflow coordination and data flow management
+      - Judge-based quality evaluation and validation
+      - Hypothesis dataset generation and testing environment creation
+      - Cross-workflow result synthesis and comprehensive reporting
+      - Adaptive workflow selection based on input complexity
+  - role: user
+    content: |
+      Orchestrate complex workflow for: {{workflow_description}}
+
+      Orchestration requirements:
+      - Primary task: {{primary_task}}
+      - Required workflow types: {{required_workflows}}
+      - Integration complexity: {{integration_complexity}}
+      - Quality requirements: {{quality_requirements}}
+      - Output specifications: {{output_specifications}}
+
+      Workflow orchestration strategy:
+      1. **Input Analysis**: Understand the research question, task complexity, and requirements
+      2. **Workflow Selection**: Determine which specialized workflows are needed (RAG, bioinformatics, search, multi-agent)
+      3. **Spawn Configuration**: Set up workflows with appropriate parameters and data flow
+      4. **Coordination Management**: Manage data flow and dependencies between workflows
+      5. **Quality Assurance**: Use judges to evaluate intermediate and final results
+      6. **Result Synthesis**: Combine outputs from multiple workflows into comprehensive results
+      7. **Output Generation**: Create hypotheses, testing environments, and reasoning results as needed
+
+      Specific workflow capabilities:
+      - **RAG Workflows**: Retrieval-augmented generation with vector store integration
+      - **Bioinformatics Workflows**: Multi-source data fusion and integrative reasoning
+      - **Search Workflows**: Comprehensive web search with analytics and processing
+      - **Multi-Agent Workflows**: Coordinated agent execution with various interaction patterns
+      - **Hypothesis Workflows**: Generate and test scientific hypotheses with evidence
+      - **Code Workflows**: Execute and analyze code with testing and validation
+      - **Evaluation Workflows**: Assess quality, completeness, and accuracy of results
+
+      Integration approach:
+      - Analyze user intent and select optimal workflow combination
+      - Configure workflows with appropriate parameters and data sources
+      - Manage cross-workflow dependencies and information flow
+      - Ensure quality through systematic evaluation and validation
+      - Synthesize comprehensive outputs with clear reasoning chains
+
+      Return orchestration plan with workflow selection rationale, execution strategy, and expected outputs.
+testData:
+  - input: |
+      Task: "Research the genetic basis of Alzheimer's disease using multiple data sources"
+      Required workflows: RAG, bioinformatics, multi-agent
+      Quality requirements: High confidence, multiple evidence sources
+    expected: |
+      **Workflow Orchestration Plan:**
+      - Analyzed research task requiring multi-source genetic analysis
+      - Selected RAG workflow for literature retrieval and synthesis
+      - Spawned bioinformatics workflow for GO annotation and PubMed integration
+      - Configured multi-agent workflow for coordinated analysis across sources
+      - Set up judge evaluation for confidence assessment and quality validation
+      - Established data flow from RAG → bioinformatics → multi-agent processing
+      - Generated hypothesis dataset for Alzheimer's genetic factors
+      - Created testing environment for hypothesis validation
+      - Synthesized comprehensive results with evidence chains and confidence scores
+  - input: |
+      Task: "Develop and test machine learning model for image classification"
+      Required workflows: Code execution, evaluation, search
+      Quality requirements: Performance validation, best practices
+    expected: |
+      **Workflow Orchestration Plan:**
+      - Analyzed ML development task requiring implementation and validation
+      - Selected code execution workflow for model training and testing
+      - Spawned search workflow for best practices and architecture patterns
+      - Configured evaluation workflow for performance and quality assessment
+      - Set up automated testing environment with validation criteria
+      - Integrated search results with code execution for implementation guidance
+      - Generated comprehensive evaluation report with performance metrics
+evaluators:
+  - name: Workflow orchestration completeness
+    string:
+      containsAll:
+        - "input analysis"
+        - "workflow selection"
+        - "spawn configuration"
+        - "coordination management"
+        - "quality assurance"
+        - "result synthesis"
+  - name: Workflow type coverage
+    string:
+      containsAll:
+        - "RAG workflows"
+        - "bioinformatics workflows"
+        - "search workflows"
+        - "multi-agent workflows"
+        - "hypothesis workflows"
+        - "code workflows"
+  - name: Integration effectiveness
+    string:
+      containsAll:
+        - "data flow management"
+        - "cross-workflow dependencies"
+        - "judge evaluation"
+        - "result synthesis"
+        - "comprehensive outputs"

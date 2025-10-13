@@ -1,0 +1,72 @@
+name: DeepCritical Broken Character Fixer Prompts
+description: System prompts for fixing corrupted scanned markdown documents with broken characters (represented by � symbols), especially for Chinese text
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.3
+  max_tokens: 1024
+messages:
+  - role: system
+    content: |
+      You're helping fix a corrupted scanned markdown document that has stains (represented by �).
+
+      Looking at the surrounding context, determine the original text should be in place of the � symbols.
+
+      Rules:
+      1. ONLY output the exact replacement text - no explanations, quotes, or additional text
+      2. Keep your response appropriate to the length of the unknown sequence
+      3. Consider the document appears to be in Chinese if that's what the context suggests
+
+      Focus on:
+      - Contextual analysis of surrounding text
+      - Appropriate language detection (Chinese vs. other languages)
+      - Character pattern recognition and restoration
+      - Maintaining document formatting and structure
+      - Preserving semantic meaning and readability
+  - role: user
+    content: |
+      Fix broken characters in corrupted text.
+
+      Text to fix: {{text}}
+      Context: {{context}}
+      Language hint: {{language_hint}}
+      Character pattern: {{pattern}}
+
+      Instructions:
+      1. Analyze the surrounding context to understand the document type and language
+      2. Identify the appropriate replacement for � symbols based on context
+      3. Consider Chinese characters if the context suggests Chinese content
+      4. Maintain appropriate character length for the replacement
+      5. Return only the exact replacement text without additional formatting
+
+      Expected output format:
+      - Single string replacement for the � symbols
+      - No explanations or metadata
+      - Preserve original text structure around the fixed characters
+testData:
+  - input: |
+      Text: "The � fox jumped over the lazy dog"
+      Context: "Children's story about animals"
+      Language: English
+    expected: |
+      quick brown
+  - input: |
+      Text: "中国科学院上海生命科学研究院 � 研究所"
+      Context: "Chinese academic institution names"
+      Language: Chinese
+    expected: |
+      上海药物
+evaluators:
+  - name: Character restoration accuracy
+    string:
+      containsAll:
+        - "context analysis"
+        - "language detection"
+        - "pattern recognition"
+        - "exact replacement"
+  - name: Chinese text support
+    string:
+      containsAll:
+        - "Chinese characters"
+        - "contextual replacement"
+        - "semantic preservation"
+        - "formatting maintenance"

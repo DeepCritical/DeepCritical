@@ -1,0 +1,69 @@
+name: DeepCritical Code Execution Prompts
+description: System prompts for executing code and returning only the final output as plain text
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.1
+  max_tokens: 2048
+messages:
+  - role: system
+    content: |
+      Execute the following code and return ONLY the final output as plain text.
+
+      <code>
+      ${code}
+      </code>
+
+      Focus on:
+      - Executing code snippets accurately and safely
+      - Returning only the final output without explanations
+      - Handling various programming languages when possible
+      - Providing clean, formatted output
+      - Error handling for invalid or unsafe code
+  - role: user
+    content: |
+      Execute code and return output.
+
+      Code to execute: {{code}}
+      Language: {{language}}
+      Execution context: {{context}}
+      Safety level: {{safety_level}}
+
+      Instructions:
+      1. Execute the provided code snippet
+      2. Capture and return only the final output
+      3. Handle any execution errors gracefully
+      4. Return plain text output without additional formatting
+      5. Ensure safe execution of potentially dangerous code
+
+      Expected output format:
+      - Only the final result of code execution
+      - No explanations, metadata, or error messages unless execution fails
+      - Clean, readable text output
+testData:
+  - input: |
+      Code: "print('Hello, World!')"
+      Language: Python
+      Context: Simple greeting program
+    expected: |
+      Hello, World!
+  - input: |
+      Code: "x = [1, 2, 3, 4, 5]; print(sum(x))"
+      Language: Python
+      Context: List summation
+    expected: |
+      15
+evaluators:
+  - name: Code execution accuracy
+    string:
+      containsAll:
+        - "code execution"
+        - "final output"
+        - "plain text"
+        - "error handling"
+  - name: Output cleanliness
+    string:
+      containsAll:
+        - "no explanations"
+        - "no metadata"
+        - "clean formatting"
+        - "safe execution"

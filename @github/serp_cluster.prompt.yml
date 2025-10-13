@@ -1,0 +1,138 @@
+name: DeepCritical SERP Cluster Prompts
+description: Search engine result analyzer prompts for grouping SERP API responses into meaningful clusters with summaries, insights, and structured JSON output
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.7
+  max_tokens: 4096
+messages:
+  - role: system
+    content: |
+      You are a search engine result analyzer. You look at the SERP API response and group them into meaningful clusters.
+
+      Each cluster should contain:
+      - Summary of the content
+      - Key data and insights
+      - The corresponding URLs
+      - Search advice
+
+      Respond in JSON format with structured cluster organization.
+
+      **Clustering Strategy:**
+      - Group similar results by topic, domain, or content type
+      - Identify common themes and recurring information
+      - Separate authoritative sources from general content
+      - Highlight unique insights and comprehensive coverage
+      - Provide actionable search advice for each cluster
+
+      **Analysis Approach:**
+      - Content similarity assessment for grouping
+      - Quality and relevance evaluation
+      - Source credibility analysis
+      - Insight extraction and synthesis
+      - Strategic search recommendations
+
+      Focus on creating meaningful, actionable clusters that help users navigate and understand search results effectively.
+  - role: user
+    content: |
+      Analyze and cluster search engine results for improved organization.
+
+      SERP data: {{serp_data}}
+      Clustering strategy: {{clustering_strategy}}
+      Analysis depth: {{analysis_depth}}
+      Output format: {{output_format}}
+
+      Clustering requirements:
+      1. **Content Analysis**: Examine titles, descriptions, and source information
+      2. **Similarity Grouping**: Cluster similar topics, domains, or content types
+      3. **Quality Assessment**: Evaluate source credibility and content relevance
+      4. **Insight Extraction**: Identify key data points and unique information
+      5. **URL Organization**: Group related URLs within each cluster
+      6. **Search Advice**: Provide strategic recommendations for each cluster
+
+      Cluster structure:
+      - **Cluster Name**: Descriptive title for the group
+      - **Summary**: Concise overview of cluster content
+      - **Key Insights**: Important data points and findings
+      - **Source URLs**: Relevant links organized by relevance/quality
+      - **Search Advice**: Recommendations for further exploration
+
+      Analysis approach:
+      - **Thematic Grouping**: Similar topics and subject matter
+      - **Authority Clustering**: Group by source credibility and expertise
+      - **Content Type**: News, research, commercial, educational content
+      - **Temporal Organization**: Recent vs. established information
+      - **Geographic Relevance**: Local vs. global content when applicable
+
+      Generate structured JSON clusters that provide clear organization and actionable insights for search result navigation.
+testData:
+  - input: |
+      SERP: "[{title: 'Machine Learning Guide', url: 'https://example.com/ml-guide', description: 'Comprehensive ML tutorial'}, {title: 'AI News Today', url: 'https://news.com/ai', description: 'Latest AI developments'}]"
+      Strategy: Group by content type and authority
+      Format: JSON with cluster structure
+    expected: |
+      {
+        "clusters": [
+          {
+            "name": "Educational Resources",
+            "summary": "Comprehensive tutorials and guides for machine learning concepts",
+            "insights": ["Step-by-step learning approach", "Practical examples included", "Beginner to advanced coverage"],
+            "urls": ["https://example.com/ml-guide"],
+            "search_advice": "Great starting point for ML fundamentals"
+          },
+          {
+            "name": "News and Updates",
+            "summary": "Current developments in artificial intelligence",
+            "insights": ["Latest breakthrough announcements", "Industry trend analysis", "Research publication highlights"],
+            "urls": ["https://news.com/ai"],
+            "search_advice": "Follow for staying current with AI news"
+          }
+        ]
+      }
+  - input: |
+      SERP: "[{title: 'Climate Change Facts', url: 'https://science.gov/climate', description: 'Scientific data on global warming'}, {title: 'Climate News', url: 'https://news.com/climate', description: 'Daily climate updates'}]"
+      Strategy: Separate scientific vs. news content
+      Format: Structured clusters with insights
+    expected: |
+      {
+        "clusters": [
+          {
+            "name": "Scientific Data and Research",
+            "summary": "Authoritative scientific information on climate change",
+            "insights": ["Peer-reviewed research findings", "Long-term climate data", "IPCC report references"],
+            "urls": ["https://science.gov/climate"],
+            "search_advice": "Primary source for scientific climate information"
+          },
+          {
+            "name": "Current Events and News",
+            "summary": "Daily updates on climate-related news and events",
+            "insights": ["Policy developments", "Extreme weather events", "International climate agreements"],
+            "urls": ["https://news.com/climate"],
+            "search_advice": "Daily digest of climate-related current events"
+          }
+        ]
+      }
+evaluators:
+  - name: Clustering effectiveness
+    string:
+      containsAll:
+        - "content similarity"
+        - "thematic grouping"
+        - "authority clustering"
+        - "content type separation"
+        - "insight extraction"
+  - name: JSON structure quality
+    string:
+      containsAll:
+        - "cluster names"
+        - "content summaries"
+        - "key insights"
+        - "URL organization"
+        - "search advice"
+  - name: Analysis value
+    string:
+      containsAll:
+        - "actionable insights"
+        - "source credibility"
+        - "search recommendations"
+        - "content navigation"
+        - "information synthesis"

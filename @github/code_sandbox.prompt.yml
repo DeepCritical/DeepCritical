@@ -1,0 +1,112 @@
+name: DeepCritical Code Sandbox Prompts
+description: Expert JavaScript programmer prompts for generating code solutions with available variables and self-contained implementations
+model: anthropic:claude-sonnet-4-0
+modelParameters:
+  temperature: 0.3
+  max_tokens: 2048
+messages:
+  - role: system
+    content: |
+      You are an expert JavaScript programmer. Your task is to generate JavaScript code to solve the given problem.
+
+      **Rules:**
+      1. Generate plain JavaScript code that returns the result directly
+      2. You can access any of these available variables directly:
+         ${available_vars}
+      3. You don't have access to any third party libraries that need to be installed, so you must write complete, self-contained code
+      4. Must have a return statement
+
+      **Example:**
+      Available variables:
+      numbers (Array<number>) e.g. [1, 2, 3, 4, 5, 6]
+      threshold (number) e.g. 4
+
+      Problem: Sum all numbers above threshold
+
+      Response:
+      {
+        "code": "return numbers.filter(n => n > threshold).reduce((a, b) => a + b, 0);"
+      }
+
+      Focus on:
+      - Writing clean, efficient JavaScript code
+      - Proper variable access and scope handling
+      - Self-contained implementations without external dependencies
+      - Direct return of computed results
+      - Following JavaScript best practices and conventions
+  - role: user
+    content: |
+      Generate JavaScript code solution for programming problem.
+
+      Problem description: {{problem_description}}
+      Available variables: {{available_vars}}
+      Expected output format: {{output_format}}
+      Complexity constraints: {{complexity_constraints}}
+
+      Code generation requirements:
+      1. **Variable Access**: Use provided variables directly without redeclaration
+      2. **Self-Contained**: No external library imports or dependencies
+      3. **Direct Return**: Must include return statement with computed result
+      4. **JavaScript Standards**: Follow ES6+ syntax and best practices
+      5. **Error Handling**: Include appropriate error handling for edge cases
+      6. **Performance**: Write efficient, optimized code for the given constraints
+
+      Example variable usage:
+      - Arrays: Use array methods like filter, map, reduce
+      - Numbers: Perform mathematical operations and comparisons
+      - Strings: Apply string manipulation methods
+      - Objects: Access properties and methods safely
+
+      Generate code that:
+      - Solves the specific problem described
+      - Uses only the available variables provided
+      - Returns the expected result format
+      - Handles edge cases and error conditions
+      - Follows clean code principles
+
+      Return JavaScript code solution in the specified format with proper structure and functionality.
+testData:
+  - input: |
+      Problem: "Filter even numbers and calculate their average"
+      Variables: "numbers (Array<number>) e.g. [1, 2, 3, 4, 5, 6]"
+      Output: Single number (average of even numbers)
+    expected: |
+      **JavaScript Solution:**
+      ```javascript
+      const evens = numbers.filter(n => n % 2 === 0);
+      return evens.length > 0 ? evens.reduce((a, b) => a + b, 0) / evens.length : 0;
+      ```
+  - input: |
+      Problem: "Find maximum value in array"
+      Variables: "values (Array<number>) e.g. [10, 5, 8, 12, 3]"
+      Output: Single number (maximum value)
+    expected: |
+      **JavaScript Solution:**
+      ```javascript
+      return Math.max(...values);
+      ```
+evaluators:
+  - name: Code generation quality
+    string:
+      containsAll:
+        - "JavaScript code"
+        - "return statement"
+        - "variable access"
+        - "self-contained"
+        - "no external libraries"
+  - name: Solution correctness
+    string:
+      containsAll:
+        - "problem solving"
+        - "edge case handling"
+        - "mathematical accuracy"
+        - "expected output format"
+        - "error prevention"
+  - name: Code standards compliance
+    string:
+      containsAll:
+        - "ES6+ syntax"
+        - "best practices"
+        - "clean code"
+        - "performance optimization"
+        - "readability"
