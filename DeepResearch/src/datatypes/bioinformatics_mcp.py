@@ -33,6 +33,7 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.tools import Tool
 
 # Import DeepCritical types
+from .agents import AgentDependencies
 from .mcp import (
     MCPAgentIntegration,
     MCPAgentSession,
@@ -49,8 +50,6 @@ from .mcp import (
 
 if TYPE_CHECKING:
     from typing import Protocol
-
-    from .agents import AgentDependencies
 
     class MCPToolFuncProtocol(Protocol):
         """Protocol for functions decorated with @mcp_tool."""
@@ -283,9 +282,7 @@ class MCPServerBase(ABC):
     def _load_system_prompt(self) -> str:
         """Load system prompt from prompts directory."""
         try:
-            prompt_path = (
-                Path(__file__).parent.parent.parent / "prompts" / "system_prompt.txt"
-            )
+            prompt_path = Path(__file__).parent.parent / "prompts" / "system_prompt.txt"
             if prompt_path.exists():
                 return prompt_path.read_text().strip()
             self.logger.warning("System prompt file not found: %s", prompt_path)
