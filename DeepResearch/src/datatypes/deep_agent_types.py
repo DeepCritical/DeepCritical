@@ -8,7 +8,7 @@ types that align with DeepCritical's Pydantic AI architecture.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -97,14 +97,16 @@ class SubAgent(BaseModel):
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
-            raise ValueError("Subagent name cannot be empty")
+            msg = "Subagent name cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("description", mode="before")
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
-            raise ValueError("Subagent description cannot be empty")
+            msg = "Subagent description cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     model_config = ConfigDict(json_schema_extra={})
@@ -126,14 +128,16 @@ class CustomSubAgent(BaseModel):
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
-            raise ValueError("Custom subagent name cannot be empty")
+            msg = "Custom subagent name cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("description", mode="before")
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
-            raise ValueError("Custom subagent description cannot be empty")
+            msg = "Custom subagent description cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     model_config = ConfigDict(json_schema_extra={})
@@ -175,7 +179,8 @@ class TaskRequest(BaseModel):
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
-            raise ValueError("Task description cannot be empty")
+            msg = "Task description cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     model_config = ConfigDict(json_schema_extra={})

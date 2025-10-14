@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 from .execution_status import ExecutionStatus
 
@@ -17,7 +18,9 @@ class ExecutionItem:
     status: ExecutionStatus
     result: dict[str, Any] | None = None
     error: str | None = None
-    timestamp: float = field(default_factory=lambda: datetime.now().timestamp())
+    timestamp: float = field(
+        default_factory=lambda: datetime.now(timezone.utc).timestamp()
+    )
     parameters: dict[str, Any] | None = None
     duration: float | None = None
     retry_count: int = 0
@@ -38,8 +41,13 @@ class ExecutionStep:
 class ExecutionHistory:
     """History of workflow execution for adaptive re-planning."""
 
+    # Constants for success rate thresholds
+    SUCCESS_RATE_THRESHOLD = 0.8
+
     items: list[ExecutionItem] = field(default_factory=list)
-    start_time: float = field(default_factory=lambda: datetime.now().timestamp())
+    start_time: float = field(
+        default_factory=lambda: datetime.now(timezone.utc).timestamp()
+    )
     end_time: float | None = None
 
     def add_item(self, item: ExecutionItem) -> None:
@@ -106,12 +114,12 @@ class ExecutionHistory:
             "success_rate": successful_steps / total_steps if total_steps > 0 else 0,
             "duration": duration,
             "failure_patterns": self.get_failure_patterns(),
-            "tools_used": list(set(item.tool for item in self.items)),
+            "tools_used": list({item.tool for item in self.items}),
         }
 
     def finish(self) -> None:
         """Mark the execution as finished."""
-        self.end_time = datetime.now().timestamp()
+        self.end_time = datetime.now(timezone.utc).timestamp()
 
     def to_dict(self) -> dict[str, Any]:
         """Convert history to dictionary for serialization."""
@@ -137,17 +145,19 @@ class ExecutionHistory:
 
     def save_to_file(self, filepath: str) -> None:
         """Save execution history to a JSON file."""
-        with open(filepath, "w") as f:
+        with Path(filepath).open("w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
     @classmethod
     def load_from_file(cls, filepath: str) -> ExecutionHistory:
         """Load execution history from a JSON file."""
-        with open(filepath) as f:
+        with Path(filepath).open() as f:
             data = json.load(f)
 
         history = cls()
-        history.start_time = data.get("start_time", datetime.now().timestamp())
+        history.start_time = data.get(
+            "start_time", datetime.now(timezone.utc).timestamp()
+        )
         history.end_time = data.get("end_time")
 
         for item_data in data.get("items", []):
@@ -157,7 +167,9 @@ class ExecutionHistory:
                 status=ExecutionStatus(item_data["status"]),
                 result=item_data.get("result"),
                 error=item_data.get("error"),
-                timestamp=item_data.get("timestamp", datetime.now().timestamp()),
+                timestamp=item_data.get(
+                    "timestamp", datetime.now(timezone.utc).timestamp()
+                ),
                 parameters=item_data.get("parameters"),
                 duration=item_data.get("duration"),
                 retry_count=item_data.get("retry_count", 0),
@@ -185,7 +197,9 @@ class ExecutionTracker:
         summary = history.get_execution_summary()
 
         self.metrics["total_executions"] += 1
-        if summary["success_rate"] > 0.8:  # Consider successful if >80% success rate
+        if (
+            summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
+        ):  # Consider successful if >80% success rate
             self.metrics["successful_executions"] += 1
         else:
             self.metrics["failed_executions"] += 1
@@ -205,7 +219,7 @@ class ExecutionTracker:
                 self.metrics["tool_performance"][tool] = {"uses": 0, "successes": 0}
 
             self.metrics["tool_performance"][tool]["uses"] += 1
-            if summary["success_rate"] > 0.8:
+            if summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD:
                 self.metrics["tool_performance"][tool]["successes"] += 1
 
         # Update error frequency
@@ -229,7 +243,7 @@ class ExecutionTracker:
         """Get the most reliable tools based on historical performance."""
         tool_scores = [
             (tool, self.get_tool_reliability(tool))
-            for tool in self.metrics["tool_performance"].keys()
+            for tool in self.metrics["tool_performance"]
         ]
         tool_scores.sort(key=lambda x: x[1], reverse=True)
         return tool_scores[:limit]

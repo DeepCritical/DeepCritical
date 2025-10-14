@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 # Optional import for pydantic_graph
 try:
@@ -41,7 +41,7 @@ except ImportError:
             pass
 
 
-from ..datatypes.bioinformatics import (
+from DeepResearch.src.datatypes.bioinformatics import (
     DataFusionRequest,
     EvidenceCode,
     FusedDataset,
@@ -88,7 +88,7 @@ class ParseBioinformaticsQuery(BaseNode[BioinformaticsState]):  # type: ignore[u
 
         try:
             # Use the new ParserAgent for better query understanding
-            from ...agents import ParserAgent
+            from DeepResearch.agents import ParserAgent
 
             parser = ParserAgent()
             parsed_result = parser.parse(question)
@@ -212,7 +212,7 @@ class FuseDataSources(BaseNode[BioinformaticsState]):  # type: ignore[unsupporte
 
         try:
             # Use the new BioinformaticsAgent
-            from ...agents import BioinformaticsAgent
+            from DeepResearch.agents import BioinformaticsAgent
 
             bioinformatics_agent = BioinformaticsAgent()
 
@@ -371,7 +371,7 @@ class PerformReasoning(BaseNode[BioinformaticsState]):  # type: ignore[unsupport
 
         try:
             # Use the new BioinformaticsAgent
-            from ...agents import BioinformaticsAgent
+            from DeepResearch.agents import BioinformaticsAgent
 
             bioinformatics_agent = BioinformaticsAgent()
 

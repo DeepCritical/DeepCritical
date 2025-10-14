@@ -1,10 +1,10 @@
 import asyncio
+import contextlib
 import json
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 import trafilatura
@@ -13,7 +13,8 @@ from limits import parse
 from limits.aio.storage import MemoryStorage
 from limits.aio.strategies import MovingWindowRateLimiter
 
-from ..utils.analytics import record_request
+from DeepResearch.src.utils.analytics import record_request
+
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configuration
@@ -99,7 +100,6 @@ async def search_web(
     try:
         # Check rate limit
         if not await limiter.hit(rate_limit, "global"):
-            print(f"[{datetime.now().isoformat()}] Rate limit exceeded")
             duration = time.time() - start_time
             await record_request(duration, num_results)
             return "Error: Rate limit exceeded. Please try again later (limit: 360 requests per hour)."
@@ -157,9 +157,6 @@ async def search_web(
                 continue
 
             successful_extractions += 1
-            print(
-                f"[{datetime.now().isoformat()}] Successfully extracted content from {meta['link']}"
-            )
 
             # Format the chunk based on search type
             if search_type == "news":
@@ -202,10 +199,6 @@ async def search_web(
 
         result = "\n---\n".join(chunks)
         summary = f"Successfully extracted content from {successful_extractions} out of {len(results)} {search_type} results for query: '{query}'\n\n---\n\n"
-
-        print(
-            f"[{datetime.now().isoformat()}] Extraction complete: {successful_extractions}/{len(results)} successful for query '{query}'"
-        )
 
         # Record successful request with duration
         duration = time.time() - start_time
@@ -472,10 +465,8 @@ def _run_markdown_chunker(
             "metadata",
         ):
             if hasattr(c, field):
-                try:
+                with contextlib.suppress(Exception):
                     item[field] = getattr(c, field)
-                except Exception:
-                    pass
         if not item:
             # Last resort: string representation
             item = {"text": str(c)}

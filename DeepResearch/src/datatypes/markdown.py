@@ -1,7 +1,6 @@
 """Markdown types for Chunks"""
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from .document_dataclass import Document
 

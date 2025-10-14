@@ -8,10 +8,12 @@ edge management, routing, and validation functionality with minimal external dep
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,8 @@ def _missing_callable(name: str) -> Callable[..., Any]:
     """Create a defensive placeholder for callables that cannot be restored."""
 
     def _raise(*_: Any, **__: Any) -> Any:
-        raise RuntimeError(f"Callable '{name}' is unavailable after serialization")
+        msg = f"Callable '{name}' is unavailable after serialization"
+        raise RuntimeError(msg)
 
     return _raise
 
@@ -56,9 +59,11 @@ class Edge:
     ) -> None:
         """Initialize a fully-specified edge between two workflow executors."""
         if not source_id:
-            raise ValueError("Edge source_id must be a non-empty string")
+            msg = "Edge source_id must be a non-empty string"
+            raise ValueError(msg)
         if not target_id:
-            raise ValueError("Edge target_id must be a non-empty string")
+            msg = "Edge target_id must be a non-empty string"
+            raise ValueError(msg)
         self.source_id = source_id
         self.target_id = target_id
         self._condition = condition
@@ -236,7 +241,8 @@ class FanOutEdgeGroup(EdgeGroup):
     ) -> None:
         """Create a fan-out mapping from a single source to many targets."""
         if len(target_ids) <= 1:
-            raise ValueError("FanOutEdgeGroup must contain at least two targets.")
+            msg = "FanOutEdgeGroup must contain at least two targets."
+            raise ValueError(msg)
 
         edges = [Edge(source_id=source_id, target_id=target) for target in target_ids]
         super().__init__(edges, id=id, type=self.__class__.__name__)
@@ -276,7 +282,8 @@ class FanInEdgeGroup(EdgeGroup):
     ) -> None:
         """Build a fan-in mapping that merges several sources into one target."""
         if len(source_ids) <= 1:
-            raise ValueError("FanInEdgeGroup must contain at least two sources.")
+            msg = "FanInEdgeGroup must contain at least two sources."
+            raise ValueError(msg)
 
         edges = [Edge(source_id=source, target_id=target_id) for source in source_ids]
         super().__init__(edges, id=id, type=self.__class__.__name__)
@@ -300,7 +307,8 @@ class SwitchCaseEdgeGroupCase:
     ) -> None:
         """Record the routing metadata for a conditional case branch."""
         if not target_id:
-            raise ValueError("SwitchCaseEdgeGroupCase requires a target_id")
+            msg = "SwitchCaseEdgeGroupCase requires a target_id"
+            raise ValueError(msg)
         self.target_id = target_id
         self.type = "Case"
         if condition is not None:
@@ -343,7 +351,8 @@ class SwitchCaseEdgeGroupDefault:
     def __init__(self, target_id: str) -> None:
         """Point the default branch toward the given executor identifier."""
         if not target_id:
-            raise ValueError("SwitchCaseEdgeGroupDefault requires a target_id")
+            msg = "SwitchCaseEdgeGroupDefault requires a target_id"
+            raise ValueError(msg)
         self.target_id = target_id
         self.type = "Default"
 
@@ -373,17 +382,15 @@ class SwitchCaseEdgeGroup(FanOutEdgeGroup):
     ) -> None:
         """Configure a switch/case routing structure for a single source executor."""
         if len(cases) < 2:
-            raise ValueError(
-                "SwitchCaseEdgeGroup must contain at least two cases (including the default case)."
-            )
+            msg = "SwitchCaseEdgeGroup must contain at least two cases (including the default case)."
+            raise ValueError(msg)
 
         default_cases = [
             case for case in cases if isinstance(case, SwitchCaseEdgeGroupDefault)
         ]
         if len(default_cases) != 1:
-            raise ValueError(
-                "SwitchCaseEdgeGroup must contain exactly one default case."
-            )
+            msg = "SwitchCaseEdgeGroup must contain exactly one default case."
+            raise ValueError(msg)
 
         if not isinstance(cases[-1], SwitchCaseEdgeGroupDefault):
             logger.warning(
@@ -404,7 +411,8 @@ class SwitchCaseEdgeGroup(FanOutEdgeGroup):
                         case.target_id,
                         exc,
                     )
-            raise RuntimeError("No matching case found in SwitchCaseEdgeGroup")
+            msg = "No matching case found in SwitchCaseEdgeGroup"
+            raise RuntimeError(msg)
 
         target_ids = [case.target_id for case in cases]
         # Call FanOutEdgeGroup constructor directly to avoid type checking issues

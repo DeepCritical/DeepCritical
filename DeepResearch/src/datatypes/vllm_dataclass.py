@@ -8,13 +8,16 @@ including configuration, inference, serving, attention, and multimodal capabilit
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Callable
+
+    import numpy as np
 
 # ============================================================================
 # Core Enums and Types
@@ -222,7 +225,6 @@ class LoadConfig(BaseModel):
     max_cpu_loras: int = Field(2, description="Maximum CPU LoRAs")
     lora_extra_vocab_size: int = Field(256, description="LoRA extra vocabulary size")
     lora_dtype: str = Field("auto", description="LoRA data type")
-    max_loras: int = Field(1, description="Maximum LoRAs")
     device_map: str | None = Field(None, description="Device map")
     load_in_low_bit: str | None = Field(None, description="Load in low bit")
     load_in_4bit: bool = Field(False, description="Load in 4-bit")
@@ -510,8 +512,6 @@ class LoRAConfig(BaseModel):
     max_cpu_loras: int = Field(2, description="Maximum CPU LoRAs")
     lora_extra_vocab_size: int = Field(256, description="LoRA extra vocabulary size")
     lora_dtype: str = Field("auto", description="LoRA data type")
-    lora_extra_vocab_size: int = Field(256, description="LoRA extra vocabulary size")
-    lora_dtype: str = Field("auto", description="LoRA data type")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -792,10 +792,6 @@ class SamplingParams(BaseModel):
     detokenize: bool = Field(True, description="Detokenize output")
     seed: int | None = Field(None, description="Random seed")
     logprobs: int | None = Field(None, description="Number of logprobs to return")
-    prompt_logprobs: int | None = Field(
-        None, description="Number of logprobs for prompt"
-    )
-    detokenize: bool = Field(True, description="Detokenize output")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -1201,9 +1197,9 @@ class LLMEngine(BaseModel):
 
     def generate(
         self,
-        prompts: str | list[str] | TextPrompt | list[TextPrompt],
-        sampling_params: SamplingParams,
-        **kwargs,
+        _prompts: str | list[str] | TextPrompt | list[TextPrompt],
+        _sampling_params: SamplingParams,
+        **_kwargs,
     ) -> list[RequestOutput]:
         """Generate text from prompts."""
         # Implementation would go here
@@ -1234,9 +1230,9 @@ class AsyncLLMEngine(BaseModel):
 
     async def generate(
         self,
-        prompts: str | list[str] | TextPrompt | list[TextPrompt],
-        sampling_params: SamplingParams,
-        **kwargs,
+        _prompts: str | list[str] | TextPrompt | list[TextPrompt],
+        _sampling_params: SamplingParams,
+        **_kwargs,
     ) -> list[AsyncRequestOutput]:
         """Asynchronously generate text from prompts."""
         # Implementation would go here
@@ -1244,9 +1240,9 @@ class AsyncLLMEngine(BaseModel):
 
     async def generate_stream(
         self,
-        prompts: str | list[str] | TextPrompt | list[TextPrompt],
-        sampling_params: SamplingParams,
-        **kwargs,
+        _prompts: str | list[str] | TextPrompt | list[TextPrompt],
+        _sampling_params: SamplingParams,
+        **_kwargs,
     ) -> AsyncGenerator[StreamingRequestOutput, None]:
         """Stream generated text from prompts."""
         # Implementation would go here
@@ -1736,7 +1732,7 @@ class VLLMClient(BaseModel):
         super().__init__(base_url=base_url, api_key=api_key, **kwargs)
 
     async def chat_completions(
-        self, request: ChatCompletionRequest
+        self, _request: ChatCompletionRequest
     ) -> ChatCompletionResponse:
         """Send chat completion request."""
         # Implementation would go here
@@ -1749,7 +1745,7 @@ class VLLMClient(BaseModel):
             usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
 
-    async def completions(self, request: CompletionRequest) -> CompletionResponse:
+    async def completions(self, _request: CompletionRequest) -> CompletionResponse:
         """Send completion request."""
         # Implementation would go here
         return CompletionResponse(
@@ -1761,7 +1757,7 @@ class VLLMClient(BaseModel):
             usage=UsageStats(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         )
 
-    async def embeddings(self, request: EmbeddingRequest) -> EmbeddingResponse:
+    async def embeddings(self, _request: EmbeddingRequest) -> EmbeddingResponse:
         """Send embedding request."""
         # Implementation would go here
         return EmbeddingResponse(

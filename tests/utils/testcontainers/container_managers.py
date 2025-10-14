@@ -2,8 +2,6 @@
 Container management utilities for testing.
 """
 
-from typing import Any, Dict, List, Optional
-
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 

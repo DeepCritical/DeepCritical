@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 HEADER = (
     "Current date: ${current_date_utc}\n\n"
     "You are an advanced AI research agent from Jina AI. You are specialized in multistep reasoning.\n"

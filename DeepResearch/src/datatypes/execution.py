@@ -8,10 +8,10 @@ workflow steps, DAGs, execution contexts, and execution history.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..utils.execution_history import ExecutionHistory
+    from DeepResearch.src.utils.execution_history import ExecutionHistory
 
 
 @dataclass

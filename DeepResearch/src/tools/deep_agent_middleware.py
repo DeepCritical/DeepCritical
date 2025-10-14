@@ -10,7 +10,7 @@ from __future__ import annotations
 
 # Import existing DeepCritical types
 # Import middleware types from datatypes module
-from ..datatypes.middleware import (
+from DeepResearch.src.datatypes.middleware import (
     BaseMiddleware,
     FilesystemMiddleware,
     MiddlewareConfig,

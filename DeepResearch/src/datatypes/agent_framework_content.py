@@ -6,7 +6,7 @@ This module provides content types for AI agent interactions with minimal extern
 
 import json
 import re
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 from pydantic import BaseModel, field_validator
 
@@ -80,7 +80,8 @@ class TextContent(BaseContent):
     def __add__(self, other: "TextContent") -> "TextContent":
         """Concatenate two TextContent instances."""
         if not isinstance(other, TextContent):
-            raise TypeError("Incompatible type")
+            msg = "Incompatible type"
+            raise TypeError(msg)
 
         # Merge annotations
         annotations = []
@@ -114,7 +115,8 @@ class TextReasoningContent(BaseContent):
     def __add__(self, other: "TextReasoningContent") -> "TextReasoningContent":
         """Concatenate two TextReasoningContent instances."""
         if not isinstance(other, TextReasoningContent):
-            raise TypeError("Incompatible type")
+            msg = "Incompatible type"
+            raise TypeError(msg)
 
         # Merge annotations
         annotations = []
@@ -152,10 +154,12 @@ class DataContent(BaseContent):
         """Validate URI format and extract media type."""
         match = URI_PATTERN.match(v)
         if not match:
-            raise ValueError(f"Invalid data URI format: {v}")
+            msg = f"Invalid data URI format: {v}"
+            raise ValueError(msg)
         media_type = match.group("media_type")
         if media_type not in KNOWN_MEDIA_TYPES:
-            raise ValueError(f"Unknown media type: {media_type}")
+            msg = f"Unknown media type: {media_type}"
+            raise ValueError(msg)
         return v
 
     @field_validator("media_type", mode="before")

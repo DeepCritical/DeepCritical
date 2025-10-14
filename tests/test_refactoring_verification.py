@@ -17,7 +17,6 @@ def test_refactoring_verification():
     """Test that all refactored components work correctly."""
 
     # Test datatypes imports
-    print("Testing datatypes imports...")
     from DeepResearch.src.datatypes.workflow_orchestration import (
         BreakConditionCheck,
         NestedLoopRequest,
@@ -31,10 +30,8 @@ def test_refactoring_verification():
     assert SubgraphSpawnRequest is not None
     assert BreakConditionCheck is not None
     assert OrchestrationResult is not None
-    print("+ Workflow orchestration types import successfully")
 
     # Test main datatypes package
-    print("Testing main datatypes package...")
     from DeepResearch.src.datatypes import (
         BreakConditionCheck as BCC1,
     )
@@ -56,10 +53,8 @@ def test_refactoring_verification():
     assert SSR1 is not None
     assert BCC1 is not None
     assert OR1 is not None
-    print("+ All types available from main datatypes package")
 
     # Test prompts
-    print("Testing prompts...")
     from DeepResearch.src.prompts.orchestrator import (
         ORCHESTRATOR_INSTRUCTIONS,
         ORCHESTRATOR_SYSTEM_PROMPT,
@@ -76,24 +71,16 @@ def test_refactoring_verification():
     assert OrchestratorPrompts is not None
     assert isinstance(ORCHESTRATOR_SYSTEM_PROMPT, str)
     assert isinstance(ORCHESTRATOR_INSTRUCTIONS, list)
-    print("+ Orchestrator prompts import successfully")
     assert WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT is not None
     assert WORKFLOW_ORCHESTRATOR_INSTRUCTIONS is not None
     assert WorkflowOrchestratorPrompts is not None
     assert isinstance(WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT, str)
     assert isinstance(WORKFLOW_ORCHESTRATOR_INSTRUCTIONS, list)
-    print("+ Workflow orchestrator prompts import successfully")
 
     # Test agent orchestrator
-    print("Testing agent orchestrator...")
     from DeepResearch.src.agents.agent_orchestrator import AgentOrchestrator
 
     assert AgentOrchestrator is not None
-    print("+ AgentOrchestrator imports successfully")
-
-    print(
-        "All refactoring tests passed! The refactoring is complete and working correctly."
-    )
 
 
 if __name__ == "__main__":

@@ -2,9 +2,7 @@
 Global test fixtures for DeepCritical testing framework.
 """
 
-import tempfile
 from pathlib import Path
-from typing import Any, Dict
 
 import pytest
 

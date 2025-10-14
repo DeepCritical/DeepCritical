@@ -7,8 +7,6 @@ import argparse
 import asyncio
 import os
 import subprocess
-import sys
-from pathlib import Path
 
 # Docker Hub configuration - uses environment variables with defaults
 DOCKER_HUB_USERNAME = os.getenv(
@@ -70,20 +68,15 @@ def check_image_exists(tool_name: str) -> bool:
 
 async def build_and_publish_image(tool_name: str):
     """Build and publish a single Docker image."""
-    print(f"\n{'=' * 50}")
-    print(f"Building and publishing {tool_name}")
-    print(f"{'=' * 50}")
 
     dockerfile_path = f"docker/bioinformatics/Dockerfile.{tool_name}"
     image_name = f"{DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}-{tool_name}:{TAG}"
 
     try:
         # Build the image
-        print(f"Building Docker image: {image_name}")
         build_cmd = ["docker", "build", "-f", dockerfile_path, "-t", image_name, "."]
 
         subprocess.run(build_cmd, check=True, capture_output=True, text=True)
-        print(f"[SUCCESS] Successfully built {image_name}")
 
         # Tag as latest
         tag_cmd = [
@@ -93,62 +86,39 @@ async def build_and_publish_image(tool_name: str):
             f"{DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}-{tool_name}:latest",
         ]
         subprocess.run(tag_cmd, check=True)
-        print("[SUCCESS] Tagged as latest")
 
         # Push to Docker Hub
-        print(f"Pushing to Docker Hub: {image_name}")
         push_cmd = ["docker", "push", image_name]
         subprocess.run(push_cmd, check=True)
-        print(f"[SUCCESS] Successfully pushed {image_name}")
 
         # Push latest tag
         latest_image = f"{DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}-{tool_name}:latest"
         push_latest_cmd = ["docker", "push", latest_image]
         subprocess.run(push_latest_cmd, check=True)
-        print(f"[SUCCESS] Successfully pushed {latest_image}")
 
         return True
 
-    except subprocess.CalledProcessError as e:
-        print(f"[ERROR] Failed to build/publish {tool_name}: {e}")
-        print(f"Error output: {e.stderr}")
+    except subprocess.CalledProcessError:
         return False
-    except Exception as e:
-        print(f"[ERROR] Unexpected error for {tool_name}: {e}")
+    except Exception:
         return False
 
 
 async def check_images_only():
     """Check which Docker Hub images exist without building."""
-    print("🔍 Checking Docker Hub image availability...")
-    print(f"Repository: {DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}")
-    print(f"Tag: {TAG}")
-    print()
 
     available_images = []
     missing_images = []
 
     for tool in BIOINFORMATICS_TOOLS:
         if check_image_exists(tool):
-            print(f"✅ {tool}: Available")
             available_images.append(tool)
         else:
-            print(f"❌ {tool}: Not found")
             missing_images.append(tool)
 
-    print(f"\n{'=' * 50}")
-    print("📊 Image Availability Summary:")
-    print(f"✅ Available: {len(available_images)}")
-    print(f"❌ Missing: {len(missing_images)}")
-    print(
-        f"📈 Availability: {(len(available_images) / len(BIOINFORMATICS_TOOLS)) * 100:.1f}%"
-    )
-    print(f"{'=' * 50}")
-
     if missing_images:
-        print("\n📝 Missing images:")
         for tool in missing_images:
-            print(f"  - {DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}-{tool}:{TAG}")
+            pass
 
 
 async def main():
@@ -167,24 +137,16 @@ async def main():
         await check_images_only()
         return
 
-    print("[START] Starting Docker Hub publishing process...")
-    print(f"Repository: {DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}")
-    print(f"Tools to process: {len(BIOINFORMATICS_TOOLS)}")
-
     # Check if Docker is available
     try:
         subprocess.run(["docker", "--version"], check=True, capture_output=True)
-        print("[OK] Docker is available")
     except subprocess.CalledProcessError:
-        print("[ERROR] Docker is not available. Please install Docker first.")
         return
 
     # Check if Docker daemon is running
     try:
         subprocess.run(["docker", "info"], check=True, capture_output=True)
-        print("[OK] Docker daemon is running")
     except subprocess.CalledProcessError:
-        print("[ERROR] Docker daemon is not running. Please start Docker first.")
         return
 
     successful_builds = 0
@@ -198,29 +160,10 @@ async def main():
         else:
             failed_builds += 1
 
-    print(f"\n{'=' * 50}")
-    print("[SUMMARY] Publishing Summary:")
-    print(f"[SUCCESS] Successful builds: {successful_builds}")
-    print(f"[FAILED] Failed builds: {failed_builds}")
-    print(
-        f"[RATE] Success rate: {(successful_builds / len(BIOINFORMATICS_TOOLS)) * 100:.1f}%"
-    )
-    print(f"{'=' * 50}")
-
     if failed_builds > 0:
-        print("\n[WARNING] Some builds failed. Check the output above for details.")
-        print("You may need to:")
-        print("- Check Docker Hub credentials")
-        print("- Verify Dockerfile syntax")
-        print("- Ensure all dependencies are available")
-        print("- Check available disk space")
+        pass
     else:
-        print("\n[SUCCESS] All images successfully built and published!")
-        print("\n[USAGE] Usage:")
-        print("Update your bioinformatics server configs to use:")
-        print(
-            f'container_image = "{DOCKER_HUB_USERNAME}/{DOCKER_HUB_REPO}-{{tool_name}}:{TAG}"'
-        )
+        pass
 
 
 if __name__ == "__main__":

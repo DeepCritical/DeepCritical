@@ -5,8 +5,6 @@ This module defines system prompts and instructions for the primary workflow orc
 that coordinates multiple specialized workflows using Pydantic AI patterns.
 """
 
-from typing import Dict, List
-
 # System prompt for the primary workflow orchestrator
 WORKFLOW_ORCHESTRATOR_SYSTEM_PROMPT = """You are the primary orchestrator for a sophisticated workflow-of-workflows system.
 Your role is to:

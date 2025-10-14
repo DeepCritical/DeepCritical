@@ -4,7 +4,7 @@ Vendored chat options types from agent_framework._types.
 This module provides chat options and tool configuration types.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -47,7 +47,8 @@ class ChatOptions(BaseModel):
                 return ToolMode(mode="required")
             if v == "none":
                 return ToolMode(mode="none")
-            raise ValueError(f"Invalid tool choice: {v}")
+            msg = f"Invalid tool choice: {v}"
+            raise ValueError(msg)
         if isinstance(v, dict):
             return ToolMode(mode=v.get("mode", "auto"))
         return v

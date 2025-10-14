@@ -8,7 +8,7 @@ agent interaction design patterns with minimal external dependencies.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -381,7 +381,7 @@ async def execute_hierarchical_workflow(
     Returns:
         The hierarchical workflow result
     """
-    all_agents = [coordinator_id] + subordinate_ids
+    all_agents = [coordinator_id, *subordinate_ids]
 
     return await execute_workflow_pattern(
         question=question,
@@ -396,7 +396,6 @@ async def execute_hierarchical_workflow(
 # Example usage functions
 async def example_collaborative_workflow():
     """Example of using collaborative workflow pattern."""
-    print("=== Collaborative Workflow Example ===")
 
     # Define agents
     agents = ["parser", "planner", "executor"]
@@ -423,20 +422,16 @@ async def example_collaborative_workflow():
     }
 
     # Execute workflow
-    result = await execute_collaborative_workflow(
+    return await execute_collaborative_workflow(
         question="What is machine learning?",
         agents=agents,
         agent_types=agent_types,
         agent_executors=agent_executors,
     )
 
-    print(f"Result: {result[:200]}...")
-    return result
-
 
 async def example_sequential_workflow():
     """Example of using sequential workflow pattern."""
-    print("=== Sequential Workflow Example ===")
 
     # Define agents in execution order
     agents = ["analyzer", "researcher", "synthesizer"]
@@ -463,20 +458,16 @@ async def example_sequential_workflow():
     }
 
     # Execute workflow
-    result = await execute_sequential_workflow(
+    return await execute_sequential_workflow(
         question="Explain quantum computing",
         agents=agents,
         agent_types=agent_types,
         agent_executors=agent_executors,
     )
 
-    print(f"Result: {result[:200]}...")
-    return result
-
 
 async def example_hierarchical_workflow():
     """Example of using hierarchical workflow pattern."""
-    print("=== Hierarchical Workflow Example ===")
 
     # Define coordinator and subordinates
     coordinator_id = "orchestrator"
@@ -511,7 +502,7 @@ async def example_hierarchical_workflow():
     }
 
     # Execute workflow
-    result = await execute_hierarchical_workflow(
+    return await execute_hierarchical_workflow(
         question="Analyze the impact of AI on healthcare",
         coordinator_id=coordinator_id,
         subordinate_ids=subordinate_ids,
@@ -519,32 +510,17 @@ async def example_hierarchical_workflow():
         agent_executors=agent_executors,
     )
 
-    print(f"Result: {result[:200]}...")
-    return result
-
 
 # Main demonstration function
 async def demonstrate_workflow_patterns():
     """Demonstrate all workflow pattern types."""
-    print("DeepCritical Agent Interaction Design Patterns Demo")
-    print("=" * 60)
 
-    try:
-        # Run examples
-        await example_collaborative_workflow()
-        print("\n" + "-" * 40 + "\n")
+    # Run examples
+    await example_collaborative_workflow()
 
-        await example_sequential_workflow()
-        print("\n" + "-" * 40 + "\n")
+    await example_sequential_workflow()
 
-        await example_hierarchical_workflow()
-        print("\n" + "-" * 40 + "\n")
-
-        print("All workflow patterns demonstrated successfully!")
-
-    except Exception as e:
-        print(f"Demo failed: {e}")
-        raise
+    await example_hierarchical_workflow()
 
 
 # CLI interface for testing

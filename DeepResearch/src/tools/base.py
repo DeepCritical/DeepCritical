@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @dataclass
@@ -32,7 +34,7 @@ class ToolRunner:
             if k not in params:
                 return False, f"Missing required param: {k}"
             # basic type gate (string types only for placeholder)
-            if t.endswith("PATH") or t.endswith("ID") or t in {"TEXT", "AA SEQUENCE"}:
+            if t.endswith(("PATH", "ID")) or t in {"TEXT", "AA SEQUENCE"}:
                 if not isinstance(params[k], str):
                     return False, f"Invalid type for {k}: expected str for {t}"
         return True, None
@@ -50,7 +52,8 @@ class ToolRegistry:
 
     def make(self, name: str) -> ToolRunner:
         if name not in self._tools:
-            raise KeyError(f"Tool not found: {name}")
+            msg = f"Tool not found: {name}"
+            raise KeyError(msg)
         return self._tools[name]()
 
     def list(self):

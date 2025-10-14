@@ -6,8 +6,6 @@ and comprehensive bioinformatics functionality. Includes both containerized and
 non-containerized test scenarios.
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -16,7 +14,6 @@ from tests.test_bioinformatics_tools.base.test_base_tool import (
     BaseBioinformaticsToolTest,
 )
 from tests.utils.mocks.mock_data import create_mock_bam, create_mock_gtf
-from tests.utils.testcontainers.docker_helpers import create_isolated_container
 
 # Import the MCP module to test MCP functionality
 try:

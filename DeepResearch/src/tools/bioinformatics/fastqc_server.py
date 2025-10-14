@@ -11,18 +11,14 @@ for testing environments.
 
 from __future__ import annotations
 
-import asyncio
 import os
-import shutil
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -244,12 +240,14 @@ class FastQCServer(MCPServerBase):
         """
         # Validate input files
         if not input_files:
-            raise ValueError("At least one input file must be specified")
+            msg = "At least one input file must be specified"
+            raise ValueError(msg)
 
         # Validate input files exist
         for input_file in input_files:
             if not os.path.exists(input_file):
-                raise FileNotFoundError(f"Input file not found: {input_file}")
+                msg = f"Input file not found: {input_file}"
+                raise FileNotFoundError(msg)
 
         # Use alternative output directory if specified
         if outdir:
@@ -305,7 +303,7 @@ class FastQCServer(MCPServerBase):
             for input_file in input_files:
                 # Get base name without extension
                 base_name = Path(input_file).stem
-                if base_name.endswith(".fastq") or base_name.endswith(".fq"):
+                if base_name.endswith((".fastq", ".fq")):
                     base_name = Path(base_name).stem
 
                 # Look for HTML and ZIP files
@@ -581,8 +579,8 @@ class FastQCServer(MCPServerBase):
 
             return True
 
-        except Exception as e:
-            self.logger.error(f"Failed to stop container {self.container_id}: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop container %s", self.container_id)
             return False
 
     def get_server_info(self) -> dict[str, Any]:

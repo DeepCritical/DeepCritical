@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, Union
+from typing import Any, Protocol
 
 # ============================================================================
 # Core Enums and Types
@@ -112,9 +112,10 @@ class Embedding:
         if self.dimension is None:
             self.dimension = len(self.vector)
         elif self.dimension != len(self.vector):
-            raise ValueError(
+            msg = (
                 f"Dimension mismatch: expected {self.dimension}, got {len(self.vector)}"
             )
+            raise ValueError(msg)
 
 
 @dataclass

@@ -1,5 +1,3 @@
-from typing import Dict
-
 SYSTEM = (
     "You're helping fix a corrupted scanned markdown document that has stains (represented by �).\n"
     "Looking at the surrounding context, determine the original text should be in place of the � symbols.\n\n"

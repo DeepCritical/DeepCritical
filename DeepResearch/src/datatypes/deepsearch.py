@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class EvaluationType(str, Enum):
@@ -50,7 +49,8 @@ class SearchTimeFilter:
             self.PAST_MONTH,
             self.PAST_YEAR,
         ]:
-            raise ValueError(f"Invalid time filter: {filter_str}")
+            msg = f"Invalid time filter: {filter_str}"
+            raise ValueError(msg)
         self.value = filter_str
 
     def __str__(self) -> str:

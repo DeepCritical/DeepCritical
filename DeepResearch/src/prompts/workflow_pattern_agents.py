@@ -5,8 +5,6 @@ This module defines system prompts and instructions for workflow pattern agents,
 integrating with the Magentic One orchestration system from the _workflows directory.
 """
 
-from typing import Dict, List
-
 # Import Magentic prompts from the _magentic.py file
 ORCHESTRATOR_TASK_LEDGER_FACTS_PROMPT = """Below I will present you a request.
 

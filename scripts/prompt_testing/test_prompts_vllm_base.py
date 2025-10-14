@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pytest
 from omegaconf import DictConfig
@@ -73,7 +73,7 @@ class VLLMPromptTestBase:
                 with initialize_config_dir(
                     config_dir=str(config_dir), version_base=None
                 ):
-                    config = compose(
+                    return compose(
                         config_name="vllm_tests",
                         overrides=[
                             "model=local_model",
@@ -82,7 +82,6 @@ class VLLMPromptTestBase:
                             "output=structured",
                         ],
                     )
-                    return config
             else:
                 logger.warning(
                     "Config directory not found, using default configuration"
@@ -361,7 +360,7 @@ class VLLMPromptTestBase:
                     time.sleep(delay_between_tests)
 
             except Exception as e:
-                logger.error(f"Error testing prompt {prompt_name}: {e}")
+                logger.exception(f"Error testing prompt {prompt_name}")
 
                 # Handle errors based on configuration
                 if error_config.get("graceful_degradation", True):

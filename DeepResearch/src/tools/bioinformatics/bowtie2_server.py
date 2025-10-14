@@ -15,12 +15,11 @@ Features:
 from __future__ import annotations
 
 import asyncio
-import os
 import shlex
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # FastMCP for direct MCP server functionality
 try:
@@ -31,14 +30,12 @@ except ImportError:
     FASTMCP_AVAILABLE = False
     _FastMCP = None
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -337,9 +334,8 @@ class Bowtie2Server(MCPServerBase):
         if self.fastmcp_server:
             self.fastmcp_server.run()
         else:
-            raise RuntimeError(
-                "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
-            )
+            msg = "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
+            raise RuntimeError(msg)
 
     def _bowtie2_align_impl(
         self,
@@ -443,46 +439,52 @@ class Bowtie2Server(MCPServerBase):
         """
         # Validate mutually exclusive options
         if end_to_end and local:
-            raise ValueError("Options --end-to-end and --local are mutually exclusive.")
+            msg = "Options --end-to-end and --local are mutually exclusive."
+            raise ValueError(msg)
         if k is not None and a:
-            raise ValueError("Options -k and -a are mutually exclusive.")
+            msg = "Options -k and -a are mutually exclusive."
+            raise ValueError(msg)
         if trim_to is not None and (trim5 > 0 or trim3 > 0):
-            raise ValueError("--trim-to and -3/-5 are mutually exclusive.")
+            msg = "--trim-to and -3/-5 are mutually exclusive."
+            raise ValueError(msg)
         if phred33 and phred64:
-            raise ValueError("--phred33 and --phred64 are mutually exclusive.")
+            msg = "--phred33 and --phred64 are mutually exclusive."
+            raise ValueError(msg)
         if mate1_files is not None and interleaved is not None:
-            raise ValueError("Cannot specify both -1 and --interleaved.")
+            msg = "Cannot specify both -1 and --interleaved."
+            raise ValueError(msg)
         if mate2_files is not None and interleaved is not None:
-            raise ValueError("Cannot specify both -2 and --interleaved.")
+            msg = "Cannot specify both -2 and --interleaved."
+            raise ValueError(msg)
         if (mate1_files is None) != (mate2_files is None):
-            raise ValueError(
-                "Both -1 and -2 must be specified together for paired-end reads."
-            )
+            msg = "Both -1 and -2 must be specified together for paired-end reads."
+            raise ValueError(msg)
 
         # Validate input files exist
         def check_files_exist(files: list[str] | None, param_name: str):
             if files:
                 for f in files:
                     if f != "-" and not Path(f).exists():
-                        raise FileNotFoundError(
-                            f"Input file '{f}' specified in {param_name} does not exist."
-                        )
+                        msg = f"Input file '{f}' specified in {param_name} does not exist."
+                        raise FileNotFoundError(msg)
 
         # check_files_exist(mate1_files, "-1")
         # check_files_exist(mate2_files, "-2")
         check_files_exist(unpaired_files, "-U")
         if interleaved is not None and not interleaved.exists():
-            raise FileNotFoundError(f"Interleaved file '{interleaved}' does not exist.")
+            msg = f"Interleaved file '{interleaved}' does not exist."
+            raise FileNotFoundError(msg)
         if bam_unaligned is not None and not bam_unaligned.exists():
-            raise FileNotFoundError(f"BAM file '{bam_unaligned}' does not exist.")
+            msg = f"BAM file '{bam_unaligned}' does not exist."
+            raise FileNotFoundError(msg)
         if kmer_fasta is not None and not kmer_fasta.exists():
-            raise FileNotFoundError(f"K-mer fasta file '{kmer_fasta}' does not exist.")
+            msg = f"K-mer fasta file '{kmer_fasta}' does not exist."
+            raise FileNotFoundError(msg)
         if sam_output is not None:
             sam_output = Path(sam_output)
             if sam_output.exists() and not sam_output.is_file():
-                raise ValueError(
-                    f"Output SAM path '{sam_output}' exists and is not a file."
-                )
+                msg = f"Output SAM path '{sam_output}' exists and is not a file."
+                raise ValueError(msg)
 
         # Build command
         cmd = ["bowtie2"]
@@ -512,9 +514,8 @@ class Bowtie2Server(MCPServerBase):
             cmd.extend(["-F", f"{kmer_int},i:{kmer_i}"])
             cmd.append(str(kmer_fasta))
         else:
-            raise ValueError(
-                "No input reads specified. Provide -1/-2, -U, --interleaved, --sra-acc, -b, -c, or -F options."
-            )
+            msg = "No input reads specified. Provide -1/-2, -U, --interleaved, --sra-acc, -b, -c, or -F options."
+            raise ValueError(msg)
 
         # Output SAM
         if sam_output is not None:
@@ -579,7 +580,8 @@ class Bowtie2Server(MCPServerBase):
 
         # Alignment options
         if mismatches_seed not in (0, 1):
-            raise ValueError("-N must be 0 or 1")
+            msg = "-N must be 0 or 1"
+            raise ValueError(msg)
         cmd.extend(["-N", str(mismatches_seed)])
 
         if seed_length is not None:
@@ -620,7 +622,8 @@ class Bowtie2Server(MCPServerBase):
         # Reporting options
         if k is not None:
             if k < 1:
-                raise ValueError("-k must be >= 1")
+                msg = "-k must be >= 1"
+                raise ValueError(msg)
             cmd.extend(["-k", str(k)])
         if a:
             cmd.append("-a")
@@ -1120,9 +1123,8 @@ class Bowtie2Server(MCPServerBase):
         if not sequences_on_cmdline:
             for f in reference_in:
                 if not Path(f).exists():
-                    raise FileNotFoundError(
-                        f"Reference input file '{f}' does not exist."
-                    )
+                    msg = f"Reference input file '{f}' does not exist."
+                    raise FileNotFoundError(msg)
 
         cmd = ["bowtie2-build"]
 

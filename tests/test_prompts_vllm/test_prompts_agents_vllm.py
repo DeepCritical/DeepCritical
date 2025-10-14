@@ -29,8 +29,7 @@ class TestAgentsPromptsVLLM(VLLMPromptTestBase):
         assert len(results) > 0, "No prompts were tested from agents module"
 
         # Log container info
-        container_info = vllm_tester.get_container_info()
-        print(f"VLLM container info: {container_info}")
+        vllm_tester.get_container_info()
 
     @pytest.mark.vllm
     @pytest.mark.optional

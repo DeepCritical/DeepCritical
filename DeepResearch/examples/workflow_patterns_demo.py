@@ -83,8 +83,6 @@ class MockAgentExecutor:
 async def demonstrate_advanced_patterns():
     """Demonstrate advanced pattern combinations and adaptive selection."""
 
-    print("=== Advanced Pattern Demonstration ===")
-
     # Create mock agent executors
     agents = ["parser", "planner", "searcher", "executor", "orchestrator"]
     agent_types = {
@@ -105,8 +103,7 @@ async def demonstrate_advanced_patterns():
         agent_registry.register(agent_id, executor)
 
     # 1. Test collaborative pattern
-    print("\n1. Testing Collaborative Pattern:")
-    collaborative_result = await execute_collaborative_workflow(
+    await execute_collaborative_workflow(
         question="What are the key applications of machine learning in healthcare?",
         agents=agents,
         agent_types=agent_types,
@@ -116,11 +113,9 @@ async def demonstrate_advanced_patterns():
             "consensus_threshold": 0.8,
         },
     )
-    print(f"Collaborative result length: {len(collaborative_result)} characters")
 
     # 2. Test sequential pattern
-    print("\n2. Testing Sequential Pattern:")
-    sequential_result = await execute_sequential_workflow(
+    await execute_sequential_workflow(
         question="Explain the process of protein folding",
         agents=agents,
         agent_types=agent_types,
@@ -129,11 +124,9 @@ async def demonstrate_advanced_patterns():
             "max_rounds": len(agents),
         },
     )
-    print(f"Sequential result length: {len(sequential_result)} characters")
 
     # 3. Test hierarchical pattern
-    print("\n3. Testing Hierarchical Pattern:")
-    hierarchical_result = await execute_hierarchical_workflow(
+    await execute_hierarchical_workflow(
         question="Analyze the impact of climate change on biodiversity",
         coordinator_id="orchestrator",
         subordinate_ids=["parser", "planner", "searcher", "executor"],
@@ -143,27 +136,20 @@ async def demonstrate_advanced_patterns():
             "max_rounds": 3,
         },
     )
-    print(f"Hierarchical result length: {len(hierarchical_result)} characters")
 
     # 4. Test pattern factory
-    print("\n4. Testing Pattern Factory:")
     factory = WorkflowPatternFactory()
 
     from DeepResearch.src.workflow_patterns import InteractionPattern
 
-    interaction_state = factory.create_interaction_state(
+    factory.create_interaction_state(
         pattern=InteractionPattern.COLLABORATIVE,
         agents=agents,
         agent_types=agent_types,
         config={"max_rounds": 3},
     )
 
-    print(f"Created interaction state with {len(interaction_state.agents)} agents")
-    print(f"Pattern: {interaction_state.pattern.value}")
-    print(f"Max rounds: {interaction_state.max_rounds}")
-
     # 5. Test executor with custom config
-    print("\n5. Testing Workflow Executor with Custom Config:")
     from DeepResearch.src.workflow_patterns import (
         InteractionPattern,
         WorkflowPatternConfig,
@@ -177,21 +163,16 @@ async def demonstrate_advanced_patterns():
     )
     executor = WorkflowPatternExecutor(config)
 
-    custom_result = await executor.execute_collaborative_pattern(
+    await executor.execute_collaborative_pattern(
         question="What are the latest developments in quantum computing?",
         agents=agents[:3],  # Use only first 3 agents
         agent_types={k: v for k, v in agent_types.items() if k in agents[:3]},
         agent_executors={k: v for k, v in agent_executors.items() if k in agents[:3]},
     )
-    print(f"Custom executor result length: {len(custom_result)} characters")
-
-    print("\n=== Advanced Pattern Demonstration Complete ===")
 
 
 async def demonstrate_consensus_algorithms():
     """Demonstrate different consensus algorithms."""
-
-    print("=== Consensus Algorithm Demonstration ===")
 
     # Sample results from different agents
     results = [
@@ -217,9 +198,7 @@ async def demonstrate_consensus_algorithms():
         ("Confidence Based", "confidence_based"),
     ]
 
-    for name, algorithm_str in algorithms:
-        print(f"\n{name} Algorithm:")
-
+    for _name, algorithm_str in algorithms:
         try:
             from DeepResearch.src.utils.workflow_patterns import ConsensusAlgorithm
 
@@ -229,28 +208,18 @@ async def demonstrate_consensus_algorithms():
             elif algorithm_str == "majority":
                 algorithm_enum = ConsensusAlgorithm.MAJORITY_VOTE
 
-            consensus_result = WorkflowPatternUtils.compute_consensus(
+            WorkflowPatternUtils.compute_consensus(
                 results,
                 algorithm=algorithm_enum,
                 confidence_threshold=0.7,
             )
 
-            print(f"  Consensus reached: {consensus_result.consensus_reached}")
-            print(f"  Final result: {consensus_result.final_result}")
-            print(f"  Confidence: {consensus_result.confidence:.3f}")
-            print(f"  Agreement score: {consensus_result.agreement_score:.3f}")
-            print(f"  Algorithm used: {consensus_result.algorithm_used.value}")
-
-        except Exception as e:
-            print(f"  Error: {e}")
-
-    print("\n=== Consensus Algorithm Demonstration Complete ===")
+        except Exception:
+            pass
 
 
 async def demonstrate_message_routing():
     """Demonstrate message routing strategies."""
-
-    print("=== Message Routing Demonstration ===")
 
     # Create sample messages
     messages = [
@@ -279,9 +248,7 @@ async def demonstrate_message_routing():
         ("Load Balanced", "load_balanced"),
     ]
 
-    for name, strategy_str in strategies:
-        print(f"\n{name} Routing:")
-
+    for _name, strategy_str in strategies:
         try:
             from DeepResearch.src.utils.workflow_patterns import MessageRoutingStrategy
 
@@ -299,19 +266,15 @@ async def demonstrate_message_routing():
                 messages, strategy_enum, agents
             )
 
-            for agent, msgs in routed.items():
-                print(f"  {agent}: {len(msgs)} messages")
+            for _agent, _msgs in routed.items():
+                pass
 
-        except Exception as e:
-            print(f"  Error: {e}")
-
-    print("\n=== Message Routing Demonstration Complete ===")
+        except Exception:
+            pass
 
 
 async def demonstrate_state_management():
     """Demonstrate interaction state management."""
-
-    print("=== State Management Demonstration ===")
 
     # Create interaction state
     state = create_interaction_state(
@@ -324,12 +287,8 @@ async def demonstrate_state_management():
         },
     )
 
-    print(f"Initial state: {len(state.agents)} agents, round {state.current_round}")
-
     # Simulate some rounds
     for round_num in range(3):
-        print(f"\nRound {round_num + 1}:")
-
         # Add some messages
         message1 = WorkflowPatternUtils.create_message(
             "agent1", "agent2", MessageType.DATA, f"Round {round_num} data"
@@ -341,63 +300,27 @@ async def demonstrate_state_management():
         state.send_message(message1)
         state.send_message(message2)
 
-        print(f"  Messages sent: {len(state.messages)}")
-        print(f"  Queue size: {len(state.message_queue)}")
-
         # Move to next round
         state.next_round()
 
     # Show final state
-    print("Final state:")
-    print(f"  Total rounds: {state.current_round}")
-    print(f"  Total messages: {len(state.messages)}")
-    print(f"  Active agents: {len(state.active_agents)}")
-    print(f"  Errors: {len(state.errors)}")
-
-    print("\n=== State Management Demonstration Complete ===")
 
 
 async def run_comprehensive_demo():
     """Run all demonstrations."""
 
-    print("🚀 DeepCritical Agent Interaction Design Patterns - Comprehensive Demo")
-    print("=" * 80)
+    # Run all demonstrations
+    await demonstrate_workflow_patterns()
 
-    try:
-        # Run all demonstrations
-        await demonstrate_workflow_patterns()
-        print("\n" + "=" * 80)
+    await demonstrate_advanced_patterns()
 
-        await demonstrate_advanced_patterns()
-        print("\n" + "=" * 80)
+    await demonstrate_consensus_algorithms()
 
-        await demonstrate_consensus_algorithms()
-        print("\n" + "=" * 80)
+    await demonstrate_message_routing()
 
-        await demonstrate_message_routing()
-        print("\n" + "=" * 80)
+    await demonstrate_state_management()
 
-        await demonstrate_state_management()
-        print("\n" + "=" * 80)
-
-        print("✅ All demonstrations completed successfully!")
-
-        # Show summary
-        print("\n📊 Summary:")
-        print(f"- Executed {len(agent_registry.list())} registered agent executors")
-        print(
-            f"- Demonstrated {len([p for p in InteractionPattern])} interaction patterns"
-        )
-        print(
-            f"- Tested {len(['simple_agreement', 'majority_vote', 'confidence_based'])} consensus algorithms"
-        )
-        print(
-            f"- Demonstrated {len(['direct', 'broadcast', 'round_robin', 'priority_based', 'load_balanced'])} routing strategies"
-        )
-
-    except Exception as e:
-        print(f"\n❌ Demo failed: {e}")
-        raise
+    # Show summary
 
 
 if __name__ == "__main__":

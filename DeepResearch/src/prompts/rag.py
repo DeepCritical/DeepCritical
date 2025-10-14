@@ -5,8 +5,6 @@ This module defines prompt templates for RAG operations including general RAG qu
 and specialized bioinformatics RAG queries.
 """
 
-from typing import Dict
-
 # General RAG query prompt template
 RAG_QUERY_PROMPT = """Based on the following context, please answer the question: {query}
 

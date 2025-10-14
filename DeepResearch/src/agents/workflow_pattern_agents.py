@@ -8,20 +8,18 @@ integrating with the existing DeepCritical agent system and workflow patterns.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...agents import BaseAgent  # Use top-level BaseAgent to satisfy linters
-from ..datatypes.agents import AgentDependencies, AgentResult, AgentType
-from ..datatypes.workflow_patterns import (
-    InteractionPattern,
-)
-from ..prompts.workflow_pattern_agents import WorkflowPatternAgentPrompts
-from ..statemachines.workflow_pattern_statemachines import (
+from DeepResearch.agents import BaseAgent  # Use top-level BaseAgent to satisfy linters
+from DeepResearch.src.datatypes.agents import AgentDependencies, AgentResult, AgentType
+from DeepResearch.src.datatypes.workflow_patterns import InteractionPattern
+from DeepResearch.src.prompts.workflow_pattern_agents import WorkflowPatternAgentPrompts
+from DeepResearch.src.statemachines.workflow_pattern_statemachines import (
     run_collaborative_pattern_workflow,
     run_hierarchical_pattern_workflow,
     run_sequential_pattern_workflow,
 )
-from ..utils.workflow_patterns import ConsensusAlgorithm
+from DeepResearch.src.utils.workflow_patterns import ConsensusAlgorithm
 
 
 class WorkflowPatternAgent(BaseAgent):
@@ -289,7 +287,7 @@ class HierarchicalPatternAgent(WorkflowPatternAgent):
     ) -> AgentResult:
         """Execute hierarchical workflow."""
         try:
-            all_agents = [coordinator_id] + subordinate_ids
+            all_agents = [coordinator_id, *subordinate_ids]
 
             # Execute the base pattern
             base_result = await self.execute_pattern(

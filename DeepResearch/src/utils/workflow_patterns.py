@@ -10,13 +10,12 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 # Import existing DeepCritical types
-from ..datatypes.workflow_patterns import (
+from DeepResearch.src.datatypes.workflow_patterns import (
     AgentInteractionMode,
     AgentInteractionState,
     InteractionMessage,
@@ -24,6 +23,9 @@ from ..datatypes.workflow_patterns import (
     MessageType,
     WorkflowOrchestrator,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class ConsensusAlgorithm(str, Enum):
@@ -633,14 +635,14 @@ class WorkflowPatternUtils:
 
                     for sub_id, sub_executor in subordinate_executors.items():
                         task = sub_executor(
-                            messages
-                            + [
+                            [
+                                *messages,
                                 InteractionMessage(
                                     sender_id="coordinator",
                                     receiver_id=sub_id,
                                     message_type=MessageType.DATA,
                                     content=coordinator_result,
-                                )
+                                ),
                             ]
                         )
                         subordinate_tasks.append((sub_id, task))
@@ -732,13 +734,13 @@ class WorkflowPatternUtils:
 
                 return result
 
-            except Exception as e:
+            except Exception:
                 execution_time = time.time() - start_time
 
                 if metrics:
                     metrics.record_round(False, execution_time, False, 1)
 
-                raise e
+                raise
 
         return monitored_executor
 
@@ -769,8 +771,8 @@ class WorkflowPatternUtils:
     @staticmethod
     def deserialize_interaction_state(data: dict[str, Any]) -> AgentInteractionState:
         """Deserialize interaction state from persistence."""
-        from ..datatypes.agents import AgentStatus
-        from ..utils.execution_status import ExecutionStatus
+        from DeepResearch.src.datatypes.agents import AgentStatus
+        from DeepResearch.src.utils.execution_status import ExecutionStatus
 
         state = AgentInteractionState()
         state.interaction_id = data.get("interaction_id", state.interaction_id)
@@ -829,7 +831,7 @@ def create_collaborative_orchestrator(
         agent_type = agent_executors.get(f"{agent_id}_type")
         if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
-            from ..datatypes.agents import AgentType
+            from DeepResearch.src.datatypes.agents import AgentType
 
             try:
                 agent_type_enum = getattr(
@@ -869,7 +871,7 @@ def create_sequential_orchestrator(
         agent_type = agent_executors.get(f"{agent_id}_type")
         if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
-            from ..datatypes.agents import AgentType
+            from DeepResearch.src.datatypes.agents import AgentType
 
             try:
                 agent_type_enum = getattr(
@@ -909,7 +911,7 @@ def create_hierarchical_orchestrator(
     coordinator_type = agent_executors.get(f"{coordinator_id}_type")
     if coordinator_type and hasattr(coordinator_type, "__name__"):
         # Convert function to AgentType if possible
-        from ..datatypes.agents import AgentType
+        from DeepResearch.src.datatypes.agents import AgentType
 
         try:
             agent_type_enum = getattr(
@@ -927,7 +929,7 @@ def create_hierarchical_orchestrator(
         agent_type = agent_executors.get(f"{sub_id}_type")
         if agent_type and hasattr(agent_type, "__name__"):
             # Convert function to AgentType if possible
-            from ..datatypes.agents import AgentType
+            from DeepResearch.src.datatypes.agents import AgentType
 
             try:
                 agent_type_enum = getattr(

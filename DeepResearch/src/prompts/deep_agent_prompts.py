@@ -8,7 +8,6 @@ using Pydantic AI patterns that align with DeepCritical's architecture.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -35,14 +34,16 @@ class PromptTemplate(BaseModel):
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
-            raise ValueError("Prompt template name cannot be empty")
+            msg = "Prompt template name cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("template")
     @classmethod
     def validate_template(cls, v):
         if not v or not v.strip():
-            raise ValueError("Prompt template cannot be empty")
+            msg = "Prompt template cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     def format(self, **kwargs) -> str:
@@ -50,7 +51,8 @@ class PromptTemplate(BaseModel):
         try:
             return self.template.format(**kwargs)
         except KeyError as e:
-            raise ValueError(f"Missing required variable: {e}")
+            msg = f"Missing required variable: {e}"
+            raise ValueError(msg)
 
     model_config = ConfigDict(json_schema_extra={})
 
@@ -389,7 +391,8 @@ class PromptManager:
         """Format a prompt template with variables."""
         template = self.get_template(name)
         if not template:
-            raise ValueError(f"Template '{name}' not found")
+            msg = f"Template '{name}' not found"
+            raise ValueError(msg)
         return template.format(**kwargs)
 
     def get_system_prompt(self, components: list[str] | None = None) -> str:

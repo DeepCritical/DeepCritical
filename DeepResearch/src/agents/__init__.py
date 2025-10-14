@@ -1,5 +1,6 @@
-from ..datatypes.execution import ExecutionContext
-from ..datatypes.research import ResearchOutcome, StepResult
+from DeepResearch.src.datatypes.execution import ExecutionContext
+from DeepResearch.src.datatypes.research import ResearchOutcome, StepResult
+
 from .agent_orchestrator import AgentOrchestrator
 from .prime_executor import ToolExecutor, execute_workflow
 from .prime_parser import (

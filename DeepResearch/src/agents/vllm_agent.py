@@ -8,17 +8,17 @@ with Pydantic AI's CLI and agent system.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from ..datatypes.vllm_agent import VLLMAgentConfig, VLLMAgentDependencies
-from ..datatypes.vllm_dataclass import (
+from DeepResearch.src.datatypes.vllm_agent import VLLMAgentConfig, VLLMAgentDependencies
+from DeepResearch.src.datatypes.vllm_dataclass import (
     ChatCompletionRequest,
     CompletionRequest,
     EmbeddingRequest,
     QuantizationMethod,
     VllmConfig,
 )
-from ..utils.vllm_client import VLLMClient
+from DeepResearch.src.utils.vllm_client import VLLMClient
 
 
 class VLLMAgent:
@@ -36,12 +36,7 @@ class VLLMAgent:
     async def initialize(self):
         """Initialize the VLLM agent."""
         # Test connection
-        try:
-            await self.client.health()
-            print("✓ VLLM server connection established")
-        except Exception as e:
-            print(f"✗ Failed to connect to VLLM server: {e}")
-            raise
+        await self.client.health()
 
     async def chat(
         self, messages: list[dict[str, str]], model: str | None = None, **kwargs
@@ -112,15 +107,13 @@ class VLLMAgent:
         full_response = ""
         async for chunk in self.client.chat_completions_stream(request):
             full_response += chunk
-            print(chunk, end="", flush=True)
-        print()  # New line after streaming
         return full_response
 
     def to_pydantic_ai_agent(self):
         """Convert to Pydantic AI agent."""
         from pydantic_ai import Agent
 
-        from ..prompts.vllm_agent import VLLMAgentPrompts
+        from DeepResearch.src.prompts.vllm_agent import VLLMAgentPrompts
 
         agent = Agent(
             "vllm-agent",
@@ -258,7 +251,7 @@ def create_advanced_vllm_agent(
     """Create a VLLM agent with advanced configuration."""
 
     # Create VLLM configuration
-    from ..datatypes.vllm_dataclass import (
+    from DeepResearch.src.datatypes.vllm_dataclass import (
         CacheConfig,
         DeviceConfig,
         LoadConfig,
@@ -304,7 +297,6 @@ def create_advanced_vllm_agent(
 
 async def example_vllm_agent():
     """Example usage of VLLM agent."""
-    print("Creating VLLM agent...")
 
     # Create agent
     agent = create_vllm_agent(
@@ -317,31 +309,21 @@ async def example_vllm_agent():
     await agent.initialize()
 
     # Test chat
-    print("\n--- Testing Chat ---")
     messages = [{"role": "user", "content": "Hello! How are you today?"}]
-    response = await agent.chat(messages)
-    print(f"Chat response: {response}")
+    await agent.chat(messages)
 
     # Test completion
-    print("\n--- Testing Completion ---")
     prompt = "The future of AI is"
-    completion = await agent.complete(prompt)
-    print(f"Completion: {completion}")
+    await agent.complete(prompt)
 
     # Test embeddings (if embedding model is available)
     if agent.config.embedding_model:
-        print("\n--- Testing Embeddings ---")
         texts = ["Hello world", "AI is amazing"]
-        embeddings = await agent.embed(texts)
-        print(f"Generated {len(embeddings)} embeddings")
-        print(f"First embedding dimension: {len(embeddings[0])}")
-
-    print("\n✓ VLLM agent test completed!")
+        await agent.embed(texts)
 
 
 async def example_pydantic_ai_integration():
     """Example of using VLLM agent with Pydantic AI."""
-    print("Creating VLLM agent for Pydantic AI...")
 
     # Create agent
     agent = create_vllm_agent(
@@ -354,23 +336,15 @@ async def example_pydantic_ai_integration():
     # Convert to Pydantic AI agent
     pydantic_agent = agent.to_pydantic_ai_agent()
 
-    print("\n--- Testing Pydantic AI Integration ---")
-
     # Test with dependencies
-    result = await pydantic_agent.run(
+    await pydantic_agent.run(
         "Tell me about artificial intelligence", deps=agent.dependencies
     )
 
-    print(f"Pydantic AI result: {result.data}")
-
 
 if __name__ == "__main__":
-    print("Running VLLM agent examples...")
-
     # Run basic example
     asyncio.run(example_vllm_agent())
 
     # Run Pydantic AI integration example
     asyncio.run(example_pydantic_ai_integration())
-
-    print("All examples completed!")

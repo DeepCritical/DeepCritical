@@ -10,20 +10,20 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_ai import Agent, ModelRetry
 
 # Import existing DeepCritical types
-from ..datatypes.deep_agent_state import DeepAgentState
-from ..datatypes.deep_agent_types import AgentCapability, AgentMetrics
-from ..prompts.deep_agent_prompts import get_system_prompt
-from ..tools.deep_agent_middleware import (
+from DeepResearch.src.datatypes.deep_agent_state import DeepAgentState
+from DeepResearch.src.datatypes.deep_agent_types import AgentCapability, AgentMetrics
+from DeepResearch.src.prompts.deep_agent_prompts import get_system_prompt
+from DeepResearch.src.tools.deep_agent_middleware import (
     MiddlewarePipeline,
     create_default_middleware_pipeline,
 )
-from ..tools.deep_agent_tools import (
+from DeepResearch.src.tools.deep_agent_tools import (
     edit_file_tool,
     list_files_tool,
     read_file_tool,
@@ -52,7 +52,8 @@ class AgentConfig(BaseModel):
     @classmethod
     def validate_name(cls, v):
         if not v or not v.strip():
-            raise ValueError("Agent name cannot be empty")
+            msg = "Agent name cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     model_config = ConfigDict(json_schema_extra={})
@@ -226,18 +227,19 @@ class BaseDeepAgent:
                 if attempt < self.config.retry_attempts:
                     await asyncio.sleep(1.0 * (attempt + 1))  # Exponential backoff
                     continue
-                raise e
+                raise
 
             except Exception as e:
                 last_error = e
                 if attempt < self.config.retry_attempts and self.config.enable_retry:
                     await asyncio.sleep(1.0 * (attempt + 1))
                     continue
-                raise e
+                raise
 
         if last_error:
             raise last_error
-        raise RuntimeError("No agents available for execution")
+        msg = "No agents available for execution"
+        raise RuntimeError(msg)
 
     def _update_metrics(
         self, execution_time: float, success: bool, tools_used: list[str]

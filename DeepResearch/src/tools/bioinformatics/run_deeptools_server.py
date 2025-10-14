@@ -6,7 +6,6 @@ or as a standalone MCP server with Pydantic AI integration.
 """
 
 import argparse
-import asyncio
 import sys
 from pathlib import Path
 
@@ -38,33 +37,24 @@ def main():
     enable_fastmcp = not args.no_fastmcp
     server = DeeptoolsServer(enable_fastmcp=enable_fastmcp)
 
-    print(f"Starting Deeptools MCP Server in {args.mode} mode...")
-    print(f"Server info: {server.get_server_info()}")
-
     if args.mode == "fastmcp":
         if not enable_fastmcp:
-            print("Error: FastMCP mode requires FastMCP to be enabled")
             sys.exit(1)
-        print("Running FastMCP server...")
         server.run_fastmcp_server()
 
     elif args.mode == "mcp":
-        print("Running MCP server with Pydantic AI integration...")
         # For MCP mode, you would typically integrate with an MCP client
         # This is a placeholder for the actual MCP integration
-        print("MCP mode not yet implemented - use FastMCP mode instead")
+        pass
 
     elif args.mode == "test":
-        print("Running in test mode...")
         # Test some basic functionality
-        tools = server.list_tools()
-        print(f"Available tools: {tools}")
+        server.list_tools()
 
-        info = server.get_server_info()
-        print(f"Server info: {info}")
+        server.get_server_info()
 
         # Test a mock operation
-        result = server.run(
+        server.run(
             {
                 "operation": "compute_gc_bias",
                 "bamfile": "/tmp/test.bam",
@@ -73,7 +63,6 @@ def main():
                 "fragment_length": 200,
             }
         )
-        print(f"Test result: {result}")
 
 
 if __name__ == "__main__":

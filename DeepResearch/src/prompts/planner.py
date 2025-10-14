@@ -1,5 +1,3 @@
-from typing import Dict
-
 STYLE = "concise"
 MAX_DEPTH = 3
 

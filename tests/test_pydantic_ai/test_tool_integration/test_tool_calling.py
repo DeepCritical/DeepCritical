@@ -3,13 +3,10 @@ Tool calling tests for Pydantic AI framework.
 """
 
 import asyncio
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from pydantic_ai import Agent, RunContext
-
-from DeepResearch.src.agents import SearchAgent
-from tests.utils.mocks.mock_agents import MockSearchAgent
 
 
 class TestPydanticAIToolCalling:

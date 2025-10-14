@@ -5,7 +5,7 @@ This workflow demonstrates how to integrate the websearch and analytics tools
 into the existing Pydantic Graph state machine architecture.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,9 +31,9 @@ except ImportError:
             pass
 
 
-from ..datatypes.rag import Chunk, Document
-from ..tools.integrated_search_tools import IntegratedSearchTool
-from ..utils.execution_status import ExecutionStatus
+from DeepResearch.src.datatypes.rag import Chunk, Document
+from DeepResearch.src.tools.integrated_search_tools import IntegratedSearchTool
+from DeepResearch.src.utils.execution_status import ExecutionStatus
 
 
 class SearchWorkflowState(BaseModel):
@@ -108,8 +108,8 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
         """Execute web search operation using SearchAgent."""
         try:
             # Import here to avoid circular import
-            from ..agents import SearchAgent
-            from ..datatypes.search_agent import SearchAgentConfig
+            from DeepResearch.src.agents import SearchAgent
+            from DeepResearch.src.datatypes.search_agent import SearchAgentConfig
 
             # Create SearchAgent with config
             search_config = SearchAgentConfig(
@@ -119,7 +119,7 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
             search_agent = SearchAgent(search_config)
 
             # Execute search using agent
-            from ..datatypes.search_agent import SearchQuery
+            from DeepResearch.src.datatypes.search_agent import SearchQuery
 
             search_query = SearchQuery(
                 query=state.query,
@@ -326,30 +326,20 @@ async def example_search_workflow():
     """Example of using the search workflow."""
 
     # Basic search
-    result = await run_search_workflow(
+    await run_search_workflow(
         query="artificial intelligence developments 2024",
         search_type="news",
         num_results=3,
     )
 
-    print(f"Search successful: {result.get('status') == 'SUCCESS'}")
-    print(f"Documents found: {len(result.get('documents', []))}")
-    print(f"Chunks created: {len(result.get('chunks', []))}")
-    print(f"Analytics recorded: {result.get('analytics_recorded', False)}")
-    print(f"Processing time: {result.get('processing_time', 0):.2f}s")
-
     # RAG-optimized search
-    rag_result = await run_search_workflow(
+    await run_search_workflow(
         query="machine learning algorithms",
         search_type="search",
         num_results=5,
         chunk_size=1000,
         chunk_overlap=100,
     )
-
-    print(f"\nRAG search successful: {rag_result.get('status') == 'SUCCESS'}")
-    print(f"RAG documents: {len(rag_result.get('documents', []))}")
-    print(f"RAG chunks: {len(rag_result.get('chunks', []))}")
 
 
 if __name__ == "__main__":

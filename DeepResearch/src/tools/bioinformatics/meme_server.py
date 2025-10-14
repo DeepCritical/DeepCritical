@@ -7,20 +7,18 @@ of tools for motif discovery and sequence analysis, using Pydantic AI patterns a
 
 from __future__ import annotations
 
+import contextlib
 import subprocess
 import tempfile
-from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -244,79 +242,93 @@ class MEMEServer(MCPServerBase):
         # Validate parameters first (before file validation)
         # Validate mutually exclusive output directory options
         if output_dir and output_dir_overwrite:
-            raise ValueError(
-                "Options output_dir (-o) and output_dir_overwrite (-oc) are mutually exclusive."
-            )
+            msg = "Options output_dir (-o) and output_dir_overwrite (-oc) are mutually exclusive."
+            raise ValueError(msg)
 
         # Validate shuf_kmer range
         if not (1 <= shuf_kmer <= 6):
-            raise ValueError("shuf_kmer must be between 1 and 6.")
+            msg = "shuf_kmer must be between 1 and 6."
+            raise ValueError(msg)
 
         # Validate wn_sites range
         if not (0 <= wn_sites < 1):
-            raise ValueError("wn_sites must be in the range [0..1).")
+            msg = "wn_sites must be in the range [0..1)."
+            raise ValueError(msg)
 
         # Validate prior option
         if prior not in {"dirichlet", "dmix", "mega", "megap", "addone"}:
-            raise ValueError("Invalid prior option.")
+            msg = "Invalid prior option."
+            raise ValueError(msg)
 
         # Validate objfun and test compatibility
         if objfun not in {"classic", "de", "se", "cd", "ce", "nc"}:
-            raise ValueError("Invalid objfun option.")
+            msg = "Invalid objfun option."
+            raise ValueError(msg)
         if objfun not in {"de", "se"} and test != "mhg":
-            raise ValueError("Option -test only valid with objfun 'de' or 'se'.")
+            msg = "Option -test only valid with objfun 'de' or 'se'."
+            raise ValueError(msg)
 
         # Validate alphabet options exclusivity
         alph_opts = sum([bool(alph_file), dna, rna, protein])
         if alph_opts > 1:
-            raise ValueError(
-                "Only one of alph_file, dna, rna, protein options can be specified."
-            )
+            msg = "Only one of alph_file, dna, rna, protein options can be specified."
+            raise ValueError(msg)
 
         # Validate motif width options
         if w is not None:
             if w < 1:
-                raise ValueError("Motif width (-w) must be positive.")
+                msg = "Motif width (-w) must be positive."
+                raise ValueError(msg)
             if w < minw or w > maxw:
-                raise ValueError("Motif width (-w) must be between minw and maxw.")
+                msg = "Motif width (-w) must be between minw and maxw."
+                raise ValueError(msg)
 
         # Validate nmotifs
         if nmotifs < 1:
-            raise ValueError("nmotifs must be >= 1")
+            msg = "nmotifs must be >= 1"
+            raise ValueError(msg)
 
         # Validate maxsites if given
         if maxsites is not None and maxsites < 1:
-            raise ValueError("maxsites must be positive if specified.")
+            msg = "maxsites must be positive if specified."
+            raise ValueError(msg)
 
         # Validate evt positive
         if evt <= 0:
-            raise ValueError("evt must be positive.")
+            msg = "evt must be positive."
+            raise ValueError(msg)
 
         # Validate maxiter positive
         if maxiter < 1:
-            raise ValueError("maxiter must be positive.")
+            msg = "maxiter must be positive."
+            raise ValueError(msg)
 
         # Validate distance positive
         if distance <= 0:
-            raise ValueError("distance must be positive.")
+            msg = "distance must be positive."
+            raise ValueError(msg)
 
         # Validate spmap
         if spmap not in {"uni", "pam"}:
-            raise ValueError("spmap must be 'uni' or 'pam'.")
+            msg = "spmap must be 'uni' or 'pam'."
+            raise ValueError(msg)
 
         # Validate cons list if given
         if cons is not None:
             if not isinstance(cons, list):
-                raise ValueError("cons must be a list of consensus sequences.")
+                msg = "cons must be a list of consensus sequences."
+                raise ValueError(msg)
             for c in cons:
                 if not isinstance(c, str):
-                    raise ValueError("Each consensus sequence must be a string.")
+                    msg = "Each consensus sequence must be a string."
+                    raise ValueError(msg)
 
         # Validate input file
         if sequences != "stdin":
             seq_path = Path(sequences)
             if not seq_path.exists():
-                raise FileNotFoundError(f"Primary sequence file not found: {sequences}")
+                msg = f"Primary sequence file not found: {sequences}"
+                raise FileNotFoundError(msg)
 
         # Create output directory
         out_dir_path = Path(
@@ -363,9 +375,8 @@ class MEMEServer(MCPServerBase):
         if neg_control_file:
             neg_path = Path(neg_control_file)
             if not neg_path.exists():
-                raise FileNotFoundError(
-                    f"Control sequence file not found: {neg_control_file}"
-                )
+                msg = f"Control sequence file not found: {neg_control_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-neg", neg_control_file])
 
         # Shuffle kmer
@@ -400,7 +411,8 @@ class MEMEServer(MCPServerBase):
         if alph_file:
             alph_path = Path(alph_file)
             if not alph_path.exists():
-                raise FileNotFoundError(f"Alphabet file not found: {alph_file}")
+                msg = f"Alphabet file not found: {alph_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-alph", alph_file])
         elif dna:
             cmd.append("-dna")
@@ -430,13 +442,15 @@ class MEMEServer(MCPServerBase):
         # time limit
         if time_limit is not None:
             if time_limit < 1:
-                raise ValueError("time_limit must be positive if specified.")
+                msg = "time_limit must be positive if specified."
+                raise ValueError(msg)
             cmd.extend(["-time", str(time_limit)])
 
         # nsites, minsites, maxsites
         if nsites is not None:
             if nsites < 1:
-                raise ValueError("nsites must be positive if specified.")
+                msg = "nsites must be positive if specified."
+                raise ValueError(msg)
             cmd.extend(["-nsites", str(nsites)])
         else:
             if minsites != 2:
@@ -477,7 +491,8 @@ class MEMEServer(MCPServerBase):
         if bfile:
             bfile_path = Path(bfile)
             if not bfile_path.is_file():
-                raise FileNotFoundError(f"Background model file not found: {bfile}")
+                msg = f"Background model file not found: {bfile}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-bfile", bfile])
         if markov_order != 0:
             cmd.extend(["-markov_order", str(markov_order)])
@@ -486,9 +501,8 @@ class MEMEServer(MCPServerBase):
         if psp_file:
             psp_path = Path(psp_file)
             if not psp_path.exists():
-                raise FileNotFoundError(
-                    f"Position-specific priors file not found: {psp_file}"
-                )
+                msg = f"Position-specific priors file not found: {psp_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-psp", psp_file])
 
         # EM algorithm
@@ -507,15 +521,15 @@ class MEMEServer(MCPServerBase):
         if plib:
             plib_path = Path(plib)
             if not plib_path.exists():
-                raise FileNotFoundError(
-                    f"Dirichlet mixtures prior library file not found: {plib}"
-                )
+                msg = f"Dirichlet mixtures prior library file not found: {plib}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-plib", plib])
 
         # spfuzz
         if spfuzz is not None:
             if spfuzz < 0:
-                raise ValueError("spfuzz must be non-negative if specified.")
+                msg = "spfuzz must be non-negative if specified."
+                raise ValueError(msg)
             cmd.extend(["-spfuzz", str(spfuzz)])
 
         # spmap
@@ -666,31 +680,36 @@ class MEMEServer(MCPServerBase):
         """
         # Validate parameters first (before file validation)
         if thresh <= 0 or thresh > 1:
-            raise ValueError("thresh must be between 0 and 1")
+            msg = "thresh must be between 0 and 1"
+            raise ValueError(msg)
         if output_pthresh <= 0 or output_pthresh > 1:
-            raise ValueError("output_pthresh must be between 0 and 1")
+            msg = "output_pthresh must be between 0 and 1"
+            raise ValueError(msg)
         if motif_pseudo < 0:
-            raise ValueError("motif_pseudo must be >= 0")
+            msg = "motif_pseudo must be >= 0"
+            raise ValueError(msg)
         if max_stored_scores < 1:
-            raise ValueError("max_stored_scores must be >= 1")
+            msg = "max_stored_scores must be >= 1"
+            raise ValueError(msg)
         if max_seq_length is not None and max_seq_length < 1:
-            raise ValueError("max_seq_length must be positive if specified")
+            msg = "max_seq_length must be positive if specified"
+            raise ValueError(msg)
         if verbosity < 0 or verbosity > 3:
-            raise ValueError("verbosity must be between 0 and 3")
+            msg = "verbosity must be between 0 and 3"
+            raise ValueError(msg)
 
         # Validate input files
         seq_path = Path(sequences)
         motif_path = Path(motifs)
         if not seq_path.exists():
-            raise FileNotFoundError(f"Sequences file not found: {sequences}")
+            msg = f"Sequences file not found: {sequences}"
+            raise FileNotFoundError(msg)
         if not motif_path.exists():
-            raise FileNotFoundError(f"Motif file not found: {motifs}")
+            msg = f"Motif file not found: {motifs}"
+            raise FileNotFoundError(msg)
 
         # Determine output directory
-        if oc:
-            output_path = Path(oc)
-        else:
-            output_path = Path(output_dir)
+        output_path = Path(oc) if oc else Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
         # Build command
@@ -722,38 +741,39 @@ class MEMEServer(MCPServerBase):
         if bgfile:
             bg_path = Path(bgfile)
             if not bg_path.exists():
-                raise FileNotFoundError(f"Background file not found: {bgfile}")
+                msg = f"Background file not found: {bgfile}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--bgfile", bgfile])
 
         if bfile:
             bfile_path = Path(bfile)
             if not bfile_path.exists():
-                raise FileNotFoundError(f"Markov background file not found: {bfile}")
+                msg = f"Markov background file not found: {bfile}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--bfile", bfile])
 
         # Alphabet file
         if alphabet_file:
             alph_path = Path(alphabet_file)
             if not alph_path.exists():
-                raise FileNotFoundError(f"Alphabet file not found: {alphabet_file}")
+                msg = f"Alphabet file not found: {alphabet_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--alph", alphabet_file])
 
         # Additional motif file
         if motif_file:
             motif_file_path = Path(motif_file)
             if not motif_file_path.exists():
-                raise FileNotFoundError(
-                    f"Additional motif file not found: {motif_file}"
-                )
+                msg = f"Additional motif file not found: {motif_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--motif", motif_file])
 
         # Position-specific priors
         if psp_file:
             psp_path = Path(psp_file)
             if not psp_path.exists():
-                raise FileNotFoundError(
-                    f"Position-specific priors file not found: {psp_file}"
-                )
+                msg = f"Position-specific priors file not found: {psp_file}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--psp", psp_file])
 
         # Prior distribution
@@ -882,9 +902,11 @@ class MEMEServer(MCPServerBase):
         motif_path = Path(motifs)
         seq_path = Path(sequences)
         if not motif_path.exists():
-            raise FileNotFoundError(f"Motif file not found: {motifs}")
+            msg = f"Motif file not found: {motifs}"
+            raise FileNotFoundError(msg)
         if not seq_path.exists():
-            raise FileNotFoundError(f"Sequences file not found: {sequences}")
+            msg = f"Sequences file not found: {sequences}"
+            raise FileNotFoundError(msg)
 
         # Create output directory
         output_path = Path(output_dir)
@@ -892,15 +914,20 @@ class MEMEServer(MCPServerBase):
 
         # Validate parameters
         if mt <= 0 or mt > 1:
-            raise ValueError("mt must be between 0 and 1")
+            msg = "mt must be between 0 and 1"
+            raise ValueError(msg)
         if ev is not None and ev < 1:
-            raise ValueError("ev must be positive if specified")
+            msg = "ev must be positive if specified"
+            raise ValueError(msg)
         if me is not None and me < 1:
-            raise ValueError("me must be positive if specified")
+            msg = "me must be positive if specified"
+            raise ValueError(msg)
         if mv is not None and mv < 1:
-            raise ValueError("mv must be positive if specified")
+            msg = "mv must be positive if specified"
+            raise ValueError(msg)
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
 
         # Build command
         cmd = [
@@ -1035,9 +1062,11 @@ class MEMEServer(MCPServerBase):
         query_path = Path(query_motifs)
         target_path = Path(target_motifs)
         if not query_path.exists():
-            raise FileNotFoundError(f"Query motif file not found: {query_motifs}")
+            msg = f"Query motif file not found: {query_motifs}"
+            raise FileNotFoundError(msg)
         if not target_path.exists():
-            raise FileNotFoundError(f"Target motif file not found: {target_motifs}")
+            msg = f"Target motif file not found: {target_motifs}"
+            raise FileNotFoundError(msg)
 
         # Create output directory
         output_path = Path(output_dir)
@@ -1045,15 +1074,20 @@ class MEMEServer(MCPServerBase):
 
         # Validate parameters
         if thresh <= 0 or thresh > 1:
-            raise ValueError("thresh must be between 0 and 1")
+            msg = "thresh must be between 0 and 1"
+            raise ValueError(msg)
         if dist not in {"allr", "ed", "kullback", "pearson", "sandelin"}:
-            raise ValueError("Invalid distance metric")
+            msg = "Invalid distance metric"
+            raise ValueError(msg)
         if min_overlap < 1:
-            raise ValueError("min_overlap must be >= 1")
+            msg = "min_overlap must be >= 1"
+            raise ValueError(msg)
         if png not in {"small", "medium", "large"}:
-            raise ValueError("png must be small, medium, or large")
+            msg = "png must be small, medium, or large"
+            raise ValueError(msg)
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
 
         # Build command
         cmd = [
@@ -1173,9 +1207,11 @@ class MEMEServer(MCPServerBase):
         seq_path = Path(sequences)
         motif_path = Path(motifs)
         if not seq_path.exists():
-            raise FileNotFoundError(f"Sequences file not found: {sequences}")
+            msg = f"Sequences file not found: {sequences}"
+            raise FileNotFoundError(msg)
         if not motif_path.exists():
-            raise FileNotFoundError(f"Motif file not found: {motifs}")
+            msg = f"Motif file not found: {motifs}"
+            raise FileNotFoundError(msg)
 
         # Create output directory
         output_path = Path(output_dir)
@@ -1183,13 +1219,17 @@ class MEMEServer(MCPServerBase):
 
         # Validate parameters
         if score not in {"totalhits", "binomial", "hypergeometric"}:
-            raise ValueError("Invalid scoring method")
+            msg = "Invalid scoring method"
+            raise ValueError(msg)
         if flank < 1:
-            raise ValueError("flank must be positive")
+            msg = "flank must be positive"
+            raise ValueError(msg)
         if kmer < 1:
-            raise ValueError("kmer must be positive")
+            msg = "kmer must be positive"
+            raise ValueError(msg)
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
 
         # Build command
         cmd = [
@@ -1211,7 +1251,8 @@ class MEMEServer(MCPServerBase):
         if bgfile:
             bg_path = Path(bgfile)
             if not bg_path.exists():
-                raise FileNotFoundError(f"Background file not found: {bgfile}")
+                msg = f"Background file not found: {bgfile}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-bgfile", bgfile])
 
         if norc:
@@ -1309,7 +1350,8 @@ class MEMEServer(MCPServerBase):
         # Validate input files
         seq_path = Path(sequences)
         if not seq_path.exists():
-            raise FileNotFoundError(f"Primary sequences file not found: {sequences}")
+            msg = f"Primary sequences file not found: {sequences}"
+            raise FileNotFoundError(msg)
 
         # Create output directory
         output_path = Path(output_dir)
@@ -1317,19 +1359,26 @@ class MEMEServer(MCPServerBase):
 
         # Validate parameters
         if method not in {"fisher", "ranksum", "pearson", "spearman"}:
-            raise ValueError("Invalid method")
+            msg = "Invalid method"
+            raise ValueError(msg)
         if scoring not in {"avg", "totalhits", "max", "sum"}:
-            raise ValueError("Invalid scoring method")
+            msg = "Invalid scoring method"
+            raise ValueError(msg)
         if not (0 < hit_lo_fraction <= 1):
-            raise ValueError("hit_lo_fraction must be between 0 and 1")
+            msg = "hit_lo_fraction must be between 0 and 1"
+            raise ValueError(msg)
         if evalue_report_threshold <= 0:
-            raise ValueError("evalue_report_threshold must be positive")
+            msg = "evalue_report_threshold must be positive"
+            raise ValueError(msg)
         if fasta_threshold <= 0 or fasta_threshold > 1:
-            raise ValueError("fasta_threshold must be between 0 and 1")
+            msg = "fasta_threshold must be between 0 and 1"
+            raise ValueError(msg)
         if fix_partition is not None and fix_partition < 1:
-            raise ValueError("fix_partition must be positive if specified")
+            msg = "fix_partition must be positive if specified"
+            raise ValueError(msg)
         if verbose < 0:
-            raise ValueError("verbose must be >= 0")
+            msg = "verbose must be >= 0"
+            raise ValueError(msg)
 
         # Build command
         cmd = [
@@ -1356,15 +1405,15 @@ class MEMEServer(MCPServerBase):
         if motifs:
             motif_path = Path(motifs)
             if not motif_path.exists():
-                raise FileNotFoundError(f"Motif file not found: {motifs}")
+                msg = f"Motif file not found: {motifs}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--motifs", motifs])
 
         if control_sequences:
             ctrl_path = Path(control_sequences)
             if not ctrl_path.exists():
-                raise FileNotFoundError(
-                    f"Control sequences file not found: {control_sequences}"
-                )
+                msg = f"Control sequences file not found: {control_sequences}"
+                raise FileNotFoundError(msg)
             cmd.extend(["--control", control_sequences])
 
         cmd.append(sequences)
@@ -1452,9 +1501,11 @@ class MEMEServer(MCPServerBase):
         glam2_path = Path(glam2_file)
         seq_path = Path(sequences)
         if not glam2_path.exists():
-            raise FileNotFoundError(f"GLAM2 file not found: {glam2_file}")
+            msg = f"GLAM2 file not found: {glam2_file}"
+            raise FileNotFoundError(msg)
         if not seq_path.exists():
-            raise FileNotFoundError(f"Sequences file not found: {sequences}")
+            msg = f"Sequences file not found: {sequences}"
+            raise FileNotFoundError(msg)
 
         # Create output directory
         output_path = Path(output_dir)
@@ -1462,7 +1513,8 @@ class MEMEServer(MCPServerBase):
 
         # Validate parameters
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
 
         # Build command
         cmd = [
@@ -1581,10 +1633,8 @@ dependencies:
             self.container_name = container.get_wrapped_container().name
 
             # Clean up temp file
-            try:
+            with contextlib.suppress(OSError):
                 Path(env_file).unlink()
-            except OSError:
-                pass
 
             return MCPServerDeployment(
                 server_name=self.name,

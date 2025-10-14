@@ -2,12 +2,11 @@
 Multi-agent orchestration tests for Pydantic AI framework.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from DeepResearch.src.agents import PlanGenerator, ResearchAgent, ToolExecutor
+from DeepResearch.src.agents import PlanGenerator
 from tests.utils.mocks.mock_agents import (
     MockEvaluatorAgent,
     MockExecutorAgent,

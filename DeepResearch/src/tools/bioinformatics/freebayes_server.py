@@ -10,18 +10,15 @@ using Pydantic AI patterns and testcontainers deployment.
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -287,108 +284,140 @@ class FreeBayesServer(MCPServerBase):
 
         # Validate paths
         if not fasta_reference.exists():
-            raise FileNotFoundError(
-                f"Reference FASTA file not found: {fasta_reference}"
-            )
+            msg = f"Reference FASTA file not found: {fasta_reference}"
+            raise FileNotFoundError(msg)
         if bam_list is not None and not bam_list.exists():
-            raise FileNotFoundError(f"BAM list file not found: {bam_list}")
+            msg = f"BAM list file not found: {bam_list}"
+            raise FileNotFoundError(msg)
         for bam in bam_files:
             if not bam.exists():
-                raise FileNotFoundError(f"BAM file not found: {bam}")
+                msg = f"BAM file not found: {bam}"
+                raise FileNotFoundError(msg)
         if targets is not None and not targets.exists():
-            raise FileNotFoundError(f"Targets BED file not found: {targets}")
+            msg = f"Targets BED file not found: {targets}"
+            raise FileNotFoundError(msg)
         if samples is not None and not samples.exists():
-            raise FileNotFoundError(f"Samples file not found: {samples}")
+            msg = f"Samples file not found: {samples}"
+            raise FileNotFoundError(msg)
         if populations is not None and not populations.exists():
-            raise FileNotFoundError(f"Populations file not found: {populations}")
+            msg = f"Populations file not found: {populations}"
+            raise FileNotFoundError(msg)
         if cnv_map is not None and not cnv_map.exists():
-            raise FileNotFoundError(f"CNV map file not found: {cnv_map}")
+            msg = f"CNV map file not found: {cnv_map}"
+            raise FileNotFoundError(msg)
         if variant_input is not None and not variant_input.exists():
-            raise FileNotFoundError(
-                f"Variant input VCF file not found: {variant_input}"
-            )
+            msg = f"Variant input VCF file not found: {variant_input}"
+            raise FileNotFoundError(msg)
         if haplotype_basis_alleles is not None and not haplotype_basis_alleles.exists():
-            raise FileNotFoundError(
+            msg = (
                 f"Haplotype basis alleles VCF file not found: {haplotype_basis_alleles}"
             )
+            raise FileNotFoundError(msg)
         if observation_bias is not None and not observation_bias.exists():
-            raise FileNotFoundError(
-                f"Observation bias file not found: {observation_bias}"
-            )
+            msg = f"Observation bias file not found: {observation_bias}"
+            raise FileNotFoundError(msg)
         if contamination_estimates is not None and not contamination_estimates.exists():
-            raise FileNotFoundError(
-                f"Contamination estimates file not found: {contamination_estimates}"
-            )
+            msg = f"Contamination estimates file not found: {contamination_estimates}"
+            raise FileNotFoundError(msg)
 
         # Validate numeric parameters
         if pvar < 0.0 or pvar > 1.0:
-            raise ValueError("pvar must be between 0.0 and 1.0")
+            msg = "pvar must be between 0.0 and 1.0"
+            raise ValueError(msg)
         if theta < 0.0:
-            raise ValueError("theta must be non-negative")
+            msg = "theta must be non-negative"
+            raise ValueError(msg)
         if ploidy < 1:
-            raise ValueError("ploidy must be at least 1")
+            msg = "ploidy must be at least 1"
+            raise ValueError(msg)
         if use_best_n_alleles < 0:
-            raise ValueError("use_best_n_alleles must be >= 0")
+            msg = "use_best_n_alleles must be >= 0"
+            raise ValueError(msg)
         if max_complex_gap < -1:
-            raise ValueError("max_complex_gap must be >= -1")
+            msg = "max_complex_gap must be >= -1"
+            raise ValueError(msg)
         if min_repeat_size < 0:
-            raise ValueError("min_repeat_size must be >= 0")
+            msg = "min_repeat_size must be >= 0"
+            raise ValueError(msg)
         if min_repeat_entropy < 0.0:
-            raise ValueError("min_repeat_entropy must be >= 0.0")
+            msg = "min_repeat_entropy must be >= 0.0"
+            raise ValueError(msg)
         if min_mapping_quality < 0:
-            raise ValueError("min_mapping_quality must be >= 0")
+            msg = "min_mapping_quality must be >= 0"
+            raise ValueError(msg)
         if min_base_quality < 0:
-            raise ValueError("min_base_quality must be >= 0")
+            msg = "min_base_quality must be >= 0"
+            raise ValueError(msg)
         if min_supporting_allele_qsum < 0:
-            raise ValueError("min_supporting_allele_qsum must be >= 0")
+            msg = "min_supporting_allele_qsum must be >= 0"
+            raise ValueError(msg)
         if min_supporting_mapping_qsum < 0:
-            raise ValueError("min_supporting_mapping_qsum must be >= 0")
+            msg = "min_supporting_mapping_qsum must be >= 0"
+            raise ValueError(msg)
         if mismatch_base_quality_threshold < 0:
-            raise ValueError("mismatch_base_quality_threshold must be >= 0")
+            msg = "mismatch_base_quality_threshold must be >= 0"
+            raise ValueError(msg)
         if read_mismatch_limit is not None and read_mismatch_limit < 0:
-            raise ValueError("read_mismatch_limit must be >= 0")
+            msg = "read_mismatch_limit must be >= 0"
+            raise ValueError(msg)
         if not (0.0 <= read_max_mismatch_fraction <= 1.0):
-            raise ValueError("read_max_mismatch_fraction must be between 0.0 and 1.0")
+            msg = "read_max_mismatch_fraction must be between 0.0 and 1.0"
+            raise ValueError(msg)
         if read_snp_limit is not None and read_snp_limit < 0:
-            raise ValueError("read_snp_limit must be >= 0")
+            msg = "read_snp_limit must be >= 0"
+            raise ValueError(msg)
         if read_indel_limit is not None and read_indel_limit < 0:
-            raise ValueError("read_indel_limit must be >= 0")
+            msg = "read_indel_limit must be >= 0"
+            raise ValueError(msg)
         if min_alternate_fraction < 0.0 or min_alternate_fraction > 1.0:
-            raise ValueError("min_alternate_fraction must be between 0.0 and 1.0")
+            msg = "min_alternate_fraction must be between 0.0 and 1.0"
+            raise ValueError(msg)
         if min_alternate_count < 0:
-            raise ValueError("min_alternate_count must be >= 0")
+            msg = "min_alternate_count must be >= 0"
+            raise ValueError(msg)
         if min_alternate_qsum < 0:
-            raise ValueError("min_alternate_qsum must be >= 0")
+            msg = "min_alternate_qsum must be >= 0"
+            raise ValueError(msg)
         if min_alternate_total < 0:
-            raise ValueError("min_alternate_total must be >= 0")
+            msg = "min_alternate_total must be >= 0"
+            raise ValueError(msg)
         if min_coverage < 0:
-            raise ValueError("min_coverage must be >= 0")
+            msg = "min_coverage must be >= 0"
+            raise ValueError(msg)
         if limit_coverage is not None and limit_coverage < 0:
-            raise ValueError("limit_coverage must be >= 0")
+            msg = "limit_coverage must be >= 0"
+            raise ValueError(msg)
         if skip_coverage is not None and skip_coverage < 0:
-            raise ValueError("skip_coverage must be >= 0")
+            msg = "skip_coverage must be >= 0"
+            raise ValueError(msg)
         if base_quality_cap is not None and base_quality_cap < 0:
-            raise ValueError("base_quality_cap must be >= 0")
+            msg = "base_quality_cap must be >= 0"
+            raise ValueError(msg)
         if prob_contamination < 0.0 or prob_contamination > 1.0:
-            raise ValueError("prob_contamination must be between 0.0 and 1.0")
+            msg = "prob_contamination must be between 0.0 and 1.0"
+            raise ValueError(msg)
         if genotyping_max_iterations < 1:
-            raise ValueError("genotyping_max_iterations must be >= 1")
+            msg = "genotyping_max_iterations must be >= 1"
+            raise ValueError(msg)
         if genotyping_max_banddepth < 1:
-            raise ValueError("genotyping_max_banddepth must be >= 1")
+            msg = "genotyping_max_banddepth must be >= 1"
+            raise ValueError(msg)
         if posterior_integration_limits is not None:
             if len(posterior_integration_limits) != 2:
-                raise ValueError(
-                    "posterior_integration_limits must be a tuple of two integers"
-                )
+                msg = "posterior_integration_limits must be a tuple of two integers"
+                raise ValueError(msg)
             if (
                 posterior_integration_limits[0] < 0
                 or posterior_integration_limits[1] < 0
             ):
-                raise ValueError("posterior_integration_limits values must be >= 0")
+                msg = "posterior_integration_limits values must be >= 0"
+                raise ValueError(msg)
         if genotype_variant_threshold is not None and genotype_variant_threshold <= 0:
-            raise ValueError("genotype_variant_threshold must be > 0")
+            msg = "genotype_variant_threshold must be > 0"
+            raise ValueError(msg)
         if read_dependence_factor < 0.0 or read_dependence_factor > 1.0:
-            raise ValueError("read_dependence_factor must be between 0.0 and 1.0")
+            msg = "read_dependence_factor must be between 0.0 and 1.0"
+            raise ValueError(msg)
 
         # Build command line
         cmd = ["freebayes"]
@@ -428,7 +457,8 @@ class FreeBayesServer(MCPServerBase):
             cmd.append("--gvcf")
         if gvcf_chunk is not None:
             if gvcf_chunk < 1:
-                raise ValueError("gvcf_chunk must be >= 1")
+                msg = "gvcf_chunk must be >= 1"
+                raise ValueError(msg)
             cmd += ["--gvcf-chunk", str(gvcf_chunk)]
         if gvcf_dont_use_chunk is not None:
             cmd += ["-&", "true" if gvcf_dont_use_chunk else "false"]
@@ -464,10 +494,12 @@ class FreeBayesServer(MCPServerBase):
             # Validate format MQ,BQ
             parts = reference_quality.split(",")
             if len(parts) != 2:
-                raise ValueError("reference_quality must be in format MQ,BQ")
+                msg = "reference_quality must be in format MQ,BQ"
+                raise ValueError(msg)
             mq, bq = parts
             if not mq.isdigit() or not bq.isdigit():
-                raise ValueError("reference_quality MQ and BQ must be integers")
+                msg = "reference_quality MQ and BQ must be integers"
+                raise ValueError(msg)
             cmd += ["--reference-quality", reference_quality]
 
         # Allele scope
@@ -643,7 +675,8 @@ class FreeBayesServer(MCPServerBase):
             container = container.with_volume_mapping("/tmp", "/tmp", "rw")
 
             # Install conda environment and dependencies (matches mcp_freebayes pattern)
-            container = container.with_command("""
+            container = container.with_command(
+                """
                 # Install system dependencies
                 apt-get update && apt-get install -y default-jre wget curl && apt-get clean && rm -rf /var/lib/apt/lists/* && \\
                 # Install pip and uv for Python dependencies
@@ -653,7 +686,8 @@ class FreeBayesServer(MCPServerBase):
                 conda clean -a && \\
                 # Verify conda environment is ready
                 conda run -n mcp-tool python -c "import sys; print('Conda environment ready')"
-            """)
+            """
+            )
 
             # Start container and wait for environment setup
             container.start()
@@ -676,7 +710,7 @@ class FreeBayesServer(MCPServerBase):
             )
 
         except Exception as e:
-            self.logger.error(f"Failed to deploy FreeBayes server: {e}")
+            self.logger.exception("Failed to deploy FreeBayes server")
             return MCPServerDeployment(
                 server_name=self.name,
                 server_type=self.server_type,
@@ -702,6 +736,6 @@ class FreeBayesServer(MCPServerBase):
             self.container_name = None
             return True
 
-        except Exception as e:
-            self.logger.error(f"Failed to stop FreeBayes server: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop FreeBayes server")
             return False

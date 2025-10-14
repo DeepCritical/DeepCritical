@@ -14,14 +14,12 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -34,29 +32,32 @@ def _validate_func_option(func: str) -> None:
     """Validate function option format F,B,A where F in {C,L,S,G} and B,A are floats."""
     parts = func.split(",")
     if len(parts) != 3:
-        raise ValueError(
-            f"Function option must have 3 parts separated by commas: {func}"
-        )
+        msg = f"Function option must have 3 parts separated by commas: {func}"
+        raise ValueError(msg)
     F, B, A = parts
     if F not in {"C", "L", "S", "G"}:
-        raise ValueError(f"Function type must be one of C,L,S,G but got {F}")
+        msg = f"Function type must be one of C,L,S,G but got {F}"
+        raise ValueError(msg)
     try:
         float(B)
         float(A)
     except ValueError:
-        raise ValueError(f"Constant term and coefficient must be floats: {B}, {A}")
+        msg = f"Constant term and coefficient must be floats: {B}, {A}"
+        raise ValueError(msg)
 
 
 def _validate_int_pair(value: str, name: str) -> tuple[int, int]:
     """Validate a comma-separated pair of integers."""
     parts = value.split(",")
     if len(parts) != 2:
-        raise ValueError(f"{name} must be two comma-separated integers")
+        msg = f"{name} must be two comma-separated integers"
+        raise ValueError(msg)
     try:
         i1 = int(parts[0])
         i2 = int(parts[1])
     except ValueError:
-        raise ValueError(f"{name} values must be integers")
+        msg = f"{name} values must be integers"
+        raise ValueError(msg)
     return i1, i2
 
 
@@ -654,14 +655,16 @@ class HISAT2Server(MCPServerBase):
         """
         # Validate index basename path (no extension)
         if not index_basename:
-            raise ValueError("index_basename must be specified")
+            msg = "index_basename must be specified"
+            raise ValueError(msg)
 
         # Validate input files if provided
         def _check_files_csv(csv: str | None, name: str):
             if csv:
                 for f in csv.split(","):
                     if f != "-" and not Path(f).exists():
-                        raise FileNotFoundError(f"{name} file does not exist: {f}")
+                        msg = f"{name} file does not exist: {f}"
+                        raise FileNotFoundError(msg)
 
         _check_files_csv(mate1, "mate1")
         _check_files_csv(mate2, "mate2")
@@ -684,45 +687,58 @@ class HISAT2Server(MCPServerBase):
         # Validate strandness
         if rna_strandness is not None:
             if rna_strandness not in {"F", "R", "FR", "RF"}:
-                raise ValueError("rna_strandness must be one of F, R, FR, RF")
+                msg = "rna_strandness must be one of F, R, FR, RF"
+                raise ValueError(msg)
 
         # Validate paired-end orientation flags
         if sum([fr, rf, ff]) > 1:
-            raise ValueError("Only one of --fr, --rf, --ff can be specified")
+            msg = "Only one of --fr, --rf, --ff can be specified"
+            raise ValueError(msg)
 
         # Validate threads
         if threads < 1:
-            raise ValueError("threads must be >= 1")
+            msg = "threads must be >= 1"
+            raise ValueError(msg)
 
         # Validate skip, upto, trim5, trim3
         if skip < 0:
-            raise ValueError("skip must be >= 0")
+            msg = "skip must be >= 0"
+            raise ValueError(msg)
         if upto < 0:
-            raise ValueError("upto must be >= 0")
+            msg = "upto must be >= 0"
+            raise ValueError(msg)
         if trim5 < 0:
-            raise ValueError("trim5 must be >= 0")
+            msg = "trim5 must be >= 0"
+            raise ValueError(msg)
         if trim3 < 0:
-            raise ValueError("trim3 must be >= 0")
+            msg = "trim3 must be >= 0"
+            raise ValueError(msg)
 
         # Validate min_intronlen and max_intronlen
         if min_intronlen < 0:
-            raise ValueError("min_intronlen must be >= 0")
+            msg = "min_intronlen must be >= 0"
+            raise ValueError(msg)
         if max_intronlen < min_intronlen:
-            raise ValueError("max_intronlen must be >= min_intronlen")
+            msg = "max_intronlen must be >= min_intronlen"
+            raise ValueError(msg)
 
         # Validate k and max_seeds
         if k < 1:
-            raise ValueError("k must be >= 1")
+            msg = "k must be >= 1"
+            raise ValueError(msg)
         if max_seeds < 1:
-            raise ValueError("max_seeds must be >= 1")
+            msg = "max_seeds must be >= 1"
+            raise ValueError(msg)
 
         # Validate offrate if specified
         if offrate is not None and offrate < 1:
-            raise ValueError("offrate must be >= 1")
+            msg = "offrate must be >= 1"
+            raise ValueError(msg)
 
         # Validate seed
         if seed < 0:
-            raise ValueError("seed must be >= 0")
+            msg = "seed must be >= 0"
+            raise ValueError(msg)
 
         # Build command line
         cmd = ["hisat2"]
@@ -738,9 +754,8 @@ class HISAT2Server(MCPServerBase):
         elif sra_acc:
             cmd += ["--sra-acc", sra_acc]
         else:
-            raise ValueError(
-                "Must specify either mate1 and mate2, or unpaired, or sra_acc"
-            )
+            msg = "Must specify either mate1 and mate2, or unpaired, or sra_acc"
+            raise ValueError(msg)
 
         # Output SAM file
         if sam_output:

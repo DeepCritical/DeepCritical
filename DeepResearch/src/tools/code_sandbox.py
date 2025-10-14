@@ -8,7 +8,7 @@ importing the necessary data types and prompts from their respective modules.
 from __future__ import annotations
 
 # Import the actual tool implementation from datatypes
-from ..datatypes.code_sandbox import CodeSandboxTool
+from DeepResearch.src.datatypes.code_sandbox import CodeSandboxTool
 
 # Re-export for convenience
 __all__ = ["CodeSandboxTool"]

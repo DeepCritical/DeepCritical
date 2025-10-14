@@ -20,14 +20,12 @@ import asyncio
 import os
 import shutil
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -261,7 +259,7 @@ class MACS3Server(MCPServerBase):
         nomodel: bool = False,
         extsize: int = 0,
         shift: int = 0,
-        keep_dup: Union[str, int] = 1,
+        keep_dup: str | int = 1,
         broad: bool = False,
         broad_cutoff: float = 0.1,
         scale_to: str = "small",
@@ -312,16 +310,17 @@ class MACS3Server(MCPServerBase):
         """
         # Validate input files
         if not treatment or len(treatment) == 0:
-            raise ValueError(
-                "At least one treatment file must be specified in 'treatment' parameter."
-            )
+            msg = "At least one treatment file must be specified in 'treatment' parameter."
+            raise ValueError(msg)
         for f in treatment:
             if not f.exists():
-                raise FileNotFoundError(f"Treatment file not found: {f}")
+                msg = f"Treatment file not found: {f}"
+                raise FileNotFoundError(msg)
         if control:
             for f in control:
                 if not f.exists():
-                    raise FileNotFoundError(f"Control file not found: {f}")
+                    msg = f"Control file not found: {f}"
+                    raise FileNotFoundError(msg)
 
         # Validate format
         valid_formats = {
@@ -339,76 +338,92 @@ class MACS3Server(MCPServerBase):
         }
         format_upper = format.upper()
         if format_upper not in valid_formats:
-            raise ValueError(
-                f"Invalid format '{format}'. Must be one of {valid_formats}."
-            )
+            msg = f"Invalid format '{format}'. Must be one of {valid_formats}."
+            raise ValueError(msg)
 
         # Validate keep_dup
         if isinstance(keep_dup, str):
             if keep_dup not in {"auto", "all"}:
-                raise ValueError("keep_dup string value must be 'auto' or 'all'.")
+                msg = "keep_dup string value must be 'auto' or 'all'."
+                raise ValueError(msg)
         elif isinstance(keep_dup, int):
             if keep_dup < 0:
-                raise ValueError("keep_dup integer value must be non-negative.")
+                msg = "keep_dup integer value must be non-negative."
+                raise ValueError(msg)
         else:
-            raise ValueError("keep_dup must be str ('auto','all') or non-negative int.")
+            msg = "keep_dup must be str ('auto','all') or non-negative int."
+            raise ValueError(msg)
 
         # Validate scale_to
         if scale_to not in {"large", "small"}:
-            raise ValueError("scale_to must be 'large' or 'small'.")
+            msg = "scale_to must be 'large' or 'small'."
+            raise ValueError(msg)
 
         # Validate broad_cutoff only if broad is True
         if broad:
             if broad_cutoff <= 0 or broad_cutoff > 1:
-                raise ValueError(
-                    "broad_cutoff must be > 0 and <= 1 when broad is enabled."
-                )
+                msg = "broad_cutoff must be > 0 and <= 1 when broad is enabled."
+                raise ValueError(msg)
         elif broad_cutoff != 0.1:
-            raise ValueError("broad_cutoff option is only valid when broad is enabled.")
+            msg = "broad_cutoff option is only valid when broad is enabled."
+            raise ValueError(msg)
 
         # Validate shift for paired-end formats
         if format_upper in {"BAMPE", "BEDPE"} and shift != 0:
-            raise ValueError("shift must be 0 when format is BAMPE or BEDPE.")
+            msg = "shift must be 0 when format is BAMPE or BEDPE."
+            raise ValueError(msg)
 
         # Validate tsize
         if tsize < 0:
-            raise ValueError("tsize must be >= 0.")
+            msg = "tsize must be >= 0."
+            raise ValueError(msg)
 
         # Validate qvalue and pvalue
         if qvalue <= 0 or qvalue > 1:
-            raise ValueError("qvalue must be > 0 and <= 1.")
+            msg = "qvalue must be > 0 and <= 1."
+            raise ValueError(msg)
         if pvalue < 0 or pvalue > 1:
-            raise ValueError("pvalue must be >= 0 and <= 1.")
+            msg = "pvalue must be >= 0 and <= 1."
+            raise ValueError(msg)
 
         # Validate min_length and max_gap
         if min_length < 0:
-            raise ValueError("min_length must be >= 0.")
+            msg = "min_length must be >= 0."
+            raise ValueError(msg)
         if max_gap < 0:
-            raise ValueError("max_gap must be >= 0.")
+            msg = "max_gap must be >= 0."
+            raise ValueError(msg)
 
         # Validate slocal and llocal
         if slocal <= 0:
-            raise ValueError("slocal must be > 0.")
+            msg = "slocal must be > 0."
+            raise ValueError(msg)
         if llocal <= 0:
-            raise ValueError("llocal must be > 0.")
+            msg = "llocal must be > 0."
+            raise ValueError(msg)
 
         # Validate buffer_size
         if buffer_size <= 0:
-            raise ValueError("buffer_size must be > 0.")
+            msg = "buffer_size must be > 0."
+            raise ValueError(msg)
 
         # Validate max_count only if format is FRAG
         if max_count is not None:
             if format_upper != "FRAG":
-                raise ValueError("--max-count is only valid when format is FRAG.")
+                msg = "--max-count is only valid when format is FRAG."
+                raise ValueError(msg)
             if max_count < 1:
-                raise ValueError("max_count must be >= 1.")
+                msg = "max_count must be >= 1."
+                raise ValueError(msg)
 
         # Validate barcodes only if format is FRAG
         if barcodes is not None:
             if format_upper != "FRAG":
-                raise ValueError("--barcodes option is only valid when format is FRAG.")
+                msg = "--barcodes option is only valid when format is FRAG."
+                raise ValueError(msg)
             if not barcodes.exists():
-                raise FileNotFoundError(f"Barcode list file not found: {barcodes}")
+                msg = f"Barcode list file not found: {barcodes}"
+                raise FileNotFoundError(msg)
 
         # Prepare output directory
         if outdir is not None:
@@ -661,55 +676,57 @@ class MACS3Server(MCPServerBase):
         """
         # Validate input files
         if not input_files or len(input_files) == 0:
-            raise ValueError("At least one input file must be provided in input_files.")
+            msg = "At least one input file must be provided in input_files."
+            raise ValueError(msg)
         for f in input_files:
             if not f.exists():
-                raise FileNotFoundError(f"Input file does not exist: {f}")
+                msg = f"Input file does not exist: {f}"
+                raise FileNotFoundError(msg)
         # Validate format
         format_upper = format.upper()
         if format_upper not in ("BAMPE", "BEDPE"):
-            raise ValueError(f"Invalid format '{format}'. Must be 'BAMPE' or 'BEDPE'.")
+            msg = f"Invalid format '{format}'. Must be 'BAMPE' or 'BEDPE'."
+            raise ValueError(msg)
         # Validate outdir
         if not outdir.exists():
             outdir.mkdir(parents=True, exist_ok=True)
         # Validate blacklist file if provided
         if blacklist is not None and not blacklist.exists():
-            raise FileNotFoundError(f"Blacklist file does not exist: {blacklist}")
+            msg = f"Blacklist file does not exist: {blacklist}"
+            raise FileNotFoundError(msg)
         # Validate min_frag_p
         if not (0 <= min_frag_p <= 1):
-            raise ValueError(f"min_frag_p must be between 0 and 1, got {min_frag_p}")
+            msg = f"min_frag_p must be between 0 and 1, got {min_frag_p}"
+            raise ValueError(msg)
         # Validate hmm_type
         hmm_type_lower = hmm_type.lower()
         if hmm_type_lower not in ("gaussian", "poisson"):
-            raise ValueError(
-                f"hmm_type must be 'gaussian' or 'poisson', got {hmm_type}"
-            )
+            msg = f"hmm_type must be 'gaussian' or 'poisson', got {hmm_type}"
+            raise ValueError(msg)
         # Validate prescan_cutoff
         if prescan_cutoff <= 1:
-            raise ValueError(f"prescan_cutoff must be > 1, got {prescan_cutoff}")
+            msg = f"prescan_cutoff must be > 1, got {prescan_cutoff}"
+            raise ValueError(msg)
         # Validate upper and lower cutoffs
         if lower < 0:
-            raise ValueError(f"lower cutoff must be >= 0, got {lower}")
+            msg = f"lower cutoff must be >= 0, got {lower}"
+            raise ValueError(msg)
         if upper <= lower:
-            raise ValueError(
-                f"upper cutoff must be greater than lower cutoff, got upper={upper}, lower={lower}"
-            )
+            msg = f"upper cutoff must be greater than lower cutoff, got upper={upper}, lower={lower}"
+            raise ValueError(msg)
         # Validate cutoff_analysis_max and cutoff_analysis_steps
         if cutoff_analysis_max < 0:
-            raise ValueError(
-                f"cutoff_analysis_max must be >= 0, got {cutoff_analysis_max}"
-            )
+            msg = f"cutoff_analysis_max must be >= 0, got {cutoff_analysis_max}"
+            raise ValueError(msg)
         if cutoff_analysis_steps <= 0:
-            raise ValueError(
-                f"cutoff_analysis_steps must be > 0, got {cutoff_analysis_steps}"
-            )
+            msg = f"cutoff_analysis_steps must be > 0, got {cutoff_analysis_steps}"
+            raise ValueError(msg)
         # Validate training file if provided
         if training != "NA":
             training_path = Path(training)
             if not training_path.exists():
-                raise FileNotFoundError(
-                    f"Training regions file does not exist: {training_path}"
-                )
+                msg = f"Training regions file does not exist: {training_path}"
+                raise FileNotFoundError(msg)
 
         # Build command line
         cmd = ["macs3", "hmmratac"]
@@ -778,9 +795,8 @@ class MACS3Server(MCPServerBase):
 
         # Also if modelonly or model json is generated, it will be {name}_model.json in outdir
         model_json = outdir / f"{name}_model.json"
-        if modelonly or (model != "NA"):
-            if model_json.exists():
-                output_files.append(str(model_json))
+        if (modelonly or (model != "NA")) and model_json.exists():
+            output_files.append(str(model_json))
 
         return {
             "command_executed": " ".join(cmd),

@@ -44,23 +44,14 @@ The server exposes the following tool:
 
 from __future__ import annotations
 
-import asyncio
-import os
 import subprocess
-import tempfile
-from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal
 
 # Type-only imports for conditional dependencies
 if TYPE_CHECKING:
-    from ..datatypes.bioinformatics_mcp import (  # type: ignore[import]
-        MCPServerBase,  # type: ignore[import-untyped]
-    )
-    from ..datatypes.mcp import (  # type: ignore[import]
-        MCPServerConfig,
-        MCPServerType,
-    )
+    from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase
+    from DeepResearch.src.datatypes.mcp import MCPServerConfig, MCPServerType
 
 try:
     from fastmcp import FastMCP
@@ -72,8 +63,13 @@ except ImportError:
 
 # Import base classes - may not be available in all environments
 try:
-    from ..datatypes.bioinformatics_mcp import MCPServerBase  # type: ignore[import]
-    from ..datatypes.mcp import MCPServerConfig, MCPServerType  # type: ignore[import]
+    from DeepResearch.src.datatypes.bioinformatics_mcp import (
+        MCPServerBase,  # type: ignore[import]
+    )
+    from DeepResearch.src.datatypes.mcp import (  # type: ignore[import]
+        MCPServerConfig,
+        MCPServerType,
+    )
 
     BASE_CLASS_AVAILABLE = True
 except ImportError:
@@ -84,10 +80,7 @@ except ImportError:
     MCPServerType = type(None)  # type: ignore[assignment]
 
 # Create MCP server instance if FastMCP is available
-if FASTMCP_AVAILABLE:
-    mcp = FastMCP("cutadapt-server")
-else:
-    mcp = None
+mcp = FastMCP("cutadapt-server") if FASTMCP_AVAILABLE else None
 
 
 # Define the cutadapt function
@@ -123,7 +116,7 @@ def cutadapt(
     zero_cap: bool = False,
     minimum_length: str | None = None,
     maximum_length: str | None = None,
-    max_n: Union[float, None] = None,
+    max_n: float | None = None,
     max_expected_errors: float | None = None,
     discard_trimmed: bool = False,
     discard_untrimmed: bool = False,
@@ -212,41 +205,53 @@ def cutadapt(
     """
     # Validate input file
     if not input_file.exists():
-        raise FileNotFoundError(f"Input file {input_file} does not exist.")
+        msg = f"Input file {input_file} does not exist."
+        raise FileNotFoundError(msg)
     if output_file is not None:
         output_dir = output_file.parent
         if not output_dir.exists():
-            raise FileNotFoundError(f"Output directory {output_dir} does not exist.")
+            msg = f"Output directory {output_dir} does not exist."
+            raise FileNotFoundError(msg)
 
     # Validate numeric parameters
     if error_rate < 0:
-        raise ValueError("error_rate must be >= 0")
+        msg = "error_rate must be >= 0"
+        raise ValueError(msg)
     if times < 1:
-        raise ValueError("times must be >= 1")
+        msg = "times must be >= 1"
+        raise ValueError(msg)
     if overlap < 1:
-        raise ValueError("overlap must be >= 1")
+        msg = "overlap must be >= 1"
+        raise ValueError(msg)
     if quality_base not in (33, 64):
-        raise ValueError("quality_base must be 33 or 64")
+        msg = "quality_base must be 33 or 64"
+        raise ValueError(msg)
     if cores < 0:
-        raise ValueError("cores must be >= 0")
+        msg = "cores must be >= 0"
+        raise ValueError(msg)
     if nextseq_trim is not None and nextseq_trim < 0:
-        raise ValueError("nextseq_trim must be >= 0")
+        msg = "nextseq_trim must be >= 0"
+        raise ValueError(msg)
 
     # Validate cut parameters
     if cut is not None:
         if not isinstance(cut, list):
-            raise ValueError("cut must be a list of integers")
+            msg = "cut must be a list of integers"
+            raise ValueError(msg)
         for c in cut:
             if not isinstance(c, int):
-                raise ValueError("cut list elements must be integers")
+                msg = "cut list elements must be integers"
+                raise ValueError(msg)
 
     # Validate strip_suffix
     if strip_suffix is not None:
         if not isinstance(strip_suffix, list):
-            raise ValueError("strip_suffix must be a list of strings")
+            msg = "strip_suffix must be a list of strings"
+            raise ValueError(msg)
         for s in strip_suffix:
             if not isinstance(s, str):
-                raise ValueError("strip_suffix list elements must be strings")
+                msg = "strip_suffix list elements must be strings"
+                raise ValueError(msg)
 
     # Build command line
     cmd = ["cutadapt"]
@@ -396,8 +401,9 @@ def cutadapt(
 
     # JSON report
     if json_report is not None:
-        if not json_report.suffix == ".cutadapt.json":
-            raise ValueError("JSON report file must have extension '.cutadapt.json'")
+        if json_report.suffix != ".cutadapt.json":
+            msg = "JSON report file must have extension '.cutadapt.json'"
+            raise ValueError(msg)
         cmd += ["--json", str(json_report)]
 
     # Force fasta output
@@ -546,7 +552,8 @@ class CutadaptServer(MCPServerBase if BASE_CLASS_AVAILABLE else object):
         """Run a specific tool."""
         if tool_name == "cutadapt":
             return cutadapt(**kwargs)  # type: ignore[call-arg]
-        raise ValueError(f"Unknown tool: {tool_name}")
+        msg = f"Unknown tool: {tool_name}"
+        raise ValueError(msg)
 
     def run(self, params: dict):
         """Run method for compatibility with test framework."""

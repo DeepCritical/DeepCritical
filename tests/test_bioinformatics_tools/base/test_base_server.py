@@ -5,7 +5,6 @@ Base test class for MCP bioinformatics servers.
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 import pytest
 

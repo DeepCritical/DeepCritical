@@ -10,7 +10,7 @@ import logging
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, TypedDict
 
 from omegaconf import DictConfig
 
@@ -69,9 +69,8 @@ except ImportError:
     # Create a mock VLLMContainer for when testcontainers is not available
     class VLLMContainer:
         def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "testcontainers is not available. Please install it with: pip install testcontainers"
-            )
+            msg = "testcontainers is not available. Please install it with: pip install testcontainers"
+            raise ImportError(msg)
 
 
 # Set up logging for test artifacts
@@ -135,7 +134,7 @@ class VLLMPromptTester:
                             ],
                         )
                 except Exception as e:
-                    logger.warning(f"Could not load Hydra config, using defaults: {e}")
+                    logger.warning("Could not load Hydra config, using defaults: %s", e)
                     config = self._create_default_config()
 
         self.config = config
@@ -188,7 +187,10 @@ class VLLMPromptTester:
         self.max_retries_per_prompt = error_config.get("max_retries_per_prompt", 2)
 
         logger.info(
-            f"VLLMPromptTester initialized with model: {self.model_name}, VLLM available: {self.vllm_available}, Docker available: {self.docker_available}"
+            "VLLMPromptTester initialized with model: %s, VLLM available: %s, Docker available: %s",
+            self.model_name,
+            self.vllm_available,
+            self.docker_available,
         )
 
     def _check_docker_availability(self) -> bool:
@@ -265,7 +267,7 @@ class VLLMPromptTester:
                 logger.info("Docker not available, using mock mode")
             return
 
-        logger.info(f"Starting VLLM container with model: {self.model_name}")
+        logger.info("Starting VLLM container with model: %s", self.model_name)
 
         # Get container configuration from config
         model_config = self.config.get("model", {})
@@ -302,13 +304,13 @@ class VLLMPromptTester:
             self.container.with_memory_limit(resources["memory_limit"])
 
         # Start the container
-        logger.info(f"Starting container with timeout: {self.container_timeout}s")
+        logger.info("Starting container with timeout: %ds", self.container_timeout)
         self.container.start()
 
         # Wait for container to be ready with configured timeout
         self._wait_for_ready(self.container_timeout)
 
-        logger.info(f"VLLM container started at {self.container.get_connection_url()}")
+        logger.info("VLLM container started at %s", self.container.get_connection_url())
 
     def stop_container(self):
         """Stop VLLM container."""
@@ -341,24 +343,25 @@ class VLLMPromptTester:
                     logger.info("VLLM container is ready")
                     return
             except Exception as e:
-                logger.debug(f"Health check failed (attempt {retry_count + 1}): {e}")
+                logger.debug("Health check failed (attempt %d): %s", retry_count + 1, e)
                 retry_count += 1
                 if retry_count < max_retries:
                     time.sleep(interval)
 
         total_time = time.time() - start_time
-        raise TimeoutError(
-            f"VLLM container not ready after {total_time:.1f} seconds (timeout: {timeout}s)"
-        )
+        msg = f"VLLM container not ready after {total_time:.1f} seconds (timeout: {timeout}s)"
+        raise TimeoutError(msg)
 
     def _validate_prompt_structure(self, prompt: str, prompt_name: str):
         """Validate that a prompt has proper structure using configuration."""
         # Check for basic prompt structure
         if not isinstance(prompt, str):
-            raise ValueError(f"Prompt {prompt_name} is not a string")
+            msg = f"Prompt {prompt_name} is not a string"
+            raise ValueError(msg)
 
         if not prompt.strip():
-            raise ValueError(f"Prompt {prompt_name} is empty")
+            msg = f"Prompt {prompt_name} is empty"
+            raise ValueError(msg)
 
         # Check for common prompt patterns if validation is strict
         validation_config = self.config.get("testing", {}).get("validation", {})
@@ -378,14 +381,15 @@ class VLLMPromptTester:
             # Most prompts should have some form of instructions
             if not has_instructions and len(prompt) > 50:
                 logger.warning(
-                    f"Prompt {prompt_name} might be missing clear instructions"
+                    "Prompt %s might be missing clear instructions", prompt_name
                 )
 
     def _validate_response_structure(self, response: str, prompt_name: str):
         """Validate that a response has proper structure using configuration."""
         # Check for basic response structure
         if not isinstance(response, str):
-            raise ValueError(f"Response for prompt {prompt_name} is not a string")
+            msg = f"Response for prompt {prompt_name} is not a string"
+            raise ValueError(msg)
 
         validation_config = self.config.get("testing", {}).get("validation", {})
         assertions_config = self.config.get("testing", {}).get("assertions", {})
@@ -394,19 +398,23 @@ class VLLMPromptTester:
         min_length = assertions_config.get("min_response_length", 10)
         if len(response.strip()) < min_length:
             logger.warning(
-                f"Response for prompt {prompt_name} is shorter than expected: {len(response)} chars"
+                "Response for prompt %s is shorter than expected: %d chars",
+                prompt_name,
+                len(response),
             )
 
         # Check for empty response
         if not response.strip():
-            raise ValueError(f"Empty response for prompt {prompt_name}")
+            msg = f"Empty response for prompt {prompt_name}"
+            raise ValueError(msg)
 
         # Check for response quality indicators
         if validation_config.get("validate_response_content", True):
             # Check for coherent response (basic heuristic)
             if len(response.split()) < 3 and len(response) > 20:
                 logger.warning(
-                    f"Response for prompt {prompt_name} might be too short or fragmented"
+                    "Response for prompt %s might be too short or fragmented",
+                    prompt_name,
                 )
 
     def test_prompt(
@@ -433,11 +441,11 @@ class VLLMPromptTester:
         try:
             formatted_prompt = prompt.format(**dummy_data)
         except KeyError as e:
-            logger.warning(f"Missing placeholder in prompt {prompt_name}: {e}")
+            logger.warning("Missing placeholder in prompt %s: %s", prompt_name, e)
             # Use the prompt as-is if formatting fails
             formatted_prompt = prompt
 
-        logger.info(f"Testing prompt: {prompt_name}")
+        logger.info("Testing prompt: %s", prompt_name)
 
         # Get generation configuration
         generation_config = self.config.get("model", {}).get("generation", {})
@@ -469,17 +477,21 @@ class VLLMPromptTester:
             except Exception as e:
                 if attempt < self.max_retries_per_prompt and self.retry_failed_prompts:
                     logger.warning(
-                        f"Attempt {attempt + 1} failed for prompt {prompt_name}: {e}"
+                        "Attempt %d failed for prompt %s: %s",
+                        attempt + 1,
+                        prompt_name,
+                        e,
                     )
                     if self.graceful_degradation:
                         time.sleep(1)  # Brief delay before retry
                         continue
                 else:
-                    logger.error(f"All retries failed for prompt {prompt_name}: {e}")
+                    logger.exception("All retries failed for prompt %s", prompt_name)
                     raise
 
         if response is None:
-            raise RuntimeError(f"Failed to generate response for prompt {prompt_name}")
+            msg = f"Failed to generate response for prompt {prompt_name}"
+            raise RuntimeError(msg)
 
         # Parse reasoning from response
         reasoning_data = self._parse_reasoning(response)
@@ -530,7 +542,8 @@ class VLLMPromptTester:
             return self._generate_mock_response(prompt)
 
         if not self.container:
-            raise RuntimeError("VLLM container not started")
+            msg = "VLLM container not started"
+            raise RuntimeError(msg)
 
         # Default generation parameters
         gen_params = {
@@ -657,7 +670,7 @@ class VLLMPromptTester:
         with open(artifact_path, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
-        logger.info(f"Saved artifact: {artifact_path}")
+        logger.info("Saved artifact: %s", artifact_path)
 
     def batch_test_prompts(
         self, prompts: list[tuple[str, str, dict[str, Any]]], **generation_kwargs
@@ -1027,7 +1040,7 @@ def get_all_prompts_with_modules() -> list[tuple[str, str, str]]:
                             )
 
         except ImportError as e:
-            logger.warning(f"Could not import module {module_name}: {e}")
+            logger.warning("Could not import module %s: %s", module_name, e)
             continue
 
     return all_prompts

@@ -5,7 +5,6 @@ Tests for the FastMCP-based BWA bioinformatics server that integrates with Pydan
 These tests validate the MCP tool functions that can be used with Pydantic AI agents.
 """
 
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 

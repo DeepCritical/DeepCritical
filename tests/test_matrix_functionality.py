@@ -17,7 +17,6 @@ def test_script_exists():
     """Test that the VLLM test matrix script exists."""
     script_path = project_root / "scripts" / "prompt_testing" / "vllm_test_matrix.sh"
     assert script_path.exists(), f"Script not found: {script_path}"
-    print("✅ VLLM test matrix script exists")
 
 
 def test_config_files_exist():
@@ -34,7 +33,6 @@ def test_config_files_exist():
     for config_file in config_files:
         config_path = project_root / config_file
         assert config_path.exists(), f"Config file not found: {config_path}"
-        print(f"✅ Config file exists: {config_file}")
 
 
 def test_test_files_exist():
@@ -56,7 +54,6 @@ def test_test_files_exist():
     for test_file in test_files:
         test_path = project_root / test_file
         assert test_path.exists(), f"Test file not found: {test_path}"
-        print(f"✅ Test file exists: {test_file}")
 
 
 def test_prompt_modules_exist():
@@ -76,7 +73,6 @@ def test_prompt_modules_exist():
     for prompt_module in prompt_modules:
         prompt_path = project_root / prompt_module
         assert prompt_path.exists(), f"Prompt module not found: {prompt_path}"
-        print(f"✅ Prompt module exists: {prompt_module}")
 
 
 def test_hydra_config_loading():
@@ -90,11 +86,10 @@ def test_hydra_config_loading():
                 config = compose(config_name="vllm_tests")
                 assert config is not None
                 assert "vllm_tests" in config
-                print("✅ Hydra configuration loading works")
         else:
-            print("⚠️ Config directory not found, skipping Hydra test")
-    except Exception as e:
-        print(f"⚠️ Hydra test failed: {e}")
+            pass
+    except Exception:
+        pass
 
 
 def test_json_test_data():
@@ -112,15 +107,12 @@ def test_json_test_data():
         assert "test_scenarios" in data
         assert "dummy_data_variants" in data
         assert "performance_targets" in data
-        print("✅ Test data JSON is valid")
     else:
-        print("⚠️ Test data JSON not found")
+        pass
 
 
 def main():
     """Run all tests."""
-    print("🧪 Testing VLLM Test Matrix Functionality")
-    print("=" * 50)
 
     try:
         test_script_exists()
@@ -130,31 +122,9 @@ def main():
         test_hydra_config_loading()
         test_json_test_data()
 
-        print("=" * 50)
-        print("✅ All tests passed! VLLM test matrix is ready.")
-
-        print("\n📋 Usage Examples:")
-        print("  # Run full test matrix")
-        print("  ./scripts/prompt_testing/vllm_test_matrix.sh --full-matrix")
-        print()
-        print("  # Run specific configurations")
-        print("  ./scripts/prompt_testing/vllm_test_matrix.sh baseline fast quality")
-        print()
-        print("  # Test specific modules")
-        print(
-            "  ./scripts/prompt_testing/vllm_test_matrix.sh --modules agents,code_exec baseline"
-        )
-        print()
-        print("  # Use Hydra configuration")
-        print(
-            "  ./scripts/prompt_testing/vllm_test_matrix.sh --full-matrix --use-matrix-config"
-        )
-
-    except AssertionError as e:
-        print(f"❌ Test failed: {e}")
+    except AssertionError:
         sys.exit(1)
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+    except Exception:
         sys.exit(1)
 
 

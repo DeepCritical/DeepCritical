@@ -14,7 +14,7 @@ This class is designed to be extended and might go through significant changes i
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 from .chunk_dataclass import Chunk, generate_id
 

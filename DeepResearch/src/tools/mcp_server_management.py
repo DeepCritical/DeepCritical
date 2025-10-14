@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
 from pydantic_ai import RunContext
@@ -18,11 +18,9 @@ from pydantic_ai import RunContext
 # Import all required modules
 from ..datatypes.mcp import (
     MCPServerConfig,
-    MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
     MCPToolExecutionRequest,
-    MCPToolExecutionResult,
 )
 from ..tools.bioinformatics.bcftools_server import BCFtoolsServer
 from ..tools.bioinformatics.bedtools_server import BEDToolsServer

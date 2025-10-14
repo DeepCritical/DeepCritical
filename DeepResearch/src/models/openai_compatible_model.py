@@ -13,13 +13,17 @@ All configuration is managed through Hydra config files.
 from __future__ import annotations
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.ollama import OllamaProvider
 
-from ..datatypes.llm_models import GenerationConfig, LLMModelConfig, LLMProvider
+from DeepResearch.src.datatypes.llm_models import (
+    GenerationConfig,
+    LLMModelConfig,
+    LLMProvider,
+)
 
 
 class OpenAICompatibleModel(OpenAIChatModel):
@@ -64,12 +68,12 @@ class OpenAICompatibleModel(OpenAIChatModel):
             if isinstance(config, DictConfig):
                 config_dict = OmegaConf.to_container(config, resolve=True)
                 if not isinstance(config_dict, dict):
-                    raise ValueError(
-                        f"Expected dict after OmegaConf.to_container, got {type(config_dict)}"
-                    )
+                    msg = f"Expected dict after OmegaConf.to_container, got {type(config_dict)}"
+                    raise ValueError(msg)
                 config = config_dict
             elif not isinstance(config, dict):
-                raise ValueError(f"Expected dict or DictConfig, got {type(config)}")
+                msg = f"Expected dict or DictConfig, got {type(config)}"
+                raise ValueError(msg)
 
             # Build config dict with fallbacks for validation
             provider_value = config.get("provider", "custom")
@@ -86,12 +90,14 @@ class OpenAICompatibleModel(OpenAIChatModel):
             retry_delay_value = config.get("retry_delay", 1.0) or 1.0
 
             config_dict = {
-                "provider": LLMProvider(provider_value)
-                if provider_value
-                else LLMProvider.CUSTOM,
-                "model_name": str(model_name_value)
-                if model_name_value
-                else "gpt-3.5-turbo",
+                "provider": (
+                    LLMProvider(provider_value)
+                    if provider_value
+                    else LLMProvider.CUSTOM
+                ),
+                "model_name": (
+                    str(model_name_value) if model_name_value else "gpt-3.5-turbo"
+                ),
                 "base_url": str(base_url_value) if base_url_value else "",
                 "api_key": api_key or config.get("api_key") or os.getenv("LLM_API_KEY"),
                 "timeout": float(timeout_value),
@@ -103,7 +109,8 @@ class OpenAICompatibleModel(OpenAIChatModel):
             try:
                 validated_config = LLMModelConfig(**config_dict)  # type: ignore
             except Exception as e:
-                raise ValueError(f"Invalid LLM model configuration: {e}")
+                msg = f"Invalid LLM model configuration: {e}"
+                raise ValueError(msg)
 
         # Apply direct parameter overrides
         final_model_name = model_name or validated_config.model_name
@@ -119,12 +126,12 @@ class OpenAICompatibleModel(OpenAIChatModel):
             if isinstance(config, DictConfig):
                 config_dict = OmegaConf.to_container(config, resolve=True)
                 if not isinstance(config_dict, dict):
-                    raise ValueError(
-                        f"Expected dict after OmegaConf.to_container, got {type(config_dict)}"
-                    )
+                    msg = f"Expected dict after OmegaConf.to_container, got {type(config_dict)}"
+                    raise ValueError(msg)
                 config = config_dict
             elif not isinstance(config, dict):
-                raise ValueError(f"Expected dict or DictConfig, got {type(config)}")
+                msg = f"Expected dict or DictConfig, got {type(config)}"
+                raise ValueError(msg)
 
             generation_config_dict = config.get("generation", {})
 
@@ -134,11 +141,12 @@ class OpenAICompatibleModel(OpenAIChatModel):
                     # Validate only the parameters present in the config
                     validated_gen_config = GenerationConfig(**generation_config_dict)
                     # Only include parameters that were in the original config
-                    for key in generation_config_dict.keys():
+                    for key in generation_config_dict:
                         if hasattr(validated_gen_config, key):
                             settings[key] = getattr(validated_gen_config, key)
                 except Exception as e:
-                    raise ValueError(f"Invalid generation configuration: {e}")
+                    msg = f"Invalid generation configuration: {e}"
+                    raise ValueError(msg)
 
         provider = OllamaProvider(
             base_url=final_base_url,
@@ -175,9 +183,11 @@ class OpenAICompatibleModel(OpenAIChatModel):
 
         # Fallback for direct parameter usage
         if not base_url:
-            raise ValueError("base_url is required when not using config")
+            msg = "base_url is required when not using config"
+            raise ValueError(msg)
         if not model_name:
-            raise ValueError("model_name is required when not using config")
+            msg = "model_name is required when not using config"
+            raise ValueError(msg)
 
         provider = OllamaProvider(
             base_url=base_url,
@@ -214,7 +224,8 @@ class OpenAICompatibleModel(OpenAIChatModel):
 
         # Fallback for direct parameter usage
         if not base_url:
-            raise ValueError("base_url is required when not using config")
+            msg = "base_url is required when not using config"
+            raise ValueError(msg)
 
         provider = OllamaProvider(
             base_url=base_url,
@@ -248,9 +259,11 @@ class OpenAICompatibleModel(OpenAIChatModel):
 
         # Fallback for direct parameter usage
         if not base_url:
-            raise ValueError("base_url is required when not using config")
+            msg = "base_url is required when not using config"
+            raise ValueError(msg)
         if not model_name:
-            raise ValueError("model_name is required when not using config")
+            msg = "model_name is required when not using config"
+            raise ValueError(msg)
 
         provider = OllamaProvider(
             base_url=base_url,
@@ -284,9 +297,11 @@ class OpenAICompatibleModel(OpenAIChatModel):
 
         # Fallback for direct parameter usage
         if not base_url:
-            raise ValueError("base_url is required when not using config")
+            msg = "base_url is required when not using config"
+            raise ValueError(msg)
         if not model_name:
-            raise ValueError("model_name is required when not using config")
+            msg = "model_name is required when not using config"
+            raise ValueError(msg)
 
         provider = OllamaProvider(
             base_url=base_url,

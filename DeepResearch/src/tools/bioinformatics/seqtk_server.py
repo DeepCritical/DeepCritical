@@ -18,18 +18,15 @@ validation, and Pydantic AI integration for bioinformatics workflows.
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -225,7 +222,8 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "seq"]
@@ -333,14 +331,14 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate quality encoding
         valid_encodings = ["sanger", "solexa", "illumina"]
         if quality_encoding not in valid_encodings:
-            raise ValueError(
-                f"Invalid quality encoding. Must be one of: {valid_encodings}"
-            )
+            msg = f"Invalid quality encoding. Must be one of: {valid_encodings}"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "fqchk"]
@@ -428,13 +426,16 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if quality_threshold < 0 or quality_threshold > 60:
-            raise ValueError("Quality threshold must be between 0 and 60")
+            msg = "Quality threshold must be between 0 and 60"
+            raise ValueError(msg)
         if window_size < 1:
-            raise ValueError("Window size must be >= 1")
+            msg = "Window size must be >= 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "trimfq", "-q", str(quality_threshold)]
@@ -518,15 +519,19 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if window_size < 1:
-            raise ValueError("Window size must be >= 1")
+            msg = "Window size must be >= 1"
+            raise ValueError(msg)
         if step_size < 1:
-            raise ValueError("Step size must be >= 1")
+            msg = "Step size must be >= 1"
+            raise ValueError(msg)
         if min_depth < 1:
-            raise ValueError("Minimum depth must be >= 1")
+            msg = "Minimum depth must be >= 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "hety"]
@@ -621,11 +626,13 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if mutation_rate <= 0 or mutation_rate > 1:
-            raise ValueError("Mutation rate must be between 0 and 1")
+            msg = "Mutation rate must be between 0 and 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "mutfa"]
@@ -707,12 +714,14 @@ class SeqtkServer(MCPServerBase):
         """
         # Validate input files
         if not input_files:
-            raise ValueError("At least one input file must be provided")
+            msg = "At least one input file must be provided"
+            raise ValueError(msg)
 
         for input_file in input_files:
             input_path = Path(input_file)
             if not input_path.exists():
-                raise FileNotFoundError(f"Input file not found: {input_file}")
+                msg = f"Input file not found: {input_file}"
+                raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "mergefa"]
@@ -790,7 +799,8 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "dropse", input_file]
@@ -869,11 +879,13 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if start_number < 1:
-            raise ValueError("Start number must be >= 1")
+            msg = "Start number must be >= 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "rename"]
@@ -961,13 +973,16 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if min_n_length < 1:
-            raise ValueError("Minimum N length must be >= 1")
+            msg = "Minimum N length must be >= 1"
+            raise ValueError(msg)
         if gap_fraction <= 0 or gap_fraction > 1:
-            raise ValueError("Gap fraction must be between 0 and 1")
+            msg = "Gap fraction must be between 0 and 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "cutN"]
@@ -1061,9 +1076,11 @@ class SeqtkServer(MCPServerBase):
         input_path = Path(input_file)
         region_path = Path(region_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
         if not region_path.exists():
-            raise FileNotFoundError(f"Region file not found: {region_file}")
+            msg = f"Region file not found: {region_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "subseq", input_file, region_file]
@@ -1157,13 +1174,16 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Validate fraction
         if fraction <= 0:
-            raise ValueError("fraction must be > 0")
+            msg = "fraction must be > 0"
+            raise ValueError(msg)
         if fraction > 1 and fraction != int(fraction):
-            raise ValueError("fraction > 1 must be an integer")
+            msg = "fraction > 1 must be an integer"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["seqtk", "sample", "-s100"]
@@ -1247,9 +1267,11 @@ class SeqtkServer(MCPServerBase):
         read1_path = Path(read1_file)
         read2_path = Path(read2_file)
         if not read1_path.exists():
-            raise FileNotFoundError(f"Read1 file not found: {read1_file}")
+            msg = f"Read1 file not found: {read1_file}"
+            raise FileNotFoundError(msg)
         if not read2_path.exists():
-            raise FileNotFoundError(f"Read2 file not found: {read2_file}")
+            msg = f"Read2 file not found: {read2_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "mergepe", read1_file, read2_file]
@@ -1322,7 +1344,8 @@ class SeqtkServer(MCPServerBase):
         # Validate input file
         input_path = Path(input_file)
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["seqtk", "comp", input_file]
@@ -1417,7 +1440,8 @@ class SeqtkServer(MCPServerBase):
             )
 
         except Exception as e:
-            raise RuntimeError(f"Failed to deploy Seqtk server: {e}")
+            msg = f"Failed to deploy Seqtk server: {e}"
+            raise RuntimeError(msg)
 
     async def stop_with_testcontainers(self) -> bool:
         """Stop the server deployed with testcontainers."""
@@ -1434,6 +1458,6 @@ class SeqtkServer(MCPServerBase):
             self.container_name = None
             return True
 
-        except Exception as e:
-            self.logger.error(f"Failed to stop Seqtk server: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop Seqtk server")
             return False

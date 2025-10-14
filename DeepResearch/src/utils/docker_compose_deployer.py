@@ -4,23 +4,23 @@ Docker Compose Deployer for MCP Servers.
 This module provides deployment functionality for MCP servers using Docker Compose
 for production-like deployments.
 """
+
 # type: ignore  # Template file with dynamic variable substitution
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 import os
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..datatypes.bioinformatics_mcp import (
+from DeepResearch.src.datatypes.bioinformatics_mcp import (
     MCPServerConfig,
     MCPServerDeployment,
+)
+from DeepResearch.src.datatypes.mcp import (
     MCPServerStatus,
 )
 
@@ -141,7 +141,8 @@ class DockerComposeDeployer:
             result = subprocess.run(cmd, check=False, capture_output=True, text=True)
 
             if result.returncode != 0:
-                raise RuntimeError(f"Docker Compose deployment failed: {result.stderr}")
+                msg = f"Docker Compose deployment failed: {result.stderr}"
+                raise RuntimeError(msg)
 
             # Create deployment records
             for server_config in server_configs:
@@ -156,11 +157,11 @@ class DockerComposeDeployer:
                 deployments.append(deployment)
 
             logger.info(
-                f"Deployed {len(server_configs)} MCP servers using Docker Compose"
+                "Deployed %d MCP servers using Docker Compose", len(server_configs)
             )
 
         except Exception as e:
-            logger.error(f"Failed to deploy MCP servers: {e}")
+            logger.exception("Failed to deploy MCP servers")
             # Create failed deployment records
             for server_config in server_configs:
                 deployment = MCPServerDeployment(
@@ -206,15 +207,17 @@ class DockerComposeDeployer:
 
                         if result.returncode == 0:
                             deployment.status = "stopped"
-                            logger.info(f"Stopped MCP server '{server_name}'")
+                            logger.info("Stopped MCP server '%s'", server_name)
                         else:
                             logger.error(
-                                f"Failed to stop server '{server_name}': {result.stderr}"
+                                "Failed to stop server '%s': %s",
+                                server_name,
+                                result.stderr,
                             )
                             success = False
 
-                except Exception as e:
-                    logger.error(f"Error stopping server '{server_name}': {e}")
+                except Exception:
+                    logger.exception("Error stopping server '%s'", server_name)
                     success = False
 
         return success
@@ -252,15 +255,17 @@ class DockerComposeDeployer:
                             deployment.status = "stopped"
                             del self.deployments[server_name]
                             del self.compose_files[server_name]
-                            logger.info(f"Removed MCP server '{server_name}'")
+                            logger.info("Removed MCP server '%s'", server_name)
                         else:
                             logger.error(
-                                f"Failed to remove server '{server_name}': {result.stderr}"
+                                "Failed to remove server '%s': %s",
+                                server_name,
+                                result.stderr,
                             )
                             success = False
 
-                except Exception as e:
-                    logger.error(f"Error removing server '{server_name}': {e}")
+                except Exception:
+                    logger.exception("Error removing server '%s'", server_name)
                     success = False
 
         return success
@@ -332,16 +337,18 @@ CMD ["python", "{server_name}_server.py"]
 
             if result.returncode == 0:
                 logger.info(
-                    f"Built Docker image '{image_tag}' for server '{server_name}'"
+                    "Built Docker image '%s' for server '%s'", image_tag, server_name
                 )
                 return True
             logger.error(
-                f"Failed to build Docker image for server '{server_name}': {result.stderr}"
+                "Failed to build Docker image for server '%s': %s",
+                server_name,
+                result.stderr,
             )
             return False
 
-        except Exception as e:
-            logger.error(f"Error building Docker image for server '{server_name}': {e}")
+        except Exception:
+            logger.exception("Error building Docker image for server '%s'", server_name)
             return False
 
     async def create_server_package(
@@ -386,11 +393,13 @@ CMD ["python", "{server_name}_server.py"]
 
             files_created.append(str(compose_file))
 
-            logger.info(f"Created server package for '{server_name}' in {server_dir}")
+            logger.info(
+                "Created server package for '%s' in %s", server_name, server_dir
+            )
             return files_created
 
-        except Exception as e:
-            logger.error(f"Failed to create server package for '{server_name}': {e}")
+        except Exception:
+            logger.exception("Failed to create server package for '%s'", server_name)
             return files_created
 
     def _generate_server_code(self, server_name: str, server_implementation) -> str:
@@ -398,7 +407,7 @@ CMD ["python", "{server_name}_server.py"]
         module_path = server_implementation.__module__
         class_name = server_implementation.__class__.__name__
 
-        code = f'''"""
+        return f'''"""
 Auto-generated MCP server for {server_name}.
 """
 
@@ -409,8 +418,6 @@ mcp_server = {class_name}()
 
 # Template file - main execution logic is handled by deployment system
 '''
-
-        return code
 
     def _generate_requirements(self, server_name: str) -> str:
         """Generate requirements file for server deployment."""

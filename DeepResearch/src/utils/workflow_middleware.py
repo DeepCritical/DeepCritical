@@ -329,8 +329,7 @@ class AgentMiddlewarePipeline(BaseMiddlewarePipeline):
             return context.result
 
         # If no result was set (next() not called), return empty result
-        response = result_container.get("result")
-        return response
+        return result_container.get("result")
 
 
 class FunctionMiddlewarePipeline(BaseMiddlewarePipeline):
@@ -479,10 +478,11 @@ def _determine_middleware_type(middleware: Any) -> MiddlewareType:
                     param_type = MiddlewareType.CHAT
         else:
             # Not enough parameters - can't be valid middleware
-            raise ValueError(
+            msg = (
                 f"Middleware function must have at least 2 parameters (context, next), "
                 f"but {middleware.__name__} has {len(params)}"
             )
+            raise ValueError(msg)
     except Exception:
         # Signature inspection failed - continue with other checks
         pass
@@ -490,10 +490,11 @@ def _determine_middleware_type(middleware: Any) -> MiddlewareType:
     if decorator_type and param_type:
         # Both decorator and parameter type specified - they must match
         if decorator_type != param_type:
-            raise ValueError(
+            msg = (
                 f"Middleware type mismatch: decorator indicates '{decorator_type.value}' "
                 f"but parameter type indicates '{param_type.value}' for function {middleware.__name__}"
             )
+            raise ValueError(msg)
         return decorator_type
 
     if decorator_type:
@@ -505,11 +506,12 @@ def _determine_middleware_type(middleware: Any) -> MiddlewareType:
         return param_type
 
     # Neither decorator nor parameter type specified - throw exception
-    raise ValueError(
+    msg = (
         f"Cannot determine middleware type for function {middleware.__name__}. "
         f"Please either use @agent_middleware/@function_middleware/@chat_middleware decorators "
         f"or specify parameter types (AgentRunContext, FunctionInvocationContext, or ChatContext)."
     )
+    raise ValueError(msg)
 
 
 def agent_middleware(func: AgentMiddlewareCallable) -> AgentMiddlewareCallable:
@@ -738,7 +740,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
             return await original_get_response(self, messages, **kwargs)
 
         # Create pipeline and execute with middleware
-        from ..datatypes.agent_framework_options import ChatOptions
+        from DeepResearch.src.datatypes.agent_framework_options import ChatOptions
 
         # Extract chat_options or create default
         chat_options = kwargs.pop("chat_options", ChatOptions())
@@ -792,7 +794,7 @@ def use_chat_middleware(chat_client_class: type[TChatClient]) -> type[TChatClien
                 return
 
             # Create pipeline and execute with middleware
-            from ..datatypes.agent_framework_options import ChatOptions
+            from DeepResearch.src.datatypes.agent_framework_options import ChatOptions
 
             # Extract chat_options or create default
             chat_options = kwargs.pop("chat_options", ChatOptions())

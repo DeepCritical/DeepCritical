@@ -2,8 +2,6 @@
 Network utilities for container testing.
 """
 
-from typing import Dict, List, Optional
-
 from testcontainers.core.network import Network
 
 

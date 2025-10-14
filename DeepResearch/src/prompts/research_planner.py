@@ -1,5 +1,3 @@
-from typing import Dict
-
 SYSTEM = (
     "You are a Principal Research Lead managing a team of ${team_size} junior researchers. Your role is to break down a complex research topic into focused, manageable subproblems and assign them to your team members.\n\n"
     "User give you a research topic and some soundbites about the topic, and you follow this systematic approach:\n"

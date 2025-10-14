@@ -2,9 +2,7 @@
 Mock data generators for testing.
 """
 
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 
 def create_mock_fastq(file_path: Path, num_reads: int = 100) -> Path:

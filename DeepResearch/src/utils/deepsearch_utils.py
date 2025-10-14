@@ -10,9 +10,14 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, cast
 
-from ..datatypes.deepsearch import ActionType, DeepSearchSchemas, EvaluationType
+from DeepResearch.src.datatypes.deepsearch import (
+    ActionType,
+    DeepSearchSchemas,
+    EvaluationType,
+)
+
 from .execution_history import ExecutionHistory, ExecutionItem
 from .execution_status import ExecutionStatus
 
@@ -138,7 +143,7 @@ class KnowledgeManager:
     ) -> None:
         """Add knowledge with source tracking."""
         self.knowledge_base[key] = value
-        self.knowledge_sources[key] = self.knowledge_sources.get(key, []) + [source]
+        self.knowledge_sources[key] = [*self.knowledge_sources.get(key, []), source]
         self.knowledge_confidence[key] = max(
             self.knowledge_confidence.get(key, 0.0), confidence
         )
@@ -250,7 +255,8 @@ class SearchOrchestrator:
             elif action == ActionType.CODING:
                 result = await self._execute_coding(parameters)
             else:
-                raise ValueError(f"Unknown action: {action}")
+                msg = f"Unknown action: {action}"
+                raise ValueError(msg)
 
             # Update context
             self._update_context_after_action(action, result)
@@ -273,7 +279,7 @@ class SearchOrchestrator:
             return result
 
         except Exception as e:
-            logger.error(f"Search step execution failed: {e}")
+            logger.exception("Search step execution failed")
 
             # Record failed execution
             execution_item = ExecutionItem(
@@ -407,10 +413,7 @@ class SearchOrchestrator:
             return False
 
         # Check if we have sufficient search results
-        if len(self.context.search_results) >= 10:
-            return False
-
-        return True
+        return not len(self.context.search_results) >= 10
 
     def get_next_action(self) -> ActionType | None:
         """Determine the next action to take."""

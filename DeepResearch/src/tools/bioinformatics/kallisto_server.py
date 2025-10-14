@@ -18,16 +18,18 @@ Features:
 from __future__ import annotations
 
 import asyncio
-import os
+import contextlib
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, ToolSpec, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import (
+    MCPServerBase,
+    ToolSpec,
+    mcp_tool,
+)
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -192,39 +194,43 @@ class KallistoServer(MCPServerBase):
         """
         # Validate fasta_files
         if not fasta_files or len(fasta_files) == 0:
-            raise ValueError("At least one FASTA file must be provided in fasta_files.")
+            msg = "At least one FASTA file must be provided in fasta_files."
+            raise ValueError(msg)
         for f in fasta_files:
             if not f.exists():
-                raise FileNotFoundError(f"FASTA file not found: {f}")
+                msg = f"FASTA file not found: {f}"
+                raise FileNotFoundError(msg)
 
         # Validate index path parent directory exists
         if not index.parent.exists():
-            raise FileNotFoundError(
-                f"Index output directory does not exist: {index.parent}"
-            )
+            msg = f"Index output directory does not exist: {index.parent}"
+            raise FileNotFoundError(msg)
 
         # Validate kmer_size
         if kmer_size < 1 or kmer_size > 31 or kmer_size % 2 == 0:
-            raise ValueError(
-                "kmer_size must be an odd integer between 1 and 31 (inclusive)."
-            )
+            msg = "kmer_size must be an odd integer between 1 and 31 (inclusive)."
+            raise ValueError(msg)
 
         # Validate threads
         if threads < 1:
-            raise ValueError("threads must be >= 1.")
+            msg = "threads must be >= 1."
+            raise ValueError(msg)
 
         # Validate min_size if given
         if min_size is not None and min_size < 1:
-            raise ValueError("min_size must be >= 1 if specified.")
+            msg = "min_size must be >= 1 if specified."
+            raise ValueError(msg)
 
         # Validate ec_max_size if given
         if ec_max_size is not None and ec_max_size < 1:
-            raise ValueError("ec_max_size must be >= 1 if specified.")
+            msg = "ec_max_size must be >= 1 if specified."
+            raise ValueError(msg)
 
         cmd = ["kallisto", "index", "-i", str(index), "-k", str(kmer_size)]
         if d_list:
             if not d_list.exists():
-                raise FileNotFoundError(f"d_list FASTA file not found: {d_list}")
+                msg = f"d_list FASTA file not found: {d_list}"
+                raise FileNotFoundError(msg)
             cmd += ["-d", str(d_list)]
         if make_unique:
             cmd.append("--make-unique")
@@ -338,14 +344,17 @@ class KallistoServer(MCPServerBase):
         """
         # Validate fastq_files
         if not fastq_files or len(fastq_files) == 0:
-            raise ValueError("At least one FASTQ file must be provided in fastq_files.")
+            msg = "At least one FASTQ file must be provided in fastq_files."
+            raise ValueError(msg)
         for f in fastq_files:
             if not f.exists():
-                raise FileNotFoundError(f"FASTQ file not found: {f}")
+                msg = f"FASTQ file not found: {f}"
+                raise FileNotFoundError(msg)
 
         # Validate index file
         if not index.exists():
-            raise FileNotFoundError(f"Index file not found: {index}")
+            msg = f"Index file not found: {index}"
+            raise FileNotFoundError(msg)
 
         # Validate output_dir exists or create it
         if not output_dir.exists():
@@ -353,29 +362,31 @@ class KallistoServer(MCPServerBase):
 
         # Validate bootstrap_samples
         if bootstrap_samples < 0:
-            raise ValueError("bootstrap_samples must be >= 0.")
+            msg = "bootstrap_samples must be >= 0."
+            raise ValueError(msg)
 
         # Validate seed
         if seed < 0:
-            raise ValueError("seed must be >= 0.")
+            msg = "seed must be >= 0."
+            raise ValueError(msg)
 
         # Validate threads
         if threads < 1:
-            raise ValueError("threads must be >= 1.")
+            msg = "threads must be >= 1."
+            raise ValueError(msg)
 
         # Validate single-end parameters
         if single:
             if fragment_length is None or fragment_length <= 0:
-                raise ValueError(
-                    "fragment_length must be > 0 when using single-end mode."
-                )
+                msg = "fragment_length must be > 0 when using single-end mode."
+                raise ValueError(msg)
             if sd is None or sd <= 0:
-                raise ValueError("sd must be > 0 when using single-end mode.")
+                msg = "sd must be > 0 when using single-end mode."
+                raise ValueError(msg)
         # For paired-end, number of fastq files must be even
         elif len(fastq_files) % 2 != 0:
-            raise ValueError(
-                "For paired-end mode, an even number of FASTQ files must be provided."
-            )
+            msg = "For paired-end mode, an even number of FASTQ files must be provided."
+            raise ValueError(msg)
 
         cmd = [
             "kallisto",
@@ -475,19 +486,23 @@ class KallistoServer(MCPServerBase):
         - threads: Number of threads to use (default: 1).
         """
         if not tcc_matrix.exists():
-            raise FileNotFoundError(f"TCC matrix file not found: {tcc_matrix}")
+            msg = f"TCC matrix file not found: {tcc_matrix}"
+            raise FileNotFoundError(msg)
 
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
 
         if bootstrap_samples < 0:
-            raise ValueError("bootstrap_samples must be >= 0.")
+            msg = "bootstrap_samples must be >= 0."
+            raise ValueError(msg)
 
         if seed < 0:
-            raise ValueError("seed must be >= 0.")
+            msg = "seed must be >= 0."
+            raise ValueError(msg)
 
         if threads < 1:
-            raise ValueError("threads must be >= 1.")
+            msg = "threads must be >= 1."
+            raise ValueError(msg)
 
         cmd = [
             "kallisto",
@@ -601,43 +616,55 @@ class KallistoServer(MCPServerBase):
         - plaintext: Output plaintext only, not HDF5.
         """
         if not fastq_files or len(fastq_files) == 0:
-            raise ValueError("At least one FASTQ file must be provided in fastq_files.")
+            msg = "At least one FASTQ file must be provided in fastq_files."
+            raise ValueError(msg)
         for f in fastq_files:
             if not f.exists():
-                raise FileNotFoundError(f"FASTQ file not found: {f}")
+                msg = f"FASTQ file not found: {f}"
+                raise FileNotFoundError(msg)
 
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
 
         if index is None and txnames is None:
-            raise ValueError("Either index or txnames must be provided.")
+            msg = "Either index or txnames must be provided."
+            raise ValueError(msg)
 
         if index is not None and not index.exists():
-            raise FileNotFoundError(f"Index file not found: {index}")
+            msg = f"Index file not found: {index}"
+            raise FileNotFoundError(msg)
 
         if txnames is not None and not txnames.exists():
-            raise FileNotFoundError(f"txnames file not found: {txnames}")
+            msg = f"txnames file not found: {txnames}"
+            raise FileNotFoundError(msg)
 
         if ec_file is not None and not ec_file.exists():
-            raise FileNotFoundError(f"ec_file not found: {ec_file}")
+            msg = f"ec_file not found: {ec_file}"
+            raise FileNotFoundError(msg)
 
         if fragment_file is not None and not fragment_file.exists():
-            raise FileNotFoundError(f"fragment_file not found: {fragment_file}")
+            msg = f"fragment_file not found: {fragment_file}"
+            raise FileNotFoundError(msg)
 
         if genemap is not None and not genemap.exists():
-            raise FileNotFoundError(f"genemap file not found: {genemap}")
+            msg = f"genemap file not found: {genemap}"
+            raise FileNotFoundError(msg)
 
         if gtf is not None and not gtf.exists():
-            raise FileNotFoundError(f"gtf file not found: {gtf}")
+            msg = f"gtf file not found: {gtf}"
+            raise FileNotFoundError(msg)
 
         if bootstrap_samples < 0:
-            raise ValueError("bootstrap_samples must be >= 0.")
+            msg = "bootstrap_samples must be >= 0."
+            raise ValueError(msg)
 
         if seed < 0:
-            raise ValueError("seed must be >= 0.")
+            msg = "seed must be >= 0."
+            raise ValueError(msg)
 
         if threads < 1:
-            raise ValueError("threads must be >= 1.")
+            msg = "threads must be >= 1."
+            raise ValueError(msg)
 
         cmd = ["kallisto", "bus", "-o", str(output_dir), "-t", str(threads)]
 
@@ -653,15 +680,18 @@ class KallistoServer(MCPServerBase):
             cmd.append("--long")
         if platform is not None:
             if platform not in ["PacBio", "ONT"]:
-                raise ValueError("platform must be 'PacBio' or 'ONT' if specified.")
+                msg = "platform must be 'PacBio' or 'ONT' if specified."
+                raise ValueError(msg)
             cmd += ["-p", platform]
         if fragment_length is not None:
             if fragment_length <= 0:
-                raise ValueError("fragment_length must be > 0 if specified.")
+                msg = "fragment_length must be > 0 if specified."
+                raise ValueError(msg)
             cmd += ["-l", str(fragment_length)]
         if sd is not None:
             if sd <= 0:
-                raise ValueError("sd must be > 0 if specified.")
+                msg = "sd must be > 0 if specified."
+                raise ValueError(msg)
             cmd += ["-s", str(sd)]
         if genemap is not None:
             cmd += ["-g", str(genemap)]
@@ -729,7 +759,8 @@ class KallistoServer(MCPServerBase):
         - output_dir: Directory to write output to.
         """
         if not abundance_h5.exists():
-            raise FileNotFoundError(f"abundance.h5 file not found: {abundance_h5}")
+            msg = f"abundance.h5 file not found: {abundance_h5}"
+            raise FileNotFoundError(msg)
 
         if not output_dir.exists():
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -784,10 +815,12 @@ class KallistoServer(MCPServerBase):
         - threads: Number of threads to use (default: 1).
         """
         if not index_file.exists():
-            raise FileNotFoundError(f"Index file not found: {index_file}")
+            msg = f"Index file not found: {index_file}"
+            raise FileNotFoundError(msg)
 
         if threads < 1:
-            raise ValueError("threads must be >= 1.")
+            msg = "threads must be >= 1."
+            raise ValueError(msg)
 
         cmd = ["kallisto", "inspect", str(index_file)]
         if threads != 1:
@@ -899,7 +932,6 @@ class KallistoServer(MCPServerBase):
             )
 
             # Copy environment file
-            import os
             import tempfile
 
             env_content = """name: mcp-kallisto-env
@@ -933,10 +965,8 @@ dependencies:
             self.container_name = container.get_wrapped_container().name
 
             # Clean up temp file
-            try:
+            with contextlib.suppress(OSError):
                 Path(env_file).unlink()
-            except OSError:
-                pass
 
             return MCPServerDeployment(
                 server_name=self.name,

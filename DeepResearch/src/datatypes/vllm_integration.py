@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +22,9 @@ from .rag import (
     LLMProvider,
     VLLMConfig,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class VLLMEmbeddings(Embeddings):
@@ -87,9 +89,8 @@ class VLLMEmbeddings(Embeddings):
                 batch_embeddings = [item["embedding"] for item in response["data"]]
                 embeddings.extend(batch_embeddings)
             except Exception as e:
-                raise RuntimeError(
-                    f"Failed to generate embeddings for batch {i // batch_size}: {e}"
-                )
+                msg = f"Failed to generate embeddings for batch {i // batch_size}: {e}"
+                raise RuntimeError(msg)
 
         return embeddings
 
@@ -172,7 +173,8 @@ class VLLMLLMProvider(LLMProvider):
             response = await self._make_request("chat/completions", payload)
             return response["choices"][0]["message"]["content"]
         except Exception as e:
-            raise RuntimeError(f"Failed to generate text: {e}")
+            msg = f"Failed to generate text: {e}"
+            raise RuntimeError(msg)
 
     async def generate_stream(
         self, prompt: str, context: str | None = None, **kwargs: Any
@@ -229,7 +231,8 @@ class VLLMLLMProvider(LLMProvider):
                         except json.JSONDecodeError:
                             continue
         except Exception as e:
-            raise RuntimeError(f"Failed to generate streaming text: {e}")
+            msg = f"Failed to generate streaming text: {e}"
+            raise RuntimeError(msg)
 
 
 class VLLMServerConfig(BaseModel):
@@ -254,7 +257,6 @@ class VLLMServerConfig(BaseModel):
     code_revision: str | None = Field(None, description="Code revision")
     tokenizer: str | None = Field(None, description="Tokenizer name")
     tokenizer_mode: str = Field("auto", description="Tokenizer mode")
-    trust_remote_code: bool = Field(False, description="Trust remote code")
     skip_tokenizer_init: bool = Field(
         False, description="Skip tokenizer initialization"
     )

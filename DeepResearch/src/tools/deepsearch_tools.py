@@ -12,13 +12,13 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
-from ..datatypes.deepsearch import (
+from DeepResearch.src.datatypes.deepsearch import (
     MAX_QUERIES_PER_STEP,
     MAX_REFLECT_PER_STEP,
     MAX_URLS_PER_STEP,
@@ -28,6 +28,7 @@ from ..datatypes.deepsearch import (
     URLVisitResult,
     WebSearchRequest,
 )
+
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configure logging
@@ -78,7 +79,7 @@ class WebSearchTool(ToolRunner):
                 try:
                     time_filter = SearchTimeFilter(time_filter_str)
                 except ValueError:
-                    logger.warning(f"Invalid time filter: {time_filter_str}")
+                    logger.warning("Invalid time filter: %s", time_filter_str)
 
             # Create search request
             search_request = WebSearchRequest(
@@ -103,8 +104,8 @@ class WebSearchTool(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"Web search failed: {e}")
-            return ExecutionResult(success=False, error=f"Web search failed: {e!s}")
+            logger.exception("Web search failed")
+            return ExecutionResult(success=False, error=f"Web search failed: {e}")
 
     def _perform_search(self, request: WebSearchRequest) -> list[SearchResult]:
         """Perform the actual web search."""
@@ -183,10 +184,7 @@ class URLVisitTool(ToolRunner):
                 return ExecutionResult(success=False, error="No URLs provided")
 
             # Parse URLs
-            if isinstance(urls_data, str):
-                urls = json.loads(urls_data)
-            else:
-                urls = urls_data
+            urls = json.loads(urls_data) if isinstance(urls_data, str) else urls_data
 
             if not isinstance(urls, list):
                 return ExecutionResult(success=False, error="URLs must be a list")
@@ -218,7 +216,7 @@ class URLVisitTool(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"URL visit failed: {e}")
+            logger.exception("URL visit failed")
             return ExecutionResult(success=False, error=f"URL visit failed: {e!s}")
 
     def _visit_url(
@@ -379,7 +377,7 @@ class ReflectionTool(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"Reflection generation failed: {e}")
+            logger.exception("Reflection generation failed")
             return ExecutionResult(
                 success=False, error=f"Reflection generation failed: {e!s}"
             )
@@ -458,9 +456,7 @@ class ReflectionTool(ToolRunner):
             )
 
         # Limit to max reflection questions
-        questions = sorted(questions, key=lambda q: q.priority)[:MAX_REFLECT_PER_STEP]
-
-        return questions
+        return sorted(questions, key=lambda q: q.priority)[:MAX_REFLECT_PER_STEP]
 
     def _identify_knowledge_gaps(
         self,
@@ -563,7 +559,7 @@ class AnswerGeneratorTool(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"Answer generation failed: {e}")
+            logger.exception("Answer generation failed")
             return ExecutionResult(
                 success=False, error=f"Answer generation failed: {e!s}"
             )
@@ -728,7 +724,7 @@ class QueryRewriterTool(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"Query rewriting failed: {e}")
+            logger.exception("Query rewriting failed")
             return ExecutionResult(
                 success=False, error=f"Query rewriting failed: {e!s}"
             )
@@ -785,13 +781,12 @@ class QueryRewriterTool(ToolRunner):
 
     def _generate_search_strategies(self, original_query: str) -> list[str]:
         """Generate search strategies for the query."""
-        strategies = [
+        return [
             "Direct keyword search",
             "Synonym and related term search",
             "Recent developments search",
             "Academic and research sources search",
         ]
-        return strategies
 
 
 # Register all deep search tools

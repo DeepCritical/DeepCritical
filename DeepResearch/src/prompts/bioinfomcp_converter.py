@@ -5,8 +5,6 @@ This module contains prompts for converting command-line bioinformatics tools
 into MCP servers using Pydantic AI patterns.
 """
 
-from typing import Dict
-
 # System prompt for MCP server generation from BioinfoMCP
 BIOINFOMCP_SYSTEM_PROMPT = """You are an expert bioinformatics software engineer specializing in converting command-line tools into Model Context Protocol (MCP) server tools.
 Your task is to analyze bioinformatics tool documentation, and make a server based on that tool. You only need to generate the production-ready Python code with @mcp.tool decorators.

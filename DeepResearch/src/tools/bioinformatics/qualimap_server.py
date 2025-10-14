@@ -17,23 +17,18 @@ All tools support comprehensive parameter validation, error handling, and output
 
 from __future__ import annotations
 
-import asyncio
 import subprocess
-from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -181,17 +176,20 @@ class QualimapServer(MCPServerBase):
         """
         # Validate input file
         if not bam.exists() or not bam.is_file():
-            raise FileNotFoundError(f"BAM file not found: {bam}")
+            msg = f"BAM file not found: {bam}"
+            raise FileNotFoundError(msg)
 
         # Validate feature_file if provided
         if feature_file is not None:
             if not feature_file.exists() or not feature_file.is_file():
-                raise FileNotFoundError(f"Feature file not found: {feature_file}")
+                msg = f"Feature file not found: {feature_file}"
+                raise FileNotFoundError(msg)
 
         # Validate outformat
         outformat_upper = outformat.upper()
         if outformat_upper not in ("PDF", "HTML"):
-            raise ValueError("outformat must be 'PDF' or 'HTML'")
+            msg = "outformat must be 'PDF' or 'HTML'"
+            raise ValueError(msg)
 
         # Validate sequencing_protocol
         valid_protocols = {
@@ -200,11 +198,13 @@ class QualimapServer(MCPServerBase):
             "non-strand-specific",
         }
         if sequencing_protocol not in valid_protocols:
-            raise ValueError(f"sequencing_protocol must be one of {valid_protocols}")
+            msg = f"sequencing_protocol must be one of {valid_protocols}"
+            raise ValueError(msg)
 
         # Validate skip_dup_mode
         if skip_dup_mode not in (0, 1, 2):
-            raise ValueError("skip_dup_mode must be 0, 1, or 2")
+            msg = "skip_dup_mode must be 0, 1, or 2"
+            raise ValueError(msg)
 
         # Prepare output directory
         if outdir is None:
@@ -246,7 +246,8 @@ class QualimapServer(MCPServerBase):
         if genome_gc_distr is not None:
             genome_gc_distr_upper = genome_gc_distr.upper()
             if genome_gc_distr_upper not in ("HUMAN", "MOUSE"):
-                raise ValueError("genome_gc_distr must be 'HUMAN' or 'MOUSE'")
+                msg = "genome_gc_distr must be 'HUMAN' or 'MOUSE'"
+                raise ValueError(msg)
             cmd.extend(["-gd", genome_gc_distr_upper])
         if feature_file is not None:
             cmd.extend(["-gff", str(feature_file)])
@@ -323,20 +324,22 @@ class QualimapServer(MCPServerBase):
         """
         # Validate input files
         if not bam.exists() or not bam.is_file():
-            raise FileNotFoundError(f"BAM file not found: {bam}")
+            msg = f"BAM file not found: {bam}"
+            raise FileNotFoundError(msg)
         if not gtf.exists() or not gtf.is_file():
-            raise FileNotFoundError(f"GTF file not found: {gtf}")
+            msg = f"GTF file not found: {gtf}"
+            raise FileNotFoundError(msg)
 
         # Validate algorithm
         if algorithm not in ("uniquely-mapped-reads", "proportional"):
-            raise ValueError(
-                "algorithm must be 'uniquely-mapped-reads' or 'proportional'"
-            )
+            msg = "algorithm must be 'uniquely-mapped-reads' or 'proportional'"
+            raise ValueError(msg)
 
         # Validate outformat
         outformat_upper = outformat.upper()
         if outformat_upper not in ("PDF", "HTML"):
-            raise ValueError("outformat must be 'PDF' or 'HTML'")
+            msg = "outformat must be 'PDF' or 'HTML'"
+            raise ValueError(msg)
 
         # Validate sequencing_protocol
         valid_protocols = {
@@ -345,7 +348,8 @@ class QualimapServer(MCPServerBase):
             "non-strand-specific",
         }
         if sequencing_protocol not in valid_protocols:
-            raise ValueError(f"sequencing_protocol must be one of {valid_protocols}")
+            msg = f"sequencing_protocol must be one of {valid_protocols}"
+            raise ValueError(msg)
 
         # Prepare output directory
         if outdir is None:
@@ -439,11 +443,13 @@ class QualimapServer(MCPServerBase):
         - run_bamqc: If True, run BAM QC first for each sample (-r mode).
         """
         if not data.exists() or not data.is_file():
-            raise FileNotFoundError(f"Data file not found: {data}")
+            msg = f"Data file not found: {data}"
+            raise FileNotFoundError(msg)
 
         outformat_upper = outformat.upper()
         if outformat_upper not in ("PDF", "HTML"):
-            raise ValueError("outformat must be 'PDF' or 'HTML'")
+            msg = "outformat must be 'PDF' or 'HTML'"
+            raise ValueError(msg)
 
         if outdir is None:
             outdir = data.parent / (data.stem + "_multi_bamqc_qualimap")
@@ -530,16 +536,19 @@ class QualimapServer(MCPServerBase):
         - species: Use built-in info file for species: HUMAN or MOUSE.
         """
         if not data.exists() or not data.is_file():
-            raise FileNotFoundError(f"Data file not found: {data}")
+            msg = f"Data file not found: {data}"
+            raise FileNotFoundError(msg)
 
         outformat_upper = outformat.upper()
         if outformat_upper not in ("PDF", "HTML"):
-            raise ValueError("outformat must be 'PDF' or 'HTML'")
+            msg = "outformat must be 'PDF' or 'HTML'"
+            raise ValueError(msg)
 
         if species is not None:
             species_upper = species.upper()
             if species_upper not in ("HUMAN", "MOUSE"):
-                raise ValueError("species must be 'HUMAN' or 'MOUSE'")
+                msg = "species must be 'HUMAN' or 'MOUSE'"
+                raise ValueError(msg)
         else:
             species_upper = None
 
@@ -564,15 +573,18 @@ class QualimapServer(MCPServerBase):
             cmd.append("-c")
         if info is not None:
             if not info.exists() or not info.is_file():
-                raise FileNotFoundError(f"Info file not found: {info}")
+                msg = f"Info file not found: {info}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-i", str(info)])
         if threshold is not None:
             if threshold < 0:
-                raise ValueError("threshold must be non-negative")
+                msg = "threshold must be non-negative"
+                raise ValueError(msg)
             cmd.extend(["-k", str(threshold)])
         if rscriptpath is not None:
             if not rscriptpath.exists() or not rscriptpath.is_file():
-                raise FileNotFoundError(f"Rscript executable not found: {rscriptpath}")
+                msg = f"Rscript executable not found: {rscriptpath}"
+                raise FileNotFoundError(msg)
             cmd.extend(["-R", str(rscriptpath)])
         if species_upper is not None:
             cmd.extend(["-s", species_upper])
@@ -642,19 +654,24 @@ class QualimapServer(MCPServerBase):
         # Validate input files
         for f in sample:
             if not f.exists() or not f.is_file():
-                raise FileNotFoundError(f"Sample BAM file not found: {f}")
+                msg = f"Sample BAM file not found: {f}"
+                raise FileNotFoundError(msg)
         for f in control:
             if not f.exists() or not f.is_file():
-                raise FileNotFoundError(f"Control BAM file not found: {f}")
+                msg = f"Control BAM file not found: {f}"
+                raise FileNotFoundError(msg)
         if not regions.exists() or not regions.is_file():
-            raise FileNotFoundError(f"Regions file not found: {regions}")
+            msg = f"Regions file not found: {regions}"
+            raise FileNotFoundError(msg)
 
         outformat_upper = outformat.upper()
         if outformat_upper not in ("PDF", "HTML"):
-            raise ValueError("outformat must be 'PDF' or 'HTML'")
+            msg = "outformat must be 'PDF' or 'HTML'"
+            raise ValueError(msg)
 
         if viz is not None and viz not in ("heatmap", "line"):
-            raise ValueError("viz must be 'heatmap' or 'line'")
+            msg = "viz must be 'heatmap' or 'line'"
+            raise ValueError(msg)
 
         if outdir is None:
             outdir = regions.parent / "clustering_qualimap"
@@ -744,13 +761,16 @@ class QualimapServer(MCPServerBase):
         - feature_type: Value of third column of GTF considered for counting (default "exon").
         """
         if not bam.exists() or not bam.is_file():
-            raise FileNotFoundError(f"BAM file not found: {bam}")
+            msg = f"BAM file not found: {bam}"
+            raise FileNotFoundError(msg)
         if not gtf.exists() or not gtf.is_file():
-            raise FileNotFoundError(f"GTF file not found: {gtf}")
+            msg = f"GTF file not found: {gtf}"
+            raise FileNotFoundError(msg)
 
         valid_algorithms = {"uniquely-mapped-reads", "proportional"}
         if algorithm not in valid_algorithms:
-            raise ValueError(f"algorithm must be one of {valid_algorithms}")
+            msg = f"algorithm must be one of {valid_algorithms}"
+            raise ValueError(msg)
 
         valid_protocols = {
             "strand-specific-forward",
@@ -758,7 +778,8 @@ class QualimapServer(MCPServerBase):
             "non-strand-specific",
         }
         if sequencing_protocol not in valid_protocols:
-            raise ValueError(f"sequencing_protocol must be one of {valid_protocols}")
+            msg = f"sequencing_protocol must be one of {valid_protocols}"
+            raise ValueError(msg)
 
         if out is None:
             out = bam.parent / (bam.stem + ".counts")
@@ -849,7 +870,7 @@ class QualimapServer(MCPServerBase):
 
             time.sleep(5)  # Simple wait for container setup
 
-            deployment = MCPServerDeployment(
+            return MCPServerDeployment(
                 server_name=self.name,
                 server_type=self.server_type,
                 container_id=self.container_id,
@@ -859,10 +880,9 @@ class QualimapServer(MCPServerBase):
                 configuration=self.config,
             )
 
-            return deployment
-
         except Exception as e:
-            raise RuntimeError(f"Failed to deploy Qualimap server: {e}")
+            msg = f"Failed to deploy Qualimap server: {e}"
+            raise RuntimeError(msg)
 
     async def stop_with_testcontainers(self) -> bool:
         """Stop the Qualimap server deployed with testcontainers."""
@@ -876,6 +896,6 @@ class QualimapServer(MCPServerBase):
             self.container_id = None
             self.container_name = None
             return True
-        except Exception as e:
-            self.logger.error(f"Failed to stop container: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop container")
             return False

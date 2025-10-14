@@ -2,7 +2,7 @@
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from pathlib import Path
 
 import pandas as pd  # already available in HF images
 from filelock import FileLock  # pip install filelock
@@ -13,18 +13,19 @@ from filelock import FileLock  # pip install filelock
 # 3. Use ./data for local development
 DATA_DIR = os.getenv("ANALYTICS_DATA_DIR")
 if not DATA_DIR:
-    if os.path.exists("/data") and os.access("/data", os.W_OK):
+    if Path("/data").exists() and os.access("/data", os.W_OK):
         DATA_DIR = "/data"
-        print("[Analytics] Using persistent storage at /data")
     else:
         DATA_DIR = "./data"
-        print("[Analytics] Using local storage at ./data")
 
-os.makedirs(DATA_DIR, exist_ok=True)
+Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 
-COUNTS_FILE = os.path.join(DATA_DIR, "request_counts.json")
-TIMES_FILE = os.path.join(DATA_DIR, "request_times.json")
-LOCK_FILE = os.path.join(DATA_DIR, "analytics.lock")
+# Constants
+DEFAULT_NUM_RESULTS = 4
+
+COUNTS_FILE = str(Path(DATA_DIR) / "request_counts.json")
+TIMES_FILE = str(Path(DATA_DIR) / "request_times.json")
+LOCK_FILE = str(Path(DATA_DIR) / "analytics.lock")
 
 
 class AnalyticsEngine:
@@ -33,11 +34,11 @@ class AnalyticsEngine:
     def __init__(self, data_dir: str | None = None):
         """Initialize analytics engine."""
         self.data_dir = data_dir or DATA_DIR
-        self.counts_file = os.path.join(self.data_dir, "request_counts.json")
-        self.times_file = os.path.join(self.data_dir, "request_times.json")
-        self.lock_file = os.path.join(self.data_dir, "analytics.lock")
+        self.counts_file = str(Path(self.data_dir) / "request_counts.json")
+        self.times_file = str(Path(self.data_dir) / "request_times.json")
+        self.lock_file = str(Path(self.data_dir) / "analytics.lock")
 
-    def record_request(self, endpoint: str, status_code: int, duration: float):
+    def record_request(self, _endpoint: str, status_code: int, duration: float):
         """Record a request for analytics."""
         return record_request(duration, status_code)
 
@@ -51,26 +52,26 @@ class AnalyticsEngine:
 
 
 def _load() -> dict:
-    if not os.path.exists(COUNTS_FILE):
+    if not Path(COUNTS_FILE).exists():
         return {}
-    with open(COUNTS_FILE) as f:
+    with Path(COUNTS_FILE).open() as f:
         return json.load(f)
 
 
 def _save(data: dict):
-    with open(COUNTS_FILE, "w") as f:
+    with Path(COUNTS_FILE).open("w") as f:
         json.dump(data, f)
 
 
 def _load_times() -> dict:
-    if not os.path.exists(TIMES_FILE):
+    if not Path(TIMES_FILE).exists():
         return {}
-    with open(TIMES_FILE) as f:
+    with Path(TIMES_FILE).open() as f:
         return json.load(f)
 
 
 def _save_times(data: dict):
-    with open(TIMES_FILE, "w") as f:
+    with Path(TIMES_FILE).open("w") as f:
         json.dump(data, f)
 
 
@@ -85,8 +86,10 @@ async def record_request(
         data[today] = data.get(today, 0) + 1
         _save(data)
 
-        # Only record times for default requests (num_results=4)
-        if duration is not None and (num_results is None or num_results == 4):
+        # Only record times for default requests
+        if duration is not None and (
+            num_results is None or num_results == DEFAULT_NUM_RESULTS
+        ):
             times = _load_times()
             if today not in times:
                 times[today] = []

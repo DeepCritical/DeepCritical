@@ -33,7 +33,7 @@ ifeq ($(OS),Windows_NT)
 	@echo "  test-optional-win   Run all optional tests (Windows)"
 endif
 	@echo "  lint         Run linting (ruff)"
-	@echo "  format       Run formatting (ruff + black)"
+	@echo "  format       Run formatting (ruff)"
 	@echo "  type-check   Run type checking (ty)"
 	@echo "  quality      Run all quality checks"
 	@echo "  pre-commit   Run pre-commit hooks on all files (includes docs build)"
@@ -182,11 +182,9 @@ lint-fix:
 
 format:
 	uv run ruff format .
-	uv run black .
 
 format-check:
 	uv run ruff format --check .
-	uv run black --check .
 
 type-check:
 	uvx ty check

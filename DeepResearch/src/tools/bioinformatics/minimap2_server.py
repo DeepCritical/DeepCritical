@@ -9,18 +9,15 @@ using Pydantic AI patterns and testcontainers deployment.
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -155,22 +152,28 @@ class Minimap2Server(MCPServerBase):
         # Validate input files
         target_path = Path(target_fa)
         if not target_path.exists():
-            raise FileNotFoundError(f"Target FASTA file not found: {target_fa}")
+            msg = f"Target FASTA file not found: {target_fa}"
+            raise FileNotFoundError(msg)
 
         if alt_file is not None:
             alt_path = Path(alt_file)
             if not alt_path.exists():
-                raise FileNotFoundError(f"ALT contigs file not found: {alt_file}")
+                msg = f"ALT contigs file not found: {alt_file}"
+                raise FileNotFoundError(msg)
 
         # Validate numeric parameters
         if kmer_length < 1:
-            raise ValueError("kmer_length must be positive integer")
+            msg = "kmer_length must be positive integer"
+            raise ValueError(msg)
         if window_size < 1:
-            raise ValueError("window_size must be positive integer")
+            msg = "window_size must be positive integer"
+            raise ValueError(msg)
         if syncmer_size < 1:
-            raise ValueError("syncmer_size must be positive integer")
+            msg = "syncmer_size must be positive integer"
+            raise ValueError(msg)
         if not (0.0 <= alt_drop_fraction <= 1.0):
-            raise ValueError("alt_drop_fraction must be between 0 and 1")
+            msg = "alt_drop_fraction must be between 0 and 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["minimap2"]
@@ -286,21 +289,27 @@ class Minimap2Server(MCPServerBase):
         # Validate input files
         target_path = Path(target)
         if not target_path.exists():
-            raise FileNotFoundError(f"Target file not found: {target}")
+            msg = f"Target file not found: {target}"
+            raise FileNotFoundError(msg)
 
         query_path = Path(query)
         if not query_path.exists():
-            raise FileNotFoundError(f"Query file not found: {query}")
+            msg = f"Query file not found: {query}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if threads < 1:
-            raise ValueError("threads must be positive integer")
+            msg = "threads must be positive integer"
+            raise ValueError(msg)
         if max_query_length is not None and max_query_length < 1:
-            raise ValueError("max_query_length must be positive integer if set")
+            msg = "max_query_length must be positive integer if set"
+            raise ValueError(msg)
         if seed < 0:
-            raise ValueError("seed must be non-negative integer")
+            msg = "seed must be non-negative integer"
+            raise ValueError(msg)
         if cs_tag is not None and cs_tag not in ("short", "long"):
-            raise ValueError("cs_tag must be 'short', 'long', or None")
+            msg = "cs_tag must be 'short', 'long', or None"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["minimap2"]
@@ -364,10 +373,7 @@ class Minimap2Server(MCPServerBase):
                 check=True,
             )
 
-            if output is None:
-                stdout = result.stdout
-            else:
-                stdout = ""
+            stdout = result.stdout if output is None else ""
 
             output_files = []
             if output is not None and Path(output).exists():
@@ -506,42 +512,58 @@ class Minimap2Server(MCPServerBase):
         # Validate input files
         target_path = Path(target)
         if not target_path.exists():
-            raise FileNotFoundError(f"Target file not found: {target}")
+            msg = f"Target file not found: {target}"
+            raise FileNotFoundError(msg)
 
         for query_file in query:
             query_path = Path(query_file)
             if not query_path.exists():
-                raise FileNotFoundError(f"Query file not found: {query_file}")
+                msg = f"Query file not found: {query_file}"
+                raise FileNotFoundError(msg)
 
         # Validate parameters
         if threads < 1:
-            raise ValueError("threads must be >= 1")
+            msg = "threads must be >= 1"
+            raise ValueError(msg)
         if max_fragment_length <= 0:
-            raise ValueError("max_fragment_length must be > 0")
+            msg = "max_fragment_length must be > 0"
+            raise ValueError(msg)
         if min_chain_score < 0:
-            raise ValueError("min_chain_score must be >= 0")
+            msg = "min_chain_score must be >= 0"
+            raise ValueError(msg)
         if min_dp_score < 0:
-            raise ValueError("min_dp_score must be >= 0")
+            msg = "min_dp_score must be >= 0"
+            raise ValueError(msg)
         if min_matching_length < 0:
-            raise ValueError("min_matching_length must be >= 0")
+            msg = "min_matching_length must be >= 0"
+            raise ValueError(msg)
         if bandwidth <= 0:
-            raise ValueError("bandwidth must be > 0")
+            msg = "bandwidth must be > 0"
+            raise ValueError(msg)
         if zdrop_score < 0:
-            raise ValueError("zdrop_score must be >= 0")
+            msg = "zdrop_score must be >= 0"
+            raise ValueError(msg)
         if min_occ_floor < 0:
-            raise ValueError("min_occ_floor must be >= 0")
+            msg = "min_occ_floor must be >= 0"
+            raise ValueError(msg)
         if chain_gap_scale <= 0:
-            raise ValueError("chain_gap_scale must be > 0")
+            msg = "chain_gap_scale must be > 0"
+            raise ValueError(msg)
         if match_score < 0:
-            raise ValueError("match_score must be >= 0")
+            msg = "match_score must be >= 0"
+            raise ValueError(msg)
         if mismatch_penalty < 0:
-            raise ValueError("mismatch_penalty must be >= 0")
+            msg = "mismatch_penalty must be >= 0"
+            raise ValueError(msg)
         if gap_open_penalty < 0:
-            raise ValueError("gap_open_penalty must be >= 0")
+            msg = "gap_open_penalty must be >= 0"
+            raise ValueError(msg)
         if gap_extension_penalty < 0:
-            raise ValueError("gap_extension_penalty must be >= 0")
+            msg = "gap_extension_penalty must be >= 0"
+            raise ValueError(msg)
         if prune_factor < 1:
-            raise ValueError("prune_factor must be >= 1")
+            msg = "prune_factor must be >= 1"
+            raise ValueError(msg)
 
         # Build command
         cmd = [

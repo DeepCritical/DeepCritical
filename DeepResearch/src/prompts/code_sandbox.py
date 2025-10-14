@@ -1,5 +1,3 @@
-from typing import Dict
-
 SYSTEM = (
     "You are an expert JavaScript programmer. Your task is to generate JavaScript code to solve the given problem.\n\n"
     "<rules>\n"

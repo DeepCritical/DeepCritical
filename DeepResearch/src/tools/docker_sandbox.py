@@ -9,15 +9,16 @@ from dataclasses import dataclass
 from hashlib import md5
 from pathlib import Path
 from time import sleep
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar
 
-from ..datatypes.docker_sandbox_datatypes import (
+from DeepResearch.src.datatypes.docker_sandbox_datatypes import (
     DockerExecutionRequest,
     DockerExecutionResult,
     DockerSandboxConfig,
     DockerSandboxEnvironment,
     DockerSandboxPolicies,
 )
+
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Configure logging
@@ -43,7 +44,7 @@ def _get_file_name_from_content(code: str, work_dir: Path) -> str | None:
     lines = code.split("\n")
     for line in lines[:10]:  # Check first 10 lines
         line = line.strip()
-        if line.startswith("# filename:") or line.startswith("# file:"):
+        if line.startswith(("# filename:", "# file:")):
             filename = line.split(":", 1)[1].strip()
             # Basic validation - ensure it's a valid filename
             if filename and not os.path.isabs(filename) and ".." not in filename:
@@ -72,7 +73,8 @@ def _wait_for_ready(container, timeout: int = 60, stop_time: float = 0.1) -> Non
         container.reload()
         continue
     if container.status != "running":
-        raise ValueError("Container failed to start")
+        msg = "Container failed to start"
+        raise ValueError(msg)
 
 
 @dataclass
@@ -292,7 +294,7 @@ class DockerSandboxRunner(ToolRunner):
             _wait_for_ready(container, timeout=30)
 
             # Execute the command with timeout
-            logger.info(f"Executing command: {cmd}")
+            logger.info("Executing command: %s", cmd)
             result = container.get_wrapped_container().exec_run(
                 cmd,
                 workdir=sandbox_config.working_directory,
@@ -351,7 +353,7 @@ class DockerSandboxRunner(ToolRunner):
             )
 
         except Exception as e:
-            logger.error(f"Container execution failed: {e}")
+            logger.exception("Container execution failed")
             return ExecutionResult(success=False, error=str(e))
         finally:
             # Cleanup
@@ -368,7 +370,7 @@ class DockerSandboxRunner(ToolRunner):
 
                     shutil.rmtree(work_path)
                 except Exception:
-                    logger.warning(f"Failed to cleanup working directory: {work_path}")
+                    logger.warning("Failed to cleanup working directory: %s", work_path)
 
     def restart(self) -> None:
         """Restart the container (for persistent containers)."""
@@ -413,8 +415,7 @@ class DockerSandboxTool(ToolRunner):
         if language.lower() == "python":
             # Use the existing DockerSandboxRunner for Python code
             runner = DockerSandboxRunner()
-            result = runner.run({"code": code, "timeout": timeout})
-            return result
+            return runner.run({"code": code, "timeout": timeout})
         return ExecutionResult(
             success=True,
             data={

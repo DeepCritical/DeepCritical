@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 STYLE = "concise"
 MAX_STEPS = 3
 

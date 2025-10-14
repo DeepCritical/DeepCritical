@@ -9,9 +9,9 @@ and benchmarking data.
 import argparse
 import json
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
 def parse_junit_xml(xml_file: Path) -> dict[str, Any]:
@@ -54,10 +54,10 @@ def parse_junit_xml(xml_file: Path) -> dict[str, Any]:
         "total_errors": total_errors,
         "total_time": total_time,
         "success_rate": (
-            (total_tests - total_failures - total_errors) / total_tests * 100
-        )
-        if total_tests > 0
-        else 0,
+            ((total_tests - total_failures - total_errors) / total_tests * 100)
+            if total_tests > 0
+            else 0
+        ),
     }
 
 
@@ -66,19 +66,18 @@ def parse_benchmark_json(json_file: Path) -> dict[str, Any]:
     if not json_file.exists():
         return {"benchmarks": [], "summary": {}}
 
-    with open(json_file) as f:
+    with json_file.open() as f:
         data = json.load(f)
 
-    benchmarks = []
-    for benchmark in data.get("benchmarks", []):
-        benchmarks.append(
-            {
-                "name": benchmark.get("name", "unknown"),
-                "fullname": benchmark.get("fullname", ""),
-                "stats": benchmark.get("stats", {}),
-                "group": benchmark.get("group", "default"),
-            }
-        )
+    benchmarks = [
+        {
+            "name": benchmark.get("name", "unknown"),
+            "fullname": benchmark.get("fullname", ""),
+            "stats": benchmark.get("stats", {}),
+            "group": benchmark.get("group", "default"),
+        }
+        for benchmark in data.get("benchmarks", [])
+    ]
 
     return {
         "benchmarks": benchmarks,
@@ -116,7 +115,7 @@ def generate_html_report(
 <body>
     <div class="header">
         <h1>DeepCritical Test Report</h1>
-        <p>Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+        <p>Generated on: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")}</p>
     </div>
 
     <div class="summary">
@@ -174,7 +173,7 @@ def generate_html_report(
 </html>
 """
 
-    with open(output_file, "w") as f:
+    with output_file.open("w") as f:
         f.write(html)
 
 
@@ -210,10 +209,6 @@ def main():
 
     # Generate HTML report
     generate_html_report(junit_data, benchmark_data, args.output)
-
-    print(f"Test report generated: {args.output}")
-    print(f"Success rate: {junit_data['success_rate']:.1f}%")
-    print(f"Total time: {junit_data['total_time']:.2f}s")
 
 
 if __name__ == "__main__":

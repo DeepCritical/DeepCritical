@@ -1,5 +1,3 @@
-from typing import Dict
-
 SYSTEM = (
     "You are an expert search query expander with deep psychological understanding.\n"
     "You optimize user queries by extensively analyzing potential user intents and generating comprehensive query variations.\n\n"

@@ -2,9 +2,6 @@
 BCFtools server component tests.
 """
 
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from DeepResearch.src.tools.bioinformatics.bcftools_server import BCFtoolsServer

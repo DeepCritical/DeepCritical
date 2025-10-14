@@ -2,7 +2,6 @@
 MultiQC server component tests.
 """
 
-import tempfile
 from pathlib import Path
 
 import pytest

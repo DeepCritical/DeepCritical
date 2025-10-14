@@ -10,9 +10,20 @@ from __future__ import annotations
 
 import inspect
 import logging
-from collections.abc import Callable
 from types import UnionType
-from typing import Any, Generic, TypeVar, Union, cast, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    TypeVar,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -99,28 +110,31 @@ def validate_workflow_context_annotation(
 ) -> tuple[list[type[Any]], list[type[Any]]]:
     """Validate a WorkflowContext annotation and return inferred types."""
     if annotation == inspect.Parameter.empty:
-        raise ValueError(
+        msg = (
             f"{context_description} {parameter_name} must have a WorkflowContext, "
             f"WorkflowContext[T] or WorkflowContext[T, U] type annotation, "
             f"where T is output message type and U is workflow output type"
         )
+        raise ValueError(msg)
 
     if not _is_workflow_context_type(annotation):
-        raise ValueError(
+        msg = (
             f"{context_description} {parameter_name} must be annotated as "
             f"WorkflowContext, WorkflowContext[T], or WorkflowContext[T, U], "
             f"got {annotation}"
         )
+        raise ValueError(msg)
 
     # Validate type arguments for WorkflowContext[T] or WorkflowContext[T, U]
     type_args = get_args(annotation)
 
     if len(type_args) > 2:
-        raise ValueError(
+        msg = (
             f"{context_description} {parameter_name} must have at most 2 type arguments, "
             "WorkflowContext, WorkflowContext[T], or WorkflowContext[T, U], "
             f"got {len(type_args)} arguments"
         )
+        raise ValueError(msg)
 
     if type_args:
         # Helper function to check if a value is a valid type annotation
@@ -143,18 +157,20 @@ def validate_workflow_context_annotation(
                     m for m in union_members if not _is_type_like(m) and m is not Any
                 ]
                 if invalid_members:
-                    raise ValueError(
+                    msg = (
                         f"{context_description} {parameter_name} {param_description} "
                         f"contains invalid type entries: {invalid_members}. "
                         f"Use proper types or typing generics"
                     )
+                    raise ValueError(msg)
             # Check if it's a valid type
             elif not _is_type_like(type_arg):
-                raise ValueError(
+                msg = (
                     f"{context_description} {parameter_name} {param_description} "
                     f"contains invalid type entry: {type_arg}. "
                     f"Use proper types or typing generics"
                 )
+                raise ValueError(msg)
 
     return infer_output_types_from_ctx_annotation(annotation)
 
@@ -178,9 +194,8 @@ def validate_function_signature(
         param_description = "(self, message: T, ctx: WorkflowContext[U])"
 
     if len(params) not in expected_counts:
-        raise ValueError(
-            f"{context_description} {getattr(func, '__name__', 'function')} must have {param_description}. Got {len(params)} parameters."
-        )
+        msg = f"{context_description} {getattr(func, '__name__', 'function')} must have {param_description}. Got {len(params)} parameters."
+        raise ValueError(msg)
 
     # Extract message parameter (index 0 for functions, index 1 for methods)
     message_param_idx = 0 if context_description.startswith("Function") else 1
@@ -188,9 +203,8 @@ def validate_function_signature(
 
     # Check message parameter has type annotation
     if message_param.annotation == inspect.Parameter.empty:
-        raise ValueError(
-            f"{context_description} {getattr(func, '__name__', 'function')} must have a type annotation for the message parameter"
-        )
+        msg = f"{context_description} {getattr(func, '__name__', 'function')} must have a type annotation for the message parameter"
+        raise ValueError(msg)
 
     message_type = message_param.annotation
 
@@ -205,9 +219,8 @@ def validate_function_signature(
     else:
         # No context parameter (only valid for function executors)
         if not context_description.startswith("Function"):
-            raise ValueError(
-                f"{context_description} {getattr(func, '__name__', 'function')} must have a WorkflowContext parameter"
-            )
+            msg = f"{context_description} {getattr(func, '__name__', 'function')} must have a WorkflowContext parameter"
+            raise ValueError(msg)
         output_types, workflow_output_types = [], []
         ctx_annotation = None
 
@@ -237,9 +250,8 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
         self._source_span_ids = source_span_ids or []
 
         if not self._source_executor_ids:
-            raise ValueError(
-                "source_executor_ids cannot be empty. At least one source executor ID is required."
-            )
+            msg = "source_executor_ids cannot be empty. At least one source executor ID is required."
+            raise ValueError(msg)
 
     async def send_message(self, message: T_Out, target_id: str | None = None) -> None:
         """Send a message to the workflow context."""
@@ -265,10 +277,11 @@ class WorkflowContext(Generic[T_Out, T_W_Out]):
     def get_source_executor_id(self) -> str:
         """Get the ID of the source executor that sent the message to this executor."""
         if len(self._source_executor_ids) > 1:
-            raise RuntimeError(
+            msg = (
                 "Cannot get source executor ID when there are multiple source executors. "
                 "Access the full list via the source_executor_ids property instead."
             )
+            raise RuntimeError(msg)
         return self._source_executor_ids[0]
 
     @property

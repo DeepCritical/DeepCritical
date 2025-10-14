@@ -50,16 +50,13 @@ The server exposes the following tools:
 
 from __future__ import annotations
 
-import os
 import subprocess
 from pathlib import Path
-from typing import Any, Optional
 
 try:
     from fastmcp import FastMCP
 except ImportError:
     # Fallback for environments without fastmcp
-    print("Warning: fastmcp not available, MCP server functionality limited")
     _FastMCP = None
 
 # Create MCP server instance
@@ -84,9 +81,11 @@ def bwa_index(
     -a STR: Algorithm for constructing BWT index. Options: 'is' (default), 'bwtsw'.
     """
     if not in_db_fasta.exists():
-        raise FileNotFoundError(f"Input fasta file {in_db_fasta} does not exist")
+        msg = f"Input fasta file {in_db_fasta} does not exist"
+        raise FileNotFoundError(msg)
     if a not in ("is", "bwtsw"):
-        raise ValueError("Parameter 'a' must be either 'is' or 'bwtsw'")
+        msg = "Parameter 'a' must be either 'is' or 'bwtsw'"
+        raise ValueError(msg)
 
     cmd = ["bwa", "index"]
     if p:
@@ -150,23 +149,32 @@ def bwa_mem(
     Parameters correspond to bwa mem options.
     """
     if not db_prefix.exists():
-        raise FileNotFoundError(f"Database prefix {db_prefix} does not exist")
+        msg = f"Database prefix {db_prefix} does not exist"
+        raise FileNotFoundError(msg)
     if not reads_fq.exists():
-        raise FileNotFoundError(f"Reads file {reads_fq} does not exist")
+        msg = f"Reads file {reads_fq} does not exist"
+        raise FileNotFoundError(msg)
     if mates_fq and not mates_fq.exists():
-        raise FileNotFoundError(f"Mates file {mates_fq} does not exist")
+        msg = f"Mates file {mates_fq} does not exist"
+        raise FileNotFoundError(msg)
     if t < 1:
-        raise ValueError("Number of threads 't' must be >= 1")
+        msg = "Number of threads 't' must be >= 1"
+        raise ValueError(msg)
     if k < 1:
-        raise ValueError("Minimum seed length 'k' must be >= 1")
+        msg = "Minimum seed length 'k' must be >= 1"
+        raise ValueError(msg)
     if w < 1:
-        raise ValueError("Band width 'w' must be >= 1")
+        msg = "Band width 'w' must be >= 1"
+        raise ValueError(msg)
     if d < 0:
-        raise ValueError("Off-diagonal X-dropoff 'd' must be >= 0")
+        msg = "Off-diagonal X-dropoff 'd' must be >= 0"
+        raise ValueError(msg)
     if r <= 0:
-        raise ValueError("Trigger re-seeding ratio 'r' must be > 0")
+        msg = "Trigger re-seeding ratio 'r' must be > 0"
+        raise ValueError(msg)
     if c_value < 0:
-        raise ValueError("Discard MEM occurrence 'c_value' must be >= 0")
+        msg = "Discard MEM occurrence 'c_value' must be >= 0"
+        raise ValueError(msg)
     if (
         a_penalty < 0
         or b_penalty < 0
@@ -175,11 +183,14 @@ def bwa_mem(
         or l_penalty < 0
         or u_penalty < 0
     ):
-        raise ValueError("Scoring penalties must be non-negative")
+        msg = "Scoring penalties must be non-negative"
+        raise ValueError(msg)
     if v < 0:
-        raise ValueError("Verbose level 'v' must be >= 0")
+        msg = "Verbose level 'v' must be >= 0"
+        raise ValueError(msg)
     if t_value < 0:
-        raise ValueError("Minimum output alignment score 't_value' must be >= 0")
+        msg = "Minimum output alignment score 't_value' must be >= 0"
+        raise ValueError(msg)
 
     cmd = ["bwa", "mem"]
     if a:
@@ -264,27 +275,38 @@ def bwa_aln(
     Parameters correspond to bwa aln options.
     """
     if not in_db_fasta.exists():
-        raise FileNotFoundError(f"Input fasta file {in_db_fasta} does not exist")
+        msg = f"Input fasta file {in_db_fasta} does not exist"
+        raise FileNotFoundError(msg)
     if not in_query_fq.exists():
-        raise FileNotFoundError(f"Input query file {in_query_fq} does not exist")
+        msg = f"Input query file {in_query_fq} does not exist"
+        raise FileNotFoundError(msg)
     if n < 0:
-        raise ValueError("Maximum edit distance 'n' must be non-negative")
+        msg = "Maximum edit distance 'n' must be non-negative"
+        raise ValueError(msg)
     if o < 0:
-        raise ValueError("Maximum number of gap opens 'o' must be non-negative")
+        msg = "Maximum number of gap opens 'o' must be non-negative"
+        raise ValueError(msg)
     if e < -1:
-        raise ValueError("Maximum number of gap extensions 'e' must be >= -1")
+        msg = "Maximum number of gap extensions 'e' must be >= -1"
+        raise ValueError(msg)
     if d < 0:
-        raise ValueError("Disallow long deletion 'd' must be non-negative")
+        msg = "Disallow long deletion 'd' must be non-negative"
+        raise ValueError(msg)
     if i < 0:
-        raise ValueError("Disallow indel near ends 'i' must be non-negative")
+        msg = "Disallow indel near ends 'i' must be non-negative"
+        raise ValueError(msg)
     if seed_length is not None and seed_length < 1:
-        raise ValueError("Seed length 'seed_length' must be positive or None")
+        msg = "Seed length 'seed_length' must be positive or None"
+        raise ValueError(msg)
     if k < 0:
-        raise ValueError("Maximum edit distance in seed 'k' must be non-negative")
+        msg = "Maximum edit distance in seed 'k' must be non-negative"
+        raise ValueError(msg)
     if t < 1:
-        raise ValueError("Number of threads 't' must be >= 1")
+        msg = "Number of threads 't' must be >= 1"
+        raise ValueError(msg)
     if m < 0 or o_penalty2 < 0 or e_penalty < 0 or r < 0 or q < 0 or b_penalty < 0:
-        raise ValueError("Penalty and threshold parameters must be non-negative")
+        msg = "Penalty and threshold parameters must be non-negative"
+        raise ValueError(msg)
 
     cmd = ["bwa", "aln"]
     cmd += ["-n", str(n)]
@@ -352,13 +374,17 @@ def bwa_samse(
     -r STR: Specify the read group header line (e.g. '@RG\\tID:foo\\tSM:bar')
     """
     if not in_db_fasta.exists():
-        raise FileNotFoundError(f"Input fasta file {in_db_fasta} does not exist")
+        msg = f"Input fasta file {in_db_fasta} does not exist"
+        raise FileNotFoundError(msg)
     if not in_sai.exists():
-        raise FileNotFoundError(f"Input sai file {in_sai} does not exist")
+        msg = f"Input sai file {in_sai} does not exist"
+        raise FileNotFoundError(msg)
     if not in_fq.exists():
-        raise FileNotFoundError(f"Input fastq file {in_fq} does not exist")
+        msg = f"Input fastq file {in_fq} does not exist"
+        raise FileNotFoundError(msg)
     if n < 0:
-        raise ValueError("Maximum number of alignments 'n' must be non-negative")
+        msg = "Maximum number of alignments 'n' must be non-negative"
+        raise ValueError(msg)
 
     cmd = ["bwa", "samse"]
     cmd += ["-n", str(n)]
@@ -412,9 +438,11 @@ def bwa_sampe(
     """
     for f in [in_db_fasta, in1_sai, in2_sai, in1_fq, in2_fq]:
         if not f.exists():
-            raise FileNotFoundError(f"Input file {f} does not exist")
+            msg = f"Input file {f} does not exist"
+            raise FileNotFoundError(msg)
     if a < 0 or o < 0 or n < 0 or n_value < 0:
-        raise ValueError("Parameters a, o, n, n_value must be non-negative")
+        msg = "Parameters a, o, n, n_value must be non-negative"
+        raise ValueError(msg)
 
     cmd = ["bwa", "sampe"]
     cmd += ["-a", str(a)]
@@ -472,25 +500,35 @@ def bwa_bwasw(
     Supports single-end and paired-end (Illumina short-insert) reads.
     """
     if not in_db_fasta.exists():
-        raise FileNotFoundError(f"Input fasta file {in_db_fasta} does not exist")
+        msg = f"Input fasta file {in_db_fasta} does not exist"
+        raise FileNotFoundError(msg)
     if not in_fq.exists():
-        raise FileNotFoundError(f"Input fastq file {in_fq} does not exist")
+        msg = f"Input fastq file {in_fq} does not exist"
+        raise FileNotFoundError(msg)
     if mate_fq and not mate_fq.exists():
-        raise FileNotFoundError(f"Mate fastq file {mate_fq} does not exist")
+        msg = f"Mate fastq file {mate_fq} does not exist"
+        raise FileNotFoundError(msg)
     if t < 1:
-        raise ValueError("Number of threads 't' must be >= 1")
+        msg = "Number of threads 't' must be >= 1"
+        raise ValueError(msg)
     if w < 1:
-        raise ValueError("Band width 'w' must be >= 1")
+        msg = "Band width 'w' must be >= 1"
+        raise ValueError(msg)
     if t_value < 0:
-        raise ValueError("Minimum score threshold 't_value' must be >= 0")
+        msg = "Minimum score threshold 't_value' must be >= 0"
+        raise ValueError(msg)
     if c < 0:
-        raise ValueError("Coefficient 'c' must be >= 0")
+        msg = "Coefficient 'c' must be >= 0"
+        raise ValueError(msg)
     if z < 1:
-        raise ValueError("Z-best heuristics 'z' must be >= 1")
+        msg = "Z-best heuristics 'z' must be >= 1"
+        raise ValueError(msg)
     if s < 1:
-        raise ValueError("Maximum SA interval size 's' must be >= 1")
+        msg = "Maximum SA interval size 's' must be >= 1"
+        raise ValueError(msg)
     if n_hits < 0:
-        raise ValueError("Minimum number of seeds 'n_hits' must be >= 0")
+        msg = "Minimum number of seeds 'n_hits' must be >= 0"
+        raise ValueError(msg)
 
     cmd = ["bwa", "bwasw"]
     cmd += ["-a", str(a)]
@@ -543,4 +581,4 @@ if __name__ == "__main__":
     if mcp:
         mcp.run()
     else:
-        print("FastMCP not available. Please install fastmcp to run the MCP server.")
+        pass

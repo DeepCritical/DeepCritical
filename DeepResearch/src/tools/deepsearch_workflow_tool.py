@@ -8,7 +8,7 @@ workflow with the existing tool registry system.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, TypedDict
+from typing import Any, TypedDict
 
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 

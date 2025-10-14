@@ -1,5 +1,3 @@
-from typing import Dict
-
 DEFINITIVE_SYSTEM = (
     "You are an evaluator of answer definitiveness. Analyze if the given answer provides a definitive response or not.\n\n"
     "<rules>\n"

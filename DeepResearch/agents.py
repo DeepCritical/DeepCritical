@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic_ai import Agent
 
@@ -66,7 +66,9 @@ class BaseAgent(ABC):
             def __init__(self):
                 super().__init__(AgentType.CUSTOM, "anthropic:claude-sonnet-4-0")
 
-            async def execute(self, input_data: str, deps: AgentDependencies) -> AgentResult:
+            async def execute(
+                self, input_data: str, deps: AgentDependencies
+            ) -> AgentResult:
                 result = await self._agent.run(input_data, deps=deps)
                 return AgentResult(success=True, data=result.data)
         ```
@@ -103,8 +105,7 @@ class BaseAgent(ABC):
             # Register tools
             self._register_tools()
 
-        except Exception as e:
-            print(f"Warning: Failed to initialize Pydantic AI agent: {e}")
+        except Exception:
             self._agent = None
 
     def _get_default_system_prompt(self) -> str:
@@ -240,10 +241,6 @@ class BaseAgent(ABC):
                 agent_type=self.agent_type,
             )
 
-            self.status = AgentStatus.COMPLETED
-            self.history.record(self.agent_type, agent_result)
-            return agent_result
-
         except Exception as e:
             execution_time = time.time() - start_time
             agent_result = AgentResult(
@@ -254,6 +251,10 @@ class BaseAgent(ABC):
             )
 
             self.status = AgentStatus.FAILED
+            self.history.record(self.agent_type, agent_result)
+            return agent_result
+        else:
+            self.status = AgentStatus.COMPLETED
             self.history.record(self.agent_type, agent_result)
             return agent_result
 
@@ -363,8 +364,8 @@ class ExecutorAgent(BaseAgent):
             try:
                 tool_runner = registry.make(tool_name)
                 self._agent.tool(tool_runner.run)
-            except Exception as e:
-                print(f"Warning: Failed to register tool {tool_name}: {e}")
+            except Exception:
+                pass
 
     async def execute_plan(
         self, plan: list[dict[str, Any]], history: ExecutionHistory
@@ -467,8 +468,8 @@ class SearchAgent(BaseAgent):
             chunked_search_tool = ChunkedSearchTool()
             self._agent.tool(chunked_search_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register search tools: {e}")
+        except Exception:
+            pass
 
     async def search(
         self, query: str, search_type: str = "search", num_results: int = 10
@@ -505,8 +506,8 @@ class RAGAgent(BaseAgent):
             rag_search_tool = RAGSearchTool()
             self._agent.tool(rag_search_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register RAG tools: {e}")
+        except Exception:
+            pass
 
     async def query(self, rag_query: RAGQuery) -> RAGResponse:
         """Perform RAG query."""
@@ -557,8 +558,8 @@ class BioinformaticsAgent(BaseAgent):
             pubmed_tool = PubMedRetrievalTool()
             self._agent.tool(pubmed_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register bioinformatics tools: {e}")
+        except Exception:
+            pass
 
     async def fuse_data(self, fusion_request: DataFusionRequest) -> FusedDataset:
         """Fuse bioinformatics data from multiple sources."""
@@ -626,8 +627,8 @@ class DeepSearchAgent(BaseAgent):
             agent_tool = DeepSearchAgentTool()
             self._agent.tool(agent_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register deep search tools: {e}")
+        except Exception:
+            pass
 
     async def deep_search(self, question: str, max_steps: int = 20) -> dict[str, Any]:
         """Perform deep search with iterative refinement."""
@@ -655,8 +656,8 @@ class EvaluatorAgent(BaseAgent):
             error_analyzer_tool = ErrorAnalyzerTool()
             self._agent.tool(error_analyzer_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register evaluation tools: {e}")
+        except Exception:
+            pass
 
     async def evaluate(self, question: str, answer: str) -> dict[str, Any]:
         """Evaluate research results."""
@@ -683,7 +684,10 @@ class DeepAgentPlanningAgent(BaseAgent):
             config = AgentConfig(
                 name="deep_planning_agent",
                 model_name=self.model_name,
-                system_prompt="You are a planning specialist focused on task organization and workflow management.",
+                system_prompt=(
+                    "You are a planning specialist focused on task organization "
+                    "and workflow management."
+                ),
                 tools=["write_todos", "task"],
                 capabilities=[
                     AgentCapability.PLANNING,
@@ -693,8 +697,8 @@ class DeepAgentPlanningAgent(BaseAgent):
                 timeout=120.0,
             )
             self._deep_agent = PlanningAgent(config)
-        except Exception as e:
-            print(f"Warning: Failed to initialize DeepAgent planning agent: {e}")
+        except Exception:
+            pass
 
     def _register_tools(self):
         """Register planning tools."""
@@ -705,8 +709,8 @@ class DeepAgentPlanningAgent(BaseAgent):
             self._agent.tool(write_todos_tool)
             self._agent.tool(task_tool)
 
-        except Exception as e:
-            print(f"Warning: Failed to register DeepAgent planning tools: {e}")
+        except Exception:
+            pass
 
     async def create_plan(
         self, task_description: str, context: DeepAgentState | None = None
@@ -739,7 +743,10 @@ class DeepAgentFilesystemAgent(BaseAgent):
             config = AgentConfig(
                 name="deep_filesystem_agent",
                 model_name=self.model_name,
-                system_prompt="You are a filesystem specialist focused on file operations and content management.",
+                system_prompt=(
+                    "You are a filesystem specialist focused on file operations "
+                    "and content management."
+                ),
                 tools=["list_files", "read_file", "write_file", "edit_file"],
                 capabilities=[
                     AgentCapability.FILESYSTEM,
@@ -749,8 +756,8 @@ class DeepAgentFilesystemAgent(BaseAgent):
                 timeout=60.0,
             )
             self._deep_agent = FilesystemAgent(config)
-        except Exception as e:
-            print(f"Warning: Failed to initialize DeepAgent filesystem agent: {e}")
+        except Exception:
+            pass
 
     def _register_tools(self):
         """Register filesystem tools."""
@@ -768,8 +775,8 @@ class DeepAgentFilesystemAgent(BaseAgent):
             self._agent.tool(write_file_tool)
             self._agent.tool(edit_file_tool)
 
-        except Exception as e:
-            print(f"Warning: Failed to register DeepAgent filesystem tools: {e}")
+        except Exception:
+            pass
 
     async def manage_files(
         self, operation: str, context: DeepAgentState | None = None
@@ -802,15 +809,18 @@ class DeepAgentResearchAgent(BaseAgent):
             config = AgentConfig(
                 name="deep_research_agent",
                 model_name=self.model_name,
-                system_prompt="You are a research specialist focused on information gathering and analysis.",
+                system_prompt=(
+                    "You are a research specialist focused on information gathering "
+                    "and analysis."
+                ),
                 tools=["web_search", "rag_query", "task"],
                 capabilities=[AgentCapability.SEARCH, AgentCapability.ANALYSIS],
                 max_iterations=10,
                 timeout=300.0,
             )
             self._deep_agent = ResearchAgent(config)
-        except Exception as e:
-            print(f"Warning: Failed to initialize DeepAgent research agent: {e}")
+        except Exception:
+            pass
 
     def _register_tools(self):
         """Register research tools."""
@@ -829,8 +839,8 @@ class DeepAgentResearchAgent(BaseAgent):
             rag_search_tool = RAGSearchTool()
             self._agent.tool(rag_search_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register DeepAgent research tools: {e}")
+        except Exception:
+            pass
 
     async def conduct_research(
         self, research_query: str, context: DeepAgentState | None = None
@@ -864,7 +874,10 @@ class DeepAgentOrchestrationAgent(BaseAgent):
             config = AgentConfig(
                 name="deep_orchestration_agent",
                 model_name=self.model_name,
-                system_prompt="You are an orchestration specialist focused on coordinating multiple agents and workflows.",
+                system_prompt=(
+                    "You are an orchestration specialist focused on coordinating "
+                    "multiple agents and workflows."
+                ),
                 tools=["task", "coordinate_agents", "synthesize_results"],
                 capabilities=[
                     AgentCapability.TASK_ORCHESTRATION,
@@ -878,8 +891,8 @@ class DeepAgentOrchestrationAgent(BaseAgent):
             # Create orchestrator with all available agents
             self._orchestrator = AgentOrchestrator()
 
-        except Exception as e:
-            print(f"Warning: Failed to initialize DeepAgent orchestration agent: {e}")
+        except Exception:
+            pass
 
     def _register_tools(self):
         """Register orchestration tools."""
@@ -889,8 +902,8 @@ class DeepAgentOrchestrationAgent(BaseAgent):
             # Register DeepAgent tools
             self._agent.tool(task_tool)
 
-        except Exception as e:
-            print(f"Warning: Failed to register DeepAgent orchestration tools: {e}")
+        except Exception:
+            pass
 
     async def orchestrate_tasks(
         self, task_description: str, context: DeepAgentState | None = None
@@ -936,7 +949,10 @@ class DeepAgentGeneralAgent(BaseAgent):
             config = AgentConfig(
                 name="deep_general_agent",
                 model_name=self.model_name,
-                system_prompt="You are a general-purpose agent that can handle various tasks and delegate to specialized agents.",
+                system_prompt=(
+                    "You are a general-purpose agent that can handle various tasks "
+                    "and delegate to specialized agents."
+                ),
                 tools=["task", "write_todos", "list_files", "read_file", "web_search"],
                 capabilities=[
                     AgentCapability.TASK_ORCHESTRATION,
@@ -947,8 +963,8 @@ class DeepAgentGeneralAgent(BaseAgent):
                 timeout=900.0,
             )
             self._deep_agent = GeneralPurposeAgent(config)
-        except Exception as e:
-            print(f"Warning: Failed to initialize DeepAgent general agent: {e}")
+        except Exception:
+            pass
 
     def _register_tools(self):
         """Register general tools."""
@@ -971,8 +987,8 @@ class DeepAgentGeneralAgent(BaseAgent):
             web_search_tool = WebSearchTool()
             self._agent.tool(web_search_tool.run)
 
-        except Exception as e:
-            print(f"Warning: Failed to register DeepAgent general tools: {e}")
+        except Exception:
+            pass
 
     async def handle_general_task(
         self, task_description: str, context: DeepAgentState | None = None
@@ -1067,6 +1083,16 @@ class MultiAgentOrchestrator:
 
             execution_time = time.time() - start_time
 
+        except Exception as e:
+            execution_time = time.time() - start_time
+            return {
+                "question": question,
+                "workflow_type": workflow_type,
+                "error": str(e),
+                "execution_time": execution_time,
+                "success": False,
+            }
+        else:
             return {
                 "question": question,
                 "workflow_type": workflow_type,
@@ -1078,26 +1104,15 @@ class MultiAgentOrchestrator:
                 "success": True,
             }
 
-        except Exception as e:
-            execution_time = time.time() - start_time
-            return {
-                "question": question,
-                "workflow_type": workflow_type,
-                "error": str(e),
-                "execution_time": execution_time,
-                "success": False,
-            }
-
     async def _execute_standard_workflow(
-        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+        self, question: str, _parsed: dict[str, Any], plan: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Execute standard research workflow."""
         executor = self.agents[AgentType.EXECUTOR]
-        result = await executor.execute_plan(plan, self.history)
-        return result
+        return await executor.execute_plan(plan, self.history)
 
     async def _execute_bioinformatics_workflow(
-        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+        self, question: str, _parsed: dict[str, Any], _plan: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Execute bioinformatics workflow."""
         bioinformatics_agent = self.agents[AgentType.BIOINFORMATICS]
@@ -1133,15 +1148,14 @@ class MultiAgentOrchestrator:
         }
 
     async def _execute_deepsearch_workflow(
-        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+        self, question: str, _parsed: dict[str, Any], _plan: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Execute deep search workflow."""
         deepsearch_agent = self.agents[AgentType.DEEPSEARCH]
-        result = await deepsearch_agent.deep_search(question)
-        return result
+        return await deepsearch_agent.deep_search(question)
 
     async def _execute_rag_workflow(
-        self, question: str, parsed: dict[str, Any], plan: list[dict[str, Any]]
+        self, question: str, _parsed: dict[str, Any], _plan: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Execute RAG workflow."""
         rag_agent = self.agents[AgentType.RAG]
@@ -1238,7 +1252,8 @@ def create_agent(agent_type: AgentType, **kwargs) -> BaseAgent:
 
     agent_class = agent_classes.get(agent_type)
     if not agent_class:
-        raise ValueError(f"Unknown agent type: {agent_type}")
+        msg = f"Unknown agent type: {agent_type}"
+        raise ValueError(msg)
 
     return agent_class(**kwargs)
 

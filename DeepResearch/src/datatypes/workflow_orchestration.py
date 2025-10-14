@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -232,7 +232,8 @@ class WorkflowOrchestrationConfig(BaseModel):
         """Validate sub-workflow configurations."""
         names = [w.name for w in v]
         if len(names) != len(set(names)):
-            raise ValueError("Sub-workflow names must be unique")
+            msg = "Sub-workflow names must be unique"
+            raise ValueError(msg)
         return v
 
     model_config = ConfigDict(json_schema_extra={})
@@ -709,5 +710,6 @@ class WorkflowOrchestrationState(BaseModel):
         """Validate sub-workflows structure."""
         for workflow in v:
             if not isinstance(workflow, dict):
-                raise ValueError("Each sub-workflow must be a dictionary")
+                msg = "Each sub-workflow must be a dictionary"
+                raise ValueError(msg)
         return v

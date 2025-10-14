@@ -8,16 +8,12 @@ in Pydantic AI, supporting all VLLM features while maintaining OpenAI API compat
 from __future__ import annotations
 
 import asyncio
-import json
 import time
-from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
-import aiohttp
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..datatypes.rag import VLLMConfig as RAGVLLMConfig
-from ..datatypes.vllm_dataclass import (
+from DeepResearch.src.datatypes.vllm_dataclass import (
     BatchRequest,
     BatchResponse,
     CacheConfig,
@@ -32,19 +28,17 @@ from ..datatypes.vllm_dataclass import (
     EmbeddingData,
     EmbeddingRequest,
     EmbeddingResponse,
-    HealthCheck,
     ModelConfig,
-    ModelInfo,
-    ModelListResponse,
     ObservabilityConfig,
     ParallelConfig,
-    # Sampling parameters
     QuantizationMethod,
     SchedulerConfig,
     UsageStats,
-    # Core configurations
     VllmConfig,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class VLLMClientError(Exception):
@@ -451,11 +445,8 @@ async def example_basic_usage():
 
     # Test connection
     if await test_vllm_connection(client):
-        print("VLLM server is accessible")
-
         # List models
-        models = await list_vllm_models(client)
-        print(f"Available models: {models}")
+        await list_vllm_models(client)
 
         # Chat completion
         chat_request = ChatCompletionRequest(
@@ -465,8 +456,7 @@ async def example_basic_usage():
             temperature=0.7,
         )
 
-        response = await client.chat_completions(chat_request)  # type: ignore[attr-defined]
-        print(f"Response: {response.choices[0].message.content}")
+        await client.chat_completions(chat_request)  # type: ignore[attr-defined]
 
     await client.close()  # type: ignore[attr-defined]
 
@@ -483,10 +473,8 @@ async def example_streaming():
         stream=True,
     )
 
-    print("Streaming response: ", end="")
-    async for chunk in client.chat_completions_stream(chat_request):  # type: ignore[attr-defined]
-        print(chunk, end="", flush=True)
-    print()
+    async for _chunk in client.chat_completions_stream(chat_request):  # type: ignore[attr-defined]
+        pass
 
     await client.close()  # type: ignore[attr-defined]
 
@@ -500,9 +488,7 @@ async def example_embeddings():
         input=["Hello world", "How are you?"],
     )
 
-    response = await client.embeddings(embedding_request)  # type: ignore[attr-defined]
-    print(f"Generated {len(response.data)} embeddings")
-    print(f"First embedding dimension: {len(response.data[0].embedding)}")
+    await client.embeddings(embedding_request)  # type: ignore[attr-defined]
 
     await client.close()  # type: ignore[attr-defined]
 
@@ -521,19 +507,13 @@ async def example_batch_processing():
     ]
 
     batch_request = BatchRequest(requests=requests, max_retries=2)
-    batch_response = await client.batch_request(batch_request)  # type: ignore[attr-defined]
-
-    print(f"Processed {batch_response.total_requests} requests")
-    print(f"Successful: {batch_response.successful_requests}")
-    print(f"Failed: {batch_response.failed_requests}")
-    print(f"Processing time: {batch_response.processing_time:.2f}s")
+    await client.batch_request(batch_request)  # type: ignore[attr-defined]
 
     await client.close()  # type: ignore[attr-defined]
 
 
 if __name__ == "__main__":
     # Run examples
-    print("Running VLLM client examples...")
 
     # Basic usage
     asyncio.run(example_basic_usage())
@@ -546,5 +526,3 @@ if __name__ == "__main__":
 
     # Batch processing
     asyncio.run(example_batch_processing())
-
-    print("All examples completed!")

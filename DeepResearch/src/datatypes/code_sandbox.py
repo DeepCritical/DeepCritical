@@ -15,11 +15,11 @@ import re
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Any, Dict, List
+from typing import Any
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "tools"))
 
-from ..tools.base import ExecutionResult, ToolRunner, ToolSpec, registry
+from DeepResearch.src.tools.base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 # Whitelist of safe Python builtins for sandboxed execution
 SAFE_BUILTINS: dict[str, Any] = {
@@ -63,7 +63,7 @@ class CodeSandboxRunner(ToolRunner):
         """Generate code for the given problem."""
         # Load prompt from Hydra via PromptLoader; fall back to a minimal system
         try:
-            from ..prompts import PromptLoader  # type: ignore
+            from DeepResearch.src.prompts import PromptLoader  # type: ignore
 
             cfg: dict[str, Any] = {}
             loader = PromptLoader(cfg)  # type: ignore
@@ -100,7 +100,8 @@ class CodeSandboxRunner(ToolRunner):
 
             agent, _ = _build_agent({}, [], [])
             if agent is None:
-                raise RuntimeError("pydantic_ai not available")
+                msg = "pydantic_ai not available"
+                raise RuntimeError(msg)
             result = agent.run_sync({"instructions": system, "input": user_prompt})
             output_text = getattr(result, "output", str(result))
         except Exception:
@@ -204,8 +205,7 @@ class CodeSandboxTool(ToolRunner):
         if language.lower() == "python":
             # Use the existing CodeSandboxRunner for Python code
             runner = CodeSandboxRunner()
-            result = runner.run({"code": code})
-            return result
+            return runner.run({"code": code})
         return ExecutionResult(
             success=True,
             data={

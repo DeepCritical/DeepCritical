@@ -7,12 +7,10 @@ for comparing, summarizing, and intersecting genomic features in BED format.
 
 from __future__ import annotations
 
-import asyncio
 import os
 import subprocess
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # FastMCP for direct MCP server functionality
 try:
@@ -23,14 +21,12 @@ except ImportError:
     FASTMCP_AVAILABLE = False
     _FastMCP = None
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -114,19 +110,21 @@ class BEDToolsServer(MCPServerBase):
         """
         # Validate input files
         if not os.path.exists(a_file):
-            raise FileNotFoundError(f"Input file A not found: {a_file}")
+            msg = f"Input file A not found: {a_file}"
+            raise FileNotFoundError(msg)
 
         for b_file in b_files:
             if not os.path.exists(b_file):
-                raise FileNotFoundError(f"Input file B not found: {b_file}")
+                msg = f"Input file B not found: {b_file}"
+                raise FileNotFoundError(msg)
 
         # Validate parameters
         if not (0.0 <= f <= 1.0):
-            raise ValueError(f"Parameter f must be between 0.0 and 1.0, got {f}")
+            msg = f"Parameter f must be between 0.0 and 1.0, got {f}"
+            raise ValueError(msg)
         if not (0.0 <= fraction_b <= 1.0):
-            raise ValueError(
-                f"Parameter fraction_b must be between 0.0 and 1.0, got {fraction_b}"
-            )
+            msg = f"Parameter fraction_b must be between 0.0 and 1.0, got {fraction_b}"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["bedtools", "intersect"]
@@ -266,7 +264,8 @@ class BEDToolsServer(MCPServerBase):
         """
         # Validate input file
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["bedtools", "merge"]
@@ -425,10 +424,8 @@ class BEDToolsServer(MCPServerBase):
 
             return True
 
-        except Exception as stop_exc:
-            self.logger.error(
-                f"Failed to stop container {self.container_id}: {stop_exc}"
-            )
+        except Exception:
+            self.logger.exception(f"Failed to stop container {self.container_id}")
             return False
 
     def get_server_info(self) -> dict[str, Any]:
@@ -474,9 +471,8 @@ class BEDToolsServer(MCPServerBase):
         if self.fastmcp_server:
             self.fastmcp_server.run()
         else:
-            raise RuntimeError(
-                "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
-            )
+            msg = "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
+            raise RuntimeError(msg)
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         """
@@ -599,19 +595,21 @@ class BEDToolsServer(MCPServerBase):
         """
         # Validate input files
         if not os.path.exists(a_file):
-            raise FileNotFoundError(f"Input file A not found: {a_file}")
+            msg = f"Input file A not found: {a_file}"
+            raise FileNotFoundError(msg)
 
         for b_file in b_files:
             if not os.path.exists(b_file):
-                raise FileNotFoundError(f"Input file B not found: {b_file}")
+                msg = f"Input file B not found: {b_file}"
+                raise FileNotFoundError(msg)
 
         # Validate parameters
         if not (0.0 <= f <= 1.0):
-            raise ValueError(f"Parameter f must be between 0.0 and 1.0, got {f}")
+            msg = f"Parameter f must be between 0.0 and 1.0, got {f}"
+            raise ValueError(msg)
         if not (0.0 <= fraction_b <= 1.0):
-            raise ValueError(
-                f"Parameter fraction_b must be between 0.0 and 1.0, got {fraction_b}"
-            )
+            msg = f"Parameter fraction_b must be between 0.0 and 1.0, got {fraction_b}"
+            raise ValueError(msg)
 
         # Validate iobuf if provided
         if iobuf is not None:
@@ -621,13 +619,13 @@ class BEDToolsServer(MCPServerBase):
                 or not iobuf[:-1].isdigit()
                 or iobuf[-1].upper() not in valid_suffixes
             ):
-                raise ValueError(
-                    f"iobuf must be integer followed by K/M/G suffix, got {iobuf}"
-                )
+                msg = f"iobuf must be integer followed by K/M/G suffix, got {iobuf}"
+                raise ValueError(msg)
 
         # Validate genome file if provided
         if g is not None and not os.path.exists(g):
-            raise FileNotFoundError(f"Genome file g not found: {g}")
+            msg = f"Genome file g not found: {g}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["bedtools", "coverage"]

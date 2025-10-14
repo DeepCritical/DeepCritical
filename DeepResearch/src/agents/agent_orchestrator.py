@@ -11,12 +11,11 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
-from omegaconf import DictConfig
 from pydantic_ai import Agent, RunContext
 
-from ..datatypes.workflow_orchestration import (
+from DeepResearch.src.datatypes.workflow_orchestration import (
     AgentOrchestratorConfig,
     AgentRole,
     BreakCondition,
@@ -29,7 +28,10 @@ from ..datatypes.workflow_orchestration import (
     SubgraphConfig,
     SubgraphType,
 )
-from ..prompts.orchestrator import OrchestratorPrompts
+from DeepResearch.src.prompts.orchestrator import OrchestratorPrompts
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
 
 
 @dataclass

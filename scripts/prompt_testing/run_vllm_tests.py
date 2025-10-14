@@ -11,7 +11,6 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 from omegaconf import DictConfig
 
@@ -46,7 +45,7 @@ def load_vllm_test_config() -> DictConfig:
         config_dir = Path("configs")
         if config_dir.exists():
             with initialize_config_dir(config_dir=str(config_dir), version_base=None):
-                config = compose(
+                return compose(
                     config_name="vllm_tests",
                     overrides=[
                         "model=local_model",
@@ -55,7 +54,6 @@ def load_vllm_test_config() -> DictConfig:
                         "output=structured",
                     ],
                 )
-                return config
         else:
             logger.warning("Config directory not found, using default configuration")
             return create_default_test_config()
@@ -248,8 +246,8 @@ def run_vllm_tests(
     except KeyboardInterrupt:
         logger.info("Tests interrupted by user")
         return 130
-    except Exception as e:
-        logger.error(f"Error running tests: {e}")
+    except Exception:
+        logger.exception("Error running tests")
         return 1
 
 
@@ -286,10 +284,7 @@ def _generate_summary_report(
         for json_file in json_files:
             # Extract module name from filename (test_prompts_{module}_vllm.py results in {module}_*.json)
             filename = json_file.stem
-            if "_" in filename:
-                module_name = filename.split("_")[0]
-            else:
-                module_name = "unknown"
+            module_name = filename.split("_")[0] if "_" in filename else "unknown"
 
             if module_name not in artifacts_by_module:
                 artifacts_by_module[module_name] = []
@@ -307,7 +302,7 @@ def _generate_summary_report(
     summary += f"- **Artifacts Enabled:** {reporting_config.get('enabled', True)}\n"
 
     # Write summary
-    with open(report_file, "w") as f:
+    with report_file.open("w") as f:
         f.write(summary)
 
     logger.info(f"Summary report written to: {report_file}")
@@ -376,11 +371,10 @@ def main():
     if args.list_modules:
         modules = list_available_modules()
         if modules:
-            print("Available VLLM test modules:")
-            for module in modules:
-                print(f"  - {module}")
+            for _module in modules:
+                pass
         else:
-            print("No VLLM test modules found")
+            pass
         return 0
 
     # Load configuration

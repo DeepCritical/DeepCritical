@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any
 
 import hydra
 from omegaconf import DictConfig
@@ -35,11 +35,6 @@ from .src.datatypes.workflow_orchestration import (
     SubgraphConfig,
     SubgraphType,
     WorkflowType,
-)
-from .src.tools import (
-    mock_tools,
-    pyd_ai_tools,
-    workflow_tools,
 )
 from .src.utils.execution_history import ExecutionHistory as PrimeExecutionHistory
 from .src.utils.tool_registry import ToolRegistry
@@ -1133,8 +1128,7 @@ def run_graph(question: str, cfg: DictConfig) -> str:
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
     question = cfg.get("question", "What is deep research?")
-    output = run_graph(question, cfg)
-    print(output)
+    run_graph(question, cfg)
 
 
 if __name__ == "__main__":

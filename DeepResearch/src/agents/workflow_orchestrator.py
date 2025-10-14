@@ -9,15 +9,13 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
-from omegaconf import DictConfig
 from pydantic_ai import Agent, RunContext
 
-from ..datatypes.workflow_orchestration import (
+from DeepResearch.src.datatypes.workflow_orchestration import (
     HypothesisDataset,
     HypothesisTestingEnvironment,
     JudgeEvaluationRequest,
@@ -36,7 +34,12 @@ from ..datatypes.workflow_orchestration import (
     WorkflowStatus,
     WorkflowType,
 )
-from ..prompts.workflow_orchestrator import WorkflowOrchestratorPrompts
+from DeepResearch.src.prompts.workflow_orchestrator import WorkflowOrchestratorPrompts
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from omegaconf import DictConfig
 
 
 @dataclass
@@ -321,9 +324,10 @@ class PrimaryWorkflowOrchestrator:
                 execution.workflow_config.workflow_type.value
             )
             if not workflow_func:
-                raise ValueError(
+                msg = (
                     f"Unknown workflow type: {execution.workflow_config.workflow_type}"
                 )
+                raise ValueError(msg)
 
             # Execute workflow
             result = await workflow_func(

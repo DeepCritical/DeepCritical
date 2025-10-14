@@ -2,9 +2,6 @@
 Minimap2 server component tests.
 """
 
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from tests.test_bioinformatics_tools.base.test_base_tool import (

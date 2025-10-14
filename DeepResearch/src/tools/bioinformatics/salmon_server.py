@@ -11,14 +11,12 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -169,18 +167,19 @@ class SalmonServer(MCPServerBase):
         # Validate inputs
         transcripts_path = Path(transcripts_fasta)
         if not transcripts_path.is_file():
-            raise FileNotFoundError(
-                f"Transcripts FASTA file not found: {transcripts_fasta}"
-            )
+            msg = f"Transcripts FASTA file not found: {transcripts_fasta}"
+            raise FileNotFoundError(msg)
 
         decoys_path = None
         if decoys_file is not None:
             decoys_path = Path(decoys_file)
             if not decoys_path.is_file():
-                raise FileNotFoundError(f"Decoys file not found: {decoys_file}")
+                msg = f"Decoys file not found: {decoys_file}"
+                raise FileNotFoundError(msg)
 
         if kmer_size <= 0:
-            raise ValueError("kmer_size must be a positive integer")
+            msg = "kmer_size must be a positive integer"
+            raise ValueError(msg)
 
         # Prepare command
         cmd = [
@@ -380,9 +379,10 @@ class SalmonServer(MCPServerBase):
         # Validate inputs
         index_or_transcripts_path = Path(index_or_transcripts)
         if not index_or_transcripts_path.exists():
-            raise FileNotFoundError(
+            msg = (
                 f"Index directory or transcripts file not found: {index_or_transcripts}"
             )
+            raise FileNotFoundError(msg)
 
         if reads_1 is None:
             reads_1 = []
@@ -396,15 +396,16 @@ class SalmonServer(MCPServerBase):
         # Validate read files existence
         for f in reads_1 + reads_2 + single_reads + alignments:
             if not Path(f).exists():
-                raise FileNotFoundError(f"Input file not found: {f}")
+                msg = f"Input file not found: {f}"
+                raise FileNotFoundError(msg)
 
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
 
         if num_bootstraps > 0 and num_gibbs_samples > 0:
-            raise ValueError(
-                "num_bootstraps and num_gibbs_samples are mutually exclusive"
-            )
+            msg = "num_bootstraps and num_gibbs_samples are mutually exclusive"
+            raise ValueError(msg)
 
         cmd = ["salmon", "quant"]
 
@@ -431,13 +432,11 @@ class SalmonServer(MCPServerBase):
         else:
             # paired-end reads
             if len(reads_1) == 0 or len(reads_2) == 0:
-                raise ValueError(
-                    "Paired-end reads require both reads_1 and reads_2 lists to be non-empty"
-                )
+                msg = "Paired-end reads require both reads_1 and reads_2 lists to be non-empty"
+                raise ValueError(msg)
             if len(reads_1) != len(reads_2):
-                raise ValueError(
-                    "reads_1 and reads_2 must have the same number of files"
-                )
+                msg = "reads_1 and reads_2 must have the same number of files"
+                raise ValueError(msg)
             for r1 in reads_1:
                 cmd.append("-1")
                 cmd.append(str(r1))
@@ -468,53 +467,65 @@ class SalmonServer(MCPServerBase):
             cmd.append("--dumpEq")
         if incompat_prior != 0.01:
             if incompat_prior < 0.0 or incompat_prior > 1.0:
-                raise ValueError("incompat_prior must be between 0 and 1")
+                msg = "incompat_prior must be between 0 and 1"
+                raise ValueError(msg)
             cmd.extend(["--incompatPrior", str(incompat_prior)])
         if fld_mean is not None:
             if fld_mean <= 0:
-                raise ValueError("fld_mean must be positive")
+                msg = "fld_mean must be positive"
+                raise ValueError(msg)
             cmd.extend(["--fldMean", str(fld_mean)])
         if fld_sd is not None:
             if fld_sd <= 0:
-                raise ValueError("fld_sd must be positive")
+                msg = "fld_sd must be positive"
+                raise ValueError(msg)
             cmd.extend(["--fldSD", str(fld_sd)])
         if min_score_fraction is not None:
             if not (0.0 <= min_score_fraction <= 1.0):
-                raise ValueError("min_score_fraction must be between 0 and 1")
+                msg = "min_score_fraction must be between 0 and 1"
+                raise ValueError(msg)
             cmd.extend(["--minScoreFraction", str(min_score_fraction)])
         if bandwidth is not None:
             if bandwidth <= 0:
-                raise ValueError("bandwidth must be positive")
+                msg = "bandwidth must be positive"
+                raise ValueError(msg)
             cmd.extend(["--bandwidth", str(bandwidth)])
         if max_mmpextension is not None:
             if max_mmpextension <= 0:
-                raise ValueError("max_mmpextension must be positive")
+                msg = "max_mmpextension must be positive"
+                raise ValueError(msg)
             cmd.extend(["--maxMMPExtension", str(max_mmpextension)])
         if ma is not None:
             if ma <= 0:
-                raise ValueError("ma (match score) must be positive")
+                msg = "ma (match score) must be positive"
+                raise ValueError(msg)
             cmd.extend(["--ma", str(ma)])
         if mp is not None:
             if mp >= 0:
-                raise ValueError("mp (mismatch penalty) must be negative")
+                msg = "mp (mismatch penalty) must be negative"
+                raise ValueError(msg)
             cmd.extend(["--mp", str(mp)])
         if go is not None:
             if go <= 0:
-                raise ValueError("go (gap open penalty) must be positive")
+                msg = "go (gap open penalty) must be positive"
+                raise ValueError(msg)
             cmd.extend(["--go", str(go)])
         if ge is not None:
             if ge <= 0:
-                raise ValueError("ge (gap extension penalty) must be positive")
+                msg = "ge (gap extension penalty) must be positive"
+                raise ValueError(msg)
             cmd.extend(["--ge", str(ge)])
         if range_factorization_bins is not None:
             if range_factorization_bins <= 0:
-                raise ValueError("range_factorization_bins must be positive")
+                msg = "range_factorization_bins must be positive"
+                raise ValueError(msg)
             cmd.extend(["--rangeFactorizationBins", str(range_factorization_bins)])
         if use_em:
             cmd.append("--useEM")
         if vb_prior is not None:
             if vb_prior < 0:
-                raise ValueError("vb_prior must be non-negative")
+                msg = "vb_prior must be non-negative"
+                raise ValueError(msg)
             cmd.extend(["--vbPrior", str(vb_prior)])
         if per_transcript_prior:
             cmd.append("--perTranscriptPrior")
@@ -526,14 +537,16 @@ class SalmonServer(MCPServerBase):
             cmd.append("--seqBias")
         if num_bias_samples is not None:
             if num_bias_samples <= 0:
-                raise ValueError("num_bias_samples must be positive")
+                msg = "num_bias_samples must be positive"
+                raise ValueError(msg)
             cmd.extend(["--numBiasSamples", str(num_bias_samples)])
         if gc_bias:
             cmd.append("--gcBias")
         if pos_bias:
             cmd.append("--posBias")
         if bias_speed_samp <= 0:
-            raise ValueError("bias_speed_samp must be positive")
+            msg = "bias_speed_samp must be positive"
+            raise ValueError(msg)
         cmd.extend(["--biasSpeedSamp", str(bias_speed_samp)])
         if write_unmapped_names:
             cmd.append("--writeUnmappedNames")
@@ -684,20 +697,24 @@ class SalmonServer(MCPServerBase):
             }
 
         # Build command
-        cmd = (
-            ["salmon", "alevin", "-i", index, "-l", lib_type, "-1"]
-            + mates1
-            + ["-2"]
-            + mates2
-            + [
-                "-o",
-                output,
-                "--tgMap",
-                tgmap,
-                "-p",
-                str(threads),
-            ]
-        )
+        cmd = [
+            "salmon",
+            "alevin",
+            "-i",
+            index,
+            "-l",
+            lib_type,
+            "-1",
+            *mates1,
+            "-2",
+            *mates2,
+            "-o",
+            output,
+            "--tgMap",
+            tgmap,
+            "-p",
+            str(threads),
+        ]
 
         # Add optional parameters
         if expect_cells > 0:
@@ -848,22 +865,22 @@ class SalmonServer(MCPServerBase):
             }
 
         # Build command
-        cmd = (
-            ["salmon", "quantmerge", "--quants"]
-            + quants
-            + [
-                "--output",
-                output,
-                "--column",
-                column,
-                "--threads",
-                str(threads),
-            ]
-        )
+        cmd = [
+            "salmon",
+            "quantmerge",
+            "--quants",
+            *quants,
+            "--output",
+            output,
+            "--column",
+            column,
+            "--threads",
+            str(threads),
+        ]
 
         # Add names if provided
         if names:
-            cmd.extend(["--names"] + names)
+            cmd.extend(["--names", *names])
 
         try:
             # Execute Salmon quantmerge
@@ -1251,9 +1268,11 @@ class SalmonServer(MCPServerBase):
                 "mkdir -p /tmp && echo 'name: mcp-tool\\nchannels:\\n  - bioconda\\n  - conda-forge\\ndependencies:\\n  - salmon\\n  - pip' > /tmp/environment.yaml",
                 "conda env update -f /tmp/environment.yaml && conda clean -a",
                 "mkdir -p /app/workspace /app/output",
-                "chmod +x /app/salmon_server.py"
-                if hasattr(self, "__file__")
-                else 'echo "Running in memory"',
+                (
+                    "chmod +x /app/salmon_server.py"
+                    if hasattr(self, "__file__")
+                    else 'echo "Running in memory"'
+                ),
                 "tail -f /dev/null",  # Keep container running
             ]
 

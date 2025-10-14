@@ -4,8 +4,6 @@ VLLM Agent prompts for DeepCritical research workflows.
 This module defines system prompts and instructions for VLLM agent operations.
 """
 
-from typing import Dict
-
 # System prompt for VLLM agent
 VLLM_AGENT_SYSTEM_PROMPT = """You are a helpful AI assistant powered by VLLM. You can perform various tasks including text generation, conversation, and analysis.
 

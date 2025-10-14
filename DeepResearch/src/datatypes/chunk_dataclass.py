@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Union
 from uuid import uuid4
 
 if TYPE_CHECKING:

@@ -18,15 +18,13 @@ Features:
 
 from __future__ import annotations
 
-import asyncio
 import multiprocessing
 import os
 import shutil
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any
 
 # FastMCP for direct MCP server functionality
 try:
@@ -37,14 +35,12 @@ except ImportError:
     FASTMCP_AVAILABLE = False
     _FastMCP = None
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -103,7 +99,7 @@ class DeeptoolsServer(MCPServerBase):
         genome: str,
         fragment_length: int = 200,
         gc_bias_frequencies_file: str = "",
-        number_of_processors: Union[int, str] = 1,
+        number_of_processors: int | str = 1,
         verbose: bool = False,
     ) -> dict[str, Any]:
         """
@@ -126,15 +122,19 @@ class DeeptoolsServer(MCPServerBase):
         """
         # Validate input files
         if not os.path.exists(bamfile):
-            raise FileNotFoundError(f"BAM file not found: {bamfile}")
+            msg = f"BAM file not found: {bamfile}"
+            raise FileNotFoundError(msg)
         if not os.path.exists(genome):
-            raise FileNotFoundError(f"Genome file not found: {genome}")
+            msg = f"Genome file not found: {genome}"
+            raise FileNotFoundError(msg)
 
         # Validate parameters
         if effective_genome_size <= 0:
-            raise ValueError("effective_genome_size must be positive")
+            msg = "effective_genome_size must be positive"
+            raise ValueError(msg)
         if fragment_length <= 0:
-            raise ValueError("fragment_length must be positive")
+            msg = "fragment_length must be positive"
+            raise ValueError(msg)
 
         # Validate number_of_processors
         max_cpus = multiprocessing.cpu_count()
@@ -144,13 +144,16 @@ class DeeptoolsServer(MCPServerBase):
             elif number_of_processors == "max/2":
                 nproc = max_cpus // 2 if max_cpus > 1 else 1
             else:
-                raise ValueError("number_of_processors string must be 'max' or 'max/2'")
+                msg = "number_of_processors string must be 'max' or 'max/2'"
+                raise ValueError(msg)
         elif isinstance(number_of_processors, int):
             if number_of_processors < 1:
-                raise ValueError("number_of_processors must be at least 1")
+                msg = "number_of_processors must be at least 1"
+                raise ValueError(msg)
             nproc = min(number_of_processors, max_cpus)
         else:
-            raise TypeError("number_of_processors must be int or str")
+            msg = "number_of_processors must be int or str"
+            raise TypeError(msg)
 
         # Build command
         cmd = [
@@ -179,9 +182,9 @@ class DeeptoolsServer(MCPServerBase):
                 "command_executed": "computeGCBias [mock - tool not available]",
                 "stdout": "Mock output for computeGCBias operation",
                 "stderr": "",
-                "output_files": [gc_bias_frequencies_file]
-                if gc_bias_frequencies_file
-                else [],
+                "output_files": (
+                    [gc_bias_frequencies_file] if gc_bias_frequencies_file else []
+                ),
                 "exit_code": 0,
                 "mock": True,
             }
@@ -241,7 +244,7 @@ class DeeptoolsServer(MCPServerBase):
         corrected_file: str,
         bin_size: int = 50,
         region: str | None = None,
-        number_of_processors: Union[int, str] = 1,
+        number_of_processors: int | str = 1,
         verbose: bool = False,
     ) -> dict[str, Any]:
         """
@@ -266,24 +269,28 @@ class DeeptoolsServer(MCPServerBase):
         """
         # Validate input files
         if not os.path.exists(bamfile):
-            raise FileNotFoundError(f"BAM file not found: {bamfile}")
+            msg = f"BAM file not found: {bamfile}"
+            raise FileNotFoundError(msg)
         if not os.path.exists(genome):
-            raise FileNotFoundError(f"Genome file not found: {genome}")
+            msg = f"Genome file not found: {genome}"
+            raise FileNotFoundError(msg)
         if not os.path.exists(gc_bias_frequencies_file):
-            raise FileNotFoundError(
-                f"GC bias frequencies file not found: {gc_bias_frequencies_file}"
-            )
+            msg = f"GC bias frequencies file not found: {gc_bias_frequencies_file}"
+            raise FileNotFoundError(msg)
 
         # Validate corrected_file extension
         corrected_path = Path(corrected_file)
         if corrected_path.suffix not in [".bam", ".bw", ".bg"]:
-            raise ValueError("corrected_file must end with .bam, .bw, or .bg")
+            msg = "corrected_file must end with .bam, .bw, or .bg"
+            raise ValueError(msg)
 
         # Validate parameters
         if effective_genome_size <= 0:
-            raise ValueError("effective_genome_size must be positive")
+            msg = "effective_genome_size must be positive"
+            raise ValueError(msg)
         if bin_size <= 0:
-            raise ValueError("bin_size must be positive")
+            msg = "bin_size must be positive"
+            raise ValueError(msg)
 
         # Validate number_of_processors
         max_cpus = multiprocessing.cpu_count()
@@ -293,13 +300,16 @@ class DeeptoolsServer(MCPServerBase):
             elif number_of_processors == "max/2":
                 nproc = max_cpus // 2 if max_cpus > 1 else 1
             else:
-                raise ValueError("number_of_processors string must be 'max' or 'max/2'")
+                msg = "number_of_processors string must be 'max' or 'max/2'"
+                raise ValueError(msg)
         elif isinstance(number_of_processors, int):
             if number_of_processors < 1:
-                raise ValueError("number_of_processors must be at least 1")
+                msg = "number_of_processors must be at least 1"
+                raise ValueError(msg)
             nproc = min(number_of_processors, max_cpus)
         else:
-            raise TypeError("number_of_processors must be int or str")
+            msg = "number_of_processors must be int or str"
+            raise TypeError(msg)
 
         # Build command
         cmd = [
@@ -433,7 +443,8 @@ class DeeptoolsServer(MCPServerBase):
         """
         # Validate input file exists
         if not os.path.exists(bam_file):
-            raise FileNotFoundError(f"Input BAM file not found: {bam_file}")
+            msg = f"Input BAM file not found: {bam_file}"
+            raise FileNotFoundError(msg)
 
         # Validate output directory exists
         output_path = Path(output_file)
@@ -593,11 +604,13 @@ class DeeptoolsServer(MCPServerBase):
         """
         # Validate input files exist
         if not os.path.exists(regions_file):
-            raise FileNotFoundError(f"Regions file not found: {regions_file}")
+            msg = f"Regions file not found: {regions_file}"
+            raise FileNotFoundError(msg)
 
         for score_file in score_files:
             if not os.path.exists(score_file):
-                raise FileNotFoundError(f"Score file not found: {score_file}")
+                msg = f"Score file not found: {score_file}"
+                raise FileNotFoundError(msg)
 
         # Validate output directory exists
         output_path = Path(output_file)
@@ -772,7 +785,8 @@ class DeeptoolsServer(MCPServerBase):
         """
         # Validate input file exists
         if not os.path.exists(matrix_file):
-            raise FileNotFoundError(f"Matrix file not found: {matrix_file}")
+            msg = f"Matrix file not found: {matrix_file}"
+            raise FileNotFoundError(msg)
 
         # Validate output directory exists
         output_path = Path(output_file)
@@ -951,10 +965,12 @@ class DeeptoolsServer(MCPServerBase):
         # Validate input files exist
         for bam_file in bam_files:
             if not os.path.exists(bam_file):
-                raise FileNotFoundError(f"BAM file not found: {bam_file}")
+                msg = f"BAM file not found: {bam_file}"
+                raise FileNotFoundError(msg)
 
         if bed_file and not os.path.exists(bed_file):
-            raise FileNotFoundError(f"BED file not found: {bed_file}")
+            msg = f"BED file not found: {bed_file}"
+            raise FileNotFoundError(msg)
 
         # Validate output directory exists
         output_path = Path(output_file)
@@ -1131,10 +1147,8 @@ class DeeptoolsServer(MCPServerBase):
 
             return True
 
-        except Exception as stop_exc:
-            self.logger.error(
-                f"Failed to stop container {self.container_id}: {stop_exc}"
-            )
+        except Exception:
+            self.logger.exception(f"Failed to stop container {self.container_id}")
             return False
 
     def get_server_info(self) -> dict[str, Any]:
@@ -1157,9 +1171,8 @@ class DeeptoolsServer(MCPServerBase):
         if self.fastmcp_server:
             self.fastmcp_server.run()
         else:
-            raise RuntimeError(
-                "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
-            )
+            msg = "FastMCP server not initialized. Install fastmcp package or set enable_fastmcp=False"
+            raise RuntimeError(msg)
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         """

@@ -8,9 +8,9 @@ that integrates with the existing DeepCritical agent system.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
-from ..datatypes.rag import Document, RAGQuery, RAGResponse
+from DeepResearch.src.datatypes.rag import Document, RAGQuery, RAGResponse
+
 from .research_agent import ResearchAgent
 
 
@@ -26,7 +26,7 @@ class RAGAgent(ResearchAgent):
         """Execute a RAG query and return the response."""
         # Placeholder implementation - in a real implementation,
         # this would use RAG system components to retrieve and generate
-        response = RAGResponse(
+        return RAGResponse(
             query=query.text,
             retrieved_documents=[],
             generated_answer="RAG functionality not yet implemented",
@@ -34,7 +34,6 @@ class RAGAgent(ResearchAgent):
             metadata={"status": "placeholder"},
             processing_time=0.0,
         )
-        return response
 
     def retrieve_documents(self, query: str, limit: int = 5) -> list[Document]:
         """Retrieve relevant documents for a query."""

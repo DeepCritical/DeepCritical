@@ -15,7 +15,6 @@ from pathlib import Path
 
 def run_docker_tests():
     """Run Docker-specific tests."""
-    print("🐳 Running Docker sandbox tests...")
 
     env = os.environ.copy()
     env["DOCKER_TESTS"] = "true"
@@ -26,16 +25,13 @@ def run_docker_tests():
         result = subprocess.run(cmd, check=False, env=env, cwd=Path.cwd())
         return result.returncode == 0
     except KeyboardInterrupt:
-        print("\n⏹️  Tests interrupted by user")
         return False
-    except Exception as e:
-        print(f"❌ Error running Docker tests: {e}")
+    except Exception:
         return False
 
 
 def run_bioinformatics_tests():
     """Run bioinformatics tools tests."""
-    print("🧬 Running bioinformatics tools tests...")
 
     env = os.environ.copy()
     env["DOCKER_TESTS"] = "true"
@@ -53,16 +49,13 @@ def run_bioinformatics_tests():
         result = subprocess.run(cmd, check=False, env=env, cwd=Path.cwd())
         return result.returncode == 0
     except KeyboardInterrupt:
-        print("\n⏹️  Tests interrupted by user")
         return False
-    except Exception as e:
-        print(f"❌ Error running bioinformatics tests: {e}")
+    except Exception:
         return False
 
 
 def run_llm_tests():
     """Run LLM framework tests."""
-    print("🤖 Running LLM framework tests...")
 
     cmd = ["python", "-m", "pytest", "tests/test_llm_framework/", "-v", "--tb=short"]
 
@@ -70,16 +63,13 @@ def run_llm_tests():
         result = subprocess.run(cmd, check=False, cwd=Path.cwd())
         return result.returncode == 0
     except KeyboardInterrupt:
-        print("\n⏹️  Tests interrupted by user")
         return False
-    except Exception as e:
-        print(f"❌ Error running LLM tests: {e}")
+    except Exception:
         return False
 
 
 def run_performance_tests():
     """Run performance tests."""
-    print("📊 Running performance tests...")
 
     env = os.environ.copy()
     env["PERFORMANCE_TESTS"] = "true"
@@ -99,10 +89,8 @@ def run_performance_tests():
         result = subprocess.run(cmd, check=False, env=env, cwd=Path.cwd())
         return result.returncode == 0
     except KeyboardInterrupt:
-        print("\n⏹️  Tests interrupted by user")
         return False
-    except Exception as e:
-        print(f"❌ Error running performance tests: {e}")
+    except Exception:
         return False
 
 
@@ -148,10 +136,8 @@ def main():
         success &= run_performance_tests()
 
     if success:
-        print("✅ All tests passed!")
         sys.exit(0)
     else:
-        print("❌ Some tests failed!")
         sys.exit(1)
 
 

@@ -7,8 +7,6 @@ in the DeepCritical system, organized by agent type and purpose.
 
 from __future__ import annotations
 
-from typing import Dict
-
 # Base agent prompts
 BASE_AGENT_SYSTEM_PROMPT = """You are an advanced AI research agent in the DeepCritical system. Your role is to execute specialized research tasks using available tools and maintaining high-quality, accurate results."""
 

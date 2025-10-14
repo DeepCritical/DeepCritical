@@ -11,7 +11,9 @@ __all__ = [
 ]
 
 # Direct import for tools to make them available for documentation
-try:
+from contextlib import suppress
+
+with suppress(ImportError):
     from .src.tools import (
         ChunkedSearchTool,
         DeepSearchTool,
@@ -21,9 +23,6 @@ try:
         WebSearchTool,
         registry,
     )
-except ImportError:
-    # Fallback for when tools can't be imported
-    pass
 
 
 # Lazy import for tools to avoid circular imports
@@ -32,4 +31,6 @@ def __getattr__(name):
         from .src import tools
 
         return tools
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+    msg = f"module '{__name__}' has no attribute '{name}'"
+    raise AttributeError(msg)

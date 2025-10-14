@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
-from ..tools.base import ExecutionResult, registry
+from DeepResearch.src.tools.base import ExecutionResult, registry
 
 
 @dataclass

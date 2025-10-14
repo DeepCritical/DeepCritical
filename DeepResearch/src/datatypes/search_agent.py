@@ -5,8 +5,6 @@ This module defines Pydantic models for search agent configuration, queries,
 and results that align with DeepCritical's architecture.
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 

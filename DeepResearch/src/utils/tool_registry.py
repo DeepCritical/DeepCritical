@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import importlib
 import inspect
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
-from ..datatypes.tool_specs import ToolCategory, ToolSpec
+from DeepResearch.src.datatypes.tool_specs import ToolCategory, ToolSpec
 
 # Import core tool types from datatypes
-from ..datatypes.tools import (
-    ExecutionResult,
-    MockToolRunner,
-    ToolRunner,
-)
+from DeepResearch.src.datatypes.tools import ExecutionResult, MockToolRunner, ToolRunner
 
 
 class ToolRegistry:
@@ -110,12 +106,12 @@ class ToolRegistry:
             module = importlib.import_module(module_name)
 
             # Look for tool specifications
-            for name, obj in inspect.getmembers(module):
+            for _name, obj in inspect.getmembers(module):
                 if isinstance(obj, ToolSpec):
                     self.register_tool(obj)
 
             # Look for tool runner classes
-            for name, obj in inspect.getmembers(module):
+            for _name, obj in inspect.getmembers(module):
                 if (
                     inspect.isclass(obj)
                     and issubclass(obj, ToolRunner)
@@ -126,8 +122,8 @@ class ToolRegistry:
                     if tool_name and tool_name in self.tools:
                         self.register_tool(self.tools[tool_name], obj)
 
-        except ImportError as e:
-            print(f"Warning: Could not load tools from module {module_name}: {e}")
+        except ImportError:
+            pass
 
     def get_registry_summary(self) -> dict[str, Any]:
         """Get a summary of the tool registry."""

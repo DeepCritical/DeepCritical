@@ -7,7 +7,7 @@ integrating with the existing tool registry and datatypes.
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai import RunContext

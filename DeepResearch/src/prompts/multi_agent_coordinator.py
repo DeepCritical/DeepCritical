@@ -6,8 +6,6 @@ patterns including collaborative, sequential, hierarchical, and peer-to-peer
 coordination strategies.
 """
 
-from typing import Dict, List
-
 # Default system prompts for different agent roles
 DEFAULT_SYSTEM_PROMPTS = {
     "coordinator": "You are a coordinator agent responsible for managing and coordinating other agents.",

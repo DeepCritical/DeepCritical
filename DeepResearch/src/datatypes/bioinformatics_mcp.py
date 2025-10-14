@@ -15,44 +15,30 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import json
 import logging
-import subprocess
-import tempfile
 import time
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from collections.abc import Callable
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
     cast,
     get_type_hints,
 )
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.tools import Tool, ToolDefinition
-
-from .agents import AgentDependencies
+from pydantic_ai.tools import Tool
 
 # Import DeepCritical types
 from .mcp import (
     MCPAgentIntegration,
     MCPAgentSession,
-    MCPClientConfig,
     MCPExecutionContext,
-    MCPHealthCheck,
-    MCPResourceLimits,
     MCPServerConfig,
     MCPServerDeployment,
-    MCPServerStatus,
     MCPServerType,
     MCPToolCall,
     MCPToolExecutionRequest,
@@ -63,6 +49,8 @@ from .mcp import (
 
 if TYPE_CHECKING:
     from typing import Protocol
+
+    from .agents import AgentDependencies
 
     class MCPToolFuncProtocol(Protocol):
         """Protocol for functions decorated with @mcp_tool."""
@@ -152,7 +140,8 @@ class MCPServerBase(ABC):
             tool_spec = getattr(method, "_mcp_tool_spec", None)
             if not tool_spec:
                 self.logger.warning(
-                    f"No tool spec found for method {getattr(method, '__name__', 'unknown')}"
+                    "No tool spec found for method %s",
+                    getattr(method, "__name__", "unknown"),
                 )
                 return None
 
@@ -173,7 +162,7 @@ class MCPServerBase(ABC):
         except Exception as e:
             method_name = getattr(method, "__name__", "unknown")
             self.logger.warning(
-                f"Failed to convert method {method_name} to Pydantic AI tool: {e}"
+                "Failed to convert method %s to Pydantic AI tool: %s", method_name, e
             )
             return None
 
@@ -242,9 +231,11 @@ class MCPServerBase(ABC):
             # Record tool response if session exists
             if self.session:
                 tool_response = MCPToolResponse(
-                    call_id=tool_call.call_id
-                    if "tool_call" in locals()
-                    else str(uuid.uuid4()),
+                    call_id=(
+                        tool_call.call_id
+                        if "tool_call" in locals()
+                        else str(uuid.uuid4())
+                    ),
                     success=True,
                     result=result,
                     execution_time=0.0,  # Would need timing logic
@@ -286,7 +277,7 @@ class MCPServerBase(ABC):
             )
 
         except Exception as e:
-            self.logger.warning(f"Failed to initialize Pydantic AI agent: {e}")
+            self.logger.warning("Failed to initialize Pydantic AI agent: %s", e)
             self.pydantic_ai_agent = None
 
     def _load_system_prompt(self) -> str:
@@ -297,10 +288,10 @@ class MCPServerBase(ABC):
             )
             if prompt_path.exists():
                 return prompt_path.read_text().strip()
-            self.logger.warning(f"System prompt file not found: {prompt_path}")
+            self.logger.warning("System prompt file not found: %s", prompt_path)
             return f"MCP Server: {self.name}"
         except Exception as e:
-            self.logger.warning(f"Failed to load system prompt: {e}")
+            self.logger.warning("Failed to load system prompt: %s", e)
             return f"MCP Server: {self.name}"
 
     def get_tool_spec(self, tool_name: str) -> ToolSpec | None:
@@ -318,13 +309,15 @@ class MCPServerBase(ABC):
     def execute_tool(self, tool_name: str, **kwargs) -> Any:
         """Execute a tool with the given parameters."""
         if tool_name not in self.tools:
-            raise ValueError(f"Tool '{tool_name}' not found")
+            msg = f"Tool '{tool_name}' not found"
+            raise ValueError(msg)
 
         tool_info = self.tools[tool_name]
         if isinstance(tool_info, dict) and "method" in tool_info:
             method = tool_info["method"]
             return method(**kwargs)
-        raise ValueError(f"Tool '{tool_name}' is not properly registered")
+        msg = f"Tool '{tool_name}' is not properly registered"
+        raise ValueError(msg)
 
     async def execute_tool_async(
         self, request: MCPToolExecutionRequest, ctx: MCPExecutionContext | None = None
@@ -421,14 +414,14 @@ class MCPServerBase(ABC):
 
         for param_name, expected_type in required_inputs.items():
             if param_name not in parameters:
-                raise ValueError(f"Missing required parameter: {param_name}")
+                msg = f"Missing required parameter: {param_name}"
+                raise ValueError(msg)
 
             # Basic type validation
             actual_value = parameters[param_name]
             if not self._validate_parameter_type(actual_value, expected_type):
-                raise ValueError(
-                    f"Invalid type for parameter '{param_name}': expected {expected_type}, got {type(actual_value).__name__}"
-                )
+                msg = f"Invalid type for parameter '{param_name}': expected {expected_type}, got {type(actual_value).__name__}"
+                raise ValueError(msg)
 
     def _validate_parameter_type(self, value: Any, expected_type: str) -> bool:
         """Validate parameter type."""
@@ -468,8 +461,8 @@ class MCPServerBase(ABC):
             container.reload()
 
             return container.status == "running"
-        except Exception as e:
-            self.logger.error(f"Health check failed: {e}")
+        except Exception:
+            self.logger.exception("Health check failed")
             return False
 
     def get_pydantic_ai_agent(self) -> Agent | None:
@@ -504,7 +497,7 @@ class MCPServerBase(ABC):
 
 
 # Enhanced MCP tool decorator with Pydantic AI integration
-def mcp_tool(spec: Union[ToolSpec, MCPToolSpec] | None = None):
+def mcp_tool(spec: ToolSpec | MCPToolSpec | None = None):
     """
     Decorator for marking methods as MCP tools with Pydantic AI integration.
 
@@ -526,7 +519,7 @@ def mcp_tool(spec: Union[ToolSpec, MCPToolSpec] | None = None):
 
             # Extract inputs from parameters
             inputs = {}
-            for param_name, param in sig.parameters.items():
+            for param_name in sig.parameters:
                 if param_name != "self":  # Skip self parameter
                     param_type = type_hints.get(param_name, str)
                     inputs[param_name] = _get_type_name(param_type)

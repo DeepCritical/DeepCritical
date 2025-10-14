@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -9,10 +9,10 @@ class PydAIToolsetBuilder:
     """Construct builtin tools and external toolsets for Pydantic AI based on cfg."""
 
     def build(self, cfg: dict[str, Any]) -> dict[str, list[Any]]:
-        from ..tools.pyd_ai_tools import (
+        from DeepResearch.src.tools.pyd_ai_tools import (  # reuse helpers
             _build_builtin_tools,
             _build_toolsets,
-        )  # reuse helpers
+        )
 
         builtin_tools = _build_builtin_tools(cfg)
         toolsets = _build_toolsets(cfg)

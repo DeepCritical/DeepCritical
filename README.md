@@ -834,3 +834,13 @@ print(f"Tools used: {summary['tools_used']}")
 - [PRIME Paper](https://doi.org/10.1101/2025.09.22.677756) - Original research paper
 - [Bioinformatics Integration](docs/bioinformatics_integration.md) - Multi-source data fusion guide
 - [Protein Engineering Tools](https://github.com/facebookresearch/hydra) - Tool ecosystem reference
+
+## License
+
+DeepCritical uses dual licensing to maximize open, non-commercial use while reserving rights for commercial applications:
+
+- **Source Code**: Licensed under [GNU General Public License v3 (GPLv3)](LICENSE.md), allowing broad non-commercial use including copying, modification, distribution, and collaboration for personal, educational, research, or non-profit purposes.
+
+- **AI Models and Application**: Licensed under [DeepCritical RAIL-AMS License](RAIL.md), permitting non-commercial use subject to use restrictions (no discrimination, military applications, disinformation, or privacy violations), but prohibiting distribution and derivative creation for sharing.
+
+For commercial use or permissions beyond these licenses, contact us to discuss alternative commercial licensing options.

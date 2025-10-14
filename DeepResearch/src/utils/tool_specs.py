@@ -5,7 +5,7 @@ This module re-exports tool specification types from the datatypes module
 for backward compatibility and easier access.
 """
 
-from ..datatypes.tool_specs import (
+from DeepResearch.src.datatypes.tool_specs import (
     ToolCategory,
     ToolInput,
     ToolOutput,

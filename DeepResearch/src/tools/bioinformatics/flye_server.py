@@ -10,20 +10,16 @@ Pydantic AI agent capabilities for intelligent genome assembly workflows.
 
 from __future__ import annotations
 
-import asyncio
 import subprocess
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -161,17 +157,18 @@ class FlyeServer(MCPServerBase):
             "nano-hq": "--nano-hq",
         }
         if input_type not in valid_input_types:
-            raise ValueError(
-                f"Invalid input_type '{input_type}'. Must be one of {list(valid_input_types.keys())}"
-            )
+            msg = f"Invalid input_type '{input_type}'. Must be one of {list(valid_input_types.keys())}"
+            raise ValueError(msg)
 
         # Validate input_files
         if not input_files or len(input_files) == 0:
-            raise ValueError("At least one input file must be provided in input_files")
+            msg = "At least one input file must be provided in input_files"
+            raise ValueError(msg)
         for f in input_files:
             input_path = Path(f)
             if not input_path.exists():
-                raise FileNotFoundError(f"Input file does not exist: {f}")
+                msg = f"Input file does not exist: {f}"
+                raise FileNotFoundError(msg)
 
         # Validate out_dir
         output_path = Path(out_dir)
@@ -180,16 +177,18 @@ class FlyeServer(MCPServerBase):
 
         # Validate threads
         if threads < 1:
-            raise ValueError("threads must be >= 1")
+            msg = "threads must be >= 1"
+            raise ValueError(msg)
 
         # Validate iterations
         if iterations < 1:
-            raise ValueError("iterations must be >= 1")
+            msg = "iterations must be >= 1"
+            raise ValueError(msg)
 
         # Validate read_error if provided
-        if read_error is not None:
-            if not (0.0 <= read_error <= 1.0):
-                raise ValueError("read_error must be between 0.0 and 1.0")
+        if read_error is not None and not (0.0 <= read_error <= 1.0):
+            msg = "read_error must be between 0.0 and 1.0"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["flye"]
@@ -289,7 +288,8 @@ class FlyeServer(MCPServerBase):
             container = container.with_volume_mapping("/tmp", "/tmp", "rw")
 
             # Install conda environment and dependencies (matches mcp_flye pattern)
-            container = container.with_command("""
+            container = container.with_command(
+                """
                 # Install system dependencies
                 apt-get update && apt-get install -y default-jre wget curl && apt-get clean && rm -rf /var/lib/apt/lists/* && \
                 # Install pip and uv for Python dependencies
@@ -299,7 +299,8 @@ class FlyeServer(MCPServerBase):
                 conda clean -a && \
                 # Verify conda environment is ready
                 conda run -n mcp-tool python -c "import sys; print('Conda environment ready')"
-            """)
+            """
+            )
 
             # Start container and wait for environment setup
             container.start()
@@ -322,7 +323,7 @@ class FlyeServer(MCPServerBase):
             )
 
         except Exception as e:
-            self.logger.error(f"Failed to deploy Flye server: {e}")
+            self.logger.exception("Failed to deploy Flye server")
             return MCPServerDeployment(
                 server_name=self.name,
                 server_type=self.server_type,
@@ -348,6 +349,6 @@ class FlyeServer(MCPServerBase):
             self.container_name = None
             return True
 
-        except Exception as e:
-            self.logger.error(f"Failed to stop Flye server: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop Flye server")
             return False

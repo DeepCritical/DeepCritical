@@ -7,7 +7,8 @@ including configuration management, tool building, and agent creation.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import contextlib
+from typing import Any
 
 
 def get_pydantic_ai_config() -> dict[str, Any]:
@@ -55,18 +56,14 @@ def build_builtin_tools(cfg: dict[str, Any]) -> list[Any]:
     # Code Execution
     ce_cfg = builtin_cfg.get("code_execution", {})
     if ce_cfg.get("enabled", False):
-        try:
+        with contextlib.suppress(Exception):
             tools.append(CodeExecutionTool())
-        except Exception:
-            pass
 
     # URL Context
     uc_cfg = builtin_cfg.get("url_context", {})
     if uc_cfg.get("enabled", False):
-        try:
+        with contextlib.suppress(Exception):
             tools.append(UrlContextTool())
-        except Exception:
-            pass
 
     return tools
 

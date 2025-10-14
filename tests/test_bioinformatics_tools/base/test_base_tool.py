@@ -2,10 +2,9 @@
 Base test class for individual bioinformatics tools.
 """
 
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 from unittest.mock import Mock
 
 import pytest

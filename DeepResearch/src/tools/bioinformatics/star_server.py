@@ -8,26 +8,23 @@ testcontainers deployment.
 
 from __future__ import annotations
 
-import asyncio
 import os
 import subprocess
-import tempfile
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
-from pydantic_ai import RunContext
-
-from ...datatypes.agents import AgentDependencies
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
     MCPToolSpec,
 )
+
+if TYPE_CHECKING:
+    from pydantic_ai import RunContext
+
+    from DeepResearch.src.datatypes.agents import AgentDependencies
 
 
 class STARServer(MCPServerBase):
@@ -268,7 +265,7 @@ class STARServer(MCPServerBase):
         cmd = ["STAR", "--runMode", "genomeGenerate", "--genomeDir", genome_dir]
 
         # Add genome FASTA files
-        cmd.extend(["--genomeFastaFiles"] + genome_fasta_files)
+        cmd.extend(["--genomeFastaFiles", *genome_fasta_files])
 
         if sjdb_gtf_file:
             cmd.extend(["--sjdbGTFfile", sjdb_gtf_file])
@@ -476,7 +473,7 @@ class STARServer(MCPServerBase):
         cmd = ["STAR", "--genomeDir", genome_dir]
 
         # Add input read files
-        cmd.extend(["--readFilesIn"] + read_files_in)
+        cmd.extend(["--readFilesIn", *read_files_in])
 
         # Add output prefix
         cmd.extend(["--outFileNamePrefix", out_file_name_prefix])
@@ -785,7 +782,7 @@ class STARServer(MCPServerBase):
         cmd = ["STAR", "--genomeDir", genome_dir, "--quantMode", quant_mode]
 
         # Add input read files
-        cmd.extend(["--readFilesIn"] + read_files_in)
+        cmd.extend(["--readFilesIn", *read_files_in])
 
         # Add output prefix
         cmd.extend(["--outFileNamePrefix", out_file_name_prefix])
@@ -1125,7 +1122,7 @@ class STARServer(MCPServerBase):
         ]
 
         # Add input read files
-        cmd.extend(["--readFilesIn"] + read_files_in)
+        cmd.extend(["--readFilesIn", *read_files_in])
 
         # Add output prefix
         cmd.extend(["--outFileNamePrefix", out_file_name_prefix])
@@ -1251,7 +1248,7 @@ class STARServer(MCPServerBase):
 
             time.sleep(10)  # Give conda time to install STAR
 
-            deployment = MCPServerDeployment(
+            return MCPServerDeployment(
                 server_name=self.name,
                 server_type=self.server_type,
                 container_id=self.container_id,
@@ -1260,8 +1257,6 @@ class STARServer(MCPServerBase):
                 tools_available=self.list_tools(),
                 configuration=self.config,
             )
-
-            return deployment
 
         except Exception as e:
             return MCPServerDeployment(

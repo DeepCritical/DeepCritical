@@ -7,20 +7,12 @@ including GC bias computation and correction, coverage analysis, and heatmap gen
 """
 
 import asyncio
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
-from unittest.mock import patch
 
 import pytest
 
 from tests.test_bioinformatics_tools.base.test_base_tool import (
     BaseBioinformaticsToolTest,
-)
-from tests.utils.mocks.mock_data import (
-    create_mock_bam,
-    create_mock_bed,
-    create_mock_bigwig,
 )
 
 # Import the MCP module to test MCP functionality

@@ -4,9 +4,10 @@ Vendored usage types from agent_framework._types.
 This module provides usage tracking types for AI agent interactions.
 """
 
-from typing import Dict, Optional
+from typing import Optional
 
 from pydantic import BaseModel
+from typing_extensions import Self
 
 
 class UsageDetails(BaseModel):
@@ -42,9 +43,8 @@ class UsageDetails(BaseModel):
                 "total_token_count",
             ]:
                 if not isinstance(value, int):
-                    raise ValueError(
-                        f"Additional counts must be integers, got {type(value).__name__}"
-                    )
+                    msg = f"Additional counts must be integers, got {type(value).__name__}"
+                    raise ValueError(msg)
                 additional_counts[key] = value
 
         super().__init__(
@@ -59,7 +59,8 @@ class UsageDetails(BaseModel):
         if not other:
             return self
         if not isinstance(other, UsageDetails):
-            raise ValueError("Can only add two usage details objects together.")
+            msg = "Can only add two usage details objects together."
+            raise ValueError(msg)
 
         additional_counts = {}
         if self.additional_counts:
@@ -78,12 +79,13 @@ class UsageDetails(BaseModel):
             **additional_counts,
         )
 
-    def __iadd__(self, other: Optional["UsageDetails"]) -> "UsageDetails":
+    def __iadd__(self, other: Optional["UsageDetails"]) -> Self:
         """In-place addition of UsageDetails."""
         if not other:
             return self
         if not isinstance(other, UsageDetails):
-            raise ValueError("Can only add usage details objects together.")
+            msg = "Can only add usage details objects together."
+            raise ValueError(msg)
 
         self.input_token_count = (self.input_token_count or 0) + (
             other.input_token_count or 0

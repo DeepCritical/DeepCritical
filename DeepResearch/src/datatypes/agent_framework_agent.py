@@ -6,7 +6,7 @@ This module provides agent run response types for AI agent interactions.
 
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 

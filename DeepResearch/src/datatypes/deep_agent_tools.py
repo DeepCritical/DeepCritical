@@ -7,7 +7,7 @@ and related data structures that align with DeepCritical's architecture.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -21,12 +21,15 @@ class WriteTodosRequest(BaseModel):
     @classmethod
     def validate_todos(cls, v):
         if not v:
-            raise ValueError("Todos list cannot be empty")
+            msg = "Todos list cannot be empty"
+            raise ValueError(msg)
         for todo in v:
             if not isinstance(todo, dict):
-                raise ValueError("Each todo must be a dictionary")
+                msg = "Each todo must be a dictionary"
+                raise ValueError(msg)
             if "content" not in todo:
-                raise ValueError("Each todo must have 'content' field")
+                msg = "Each todo must have 'content' field"
+                raise ValueError(msg)
         return v
 
 
@@ -56,7 +59,8 @@ class ReadFileRequest(BaseModel):
     @classmethod
     def validate_file_path(cls, v):
         if not v or not v.strip():
-            raise ValueError("File path cannot be empty")
+            msg = "File path cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
 
@@ -79,7 +83,8 @@ class WriteFileRequest(BaseModel):
     @classmethod
     def validate_file_path(cls, v):
         if not v or not v.strip():
-            raise ValueError("File path cannot be empty")
+            msg = "File path cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
 
@@ -104,14 +109,16 @@ class EditFileRequest(BaseModel):
     @classmethod
     def validate_file_path(cls, v):
         if not v or not v.strip():
-            raise ValueError("File path cannot be empty")
+            msg = "File path cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("old_string")
     @classmethod
     def validate_old_string(cls, v):
         if not v:
-            raise ValueError("Old string cannot be empty")
+            msg = "Old string cannot be empty"
+            raise ValueError(msg)
         return v
 
 
@@ -137,14 +144,16 @@ class TaskRequestModel(BaseModel):
     @classmethod
     def validate_description(cls, v):
         if not v or not v.strip():
-            raise ValueError("Task description cannot be empty")
+            msg = "Task description cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("subagent_type")
     @classmethod
     def validate_subagent_type(cls, v):
         if not v or not v.strip():
-            raise ValueError("Subagent type cannot be empty")
+            msg = "Subagent type cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
 

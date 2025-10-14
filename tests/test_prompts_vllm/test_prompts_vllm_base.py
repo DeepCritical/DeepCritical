@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pytest
 from omegaconf import DictConfig
@@ -90,7 +90,7 @@ class VLLMPromptTestBase:
                 return self._create_default_test_config()
 
         except Exception as e:
-            logger.warning(f"Could not load Hydra config for VLLM tests: {e}")
+            logger.warning("Could not load Hydra config for VLLM tests: %s", e)
             return self._create_default_test_config()
 
     def _create_default_test_config(self) -> DictConfig:
@@ -207,7 +207,7 @@ class VLLMPromptTestBase:
                     allowed_modules = scope_config.get("modules_to_test", [])
                     if allowed_modules and module_name not in allowed_modules:
                         logger.info(
-                            f"Skipping module {module_name} (not in allowed modules)"
+                            "Skipping module %s (not in allowed modules)", module_name
                         )
                         return []
 
@@ -215,14 +215,17 @@ class VLLMPromptTestBase:
                 max_prompts = scope_config.get("max_prompts_per_module", 50)
                 if len(prompts) > max_prompts:
                     logger.info(
-                        f"Limiting prompts for {module_name} to {max_prompts} (was {len(prompts)})"
+                        "Limiting prompts for %s to %d (was %d)",
+                        module_name,
+                        max_prompts,
+                        len(prompts),
                     )
                     prompts = prompts[:max_prompts]
 
             return prompts
 
         except ImportError as e:
-            logger.warning(f"Could not import module {module_name}: {e}")
+            logger.warning("Could not import module %s: %s", module_name, e)
             return []
 
     def _test_single_prompt(
@@ -279,7 +282,9 @@ class VLLMPromptTestBase:
         min_length = assertions_config.get("min_response_length", 10)
         if len(result.get("generated_response", "")) < min_length:
             logger.warning(
-                f"Response for prompt {prompt_name} is shorter than expected: {len(result.get('generated_response', ''))} chars"
+                "Response for prompt %s is shorter than expected: %d chars",
+                prompt_name,
+                len(result.get("generated_response", "")),
             )
 
         return result
@@ -304,7 +309,7 @@ class VLLMPromptTestBase:
         # Most prompts should have some form of instructions
         # (Some system prompts might be just descriptions)
         if not has_instructions and len(prompt_template) > 50:
-            logger.warning(f"Prompt {prompt_name} might be missing clear instructions")
+            logger.warning("Prompt %s might be missing clear instructions", prompt_name)
 
     def _test_prompt_batch(
         self,
@@ -361,7 +366,7 @@ class VLLMPromptTestBase:
                     time.sleep(delay_between_tests)
 
             except Exception as e:
-                logger.error(f"Error testing prompt {prompt_name}: {e}")
+                logger.error("Error testing prompt %s: %s", prompt_name, e)
 
                 # Handle errors based on configuration
                 if error_config.get("graceful_degradation", True):
@@ -460,21 +465,21 @@ class VLLMPromptTestBase:
         if config is None:
             config = self._create_default_test_config()
 
-        logger.info(f"Testing prompts from module: {module_name}")
+        logger.info("Testing prompts from module: %s", module_name)
 
         # Load prompts from the module with configuration
         prompts = self._load_prompts_from_module(module_name, config)
 
         if not prompts:
-            logger.warning(f"No prompts found in module: {module_name}")
+            logger.warning("No prompts found in module: %s", module_name)
             return []
 
-        logger.info(f"Found {len(prompts)} prompts in {module_name}")
+        logger.info("Found %d prompts in %s", len(prompts), module_name)
 
         # Check if we should skip empty modules
         vllm_config = config.get("vllm_tests", {})
         if vllm_config.get("skip_empty_modules", True) and len(prompts) == 0:
-            logger.info(f"Skipping empty module: {module_name}")
+            logger.info("Skipping empty module: %s", module_name)
             return []
 
         # Test all prompts with configuration
@@ -492,12 +497,15 @@ class VLLMPromptTestBase:
 
         if total_time > max_time:
             logger.warning(
-                f"Module {module_name} exceeded time limit: {total_time:.2f}s > {max_time}s"
+                "Module %s exceeded time limit: %.2fs > %ss",
+                module_name,
+                total_time,
+                max_time,
             )
 
         # Generate and log report
         report = self._generate_test_report(results, module_name)
-        logger.info(f"\n{report}")
+        logger.info("\n%s", report)
 
         return results
 
@@ -574,5 +582,7 @@ class VLLMPromptTestBase:
         # as it depends on the model and prompt structure
         if reasoning_rate < min_rate:
             logger.warning(
-                f"Reasoning detection rate {reasoning_rate:.2%} below target {min_rate:.2%}"
+                "Reasoning detection rate %.2f%% below target %.2f%%",
+                reasoning_rate * 100,
+                min_rate * 100,
             )

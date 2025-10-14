@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 # ============================================================================
 # Core Enums and Types
@@ -672,32 +672,32 @@ class PostgRESTClient:
 
         return headers
 
-    def query(self, request: QueryRequest) -> QueryResponse:
+    def query(self, _request: QueryRequest) -> QueryResponse:
         """Execute a query request."""
         # This would be implemented by the actual PostgREST client
         return QueryResponse(data=[], count=0, status_code=501)
 
-    def insert(self, request: InsertRequest) -> QueryResponse:
+    def insert(self, _request: InsertRequest) -> QueryResponse:
         """Execute an insert request."""
         # This would be implemented by the actual PostgREST client
         return QueryResponse(data=[], count=0, status_code=501)
 
-    def update(self, request: UpdateRequest) -> QueryResponse:
+    def update(self, _request: UpdateRequest) -> QueryResponse:
         """Execute an update request."""
         # This would be implemented by the actual PostgREST client
         return QueryResponse(data=[], count=0, status_code=501)
 
-    def delete(self, request: DeleteRequest) -> QueryResponse:
+    def delete(self, _request: DeleteRequest) -> QueryResponse:
         """Execute a delete request."""
         # This would be implemented by the actual PostgREST client
         return QueryResponse(data=[], count=0, status_code=501)
 
-    def upsert(self, request: UpsertRequest) -> QueryResponse:
+    def upsert(self, _request: UpsertRequest) -> QueryResponse:
         """Execute an upsert request."""
         # This would be implemented by the actual PostgREST client
         return QueryResponse(data=[], count=0, status_code=501)
 
-    def rpc(self, request: RPCRequest) -> RPCResponse:
+    def rpc(self, _request: RPCRequest) -> RPCResponse:
         """Execute an RPC request."""
         # This would be implemented by the actual PostgREST client
         return RPCResponse(data=[], status_code=501)

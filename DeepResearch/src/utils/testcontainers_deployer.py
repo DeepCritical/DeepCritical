@@ -7,22 +7,21 @@ for isolated execution environments.
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
-import os
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..datatypes.bioinformatics_mcp import MCPServerBase
-from ..datatypes.mcp import MCPServerConfig, MCPServerDeployment, MCPServerStatus
-from ..tools.bioinformatics.bowtie2_server import Bowtie2Server
-from ..tools.bioinformatics.fastqc_server import FastQCServer
-from ..tools.bioinformatics.samtools_server import SamtoolsServer
+from DeepResearch.src.datatypes.mcp import (
+    MCPServerConfig,
+    MCPServerDeployment,
+    MCPServerStatus,
+)
+from DeepResearch.src.tools.bioinformatics.bowtie2_server import Bowtie2Server
+from DeepResearch.src.tools.bioinformatics.fastqc_server import FastQCServer
+from DeepResearch.src.tools.bioinformatics.samtools_server import SamtoolsServer
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +109,8 @@ class TestcontainersDeployer:
             # Get server implementation
             server = self._get_server_implementation(server_name)
             if not server:
-                raise ValueError(f"Server implementation for '{server_name}' not found")
+                msg = f"Server implementation for '{server_name}' not found"
+                raise ValueError(msg)
 
             # Use testcontainers deployment method if available
             if hasattr(server, "deploy_with_testcontainers"):
@@ -163,13 +163,15 @@ class TestcontainersDeployer:
             self.deployments[server_name] = deployment
 
             logger.info(
-                f"Deployed MCP server '{server_name}' with container '{deployment.container_id}'"
+                "Deployed MCP server '%s' with container '%s'",
+                server_name,
+                deployment.container_id,
             )
 
             return deployment
 
         except Exception as e:
-            logger.error(f"Failed to deploy MCP server '{server_name}': {e}")
+            logger.exception("Failed to deploy MCP server '%s'", server_name)
             deployment = MCPServerDeployment(
                 server_name=server_name,
                 server_type=self._get_server_type(server_name),
@@ -186,7 +188,7 @@ class TestcontainersDeployer:
     async def stop_server(self, server_name: str) -> bool:
         """Stop a deployed MCP server."""
         if server_name not in self.deployments:
-            logger.warning(f"Server '{server_name}' not found in deployments")
+            logger.warning("Server '%s' not found in deployments", server_name)
             return False
 
         deployment = self.deployments[server_name]
@@ -200,11 +202,11 @@ class TestcontainersDeployer:
             if server_name in self.containers:
                 del self.containers[server_name]
 
-            logger.info(f"Stopped MCP server '{server_name}'")
+            logger.info("Stopped MCP server '%s'", server_name)
             return True
 
         except Exception as e:
-            logger.error(f"Failed to stop MCP server '{server_name}': {e}")
+            logger.exception("Failed to stop MCP server '%s'", server_name)
             deployment.status = "failed"
             deployment.error_message = str(e)
             return False
@@ -223,31 +225,31 @@ class TestcontainersDeployer:
         """Execute a tool on a deployed server."""
         deployment = self.deployments.get(server_name)
         if not deployment:
-            raise ValueError(f"Server '{server_name}' not deployed")
+            msg = f"Server '{server_name}' not deployed"
+            raise ValueError(msg)
 
         if deployment.status != "running":
-            raise ValueError(
-                f"Server '{server_name}' is not running (status: {deployment.status})"
-            )
+            msg = f"Server '{server_name}' is not running (status: {deployment.status})"
+            raise ValueError(msg)
 
         # Get server implementation
         server = self.server_implementations.get(server_name)
         if not server:
-            raise ValueError(f"Server implementation for '{server_name}' not found")
+            msg = f"Server implementation for '{server_name}' not found"
+            raise ValueError(msg)
 
         # Check if tool exists
         available_tools = server.list_tools()
         if tool_name not in available_tools:
-            raise ValueError(
-                f"Tool '{tool_name}' not found on server '{server_name}'. Available tools: {', '.join(available_tools)}"
-            )
+            msg = f"Tool '{tool_name}' not found on server '{server_name}'. Available tools: {', '.join(available_tools)}"
+            raise ValueError(msg)
 
         # Execute tool
         try:
-            result = server.execute_tool(tool_name, **kwargs)
-            return result
+            return server.execute_tool(tool_name, **kwargs)
         except Exception as e:
-            raise ValueError(f"Tool execution failed: {e}")
+            msg = f"Tool execution failed: {e}"
+            raise ValueError(msg)
 
     def _get_server_type(self, server_name: str) -> str:
         """Get the server type from the server name."""
@@ -284,11 +286,11 @@ class TestcontainersDeployer:
 
             files_created.append(str(requirements_file))
 
-            logger.info(f"Created server files for '{server_name}' in {server_dir}")
+            logger.info("Created server files for '%s' in %s", server_name, server_dir)
             return files_created
 
-        except Exception as e:
-            logger.error(f"Failed to create server files for '{server_name}': {e}")
+        except Exception:
+            logger.exception("Failed to create server files for '%s'", server_name)
             return files_created
 
     def _generate_server_code(self, server_name: str) -> str:
@@ -298,7 +300,7 @@ class TestcontainersDeployer:
             return "# Server implementation not found"
 
         # Generate basic server code structure
-        code = f'''"""
+        return f'''"""
 Auto-generated MCP server for {server_name}.
 """
 
@@ -311,8 +313,6 @@ if __name__ == "__main__":
     print(f"MCP Server '{server.name}' v{server.version} ready")
     print(f"Available tools: {{', '.join(server.list_tools())}}")
 '''
-
-        return code
 
     def _generate_requirements(self, server_name: str) -> str:
         """Generate requirements file for server deployment."""
@@ -359,11 +359,11 @@ if __name__ == "__main__":
             if server_name in self.containers:
                 del self.containers[server_name]
 
-            logger.info(f"Cleaned up MCP server '{server_name}'")
+            logger.info("Cleaned up MCP server '%s'", server_name)
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to cleanup server '{server_name}': {e}")
+        except Exception:
+            logger.exception("Failed to cleanup server '%s'", server_name)
             return False
 
     async def health_check(self, server_name: str) -> bool:
@@ -379,8 +379,8 @@ if __name__ == "__main__":
             # In a real implementation, this would check if the container is healthy
             # For now, we'll just check if the deployment exists and is running
             return True
-        except Exception as e:
-            logger.error(f"Health check failed for server '{server_name}': {e}")
+        except Exception:
+            logger.exception("Health check failed for server '%s'", server_name)
             return False
 
 

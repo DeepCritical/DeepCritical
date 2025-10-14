@@ -9,19 +9,17 @@ DeepCritical's architecture.
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict
-
-from pydantic_ai import RunContext
+from typing import TYPE_CHECKING, Any
 
 # Note: defer decorator is not available in current pydantic-ai version
 # Import existing DeepCritical types
-from ..datatypes.deep_agent_state import (
+from DeepResearch.src.datatypes.deep_agent_state import (
     DeepAgentState,
     TaskStatus,
     create_file_info,
     create_todo,
 )
-from ..datatypes.deep_agent_tools import (
+from DeepResearch.src.datatypes.deep_agent_tools import (
     EditFileRequest,
     EditFileResponse,
     ListFilesResponse,
@@ -34,8 +32,12 @@ from ..datatypes.deep_agent_tools import (
     WriteTodosRequest,
     WriteTodosResponse,
 )
-from ..datatypes.deep_agent_types import TaskRequest
+from DeepResearch.src.datatypes.deep_agent_types import TaskRequest
+
 from .base import ExecutionResult, ToolRunner, ToolSpec
+
+if TYPE_CHECKING:
+    from pydantic_ai import RunContext
 
 
 # Pydantic AI tool functions

@@ -5,20 +5,26 @@ This agent demonstrates how to use the websearch and analytics tools with Pydant
 for intelligent search and retrieval operations.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from pydantic_ai import Agent
 
-from ..datatypes.search_agent import (
+from DeepResearch.src.datatypes.search_agent import (
     SearchAgentConfig,
     SearchAgentDependencies,
     SearchQuery,
     SearchResult,
 )
-from ..prompts.search_agent import SearchAgentPrompts
-from ..tools.analytics_tools import get_analytics_data_tool, record_request_tool
-from ..tools.integrated_search_tools import integrated_search_tool, rag_search_tool
-from ..tools.websearch_tools import chunked_search_tool, web_search_tool
+from DeepResearch.src.prompts.search_agent import SearchAgentPrompts
+from DeepResearch.src.tools.analytics_tools import (
+    get_analytics_data_tool,
+    record_request_tool,
+)
+from DeepResearch.src.tools.integrated_search_tools import (
+    integrated_search_tool,
+    rag_search_tool,
+)
+from DeepResearch.src.tools.websearch_tools import chunked_search_tool, web_search_tool
 
 
 class SearchAgent:
@@ -119,10 +125,7 @@ async def example_basic_search():
         num_results=5,
     )
 
-    result = await agent.search(query)
-    print(f"Search successful: {result.success}")
-    print(f"Content: {result.content[:200]}...")
-    print(f"Analytics recorded: {result.analytics_recorded}")
+    await agent.search(query)
 
 
 async def example_rag_search():
@@ -137,9 +140,7 @@ async def example_rag_search():
         query="machine learning algorithms", use_rag=True, num_results=3
     )
 
-    result = await agent.search(query)
-    print(f"RAG search successful: {result.success}")
-    print(f"Processing time: {result.processing_time}s")
+    await agent.search(query)
 
 
 async def example_analytics():
@@ -147,8 +148,7 @@ async def example_analytics():
     config = SearchAgentConfig(enable_analytics=True)
     agent = SearchAgent(config)
 
-    analytics = await agent.get_analytics(days=7)
-    print(f"Analytics data: {analytics}")
+    await agent.get_analytics(days=7)
 
 
 if __name__ == "__main__":

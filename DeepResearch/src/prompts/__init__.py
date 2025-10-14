@@ -4,14 +4,15 @@ import importlib
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict
-
-from omegaconf import DictConfig
+from typing import TYPE_CHECKING, Any
 
 from . import deep_agent_graph
 
 # Import agent prompts
 from .agent import ACTIONS_WRAPPER, HEADER, AgentPrompts
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
 
 
 @dataclass

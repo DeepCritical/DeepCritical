@@ -6,8 +6,6 @@ This module defines prompts for deep agent graph operations and coordination.
 
 from __future__ import annotations
 
-from typing import Dict
-
 # Deep agent graph system prompt
 DEEP_AGENT_GRAPH_SYSTEM_PROMPT = """You are a deep agent graph coordinator in the DeepCritical system. Your role is to:
 

@@ -7,12 +7,12 @@ data processing, fusion, and reasoning tasks.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 
-from ..datatypes.bioinformatics import (
+from DeepResearch.src.datatypes.bioinformatics import (
     BioinformaticsAgentDeps,
     DataFusionRequest,
     DataFusionResult,
@@ -22,7 +22,7 @@ from ..datatypes.bioinformatics import (
     ReasoningResult,
     ReasoningTask,
 )
-from ..prompts.bioinformatics_agents import BioinformaticsAgentPrompts
+from DeepResearch.src.prompts.bioinformatics_agents import BioinformaticsAgentPrompts
 
 
 class DataFusionAgent:
@@ -53,14 +53,12 @@ class DataFusionAgent:
             BioinformaticsAgentPrompts.DATA_FUSION_SYSTEM,
         )
 
-        agent = Agent(
+        return Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=DataFusionResult,
             system_prompt=system_prompt,
         )
-
-        return agent
 
     async def fuse_data(
         self, request: DataFusionRequest, deps: BioinformaticsAgentDeps
@@ -90,14 +88,12 @@ class GOAnnotationAgent:
         """Create the GO annotation agent."""
         model = AnthropicModel(self.model_name)
 
-        agent = Agent(
+        return Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=list[GOAnnotation],
             system_prompt=BioinformaticsAgentPrompts.GO_ANNOTATION_SYSTEM,
         )
-
-        return agent
 
     async def process_annotations(
         self,
@@ -129,14 +125,12 @@ class ReasoningAgent:
         """Create the reasoning agent."""
         model = AnthropicModel(self.model_name)
 
-        agent = Agent(
+        return Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=ReasoningResult,
             system_prompt=BioinformaticsAgentPrompts.REASONING_SYSTEM,
         )
-
-        return agent
 
     async def perform_reasoning(
         self, task: ReasoningTask, dataset: FusedDataset, deps: BioinformaticsAgentDeps
@@ -173,14 +167,12 @@ class DataQualityAgent:
         """Create the data quality agent."""
         model = AnthropicModel(self.model_name)
 
-        agent = Agent(
+        return Agent(
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=dict[str, float],
             system_prompt=BioinformaticsAgentPrompts.DATA_QUALITY_SYSTEM,
         )
-
-        return agent
 
     async def assess_quality(
         self, dataset: FusedDataset, deps: BioinformaticsAgentDeps
@@ -257,7 +249,8 @@ class AgentOrchestrator:
         fusion_result = await self.fusion_agent.fuse_data(request, deps)
 
         if not fusion_result.success:
-            raise ValueError("Data fusion failed")
+            msg = "Data fusion failed"
+            raise ValueError(msg)
 
         # Step 2: Construct dataset from fusion result
         dataset = FusedDataset(**fusion_result.dataset)

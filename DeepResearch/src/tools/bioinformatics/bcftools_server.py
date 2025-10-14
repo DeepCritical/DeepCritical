@@ -9,26 +9,24 @@ call, view, index, concat, query, stats, sort, and plugin support.
 
 from __future__ import annotations
 
-import asyncio
-import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.tools import Tool
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
+
+if TYPE_CHECKING:
+    from pydantic_ai.tools import Tool
 
 
 class CommonBCFtoolsOptions(BaseModel):
@@ -70,21 +68,24 @@ class CommonBCFtoolsOptions(BaseModel):
     @classmethod
     def validate_output_type(cls, v):
         if v is not None and v[0] not in {"b", "u", "z", "v"}:
-            raise ValueError(f"Invalid output-type value: {v}")
+            msg = f"Invalid output-type value: {v}"
+            raise ValueError(msg)
         return v
 
     @field_validator("regions_overlap", "targets_overlap")
     @classmethod
     def validate_overlap(cls, v):
         if v is not None and v not in {"pos", "record", "variant", "0", "1", "2"}:
-            raise ValueError(f"Invalid overlap value: {v}")
+            msg = f"Invalid overlap value: {v}"
+            raise ValueError(msg)
         return v
 
     @field_validator("write_index")
     @classmethod
     def validate_write_index(cls, v):
         if v is not None and v not in {"tbi", "csi"}:
-            raise ValueError(f"Invalid write-index format: {v}")
+            msg = f"Invalid write-index format: {v}"
+            raise ValueError(msg)
         return v
 
     @field_validator("collapse")
@@ -99,7 +100,8 @@ class CommonBCFtoolsOptions(BaseModel):
             "none",
             "id",
         }:
-            raise ValueError(f"Invalid collapse value: {v}")
+            msg = f"Invalid collapse value: {v}"
+            raise ValueError(msg)
         return v
 
 
@@ -199,7 +201,8 @@ class BCFtoolsServer(MCPServerBase):
         """Validate file path and return Path object."""
         p = Path(path)
         if must_exist and not p.exists():
-            raise FileNotFoundError(f"File not found: {path}")
+            msg = f"File not found: {path}"
+            raise FileNotFoundError(msg)
         return p
 
     def _validate_output_path(self, path: str | None) -> Path | None:
@@ -208,7 +211,8 @@ class BCFtoolsServer(MCPServerBase):
             return None
         p = Path(path)
         if p.exists() and not p.is_file():
-            raise ValueError(f"Output path exists and is not a file: {path}")
+            msg = f"Output path exists and is not a file: {path}"
+            raise ValueError(msg)
         return p
 
     def _build_common_options(self, **kwargs) -> list[str]:
@@ -517,7 +521,8 @@ class BCFtoolsServer(MCPServerBase):
                 "exact",
                 "id",
             }:
-                raise ValueError(f"Invalid pair-logic value: {pair_logic}")
+                msg = f"Invalid pair-logic value: {pair_logic}"
+                raise ValueError(msg)
             cmd += ["--pair-logic", pair_logic]
         if regions:
             cmd += ["-r", regions]
@@ -526,7 +531,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if rename_annots:
             ra_path = self._validate_file_path(rename_annots)
@@ -542,18 +548,21 @@ class BCFtoolsServer(MCPServerBase):
         if single_overlaps:
             cmd.append("--single-overlaps")
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if remove:
             cmd += ["-x", remove]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
 
         cmd.append(str(file_path))
@@ -641,7 +650,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if samples:
             cmd += ["-s", samples]
@@ -655,15 +665,18 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-T", str(tf_path)]
         if targets_overlap:
             if targets_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid targets-overlap value: {targets_overlap}")
+                msg = f"Invalid targets-overlap value: {targets_overlap}"
+                raise ValueError(msg)
             cmd += ["--targets-overlap", targets_overlap]
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
         if keep_alts:
             cmd.append("-A")
@@ -683,23 +696,27 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-g", gvcf]
         if insert_missed is not None:
             if insert_missed < 0:
-                raise ValueError("insert_missed must be non-negative")
+                msg = "insert_missed must be non-negative"
+                raise ValueError(msg)
             cmd += ["-i", str(insert_missed)]
         if keep_masked_ref:
             cmd.append("-M")
         if skip_variants:
             if skip_variants not in {"snps", "indels"}:
-                raise ValueError(f"Invalid skip-variants value: {skip_variants}")
+                msg = f"Invalid skip-variants value: {skip_variants}"
+                raise ValueError(msg)
             cmd += ["-V", skip_variants]
         if variants_only:
             cmd.append("-v")
         if consensus_caller and multiallelic_caller:
-            raise ValueError("Options -c and -m are mutually exclusive")
+            msg = "Options -c and -m are mutually exclusive"
+            raise ValueError(msg)
         if consensus_caller:
             cmd.append("-c")
         if constrain:
             if constrain not in {"alleles", "trio"}:
-                raise ValueError(f"Invalid constrain value: {constrain}")
+                msg = f"Invalid constrain value: {constrain}"
+                raise ValueError(msg)
             cmd += ["-C", constrain]
         if multiallelic_caller:
             cmd.append("-m")
@@ -707,18 +724,21 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-n", novel_rate]
         if pval_threshold is not None:
             if pval_threshold < 0.0:
-                raise ValueError("pval_threshold must be non-negative")
+                msg = "pval_threshold must be non-negative"
+                raise ValueError(msg)
             cmd += ["-p", str(pval_threshold)]
         if prior is not None:
             if prior < 0.0:
-                raise ValueError("prior must be non-negative")
+                msg = "prior must be non-negative"
+                raise ValueError(msg)
             cmd += ["-P", str(prior)]
         if chromosome_x:
             cmd.append("-X")
         if chromosome_y:
             cmd.append("-Y")
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
 
@@ -805,7 +825,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd.append("--with-header")
         if compression_level is not None:
             if not (0 <= compression_level <= 9):
-                raise ValueError("compression_level must be between 0 and 9")
+                msg = "compression_level must be between 0 and 9"
+                raise ValueError(msg)
             cmd += ["-l", str(compression_level)]
         if no_version:
             cmd.append("--no-version")
@@ -821,7 +842,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if samples:
             cmd += ["-s", samples]
@@ -829,19 +851,23 @@ class BCFtoolsServer(MCPServerBase):
             sf_path = self._validate_file_path(samples_file)
             cmd += ["-S", str(sf_path)]
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
         if trim_unseen_alleles not in {0, 1, 2}:
-            raise ValueError("trim_unseen_alleles must be 0, 1, or 2")
+            msg = "trim_unseen_alleles must be 0, 1, or 2"
+            raise ValueError(msg)
         if trim_unseen_alleles == 1:
             cmd.append("-A")
         elif trim_unseen_alleles == 2:
@@ -854,15 +880,18 @@ class BCFtoolsServer(MCPServerBase):
             cmd.append("-I")
         if min_pq is not None:
             if min_pq < 0:
-                raise ValueError("min_pq must be non-negative")
+                msg = "min_pq must be non-negative"
+                raise ValueError(msg)
             cmd += ["-q", str(min_pq)]
         if min_ac is not None:
             if min_ac < 0:
-                raise ValueError("min_ac must be non-negative")
+                msg = "min_ac must be non-negative"
+                raise ValueError(msg)
             cmd += ["-c", str(min_ac)]
         if max_ac is not None:
             if max_ac < 0:
-                raise ValueError("max_ac must be non-negative")
+                msg = "max_ac must be non-negative"
+                raise ValueError(msg)
             cmd += ["-C", str(max_ac)]
         if exclude:
             cmd += ["-e", exclude]
@@ -876,11 +905,13 @@ class BCFtoolsServer(MCPServerBase):
             cmd.append("-k")
         if min_alleles is not None:
             if min_alleles < 0:
-                raise ValueError("min_alleles must be non-negative")
+                msg = "min_alleles must be non-negative"
+                raise ValueError(msg)
             cmd += ["-m", str(min_alleles)]
         if max_alleles is not None:
             if max_alleles < 0:
-                raise ValueError("max_alleles must be non-negative")
+                msg = "max_alleles must be non-negative"
+                raise ValueError(msg)
             cmd += ["-M", str(max_alleles)]
         if novel:
             cmd.append("-n")
@@ -890,11 +921,13 @@ class BCFtoolsServer(MCPServerBase):
             cmd.append("-P")
         if min_af is not None:
             if not (0.0 <= min_af <= 1.0):
-                raise ValueError("min_af must be between 0 and 1")
+                msg = "min_af must be between 0 and 1"
+                raise ValueError(msg)
             cmd += ["-q", str(min_af)]
         if max_af is not None:
             if not (0.0 <= max_af <= 1.0):
-                raise ValueError("max_af must be between 0 and 1")
+                msg = "max_af must be between 0 and 1"
+                raise ValueError(msg)
             cmd += ["-Q", str(max_af)]
         if uncalled:
             cmd.append("-u")
@@ -953,7 +986,8 @@ class BCFtoolsServer(MCPServerBase):
         if force:
             cmd.append("-f")
         if min_shift < 0:
-            raise ValueError("min_shift must be non-negative")
+            msg = "min_shift must be non-negative"
+            raise ValueError(msg)
         cmd += ["-m", str(min_shift)]
         if output:
             out_path = Path(output)
@@ -961,11 +995,13 @@ class BCFtoolsServer(MCPServerBase):
         if tbi:
             cmd.append("-t")
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
 
@@ -1038,7 +1074,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd.append("-c")
         if rm_dups:
             if rm_dups not in {"snps", "indels", "both", "all", "exact"}:
-                raise ValueError(f"Invalid rm_dups value: {rm_dups}")
+                msg = f"Invalid rm_dups value: {rm_dups}"
+                raise ValueError(msg)
             cmd += ["-d", rm_dups]
         if file_list:
             cmd += ["-f", str(fl_path)]
@@ -1061,7 +1098,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-O", output_type]
         if min_pq is not None:
             if min_pq < 0:
-                raise ValueError("min_pq must be non-negative")
+                msg = "min_pq must be non-negative"
+                raise ValueError(msg)
             cmd += ["-q", str(min_pq)]
         if regions:
             cmd += ["-r", regions]
@@ -1070,19 +1108,23 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
 
         if not file_list:
@@ -1161,7 +1203,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if samples:
             cmd += ["-s", samples]
@@ -1174,7 +1217,8 @@ class BCFtoolsServer(MCPServerBase):
             vl_path = self._validate_file_path(vcf_list)
             cmd += ["-v", str(vl_path)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
 
@@ -1265,7 +1309,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if samples:
             cmd += ["-s", samples]
@@ -1279,12 +1324,14 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-T", str(tf_path)]
         if targets_overlap:
             if targets_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid targets-overlap value: {targets_overlap}")
+                msg = f"Invalid targets-overlap value: {targets_overlap}"
+                raise ValueError(msg)
             cmd += ["--targets-overlap", targets_overlap]
         if user_tstv:
             cmd += ["-u", user_tstv]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
 
@@ -1336,12 +1383,14 @@ class BCFtoolsServer(MCPServerBase):
             temp_path = Path(temp_dir)
             cmd += ["-T", str(temp_path)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
 
         cmd.append(str(file_path))
@@ -1399,7 +1448,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if output:
             out_path = Path(output)
@@ -1407,16 +1457,19 @@ class BCFtoolsServer(MCPServerBase):
         if output_type:
             cmd += ["-O", output_type]
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
         if plugin_options:
             cmd += plugin_options
@@ -1483,7 +1536,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-s", soft_filter]
         if mode:
             if mode not in {"+", "x", "="}:
-                raise ValueError(f"Invalid mode value: {mode}")
+                msg = f"Invalid mode value: {mode}"
+                raise ValueError(msg)
             cmd += ["-m", mode]
         if regions:
             cmd += ["-r", regions]
@@ -1492,7 +1546,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-R", str(rf_path)]
         if regions_overlap:
             if regions_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid regions-overlap value: {regions_overlap}")
+                msg = f"Invalid regions-overlap value: {regions_overlap}"
+                raise ValueError(msg)
             cmd += ["--regions-overlap", regions_overlap]
         if targets:
             cmd += ["-t", targets]
@@ -1501,7 +1556,8 @@ class BCFtoolsServer(MCPServerBase):
             cmd += ["-T", str(tf_path)]
         if targets_overlap:
             if targets_overlap not in {"0", "1", "2"}:
-                raise ValueError(f"Invalid targets-overlap value: {targets_overlap}")
+                msg = f"Invalid targets-overlap value: {targets_overlap}"
+                raise ValueError(msg)
             cmd += ["--targets-overlap", targets_overlap]
         if samples:
             cmd += ["-s", samples]
@@ -1509,16 +1565,19 @@ class BCFtoolsServer(MCPServerBase):
             sf_path = self._validate_file_path(samples_file)
             cmd += ["-S", str(sf_path)]
         if threads < 0:
-            raise ValueError("threads must be >= 0")
+            msg = "threads must be >= 0"
+            raise ValueError(msg)
         if threads > 0:
             cmd += ["--threads", str(threads)]
         if verbosity < 0:
-            raise ValueError("verbosity must be >= 0")
+            msg = "verbosity must be >= 0"
+            raise ValueError(msg)
         if verbosity != 1:
             cmd += ["-v", str(verbosity)]
         if write_index:
             if write_index not in {"tbi", "csi"}:
-                raise ValueError(f"Invalid write-index format: {write_index}")
+                msg = f"Invalid write-index format: {write_index}"
+                raise ValueError(msg)
             cmd += ["-W", write_index]
 
         cmd.append(str(file_path))
@@ -1613,8 +1672,8 @@ class BCFtoolsServer(MCPServerBase):
 
             return True
 
-        except Exception as e:
-            self.logger.error(f"Failed to stop container {self.container_id}: {e}")
+        except Exception:
+            self.logger.exception(f"Failed to stop container {self.container_id}")
             return False
 
     def get_server_info(self) -> dict[str, Any]:

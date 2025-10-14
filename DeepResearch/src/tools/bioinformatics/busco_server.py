@@ -14,16 +14,12 @@ from __future__ import annotations
 
 import asyncio
 import os
-import shutil
 import subprocess
-import tempfile
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -335,7 +331,7 @@ class BUSCOServer(MCPServerBase):
                     output_files.append(busco_output_dir)
 
                 # Look for short_summary files
-                for root, dirs, files in os.walk(output_dir):
+                for root, _dirs, files in os.walk(output_dir):
                     for file in files:
                         if file.startswith("short_summary"):
                             output_files.append(os.path.join(root, file))

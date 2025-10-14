@@ -2,13 +2,8 @@
 Docker sandbox isolation tests for security validation.
 """
 
-import os
-import subprocess
-from pathlib import Path
-
 import pytest
 
-from DeepResearch.src.tools.docker_sandbox import DockerSandboxRunner
 from tests.utils.testcontainers.docker_helpers import create_isolated_container
 
 

@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
-from ..datatypes.execution import ExecutionContext
-from ..datatypes.tools import ExecutionResult
-from ..utils.execution_history import ExecutionHistory, ExecutionItem
-from ..utils.execution_status import ExecutionStatus
-from ..utils.tool_registry import ToolRegistry
+from DeepResearch.src.datatypes.execution import ExecutionContext
+from DeepResearch.src.datatypes.tools import ExecutionResult
+from DeepResearch.src.utils.execution_history import ExecutionHistory, ExecutionItem
+from DeepResearch.src.utils.execution_status import ExecutionStatus
+
 from .prime_planner import WorkflowDAG, WorkflowStep
+
+if TYPE_CHECKING:
+    from DeepResearch.src.utils.tool_registry import ToolRegistry
 
 
 @dataclass
@@ -277,10 +280,6 @@ class ToolExecutor:
         self, step: WorkflowStep, parameters: dict[str, Any]
     ) -> bool:
         """Request manual confirmation for step execution."""
-        print("\n=== Manual Confirmation Required ===")
-        print(f"Tool: {step.tool}")
-        print(f"Parameters: {parameters}")
-        print(f"Success Criteria: {step.success_criteria}")
 
         response = input("Proceed with execution? (y/n): ").lower().strip()
         return response in ["y", "yes"]
@@ -292,10 +291,6 @@ class ToolExecutor:
         # Strategic re-planning: substitute with alternative tool
         alternative_tool = self._find_alternative_tool(failed_step.tool)
         if alternative_tool:
-            print(
-                f"Strategic re-planning: substituting {failed_step.tool} with {alternative_tool}"
-            )
-
             # Create new step with alternative tool
             new_step = WorkflowStep(
                 tool=alternative_tool,
@@ -314,8 +309,6 @@ class ToolExecutor:
         # Tactical re-planning: adjust parameters
         adjusted_params = self._adjust_parameters_tactically(failed_step)
         if adjusted_params:
-            print(f"Tactical re-planning: adjusting parameters for {failed_step.tool}")
-
             # Create new step with adjusted parameters
             new_step = WorkflowStep(
                 tool=failed_step.tool,
@@ -383,10 +376,7 @@ class ToolExecutor:
         failed_steps = sum(
             1 for item in context.history.items if item.status == ExecutionStatus.FAILED
         )
-        if failed_steps > len(context.workflow.steps) // 2:
-            return False
-
-        return True
+        return not failed_steps > len(context.workflow.steps) // 2
 
 
 def execute_workflow(

@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
 import pytest
-import requests
 
 from DeepResearch.src.datatypes.bioinformatics import PubMedPaper
 from DeepResearch.src.tools.bioinformatics_tools import (

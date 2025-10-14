@@ -5,9 +5,8 @@ Tests for the comprehensive Seqtk bioinformatics server that integrates with Pyd
 These tests validate all MCP tool functions for FASTA/Q processing operations.
 """
 
-import tempfile
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 

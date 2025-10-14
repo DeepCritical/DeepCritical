@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -48,7 +48,8 @@ class Todo(BaseModel):
     @classmethod
     def validate_content(cls, v):
         if not v or not v.strip():
-            raise ValueError("Todo content cannot be empty")
+            msg = "Todo content cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     def mark_in_progress(self) -> None:
@@ -85,7 +86,8 @@ class FileInfo(BaseModel):
     @classmethod
     def validate_path(cls, v):
         if not v or not v.strip():
-            raise ValueError("File path cannot be empty")
+            msg = "File path cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     def update_content(self, new_content: str) -> None:

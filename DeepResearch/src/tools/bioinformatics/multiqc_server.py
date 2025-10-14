@@ -11,17 +11,14 @@ Based on the BioinfoMCP example implementation with full feature set integration
 from __future__ import annotations
 
 import asyncio
-import os
 import shlex
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
@@ -283,9 +280,9 @@ class MultiQCServer(MCPServerBase):
             }
         except Exception as e:
             return {
-                "command_executed": " ".join(shlex.quote(c) for c in cmd)
-                if "cmd" in locals()
-                else "",
+                "command_executed": (
+                    " ".join(shlex.quote(c) for c in cmd) if "cmd" in locals() else ""
+                ),
                 "stdout": "",
                 "stderr": str(e),
                 "output_files": [],
@@ -392,9 +389,9 @@ class MultiQCServer(MCPServerBase):
             }
         except Exception as e:
             return {
-                "command_executed": " ".join(shlex.quote(c) for c in cmd)
-                if "cmd" in locals()
-                else "",
+                "command_executed": (
+                    " ".join(shlex.quote(c) for c in cmd) if "cmd" in locals() else ""
+                ),
                 "stdout": "",
                 "stderr": str(e),
                 "modules": [],
@@ -436,16 +433,15 @@ class MultiQCServer(MCPServerBase):
             # Wait for container to be ready
             container.reload()
             max_attempts = 30
-            for attempt in range(max_attempts):
+            for _attempt in range(max_attempts):
                 if container.status == "running":
                     break
                 await asyncio.sleep(0.5)
                 container.reload()
 
             if container.status != "running":
-                raise RuntimeError(
-                    f"Container failed to start after {max_attempts} attempts"
-                )
+                msg = f"Container failed to start after {max_attempts} attempts"
+                raise RuntimeError(msg)
 
             # Store container info
             self.container_id = container.get_wrapped_container().id
@@ -464,7 +460,7 @@ class MultiQCServer(MCPServerBase):
             )
 
         except Exception as e:
-            self.logger.error(f"Failed to deploy MultiQC server: {e}")
+            self.logger.exception("Failed to deploy MultiQC server")
             return MCPServerDeployment(
                 server_name=self.name,
                 server_type=self.server_type,
@@ -487,8 +483,8 @@ class MultiQCServer(MCPServerBase):
 
                 return True
             return False
-        except Exception as e:
-            self.logger.error(f"Failed to stop MultiQC server: {e}")
+        except Exception:
+            self.logger.exception("Failed to stop MultiQC server")
             return False
 
     def get_server_info(self) -> dict[str, Any]:

@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class EvaluationType(str, Enum):
@@ -472,7 +472,8 @@ Evaluation: {
                 },
                 **base_schema_after,
             }
-        raise ValueError(f"Unknown evaluation type: {eval_type}")
+        msg = f"Unknown evaluation type: {eval_type}"
+        raise ValueError(msg)
 
     def get_agent_schema(
         self,
@@ -575,7 +576,7 @@ Ensure each reflection question:
             }
 
         # Create the main schema
-        schema = {
+        return {
             "type": "object",
             "properties": {
                 "think": {
@@ -592,8 +593,6 @@ Ensure each reflection question:
             },
             "required": ["think", "action"],
         }
-
-        return schema
 
 
 @dataclass

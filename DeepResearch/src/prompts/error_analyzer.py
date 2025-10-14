@@ -1,5 +1,3 @@
-from typing import Dict
-
 SYSTEM = (
     "You are an expert at analyzing search and reasoning processes. Your task is to analyze the given sequence of steps and identify what went wrong in the search process.\n\n"
     "<rules>\n"

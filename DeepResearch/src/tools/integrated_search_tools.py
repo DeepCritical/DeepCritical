@@ -7,11 +7,12 @@ analytics tracking, and RAG datatypes for a complete search and retrieval system
 
 import json
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from pydantic_ai import RunContext
 
-from ..datatypes.rag import Chunk, Document, RAGQuery, SearchType
+from DeepResearch.src.datatypes.rag import Chunk, Document, RAGQuery, SearchType
+
 from .analytics_tools import RecordRequestTool
 from .base import ExecutionResult, ToolRunner, ToolSpec
 from .websearch_tools import ChunkedSearchTool
@@ -124,7 +125,7 @@ class IntegratedSearchTool(ToolRunner):
                     documents.append(document)
 
                     # Create RAG Chunks (using Chunk dataclass fields)
-                    for i, chunk_data in enumerate(chunk_list):
+                    for _i, chunk_data in enumerate(chunk_list):
                         chunk = Chunk(
                             text=chunk_data.get("text", ""),
                             # Place URL in context since Chunk has no source field

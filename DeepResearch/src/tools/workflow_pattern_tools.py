@@ -8,22 +8,20 @@ integrating with the existing tool registry and datatypes.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from typing import Any
 
-from ..datatypes.workflow_patterns import (
+from DeepResearch.src.datatypes.workflow_patterns import (
     InteractionMessage,
     InteractionPattern,
     MessageType,
     create_interaction_state,
 )
-from ..utils.workflow_patterns import (
+from DeepResearch.src.utils.workflow_patterns import (
     ConsensusAlgorithm,
     MessageRoutingStrategy,
     WorkflowPatternUtils,
-    # create_collaborative_orchestrator,
-    # create_sequential_orchestrator,
-    # create_hierarchical_orchestrator,
 )
+
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 
@@ -414,11 +412,9 @@ class WorkflowOrchestrationTool(ToolRunner):
                 )
 
             # Create workflow orchestration
-            result = self._orchestrate_workflow(
+            return self._orchestrate_workflow(
                 workflow_config, input_data, pattern_configs
             )
-
-            return result
 
         except Exception as e:
             return ExecutionResult(

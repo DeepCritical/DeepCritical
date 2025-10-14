@@ -8,25 +8,17 @@ that integrate with the Pydantic AI framework.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
-from ..utils.pydantic_ai_utils import (
-    build_agent as _build_agent,
-)
-from ..utils.pydantic_ai_utils import (
+from DeepResearch.src.utils.pydantic_ai_utils import build_agent as _build_agent
+from DeepResearch.src.utils.pydantic_ai_utils import (
     build_builtin_tools as _build_builtin_tools,
 )
-from ..utils.pydantic_ai_utils import (
-    build_toolsets as _build_toolsets,
-)
+from DeepResearch.src.utils.pydantic_ai_utils import build_toolsets as _build_toolsets
 
 # Import utility functions from utils module
-from ..utils.pydantic_ai_utils import (
-    get_pydantic_ai_config as _get_cfg,
-)
-from ..utils.pydantic_ai_utils import (
-    run_agent_sync as _run_sync,
-)
+from DeepResearch.src.utils.pydantic_ai_utils import get_pydantic_ai_config as _get_cfg
+from DeepResearch.src.utils.pydantic_ai_utils import run_agent_sync as _run_sync
 
 # Import registry locally to avoid circular imports
 # from ..tools.base import registry  # Commented out to avoid circular imports
@@ -38,7 +30,7 @@ class WebSearchBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolRunner, ToolSpec
+        from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,
@@ -106,7 +98,7 @@ class CodeExecBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolRunner, ToolSpec
+        from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,
@@ -151,7 +143,7 @@ class CodeExecBuiltinRunner:
 
         # Load system prompt from Hydra (if available)
         try:
-            from ..prompts import PromptLoader  # type: ignore
+            from DeepResearch.src.prompts import PromptLoader  # type: ignore
 
             # In this wrapper, cfg may be empty; PromptLoader expects DictConfig-like object
             loader = PromptLoader(cfg)  # type: ignore
@@ -176,7 +168,7 @@ class UrlContextBuiltinRunner:
 
     def __init__(self):
         # Import base classes locally to avoid circular imports
-        from ..tools.base import ToolRunner, ToolSpec
+        from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
         ToolRunner.__init__(
             self,

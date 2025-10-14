@@ -5,10 +5,6 @@ Tests for the improved BEDTools server with FastMCP integration and enhanced fun
 Includes both containerized and non-containerized test scenarios.
 """
 
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
-
 import pytest
 
 from tests.test_bioinformatics_tools.base.test_base_tool import (

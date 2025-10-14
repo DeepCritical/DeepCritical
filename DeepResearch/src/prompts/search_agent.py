@@ -5,8 +5,6 @@ This module defines system prompts and instructions for search agent operations
 using Pydantic AI patterns that align with DeepCritical's architecture.
 """
 
-from typing import Dict
-
 # System prompt for the main search agent
 SEARCH_AGENT_SYSTEM_PROMPT = """You are an intelligent search agent that helps users find information on the web.
 

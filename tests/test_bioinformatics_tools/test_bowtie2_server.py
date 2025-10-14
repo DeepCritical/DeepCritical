@@ -6,8 +6,6 @@ and comprehensive bioinformatics functionality. Includes both containerized and
 non-containerized test scenarios.
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest

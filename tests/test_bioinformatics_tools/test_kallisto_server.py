@@ -6,9 +6,7 @@ and comprehensive bioinformatics functionality. Includes RNA-seq quantification,
 single-cell BUS file generation, and utility functions.
 """
 
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 

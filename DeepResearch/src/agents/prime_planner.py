@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
-from ..datatypes.execution import WorkflowDAG, WorkflowStep
-from ..datatypes.tool_specs import ToolCategory, ToolSpec
+from DeepResearch.src.datatypes.execution import WorkflowDAG, WorkflowStep
+from DeepResearch.src.datatypes.tool_specs import ToolCategory, ToolSpec
+
 from .prime_parser import ScientificIntent, StructuredProblem
 
 
@@ -297,7 +298,7 @@ class PlanGenerator:
         inputs = {}
 
         # Map inputs based on tool requirements and available data
-        for input_name, input_type in tool_spec.input_schema.items():
+        for input_name in tool_spec.input_schema:
             if input_name == "sequence" and "sequence" in problem.input_data:
                 inputs[input_name] = "user_input.sequence"
             elif input_name == "structure" and "structure" in problem.input_data:
@@ -315,7 +316,7 @@ class PlanGenerator:
         """Define output mappings for a workflow step."""
         outputs = {}
 
-        for output_name in tool_spec.output_schema.keys():
+        for output_name in tool_spec.output_schema:
             outputs[output_name] = f"step_{step_index}.{output_name}"
 
         return outputs

@@ -14,20 +14,17 @@ import asyncio
 import os
 import subprocess
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ...datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
 
 # Note: In a real implementation, you would import mcp here
 # from mcp import tool
-from ...datatypes.mcp import (
-    MCPAgentIntegration,
+from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
     MCPServerType,
-    MCPToolSpec,
 )
 
 
@@ -178,7 +175,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "view"]
@@ -291,7 +289,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "sort"]
@@ -366,7 +365,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "index", input_file]
@@ -429,7 +429,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "flagstat", input_file]
@@ -491,7 +492,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "stats", input_file]
@@ -568,13 +570,16 @@ class SamtoolsServer(MCPServerBase):
         # Validate input files exist
         for input_file in input_files:
             if not os.path.exists(input_file):
-                raise FileNotFoundError(f"Input file not found: {input_file}")
+                msg = f"Input file not found: {input_file}"
+                raise FileNotFoundError(msg)
 
         if not input_files:
-            raise ValueError("At least one input file must be specified")
+            msg = "At least one input file must be specified"
+            raise ValueError(msg)
 
         if update_header and not os.path.exists(update_header):
-            raise FileNotFoundError(f"Header file not found: {update_header}")
+            msg = f"Header file not found: {update_header}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "merge"]
@@ -649,7 +654,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(fasta_file):
-            raise FileNotFoundError(f"FASTA file not found: {fasta_file}")
+            msg = f"FASTA file not found: {fasta_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "faidx", fasta_file]
@@ -727,7 +733,8 @@ class SamtoolsServer(MCPServerBase):
 
         # Validate input file exists
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Input file not found: {input_file}")
+            msg = f"Input file not found: {input_file}"
+            raise FileNotFoundError(msg)
 
         # Build command
         cmd = ["samtools", "fastq"]
@@ -806,7 +813,8 @@ class SamtoolsServer(MCPServerBase):
             return result
 
         if not flags:
-            raise ValueError("flags parameter must be provided")
+            msg = "flags parameter must be provided"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["samtools", "flags", flags]
@@ -867,10 +875,12 @@ class SamtoolsServer(MCPServerBase):
         # Validate input files exist
         for input_file in input_files:
             if not os.path.exists(input_file):
-                raise FileNotFoundError(f"Input file not found: {input_file}")
+                msg = f"Input file not found: {input_file}"
+                raise FileNotFoundError(msg)
 
         if not input_files:
-            raise ValueError("At least one input file must be specified")
+            msg = "At least one input file must be specified"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["samtools", "quickcheck"]
@@ -944,10 +954,12 @@ class SamtoolsServer(MCPServerBase):
         # Validate input files exist
         for input_file in input_files:
             if not os.path.exists(input_file):
-                raise FileNotFoundError(f"Input file not found: {input_file}")
+                msg = f"Input file not found: {input_file}"
+                raise FileNotFoundError(msg)
 
         if not input_files:
-            raise ValueError("At least one input file must be specified")
+            msg = "At least one input file must be specified"
+            raise ValueError(msg)
 
         # Build command
         cmd = ["samtools", "depth"]

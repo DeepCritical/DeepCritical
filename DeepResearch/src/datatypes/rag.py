@@ -8,10 +8,9 @@ vector stores, documents, and VLLM integration for local model hosting.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
@@ -20,6 +19,8 @@ from .chunk_dataclass import Chunk, generate_id
 from .document_dataclass import Document as ChonkieDocument
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     import numpy as np
 
 
@@ -462,11 +463,12 @@ class RAGConfig(BaseModel):
 
         if embeddings and vector_store:
             if embeddings.num_dimensions != vector_store.embedding_dimension:
-                raise ValueError(
+                msg = (
                     f"Embedding dimensions mismatch: "
                     f"embeddings.num_dimensions={embeddings.num_dimensions} "
                     f"!= vector_store.embedding_dimension={vector_store.embedding_dimension}"
                 )
+                raise ValueError(msg)
 
         return values
 
@@ -617,7 +619,8 @@ class RAGSystem(BaseModel):
     async def add_documents(self, documents: list[Document]) -> list[str]:
         """Add documents to the vector store."""
         if not self.vector_store:
-            raise RuntimeError("Vector store not initialized")
+            msg = "Vector store not initialized"
+            raise RuntimeError(msg)
         return await self.vector_store.add_documents(documents)
 
     async def query(self, rag_query: RAGQuery) -> RAGResponse:
@@ -627,7 +630,8 @@ class RAGSystem(BaseModel):
         start_time = time.time()
 
         if not self.vector_store or not self.llm:
-            raise RuntimeError("RAG system not fully initialized")
+            msg = "RAG system not fully initialized"
+            raise RuntimeError(msg)
 
         # Retrieve relevant documents
         search_results = await self.vector_store.search(
@@ -647,7 +651,7 @@ class RAGSystem(BaseModel):
         context = "\n\n".join(context_parts)
 
         # Generate answer using LLM
-        from ..prompts.rag import RAGPrompts
+        from DeepResearch.src.prompts.rag import RAGPrompts
 
         prompt = RAGPrompts.get_rag_query_prompt(rag_query.text, context)
         generated_answer = await self.llm.generate(prompt, context=context)
@@ -690,7 +694,8 @@ class BioinformaticsRAGSystem(RAGSystem):
         start_time = time.time()
 
         if not self.vector_store or not self.llm:
-            raise RuntimeError("RAG system not fully initialized")
+            msg = "RAG system not fully initialized"
+            raise RuntimeError(msg)
 
         # Build enhanced filters for bioinformatics data
         enhanced_filters = query.filters or {}
@@ -772,7 +777,7 @@ class BioinformaticsRAGSystem(RAGSystem):
         context = "\n\n".join(context_parts)
 
         # Generate specialized prompt for bioinformatics
-        from ..prompts.rag import RAGPrompts
+        from DeepResearch.src.prompts.rag import RAGPrompts
 
         prompt = RAGPrompts.get_bioinformatics_rag_query_prompt(query.text, context)
         generated_answer = await self.llm.generate(prompt, context=context)

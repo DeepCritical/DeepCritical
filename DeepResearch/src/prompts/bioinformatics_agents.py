@@ -1,5 +1,3 @@
-from typing import Dict
-
 # Data Fusion Agent System Prompt
 DATA_FUSION_SYSTEM_PROMPT = """You are a bioinformatics data fusion specialist. Your role is to:
 1. Analyze data fusion requests and identify relevant data sources

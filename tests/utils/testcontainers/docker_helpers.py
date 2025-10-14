@@ -3,7 +3,6 @@ Docker helper utilities for testing.
 """
 
 import os
-from typing import Any, Dict, Optional
 
 from testcontainers.core.container import DockerContainer
 

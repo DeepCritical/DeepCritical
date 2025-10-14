@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Annotated, Any
 
 # Optional import for pydantic_graph
 try:
@@ -42,25 +42,26 @@ except ImportError:
             pass
 
 
-from omegaconf import DictConfig
-
-from ..datatypes.agents import AgentType
-
 # Import existing DeepCritical types
-from ..datatypes.workflow_patterns import (
+from DeepResearch.src.datatypes.workflow_patterns import (
     AgentInteractionState,
     InteractionPattern,
     WorkflowOrchestrator,
     create_interaction_state,
     create_workflow_orchestrator,
 )
-from ..utils.execution_status import ExecutionStatus
-from ..utils.workflow_patterns import (
+from DeepResearch.src.utils.execution_status import ExecutionStatus
+from DeepResearch.src.utils.workflow_patterns import (
     ConsensusAlgorithm,
     InteractionMetrics,
     MessageRoutingStrategy,
     WorkflowPatternUtils,
 )
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
+
+    from DeepResearch.src.datatypes.agents import AgentType
 
 
 @dataclass
@@ -145,7 +146,8 @@ class SetupAgents(BaseNode[WorkflowPatternState]):  # type: ignore[unsupported-b
             interaction_state = ctx.state.interaction_state
 
             if not orchestrator or not interaction_state:
-                raise RuntimeError("Orchestrator or interaction state not initialized")
+                msg = "Orchestrator or interaction state not initialized"
+                raise RuntimeError(msg)
 
             # Set up agent executors
             for agent_id, executor in ctx.state.agent_executors.items():
@@ -183,7 +185,8 @@ class ExecuteCollaborativePattern(BaseNode[WorkflowPatternState]):  # type: igno
         try:
             orchestrator = ctx.state.orchestrator
             if not orchestrator:
-                raise RuntimeError("Orchestrator not initialized")
+                msg = "Orchestrator not initialized"
+                raise RuntimeError(msg)
 
             # Execute collaborative pattern
             result = await orchestrator.execute_collaborative_pattern()
@@ -212,7 +215,8 @@ class ExecuteSequentialPattern(BaseNode[WorkflowPatternState]):  # type: ignore[
         try:
             orchestrator = ctx.state.orchestrator
             if not orchestrator:
-                raise RuntimeError("Orchestrator not initialized")
+                msg = "Orchestrator not initialized"
+                raise RuntimeError(msg)
 
             # Execute sequential pattern
             result = await orchestrator.execute_sequential_pattern()
@@ -241,7 +245,8 @@ class ExecuteHierarchicalPattern(BaseNode[WorkflowPatternState]):  # type: ignor
         try:
             orchestrator = ctx.state.orchestrator
             if not orchestrator:
-                raise RuntimeError("Orchestrator not initialized")
+                msg = "Orchestrator not initialized"
+                raise RuntimeError(msg)
 
             # Execute hierarchical pattern
             result = await orchestrator.execute_hierarchical_pattern()
@@ -353,7 +358,7 @@ class ProcessHierarchicalResults(BaseNode[WorkflowPatternState]):  # type: ignor
                     "pattern": ctx.state.interaction_pattern.value,
                     "coordinator_executed": "coordinator" in hierarchical_results,
                     "subordinates_executed": len(
-                        [k for k in hierarchical_results.keys() if k != "coordinator"]
+                        [k for k in hierarchical_results if k != "coordinator"]
                     ),
                     "total_rounds": ctx.state.interaction_state.current_round,
                 }
@@ -721,7 +726,7 @@ async def run_hierarchical_pattern_workflow(
 ) -> str:
     """Run hierarchical pattern workflow."""
 
-    all_agents = [coordinator_id] + subordinate_ids
+    all_agents = [coordinator_id, *subordinate_ids]
     state = WorkflowPatternState(
         question=question,
         config=config,

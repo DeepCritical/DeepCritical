@@ -4,7 +4,7 @@ Vendored enum types from agent_framework._types.
 This module provides enum-like types for AI agent interactions.
 """
 
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel
 

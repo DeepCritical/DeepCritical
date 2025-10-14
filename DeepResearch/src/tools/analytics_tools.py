@@ -7,15 +7,16 @@ integrating with the existing tool registry and datatypes.
 
 import json
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 from pydantic_ai import RunContext
 
-from ..utils.analytics import (
+from DeepResearch.src.utils.analytics import (
     last_n_days_avg_time_df,
     last_n_days_df,
     record_request,
 )
+
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
 

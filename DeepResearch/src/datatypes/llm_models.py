@@ -8,7 +8,6 @@ This module defines Pydantic models for configuring various LLM providers
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -46,7 +45,8 @@ class LLMModelConfig(BaseModel):
     def validate_model_name(cls, v: str) -> str:
         """Validate that model_name is not empty or whitespace."""
         if not v or not v.strip():
-            raise ValueError("model_name cannot be empty or whitespace")
+            msg = "model_name cannot be empty or whitespace"
+            raise ValueError(msg)
         return v.strip()
 
     @field_validator("base_url")
@@ -54,7 +54,8 @@ class LLMModelConfig(BaseModel):
     def validate_base_url(cls, v: str) -> str:
         """Validate that base_url is not empty."""
         if not v or not v.strip():
-            raise ValueError("base_url cannot be empty")
+            msg = "base_url cannot be empty"
+            raise ValueError(msg)
         return v.strip()
 
     model_config = ConfigDict(use_enum_values=True)

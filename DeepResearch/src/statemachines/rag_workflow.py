@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Annotated, Any
 
 # Optional import for pydantic_graph
 try:
@@ -42,11 +42,18 @@ except ImportError:
             pass
 
 
-from omegaconf import DictConfig
+from DeepResearch.src.datatypes.rag import (
+    Document,
+    RAGConfig,
+    RAGQuery,
+    RAGResponse,
+    SearchType,
+)
+from DeepResearch.src.datatypes.vllm_integration import VLLMDeployment, VLLMRAGSystem
+from DeepResearch.src.utils.execution_status import ExecutionStatus
 
-from ..datatypes.rag import Document, RAGConfig, RAGQuery, RAGResponse, SearchType
-from ..datatypes.vllm_integration import VLLMDeployment, VLLMRAGSystem
-from ..utils.execution_status import ExecutionStatus
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
 
 
 @dataclass
@@ -94,7 +101,7 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
     def _create_rag_config(self, rag_cfg: dict[str, Any]) -> RAGConfig:
         """Create RAG configuration from Hydra config."""
-        from ..datatypes.rag import (
+        from DeepResearch.src.datatypes.rag import (
             EmbeddingModelType,
             EmbeddingsConfig,
             LLMModelType,
@@ -341,7 +348,7 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
     def _create_vllm_deployment(self, rag_config: RAGConfig) -> VLLMDeployment:
         """Create VLLM deployment configuration."""
-        from ..datatypes.vllm_integration import (
+        from DeepResearch.src.datatypes.vllm_integration import (
             VLLMEmbeddingServerConfig,
             VLLMServerConfig,
         )
@@ -377,7 +384,7 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         """Execute RAG query using RAGAgent."""
         try:
             # Import here to avoid circular import
-            from ..agents import RAGAgent
+            from DeepResearch.src.agents import RAGAgent
 
             # Create RAGAgent
             rag_agent = RAGAgent()
@@ -413,7 +420,8 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
                         f"fallback_query_completed_in_{processing_time:.2f}s"
                     )
                 else:
-                    raise RuntimeError("RAG system not initialized and agent failed")
+                    msg = "RAG system not initialized and agent failed"
+                    raise RuntimeError(msg)
 
             return GenerateResponse()
 
@@ -435,7 +443,8 @@ class GenerateResponse(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         try:
             rag_response = ctx.state.rag_response
             if not rag_response:
-                raise RuntimeError("No RAG response available")
+                msg = "No RAG response available"
+                raise RuntimeError(msg)
 
             # Format final response
             final_response = self._format_response(rag_response, ctx.state)

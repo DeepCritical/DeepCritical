@@ -1,24 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 try:
     from pydantic_ai import Agent  # type: ignore
 except Exception:  # pragma: no cover
     Agent = None  # type: ignore
 
-from omegaconf import DictConfig
 
-from ..datatypes.research import ResearchOutcome
-from ..prompts import PromptLoader
-from ..tools.pyd_ai_tools import (
-    _build_agent as _build_core_agent,
-)
-from ..tools.pyd_ai_tools import (
-    _build_builtin_tools,
-    _build_toolsets,
-)
+from DeepResearch.src.datatypes.research import ResearchOutcome
+from DeepResearch.src.prompts import PromptLoader
+from DeepResearch.src.tools.pyd_ai_tools import _build_agent as _build_core_agent
+from DeepResearch.src.tools.pyd_ai_tools import _build_builtin_tools, _build_toolsets
+
+if TYPE_CHECKING:
+    from omegaconf import DictConfig
 
 
 def _compose_agent_system(
@@ -81,9 +78,7 @@ def _compose_agent_system(
 
     # Wrapper + footer
     sections.append(
-        actions_wrapper.replace(
-            "${action_sections}", "\n\n".join([s for s in sections[1:]])
-        )
+        actions_wrapper.replace("${action_sections}", "\n\n".join(list(sections[1:])))
     )
     sections.append(footer)
     return "\n\n".join(sections)

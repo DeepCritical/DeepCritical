@@ -111,7 +111,7 @@ make quality
 
 # Individual quality tools
 make lint      # Ruff linting
-make format    # Code formatting (Black + Ruff)
+make format    # Code formatting (Ruff)
 make type-check # Type checking (ty)
 ```
 

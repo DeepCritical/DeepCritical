@@ -183,7 +183,7 @@ Configure settings:
 
 1. Open project in PyCharm
 2. Set Python interpreter to `.venv/bin/python`
-3. Enable Ruff and Black for code quality
+3. Enable Ruff for code quality
 4. Configure run configurations for tests and main app
 
 ## Database Setup (Optional)

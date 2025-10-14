@@ -10,7 +10,6 @@ This test is designed to work in both development and CI environments.
 import importlib
 import sys
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -28,7 +27,7 @@ def safe_import(module_name: str, fallback_module_name: str | None = None) -> bo
     try:
         importlib.import_module(module_name)
         return True
-    except ImportError as e:
+    except ImportError:
         if fallback_module_name:
             try:
                 importlib.import_module(fallback_module_name)
@@ -37,7 +36,6 @@ def safe_import(module_name: str, fallback_module_name: str | None = None) -> bo
                 pass
         # In CI, modules might not be available due to missing dependencies
         # This is acceptable as long as the import structure is correct
-        print(f"Import warning for {module_name}: {e}")
         return False
 
 
