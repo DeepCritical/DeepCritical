@@ -55,11 +55,13 @@ jobs:
         run: make test-performance
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.11'
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           fail_ci_if_error: false
+          slug: ${{ github.repository }}
 
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4

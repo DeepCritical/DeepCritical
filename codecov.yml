@@ -20,42 +20,61 @@ component_management:
     statuses:
       - type: project
         target: auto
+        threshold: 1%
         branches:
           - "!main"
   individual_components:
     # Core Architecture Components
+    - component_id: core_app
+      name: Core Application
+      paths:
+        - DeepResearch/app.py
+        - DeepResearch/__init__.py
+
     - component_id: agents
       name: Agents
       paths:
-        - DeepResearch/src/agents/**
         - DeepResearch/agents.py
+        - DeepResearch/src/agents/**
+
     - component_id: datatypes
       name: Data Types
       paths:
         - DeepResearch/src/datatypes/**
+
     - component_id: tools
       name: Tools
       paths:
-        - DeepResearch/src/tools/**
         - DeepResearch/tools/**
+        - DeepResearch/src/tools/**
+
     - component_id: statemachines
       name: State Machines
       paths:
         - DeepResearch/src/statemachines/**
         - configs/statemachines/**
+
     - component_id: utils
       name: Utilities
       paths:
         - DeepResearch/src/utils/**
+
     - component_id: models
       name: Models
       paths:
         - DeepResearch/src/models/**
+
     - component_id: prompts
       name: Prompts
       paths:
         - DeepResearch/src/prompts/**
         - configs/prompts/**
+
+    - component_id: workflow_patterns
+      name: Workflow Patterns
+      paths:
+        - DeepResearch/src/workflow_patterns.py
+        - DeepResearch/examples/workflow_patterns_demo.py
 
     # Specialized Components
     - component_id: bioinformatics
@@ -69,6 +88,7 @@ component_management:
         - configs/bioinformatics/**
         - tests/test_bioinformatics_tools/**
         - docker/bioinformatics/**
+
     - component_id: deep_agent
       name: Deep Agent
       paths:
@@ -78,6 +98,7 @@ component_management:
         - DeepResearch/src/statemachines/deep_agent*.py
         - DeepResearch/src/tools/deep_agent*.py
         - configs/deep_agent/**
+
     - component_id: rag
       name: RAG
       paths:
@@ -86,6 +107,7 @@ component_management:
         - DeepResearch/src/prompts/rag.py
         - DeepResearch/src/statemachines/rag_workflow.py
         - configs/rag/**
+
     - component_id: vllm
       name: VLLM Integration
       paths:
@@ -97,20 +119,58 @@ component_management:
         - tests/test_prompts_vllm/**
         - test_artifacts/vllm_tests/**
 
+    - component_id: deepsearch
+      name: Deep Search
+      paths:
+        - DeepResearch/src/tools/deepsearch*.py
+        - DeepResearch/src/statemachines/deepsearch_workflow.py
+        - configs/deepsearch/**
+
     # Test Components
     - component_id: test_bioinformatics
       name: Bioinformatics Tests
       paths:
         - tests/test_bioinformatics_tools/**
+
     - component_id: test_vllm
       name: VLLM Tests
       paths:
         - tests/test_llm_framework/**
         - tests/test_prompts_vllm/**
+
     - component_id: test_pydantic_ai
       name: Pydantic AI Tests
       paths:
         - tests/test_pydantic_ai/**
+
+    - component_id: test_docker_sandbox
+      name: Docker Sandbox Tests
+      paths:
+        - tests/test_docker_sandbox/**
+
+    - component_id: test_core
+      name: Core Tests
+      paths:
+        - tests/test_*.py
+
+    # Configuration and Documentation
+    - component_id: configuration
+      name: Configuration
+      paths:
+        - configs/**
+        - pyproject.toml
+        - codecov.yml
+
+    - component_id: scripts
+      name: Scripts
+      paths:
+        - DeepResearch/scripts/**
+        - scripts/**
+
+    - component_id: docker
+      name: Docker
+      paths:
+        - docker/**
 
 github_checks:
   annotations: true

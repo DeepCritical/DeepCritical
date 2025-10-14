@@ -38,47 +38,120 @@ jobs:
           pytest tests/ -m "not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
         else
           echo "Running tests excluding optional tests for dev branch"
-          pytest tests/ -m "not optional and not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing
+          pytest tests/ -m "not optional and not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
         fi
 
     - name: Run bioinformatics unit tests (all branches)
       run: |
-        echo "🧬 Running bioinformatics unit tests..."
+        echo "Running bioinformatics unit tests..."
         pytest tests/test_bioinformatics_tools/ -m "not containerized" --cov=DeepResearch --cov-append --cov-report=xml --cov-report=term-missing --junitxml=junit-bioinformatics.xml -o junit_family=legacy
 
     - name: Run bioinformatics containerized tests (main branch only)
       if: github.ref == 'refs/heads/docker'
       run: |
-        echo "🐳 Running bioinformatics containerized tests..."
+        echo "Running bioinformatics containerized tests..."
         # Check if Docker is available and bioinformatics images exist
         if docker --version >/dev/null 2>&1; then
-          make test-bioinformatics-containerized || echo "⚠️  Containerized tests failed, but continuing..."
+          make test-bioinformatics-containerized || echo "Containerized tests failed, but continuing..."
         else
-          echo "⚠️  Docker not available, skipping containerized tests"
+          echo "Docker not available, skipping containerized tests"
         fi
 
+    - name: Debug coverage files
+      run: |
+        echo "Checking for coverage files..."
+        ls -la coverage.xml junit.xml junit-bioinformatics.xml || echo "Some files missing"
+        head -20 coverage.xml || echo "Coverage file not readable"
+
+    # Codecov upload steps - These steps will NOT fail the CI even if uploads fail
+    # Tests will pass regardless of Codecov upload status
+    - name: Configure Codecov repository setup
+      run: |
+        # Check if CODECOV_TOKEN is available and set HAS_CODECOV_TOKEN flag
+        if [ -n "${CODECOV_TOKEN}" ]; then
+          echo "📊 Codecov token found - uploads will be enabled"
+          echo "🔗 Repository: ${{ github.repository }}"
+          echo "📈 Coverage reports will be uploaded to Codecov"
+          echo "✅ Codecov uploads enabled for this run"
+          echo "HAS_CODECOV_TOKEN=true" >> $GITHUB_ENV
+        else
+          echo "⚠️ CODECOV_TOKEN not found - uploads will be skipped"
+          echo "💡 To enable Codecov uploads:"
+          echo "   1. Go to https://codecov.io/gh/${{ github.repository }}/settings"
+          echo "   2. Generate a repository upload token"
+          echo "   3. Add it as CODECOV_TOKEN secret in repository settings"
+          echo "   4. Repository will be auto-detected on first upload"
+          echo "HAS_CODECOV_TOKEN=false" >> $GITHUB_ENV
+        fi
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Display coverage summary
+      run: |
+        echo "📈 Local Coverage Summary:"
+        echo "=========================="
+        if command -v coverage >/dev/null 2>&1; then
+          python -m coverage report --include="DeepResearch/*" --omit="*/tests/*,*/test_*" || echo "Coverage report generation failed"
+        else
+          echo "Coverage.py not available for summary"
+        fi
+        echo ""
+        echo "📁 Coverage files generated:"
+        ls -lh *.xml 2>/dev/null || echo "No XML coverage files found"
+        echo ""
+        echo "💡 To view detailed coverage: python -m coverage html && open htmlcov/index.html"
+
     - name: Upload coverage to Codecov
+      if: env.HAS_CODECOV_TOKEN == 'true'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.xml
         fail_ci_if_error: false
+        verbose: true
+        slug: ${{ github.repository }}
+        name: "${{ github.ref_name }} - Python ${{ matrix.python-version || '3.11' }}"
+      continue-on-error: true
 
     - name: Upload test results to Codecov
-      if: ${{ !cancelled() }}
+      if: env.HAS_CODECOV_TOKEN == 'true' && !cancelled()
       uses: codecov/test-results-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./junit.xml
+        verbose: true
+        slug: ${{ github.repository }}
       continue-on-error: true
 
     - name: Upload bioinformatics test results to Codecov
-      if: ${{ !cancelled() }}
+      if: env.HAS_CODECOV_TOKEN == 'true' && !cancelled()
       uses: codecov/test-results-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./junit-bioinformatics.xml
+        verbose: true
+        slug: ${{ github.repository }}
       continue-on-error: true
+
+    - name: Codecov upload summary
+      if: env.HAS_CODECOV_TOKEN == 'false'
+      run: |
+        echo "ℹ️ Codecov uploads were skipped because CODECOV_TOKEN is not configured"
+        echo ""
+        echo "📋 Setup Instructions:"
+        echo "======================"
+        echo "1. Visit: https://codecov.io/gh/${{ github.repository }}"
+        echo "2. Sign in with GitHub"
+        echo "3. Repository should auto-appear"
+        echo "4. Go to Settings → Repository Upload Token"
+        echo "5. Generate and copy the token"
+        echo "6. Go to GitHub repo Settings → Secrets and variables → Actions"
+        echo "7. Add new repository secret: CODECOV_TOKEN"
+        echo "8. Paste the token value"
+        echo "9. Codecov uploads will work on next run"
+        echo ""
+        echo "✅ CI will pass regardless of Codecov upload status"
+        echo "📊 Coverage reports were still generated locally for inspection"
 
     - name: Run VLLM tests (optional, manual trigger only)
       if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[vllm-tests]')
