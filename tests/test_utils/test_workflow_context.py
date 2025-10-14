@@ -12,8 +12,8 @@ Implements:
 
 """
 
-from typing import Any, Literal, Optional, Union
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, Union
+from unittest.mock import patch
 
 import pytest
 
@@ -126,18 +126,6 @@ class TestWorkflowContext:
             validate_workflow_context_annotation(
                 Parameter.empty, "ctx", "Function executor"
             )
-
-    # def test_validate_workflow_context_annotation_nested_invalid_types(self):
-    #     """Raise ValueError when a Union type argument contains a non-type (e.g., 58)."""
-    #     invalid_union = Union[int, 58]  # Valid at runtime!
-
-    #     with patch("DeepResearch.src.utils.workflow_context.get_args", return_value=(Union[int, str], invalid_union)):
-    #         with pytest.raises(ValueError, match=r"contains invalid type entries: \[58\].*Use proper types or typing generics"):
-    #             validate_workflow_context_annotation(
-    #                 object(),
-    #                 "parameter 'ctx'",
-    #                 "Function executor"
-    #             )
 
     def test_validate_workflow_context_annotation_invalid_types(self):
         """Raise ValueError for invalid args type."""
