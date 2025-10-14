@@ -371,8 +371,8 @@ uv run pytest tests/test_models.py::TestOpenAICompatibleModelWithConfigs::test_f
 ## Related Documentation
 
 - [Configuration Guide](../getting-started/configuration.md): General Hydra configuration
-- [Models API](../../DeepResearch/src/models/): Implementation details
-- [Datatypes](../../DeepResearch/src/datatypes/llm_models.py): Pydantic schemas
+- [Core Modules](../core/index.md): Implementation details
+- [Data Types API](../api/datatypes.md): Pydantic schemas and validation
 
 ## References
 

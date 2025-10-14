@@ -295,4 +295,4 @@ flows.prime.params.enable_tool_fallbacks=true
 flows.prime.params.retry_failed_tools=true
 ```
 
-For more detailed information, see the [PRIME Implementation Guide](../development/prime-implementation.md) and [Tool Registry Documentation](../user-guide/tools/tool-registry.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [Tool Registry Documentation](../tools/registry.md).

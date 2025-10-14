@@ -356,6 +356,6 @@ After trying these basic examples:
 1. **Explore Flows**: Try different combinations of flows for your use case
 2. **Customize Configuration**: Modify configuration files for your specific needs
 3. **Advanced Examples**: Check out the [Advanced Workflows](advanced.md) section
-4. **Integration Examples**: See [Integration Examples](integration.md) for more complex scenarios
+4. **Integration Examples**: See [Advanced Examples](advanced.md) for more complex scenarios
 
 For more detailed examples and tutorials, visit the [Examples Repository](https://github.com/DeepCritical/DeepCritical/tree/main/example) and the [Advanced Workflows](advanced.md) section.

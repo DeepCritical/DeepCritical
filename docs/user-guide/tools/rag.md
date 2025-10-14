@@ -432,4 +432,4 @@ vector_store.optimize_index(
 )
 ```
 
-For more detailed information, see the [RAG Implementation Guide](../development/rag-implementation.md) and [Vector Store Documentation](../development/vector-store-patterns.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [Configuration Guide](../../getting-started/configuration.md).

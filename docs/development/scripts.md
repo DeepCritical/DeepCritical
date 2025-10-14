@@ -334,4 +334,4 @@ docker stats
 htop
 ```
 
-For more detailed information about VLLM testing, see the [VLLM Tests README](scripts/prompt_testing/VLLM_TESTS_README.md).
+For more detailed information about VLLM testing, see the [Testing Guide](../development/testing.md).

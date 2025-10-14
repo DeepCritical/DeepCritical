@@ -1,8 +1,8 @@
 """
-Docker Compose Deployer for MCP Servers.
+Docker Compose Deployer for MCP Servers with AG2 Code Execution Integration.
 
 This module provides deployment functionality for MCP servers using Docker Compose
-for production-like deployments.
+for production-like deployments, now integrated with AG2-style code execution.
 """
 
 # type: ignore  # Template file with dynamic variable substitution
@@ -23,6 +23,8 @@ from DeepResearch.src.datatypes.bioinformatics_mcp import (
 from DeepResearch.src.datatypes.mcp import (
     MCPServerStatus,
 )
+from DeepResearch.src.utils.coding import CodeBlock, DockerCommandLineCodeExecutor
+from DeepResearch.src.utils.python_code_execution import PythonCodeExecutionTool
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +61,13 @@ class DockerComposeConfig(BaseModel):
 
 
 class DockerComposeDeployer:
-    """Deployer for MCP servers using Docker Compose."""
+    """Deployer for MCP servers using Docker Compose with integrated code execution."""
 
     def __init__(self):
         self.deployments: dict[str, MCPServerDeployment] = {}
         self.compose_files: dict[str, str] = {}  # server_name -> compose_file_path
+        self.code_executors: dict[str, DockerCommandLineCodeExecutor] = {}
+        self.python_execution_tools: dict[str, PythonCodeExecutionTool] = {}
 
     def create_compose_config(
         self, servers: list[MCPServerConfig]
@@ -474,6 +478,113 @@ mcp_server = {class_name}()
         compose_config.volumes[f"mcp-{server_name}-data"] = {"driver": "local"}
 
         return compose_config
+
+    async def execute_code(
+        self,
+        server_name: str,
+        code: str,
+        language: str = "python",
+        timeout: int = 60,
+        max_retries: int = 3,
+        **kwargs,
+    ) -> dict[str, Any]:
+        """Execute code using the deployed server's Docker Compose environment.
+
+        Args:
+            server_name: Name of the deployed server to use for execution
+            code: Code to execute
+            language: Programming language of the code
+            timeout: Execution timeout in seconds
+            max_retries: Maximum number of retry attempts
+            **kwargs: Additional execution parameters
+
+        Returns:
+            Dictionary containing execution results
+        """
+        deployment = self.deployments.get(server_name)
+        if not deployment:
+            raise ValueError(f"Server '{server_name}' not deployed")
+
+        if deployment.status != "running":
+            raise ValueError(
+                f"Server '{server_name}' is not running (status: {deployment.status})"
+            )
+
+        # Get or create Python execution tool for this server
+        if server_name not in self.python_execution_tools:
+            try:
+                self.python_execution_tools[server_name] = PythonCodeExecutionTool(
+                    timeout=timeout,
+                    work_dir=f"/tmp/{server_name}_code_exec_compose",
+                    use_docker=True,
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to create Python execution tool for server '%s'",
+                    server_name,
+                )
+                raise
+
+        # Execute the code
+        tool = self.python_execution_tools[server_name]
+        result = tool.run(
+            {
+                "code": code,
+                "timeout": timeout,
+                "max_retries": max_retries,
+                "language": language,
+                **kwargs,
+            }
+        )
+
+        return {
+            "server_name": server_name,
+            "success": result.success,
+            "output": result.data.get("output", ""),
+            "error": result.data.get("error", ""),
+            "exit_code": result.data.get("exit_code", -1),
+            "execution_time": result.data.get("execution_time", 0.0),
+            "retries_used": result.data.get("retries_used", 0),
+        }
+
+    async def execute_code_blocks(
+        self, server_name: str, code_blocks: list[CodeBlock], **kwargs
+    ) -> dict[str, Any]:
+        """Execute multiple code blocks using the deployed server's Docker Compose environment.
+
+        Args:
+            server_name: Name of the deployed server to use for execution
+            code_blocks: List of code blocks to execute
+            **kwargs: Additional execution parameters
+
+        Returns:
+            Dictionary containing execution results for all blocks
+        """
+        deployment = self.deployments.get(server_name)
+        if not deployment:
+            raise ValueError(f"Server '{server_name}' not deployed")
+
+        if server_name not in self.code_executors:
+            # Create code executor if it doesn't exist
+            self.code_executors[server_name] = DockerCommandLineCodeExecutor(
+                image=deployment.configuration.image
+                if hasattr(deployment.configuration, "image")
+                else "python:3.11-slim",
+                timeout=kwargs.get("timeout", 60),
+                work_dir=f"/tmp/{server_name}_code_blocks_compose",
+            )
+
+        executor = self.code_executors[server_name]
+        result = executor.execute_code_blocks(code_blocks)
+
+        return {
+            "server_name": server_name,
+            "success": result.exit_code == 0,
+            "output": result.output,
+            "exit_code": result.exit_code,
+            "command": getattr(result, "command", ""),
+            "image": getattr(result, "image", None),
+        }
 
 
 # Global deployer instance

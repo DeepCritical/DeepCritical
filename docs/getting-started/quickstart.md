@@ -98,7 +98,43 @@ DeepCritical generates comprehensive outputs:
 - **Reports**: Generated reports in various formats
 - **Artifacts**: Data files, plots, and analysis results
 
-## 8. Next Steps
+## 8. Tools {#tools}
+
+### Tool Ecosystem
+
+DeepCritical provides a rich ecosystem of specialized tools organized by functionality:
+
+- **Knowledge Query Tools**: Web search, database queries, knowledge base access
+- **Sequence Analysis Tools**: BLAST searches, multiple alignments, motif discovery
+- **Structure Prediction Tools**: AlphaFold, homology modeling, quality assessment
+- **Molecular Docking Tools**: Drug-target interaction analysis
+- **Analytics Tools**: Statistical analysis, data visualization, machine learning
+
+### Using Tools
+
+Tools are automatically available to agents and workflows:
+
+```bash
+# Tools are used automatically in research workflows
+uv run deepresearch flows.prime.enabled=true question="Design a protein with specific binding properties"
+```
+
+### Tool Configuration
+
+Configure tool behavior in your configuration files:
+
+```yaml
+# Tool-specific configuration
+tool_configs:
+  web_search:
+    max_results: 20
+    timeout: 30
+  bioinformatics_tools:
+    blast:
+      e_value_threshold: 1e-5
+```
+
+## 10. Next Steps
 
 After your first successful run:
 
@@ -107,14 +143,14 @@ After your first successful run:
 3. **Add Tools**: Extend the tool registry with custom tools
 4. **Contribute**: Join the development community
 
-## 9. Getting Help
+## 11. Getting Help
 
 - **Documentation**: Browse this documentation site
 - **Issues**: Report bugs or request features on GitHub
 - **Discussions**: Join community discussions
 - **Examples**: Check the examples directory for usage patterns
 
-## 10. Troubleshooting
+## 12. Troubleshooting
 
 If you encounter issues:
 

@@ -18,8 +18,13 @@ from DeepResearch.src.datatypes.docker_sandbox_datatypes import (
     DockerSandboxEnvironment,
     DockerSandboxPolicies,
 )
-
-from .base import ExecutionResult, ToolRunner, ToolSpec, registry
+from DeepResearch.src.tools.base import ExecutionResult, ToolRunner, ToolSpec, registry
+from DeepResearch.src.utils.coding import (
+    CodeBlock,
+    DockerCommandLineCodeExecutor,
+    LocalCommandLineCodeExecutor,
+)
+from DeepResearch.src.utils.python_code_execution import PythonCodeExecutionTool
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -79,7 +84,7 @@ def _wait_for_ready(container, timeout: int = 60, stop_time: float = 0.1) -> Non
 
 @dataclass
 class DockerSandboxRunner(ToolRunner):
-    """Enhanced Docker sandbox runner using Testcontainers with AutoGen-inspired patterns."""
+    """Enhanced Docker sandbox runner using Testcontainers with AG2 code execution integration."""
 
     # Default execution policies similar to AutoGen
     DEFAULT_EXECUTION_POLICY: ClassVar[dict[str, bool]] = {
@@ -102,7 +107,7 @@ class DockerSandboxRunner(ToolRunner):
         super().__init__(
             ToolSpec(
                 name="docker_sandbox",
-                description="Run code/command in an isolated container using Testcontainers with enhanced execution policies.",
+                description="Run code/command in an isolated container using Testcontainers with AG2 code execution integration.",
                 inputs={
                     "language": "TEXT",  # e.g., python, bash, shell, sh, pwsh, powershell, ps1
                     "code": "TEXT",  # code string to execute
@@ -110,31 +115,56 @@ class DockerSandboxRunner(ToolRunner):
                     "env": "TEXT",  # JSON of env vars
                     "timeout": "TEXT",  # seconds
                     "execution_policy": "TEXT",  # JSON dict of language->bool execution policies
+                    "max_retries": "TEXT",  # maximum retry attempts for failed execution
+                    "working_directory": "TEXT",  # working directory for execution
                 },
                 outputs={
                     "stdout": "TEXT",
                     "stderr": "TEXT",
                     "exit_code": "TEXT",
                     "files": "TEXT",
+                    "success": "BOOLEAN",
+                    "retries_used": "TEXT",
                 },
             )
         )
 
         # Initialize execution policies
         self.execution_policies = self.DEFAULT_EXECUTION_POLICY.copy()
+        self.python_execution_tool = PythonCodeExecutionTool()
 
     def run(self, params: dict[str, Any]) -> ExecutionResult:
-        """Execute code in a Docker container with enhanced error handling and execution policies."""
+        """Execute code in a Docker container with AG2 integration and enhanced error handling."""
         ok, err = self.validate(params)
         if not ok:
             return ExecutionResult(success=False, error=err)
 
-        # Create execution request from parameters
+        # Extract parameters with enhanced defaults
+        language = str(params.get("language", "python")).strip() or "python"
+        code = str(params.get("code", "")).strip()
+        command = str(params.get("command", "")).strip() or None
+        timeout = max(1, int(str(params.get("timeout", "60")).strip() or "60"))
+        max_retries = max(0, int(str(params.get("max_retries", "3")).strip() or "3"))
+        working_directory = str(params.get("working_directory", "")).strip() or None
+
+        # If we have Python code, use the AG2 Python execution tool with retry logic
+        if language.lower() == "python" and code and not command:
+            return self.python_execution_tool.run(
+                {
+                    "code": code,
+                    "timeout": timeout,
+                    "max_retries": max_retries,
+                    "working_directory": working_directory,
+                    **params,
+                }
+            )
+
+        # Create execution request from parameters for other languages
         execution_request = DockerExecutionRequest(
-            language=str(params.get("language", "python")).strip() or "python",
-            code=str(params.get("code", "")).strip(),
-            command=str(params.get("command", "")).strip() or None,
-            timeout=max(1, int(str(params.get("timeout", "60")).strip() or "60")),
+            language=language,
+            code=code,
+            command=command,
+            timeout=timeout,
         )
 
         # Parse environment variables
@@ -342,12 +372,14 @@ class DockerSandboxRunner(ToolRunner):
             )
 
             return ExecutionResult(
-                success=True,
+                success=docker_result.exit_code == 0,
                 data={
                     "stdout": docker_result.stdout,
                     "stderr": docker_result.stderr,
                     "exit_code": str(docker_result.exit_code),
                     "files": json.dumps(docker_result.files_created),
+                    "success": docker_result.exit_code == 0,
+                    "retries_used": "0",  # Original implementation doesn't support retries
                     "execution_time": docker_result.execution_time,
                 },
             )
@@ -426,6 +458,113 @@ class DockerSandboxTool(ToolRunner):
         )
 
 
-# Register tool
+# Pydantic AI compatible code execution tool
+class PydanticAICodeExecutionTool:
+    """Pydantic AI compatible tool for code execution with configurable retry/error handling."""
+
+    def __init__(
+        self, max_retries: int = 3, timeout: int = 60, use_docker: bool = True
+    ):
+        self.max_retries = max_retries
+        self.timeout = timeout
+        self.use_docker = use_docker
+        self.python_tool = PythonCodeExecutionTool(
+            timeout=timeout, use_docker=use_docker
+        )
+
+    async def execute_python_code(
+        self,
+        code: str,
+        max_retries: int | None = None,
+        timeout: int | None = None,
+        working_directory: str | None = None,
+    ) -> dict[str, Any]:
+        """Execute Python code with configurable retry logic.
+
+        Args:
+            code: Python code to execute
+            max_retries: Maximum number of retry attempts (overrides instance default)
+            timeout: Execution timeout in seconds (overrides instance default)
+            working_directory: Working directory for execution
+
+        Returns:
+            Dictionary containing execution results
+        """
+        retries = max_retries if max_retries is not None else self.max_retries
+        exec_timeout = timeout if timeout is not None else self.timeout
+
+        result = self.python_tool.run(
+            {
+                "code": code,
+                "max_retries": retries,
+                "timeout": exec_timeout,
+                "working_directory": working_directory,
+            }
+        )
+
+        return {
+            "success": result.success,
+            "output": result.data.get("output", ""),
+            "error": result.data.get("error", ""),
+            "exit_code": result.data.get("exit_code", -1),
+            "execution_time": result.data.get("execution_time", 0.0),
+            "retries_used": result.data.get("retries_used", 0),
+        }
+
+    async def execute_code_blocks(
+        self,
+        code_blocks: list[CodeBlock],
+        executor_type: str = "docker",  # "docker" or "local"
+        timeout: int | None = None,
+    ) -> dict[str, Any]:
+        """Execute multiple code blocks using AG2 code execution framework.
+
+        Args:
+            code_blocks: List of code blocks to execute
+            executor_type: Type of executor to use ("docker" or "local")
+            timeout: Execution timeout in seconds
+
+        Returns:
+            Dictionary containing execution results for all blocks
+        """
+        exec_timeout = timeout if timeout is not None else self.timeout
+
+        try:
+            if executor_type == "docker":
+                with DockerCommandLineCodeExecutor(
+                    timeout=exec_timeout,
+                    work_dir=f"/tmp/pydantic_ai_code_exec_{id(self)}",
+                ) as executor:
+                    result = executor.execute_code_blocks(code_blocks)
+            else:
+                executor = LocalCommandLineCodeExecutor(
+                    timeout=exec_timeout,
+                    work_dir=f"/tmp/pydantic_ai_code_exec_{id(self)}",
+                )
+                result = executor.execute_code_blocks(code_blocks)
+
+            return {
+                "success": result.exit_code == 0,
+                "output": result.output,
+                "exit_code": result.exit_code,
+                "command": getattr(result, "command", ""),
+                "image": getattr(result, "image", None),
+                "executor_type": executor_type,
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "output": "",
+                "exit_code": -1,
+                "error": str(e),
+                "executor_type": executor_type,
+            }
+
+
+# Global instances
+pydantic_ai_code_execution_tool = PydanticAICodeExecutionTool()
+
+# Register tools
 registry.register("docker_sandbox", DockerSandboxRunner)
 registry.register("docker_sandbox_tool", DockerSandboxTool)

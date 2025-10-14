@@ -215,6 +215,55 @@ flows:
 uv run deepresearch --config-name=my_custom_config
 ```
 
+## Tool Configuration {#tools}
+
+### Tool Registry Configuration
+
+Configure the tool registry and execution settings:
+
+```yaml
+# Tool registry configuration
+tool_registry:
+  auto_discovery: true
+  cache_enabled: true
+  cache_ttl: 3600
+  max_concurrent_executions: 10
+  retry_failed_tools: true
+  retry_attempts: 3
+  validation_enabled: true
+
+  performance_monitoring:
+    enabled: true
+    metrics_retention_days: 30
+    alert_thresholds:
+      avg_execution_time: 60  # seconds
+      error_rate: 0.1         # 10%
+      success_rate: 0.9       # 90%
+```
+
+### Tool-Specific Configuration
+
+Configure individual tools:
+
+```yaml
+# Tool-specific configurations
+tool_configs:
+  web_search:
+    max_results: 20
+    timeout: 30
+    retry_on_failure: true
+
+  bioinformatics_tools:
+    blast:
+      e_value_threshold: 1e-5
+      max_target_seqs: 100
+
+    structure_prediction:
+      alphafold:
+        max_model_len: 2000
+        use_gpu: true
+```
+
 ## Configuration Best Practices
 
 1. **Start Simple**: Begin with basic configurations and add complexity as needed

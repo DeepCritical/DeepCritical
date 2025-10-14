@@ -448,4 +448,4 @@ multi_search.optimize_strategy(
 )
 ```
 
-For more detailed information, see the [Search Integration Guide](../development/search-integration.md) and [Content Processing Documentation](../user-guide/tools/content-processing.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [RAG Tools Documentation](rag.md).

@@ -347,4 +347,4 @@ flows.bioinformatics.fusion.cross_reference_enabled=true
 flows.bioinformatics.reasoning.integrative_approach=true
 ```
 
-For more detailed information, see the [Bioinformatics Integration Guide](../development/bioinformatics-integration.md) and [Data Types API Reference](../api/datatypes.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [Data Types API Reference](../../api/datatypes.md).

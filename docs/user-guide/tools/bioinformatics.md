@@ -422,4 +422,4 @@ results = await batch_tool.process_batch(
 )
 ```
 
-For more detailed information, see the [Bioinformatics Integration Guide](../development/bioinformatics-integration.md) and [Data Types API Reference](../api/datatypes.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [Data Types API Reference](../../api/datatypes.md).

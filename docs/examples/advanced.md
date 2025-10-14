@@ -611,4 +611,183 @@ After exploring these advanced examples:
 4. **Monitoring Setup**: Implement comprehensive monitoring and alerting
 5. **Integration Expansion**: Connect with additional external systems
 
-For more specialized examples, see [Bioinformatics Examples](bioinformatics.md) and [Integration Examples](integration.md).
+## Code Improvement Workflow Examples
+
+### Automatic Error Correction
+```python
+import asyncio
+from DeepResearch.src.agents.code_execution_orchestrator import CodeExecutionOrchestrator
+
+async def automatic_error_correction():
+    """Demonstrate automatic code improvement and error correction."""
+
+    orchestrator = CodeExecutionOrchestrator()
+
+    # This intentionally problematic request will trigger error correction
+    result = await orchestrator.iterative_improve_and_execute(
+        user_message="Write a Python script that reads a CSV file and calculates statistics, but make sure it handles all possible errors",
+        max_iterations=3
+    )
+
+    print(f"Success: {result.success}")
+    print(f"Final code has {len(result.data['final_code'])} characters")
+    print(f"Improvement attempts: {result.data['iterations_used']}")
+
+asyncio.run(automatic_error_correction())
+```
+
+### Code Analysis and Improvement
+```python
+import asyncio
+from DeepResearch.src.agents.code_improvement_agent import CodeImprovementAgent
+
+async def code_analysis_improvement():
+    """Analyze and improve existing code."""
+
+    agent = CodeImprovementAgent()
+
+    # Code with intentional issues
+    problematic_code = '''
+def process_list(items):
+    total = 0
+    for item in items:
+        total += item  # No error handling for non-numeric items
+    return total / len(items)  # Division by zero if empty list
+
+result = process_list([])
+'''
+
+    # Analyze the error
+    analysis = await agent.analyze_error(
+        code=problematic_code,
+        error_message="ZeroDivisionError: division by zero",
+        language="python"
+    )
+
+    print(f"Error Type: {analysis['error_type']}")
+    print(f"Root Cause: {analysis['root_cause']}")
+
+    # Improve the code
+    improvement = await agent.improve_code(
+        original_code=problematic_code,
+        error_message="ZeroDivisionError: division by zero",
+        language="python",
+        improvement_focus="robustness"
+    )
+
+    print(f"Improved Code:\n{improvement['improved_code']}")
+
+asyncio.run(code_analysis_improvement())
+```
+
+### Multi-Language Code Generation with Error Handling
+```python
+import asyncio
+from DeepResearch.src.agents.code_execution_orchestrator import CodeExecutionOrchestrator
+
+async def multi_language_generation():
+    """Generate and improve code in multiple languages."""
+
+    orchestrator = CodeExecutionOrchestrator()
+
+    # Python script with error correction
+    python_result = await orchestrator.iterative_improve_and_execute(
+        "Create a Python function that safely parses JSON data from a file",
+        code_type="python",
+        max_iterations=3
+    )
+
+    # Bash script with error correction
+    bash_result = await orchestrator.iterative_improve_and_execute(
+        "Write a bash script that checks if a directory exists and creates it if not",
+        code_type="bash",
+        max_iterations=2
+    )
+
+    print("Python script result:", python_result.success)
+    print("Bash script result:", bash_result.success)
+
+asyncio.run(multi_language_generation())
+```
+
+### Performance Optimization and Code Enhancement
+```python
+import asyncio
+from DeepResearch.src.agents.code_improvement_agent import CodeImprovementAgent
+
+async def performance_optimization():
+    """Optimize code for better performance."""
+
+    agent = CodeImprovementAgent()
+
+    # Inefficient code
+    slow_code = '''
+def fibonacci_recursive(n):
+    if n <= 1:
+        return n
+    return fibonacci_recursive(n-1) + fibonacci_recursive(n-2)
+
+# Calculate multiple values (very inefficient)
+results = [fibonacci_recursive(i) for i in range(35)]
+'''
+
+    # Optimize for performance
+    optimization = await agent.improve_code(
+        original_code=slow_code,
+        error_message="",  # No error, just optimization
+        language="python",
+        improvement_focus="optimize"
+    )
+
+    print("Optimization completed")
+    print(f"Optimized code:\n{optimization['improved_code']}")
+
+asyncio.run(performance_optimization())
+```
+
+### Integration with Code Execution Workflow
+```bash
+# Complete workflow with automatic error correction
+uv run deepresearch \
+  flows.code_execution.enabled=true \
+  question="Create a data analysis script that reads CSV, performs statistical analysis, and generates plots" \
+  flows.code_execution.improvement.enabled=true \
+  flows.code_execution.improvement.max_attempts=5 \
+  flows.code_execution.execution.use_docker=true
+```
+
+### Advanced Error Recovery Scenarios
+```python
+import asyncio
+from DeepResearch.src.agents.code_execution_orchestrator import CodeExecutionOrchestrator
+
+async def advanced_error_recovery():
+    """Handle complex error scenarios with multiple improvement attempts."""
+
+    orchestrator = CodeExecutionOrchestrator()
+
+    # Complex request that may require multiple iterations
+    result = await orchestrator.iterative_improve_and_execute(
+        user_message="""
+        Write a Python script that:
+        1. Downloads data from a REST API
+        2. Parses and validates the JSON response
+        3. Performs statistical analysis on numeric fields
+        4. Saves results to both CSV and JSON formats
+        5. Includes comprehensive error handling for all operations
+        """,
+        max_iterations=5,  # Allow more attempts for complex tasks
+        enable_improvement=True
+    )
+
+    print(f"Complex task completed: {result.success}")
+    if result.success:
+        print(f"Final code quality: {len(result.data['improvement_history'])} improvements made")
+        print("Improvement history:")
+        for i, improvement in enumerate(result.data['improvement_history'], 1):
+            print(f"  {i}. {improvement['explanation'][:100]}...")
+
+asyncio.run(advanced_error_recovery())
+```
+
+For more specialized examples, see [Bioinformatics Tools](../user-guide/tools/bioinformatics.md) and [Integration Examples](../examples/basic.md).

@@ -174,21 +174,30 @@ nav:
   - User Guide:
     - Architecture Overview: architecture/overview.md
     - Configuration: user-guide/configuration.md
+    - LLM Models: user-guide/llm-models.md
     - Flows:
       - PRIME Flow: user-guide/flows/prime.md
       - Bioinformatics Flow: user-guide/flows/bioinformatics.md
       - DeepSearch Flow: user-guide/flows/deepsearch.md
       - Challenge Flow: user-guide/flows/challenge.md
+      - Code Execution Flow: user-guide/flows/code-execution.md
+      - Flow Overview: flows/index.md
     - Tools:
-      - Tool Registry: user-guide/tools/registry.md
+      - Tool Registry: api/tools.md
+      - Tool Registry Guide: user-guide/tools/registry.md
       - Bioinformatics Tools: user-guide/tools/bioinformatics.md
       - Search Tools: user-guide/tools/search.md
       - RAG Tools: user-guide/tools/rag.md
+      - Knowledge Query Tools: user-guide/tools/knowledge-query.md
   - API Reference:
+    - Overview: api/index.md
+    - Agents: api/agents.md
+    - Tools: api/tools.md
+    - Data Types: api/datatypes.md
+    - Configuration: api/configuration.md
     - Core Modules: core/index.md
     - Utilities: utilities/index.md
     - Flows: flows/index.md
-    - Tools: api/tools.md
     - Tool Overview: tools/index.md
   - Development:
     - Setup: development/setup.md
@@ -196,6 +205,9 @@ nav:
     - Testing: development/testing.md
     - CI/CD: development/ci-cd.md
     - Scripts: development/scripts.md
+    - Makefile Usage: development/makefile-usage.md
+    - Pre-commit Hooks: development/pre-commit-hooks.md
+    - Tool Development: development/tool-development.md
   - Examples:
     - Basic Usage: examples/basic.md
     - Advanced Workflows: examples/advanced.md

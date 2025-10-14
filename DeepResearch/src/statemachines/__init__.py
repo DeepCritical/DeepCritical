@@ -3,7 +3,7 @@ State machine modules for DeepCritical workflows.
 
 This package contains Pydantic Graph-based workflow implementations
 for various DeepCritical operations including bioinformatics, RAG,
-and search workflows.
+search, and code execution workflows.
 """
 
 from .bioinformatics_workflow import (
@@ -29,6 +29,18 @@ from .bioinformatics_workflow import (
 #     CompleteDeepSearch,
 #     DeepSearchError,
 # )
+from .code_execution_workflow import (
+    AnalyzeError,
+    CodeExecutionWorkflow,
+    CodeExecutionWorkflowState,
+    ExecuteCode,
+    FormatResponse,
+    GenerateCode,
+    ImproveCode,
+    InitializeCodeExecution,
+    execute_code_workflow,
+    generate_and_execute_code,
+)
 from .rag_workflow import (
     GenerateResponse,
     InitializeRAG,
@@ -49,22 +61,28 @@ from .search_workflow import (
 )
 
 __all__ = [
+    "AnalyzeError",
     "AssessDataQuality",
     "BioSynthesizeResults",
-    # Bioinformatics workflow
     "BioinformaticsState",
     "CheckSearchProgress",
+    "CodeExecutionWorkflow",
+    "CodeExecutionWorkflowState",
     "CompleteDeepSearch",
     "CreateReasoningTask",
     "DeepSearchError",
-    # Deep search workflow
     "DeepSearchState",
     "DeepSearchSynthesizeResults",
     "EvaluateResults",
+    "ExecuteCode",
     "ExecuteSearchStep",
+    "FormatResponse",
     "FuseDataSources",
+    "GenerateCode",
     "GenerateFinalResponse",
     "GenerateResponse",
+    "ImproveCode",
+    "InitializeCodeExecution",
     "InitializeDeepSearch",
     "InitializeRAG",
     "InitializeSearch",
@@ -77,10 +95,10 @@ __all__ = [
     "ProcessResults",
     "QueryRAG",
     "RAGError",
-    # RAG workflow
     "RAGState",
     "SearchWorkflowError",
-    # Search workflow
     "SearchWorkflowState",
     "StoreDocuments",
+    "execute_code_workflow",
+    "generate_and_execute_code",
 ]

@@ -357,4 +357,4 @@ flows.challenge.preparation.data_splitting.sample_fraction=0.5
 flows.challenge.execution.parallel_execution=false
 ```
 
-For more detailed information, see the [Experimental Design Guide](../development/experimental-design.md) and [Statistical Analysis Documentation](../user-guide/tools/statistical-analysis.md).
+For more detailed information, see the [Testing Guide](../../development/testing.md) and [Tool Development Guide](../../development/tool-development.md).

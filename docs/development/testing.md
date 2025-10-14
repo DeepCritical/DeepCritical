@@ -376,6 +376,108 @@ async def test_workflow_error_recovery():
         assert len(result.error_history) > 0
 ```
 
+## Tool Testing {#tools}
+
+### Testing Custom Tools
+
+DeepCritical provides comprehensive testing support for custom tools:
+
+#### Tool Unit Testing
+```python
+import pytest
+from deepresearch.src.tools.base import ToolRunner, ExecutionResult
+
+class TestCustomTool:
+    """Test cases for custom tool implementation."""
+
+    @pytest.fixture
+    def tool(self):
+        """Create tool instance for testing."""
+        return CustomTool()
+
+    def test_tool_specification(self, tool):
+        """Test tool specification is correctly defined."""
+        spec = tool.get_spec()
+
+        assert spec.name == "custom_tool"
+        assert spec.category.value == "custom"
+        assert "input_param" in spec.inputs
+        assert "output_result" in spec.outputs
+
+    def test_tool_execution_success(self, tool):
+        """Test successful tool execution."""
+        result = tool.run({
+            "input_param": "test_value",
+            "options": {"verbose": True}
+        })
+
+        assert isinstance(result, ExecutionResult)
+        assert result.success
+        assert "output_result" in result.data
+        assert result.execution_time > 0
+```
+
+#### Tool Integration Testing
+```python
+import pytest
+from deepresearch.src.utils.tool_registry import ToolRegistry
+
+class TestToolIntegration:
+    """Integration tests for tool registry and execution."""
+
+    @pytest.fixture
+    def registry(self):
+        """Get tool registry instance."""
+        return ToolRegistry.get_instance()
+
+    def test_tool_registration(self, registry):
+        """Test tool registration in registry."""
+        tool = CustomTool()
+        registry.register_tool(tool.get_spec(), tool)
+
+        # Verify tool is registered
+        assert "custom_tool" in registry.list_tools()
+        spec = registry.get_tool_spec("custom_tool")
+        assert spec.name == "custom_tool"
+
+    def test_tool_execution_through_registry(self, registry):
+        """Test tool execution through registry."""
+        tool = CustomTool()
+        registry.register_tool(tool.get_spec(), tool)
+
+        result = registry.execute_tool("custom_tool", {
+            "input_param": "registry_test"
+        })
+
+        assert result.success
+        assert result.data["output_result"] == "processed: registry_test"
+```
+
+### Testing Best Practices for Tools
+
+#### Tool Test Organization
+```python
+# tests/tools/test_custom_tool.py
+import pytest
+from deepresearch.src.tools.custom_tool import CustomTool
+
+class TestCustomTool:
+    """Comprehensive test suite for CustomTool."""
+
+    # Unit tests
+    def test_initialization(self): ...
+    def test_input_validation(self): ...
+    def test_output_formatting(self): ...
+
+    # Integration tests
+    def test_registry_integration(self): ...
+    def test_workflow_integration(self): ...
+
+    # Performance tests
+    def test_execution_performance(self): ...
+    def test_memory_usage(self): ...
+```
+
 ## Continuous Integration Testing
 
 ### CI Test Configuration
@@ -661,4 +763,4 @@ async def test_large_dataset_processing():
 # pytest -m "resource_intensive" --maxfail=1
 ```
 
-For more information about testing patterns and examples, see the [Test Examples](https://github.com//DeepCritical/tree/main/tests) and [Testing Best Practices](../development/testing-best-practices.md).
+For more information about testing patterns and examples, see the [Contributing Guide](../development/contributing.md) and [CI/CD Guide](../development/ci-cd.md).

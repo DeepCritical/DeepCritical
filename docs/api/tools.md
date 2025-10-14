@@ -36,7 +36,7 @@ Central registry for tool management and execution.
 - `list_tools()`: List all registered tools
 - `get_tools_by_category(category)`: Get tools by category
 
-## Tool Categories
+## Tool Categories {#tool-categories}
 
 DeepCritical organizes tools into logical categories:
 
@@ -79,7 +79,9 @@ Response structure from tool execution.
 - `metadata`: Response metadata
 - `citations`: Source citations if applicable
 
-## Domain Tools
+## Domain Tools {#domain-tools}
+
+### Knowledge Query Tools {#knowledge-query-tools}
 
 ### Web Search Tools
 
@@ -94,6 +96,8 @@ Response structure from tool execution.
         options:
           docstring_style: google
           show_category_heading: true
+
+### Sequence Analysis Tools {#sequence-analysis-tools}
 
 ### Bioinformatics Tools
 
@@ -124,6 +128,34 @@ Response structure from tool execution.
         options:
           docstring_style: google
           show_category_heading: true
+
+### Code Execution Tools
+
+::: DeepResearch.src.agents.code_generation_agent.CodeGenerationAgent
+        handler: python
+        options:
+          docstring_style: google
+          show_category_heading: true
+
+::: DeepResearch.src.agents.code_generation_agent.CodeExecutionAgent
+        handler: python
+        options:
+          docstring_style: google
+          show_category_heading: true
+
+### Structure Prediction Tools {#structure-prediction-tools}
+
+### Molecular Docking Tools {#molecular-docking-tools}
+
+### De Novo Design Tools {#de-novo-design-tools}
+
+### Function Prediction Tools {#function-prediction-tools}
+
+### RAG Tools {#rag-tools}
+
+### Search Tools {#search-tools}
+
+### Analytics Tools {#analytics-tools}
 
 ### MCP Server Management Tools
 
@@ -156,6 +188,7 @@ Response structure from tool execution.
         options:
           docstring_style: google
           show_category_heading: true
+
 
 ## Enhanced MCP Server Framework
 
@@ -829,6 +862,44 @@ Stops deployed MCP servers.
 - Stops and cleans up deployed MCP server containers
 - Provides confirmation of stop operations
 - Handles resource cleanup
+
+#### TestcontainersDeployer
+::: DeepResearch.src.utils.testcontainers_deployer.TestcontainersDeployer
+        handler: python
+        options:
+          docstring_style: google
+          show_category_heading: true
+
+Core deployment infrastructure for MCP servers using testcontainers with integrated code execution.
+
+**Features:**
+- **MCP Server Deployment**: Deploy bioinformatics servers (FastQC, SAMtools, Bowtie2) in isolated containers
+- **Testcontainers Integration**: Isolated container environments for secure, reproducible execution
+- **Code Execution**: AG2-style code execution within deployed containers
+- **Health Monitoring**: Built-in health checks and automatic recovery
+- **Resource Management**: Configurable CPU, memory, and timeout limits
+- **Multi-Server Support**: Deploy multiple servers simultaneously with resource optimization
+
+**Key Methods:**
+- `deploy_server()`: Deploy MCP servers with custom configurations
+- `execute_code()`: Execute code within deployed server containers
+- `execute_code_blocks()`: Execute multiple code blocks with container isolation
+- `health_check()`: Perform health monitoring on deployed servers
+- `stop_server()`: Gracefully stop and cleanup deployed servers
+
+**Configuration:**
+```yaml
+# Testcontainers configuration
+testcontainers:
+  image: "python:3.11-slim"
+  working_directory: "/workspace"
+  auto_remove: true
+  privileged: false
+  environment_variables:
+    PYTHONPATH: "/workspace"
+  volumes:
+    /tmp/mcp_data: "/workspace/data"
+```
 
 ## Usage Examples
 

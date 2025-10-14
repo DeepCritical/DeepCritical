@@ -366,4 +366,4 @@ flows.deepsearch.processing.check_freshness=true
 flows.deepsearch.processing.max_age_days=180
 ```
 
-For more detailed information, see the [Search Integration Guide](../development/search-integration.md) and [Content Processing Documentation](../user-guide/tools/content-processing.md).
+For more detailed information, see the [Tool Development Guide](../../development/tool-development.md) and [Search Tools Documentation](../tools/search.md).

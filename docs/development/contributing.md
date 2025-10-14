@@ -369,6 +369,114 @@ def new_function(param: str) -> Dict[str, Any]:
 - [ ] Changelog updated
 - [ ] Release notes prepared
 
+## Tools {#tools}
+
+### Tool Development
+
+DeepCritical supports extending the tool ecosystem with custom tools:
+
+#### Tool Categories
+- **Knowledge Query**: Information retrieval and search tools
+- **Sequence Analysis**: Bioinformatics sequence analysis tools
+- **Structure Prediction**: Protein structure prediction tools
+- **Molecular Docking**: Drug-target interaction tools
+- **De Novo Design**: Novel molecule design tools
+- **Function Prediction**: Biological function annotation tools
+- **RAG**: Retrieval-augmented generation tools
+- **Search**: Web and document search tools
+- **Analytics**: Data analysis and visualization tools
+- **Code Execution**: Code execution and sandboxing tools
+
+#### Creating Custom Tools
+```python
+from deepresearch.src.tools.base import ToolRunner, ToolSpec, ToolCategory
+
+class CustomTool(ToolRunner):
+    """Custom tool for specific analysis."""
+
+    def __init__(self):
+        super().__init__(ToolSpec(
+            name="custom_analysis",
+            description="Performs custom data analysis",
+            category=ToolCategory.ANALYTICS,
+            inputs={
+                "data": "dict",
+                "method": "str",
+                "parameters": "dict"
+            },
+            outputs={
+                "result": "dict",
+                "statistics": "dict"
+            }
+        ))
+
+    def run(self, parameters: Dict[str, Any]) -> ExecutionResult:
+        """Execute the analysis."""
+        # Implementation here
+        return ExecutionResult(success=True, data={"result": "analysis_complete"})
+```
+
+#### Tool Registration
+```python
+from deepresearch.src.utils.tool_registry import ToolRegistry
+
+# Register custom tool
+registry = ToolRegistry.get_instance()
+registry.register_tool(
+    tool_spec=CustomTool().get_spec(),
+    tool_runner=CustomTool()
+)
+```
+
+#### Tool Testing
+```python
+def test_custom_tool():
+    """Test custom tool functionality."""
+    tool = CustomTool()
+    result = tool.run({
+        "data": {"key": "value"},
+        "method": "analysis",
+        "parameters": {"confidence": 0.95}
+    })
+
+    assert result.success
+    assert "result" in result.data
+```
+
+### MCP Server Development
+
+#### MCP Server Framework
+DeepCritical includes an enhanced MCP (Model Context Protocol) server framework:
+
+```python
+from deepresearch.src.tools.mcp_server_base import MCPServerBase
+
+class CustomMCPServer(MCPServerBase):
+    """Custom MCP server with Pydantic AI integration."""
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.server_type = "custom"
+        self.name = "custom-server"
+
+    @mcp_tool
+    async def custom_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform custom analysis."""
+        # Tool implementation with Pydantic AI reasoning
+        result = await self.pydantic_ai_agent.run(
+            f"Analyze this data: {data}",
+            message_history=[]
+        )
+        return {"analysis": result.data}
+```
+
+#### Containerized Deployment
+```python
+# Deploy MCP server with testcontainers
+deployment = await server.deploy_with_testcontainers()
+result = await server.execute_tool("custom_analysis", {"data": test_data})
+```
+
 ## Community Guidelines
 
 ### Communication

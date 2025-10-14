@@ -1,40 +1,45 @@
-# Tools
+# Tools Documentation
 
-This section contains documentation for all tool implementations.
+This section contains comprehensive documentation for the DeepCritical tool ecosystem.
 
-## Base Tool Classes
+## Overview
 
-The `ToolRunner` base class provides the foundation for all tool implementations with:
+DeepCritical provides a rich ecosystem of specialized tools organized by functionality and domain. The tool system is designed for extensibility, reliability, and high performance.
 
-- Standardized execution interface
-- Parameter validation
-- Error handling and retry logic
-- Result formatting
+## Documentation Sections
 
-## Bioinformatics Tools
+### Tool Registry
+Learn about the tool registration system, execution framework, and tool lifecycle management.
 
-Specialized tools for bioinformatics data analysis:
+**[→ Tool Registry Documentation](../user-guide/tools/registry.md)**
 
-- **Gene Ontology Tools**: GO annotation retrieval and analysis
-- **PubMed Tools**: Literature search and abstract processing
-- **Sequence Analysis Tools**: BLAST, HMMER, protein sequence analysis
-- **Structure Prediction Tools**: AlphaFold2, ESMFold integration
-- **Molecular Docking Tools**: AutoDock Vina, DiffDock
+### Search Tools
+Web search, content extraction, and information retrieval tools.
 
-## Search Tools
+**[→ Search Tools Documentation](../user-guide/tools/search.md)**
 
-Web search and information retrieval tools:
+### RAG Tools
+Retrieval-augmented generation tools for knowledge-intensive tasks.
 
-- **Web Search**: Google/Bing search integration
-- **Deep Search**: Iterative research with reflection
-- **Content Extraction**: Web page parsing and cleaning
-- **Search Analytics**: Result ranking and relevance scoring
+**[→ RAG Tools Documentation](../user-guide/tools/rag.md)**
 
-## RAG Tools
+### Bioinformatics Tools
+Specialized tools for biological data analysis and research.
 
-Retrieval-Augmented Generation tools:
+**[→ Bioinformatics Tools Documentation](../user-guide/tools/bioinformatics.md)**
 
-- **Document Processing**: Text chunking and embedding
-- **Vector Stores**: ChromaDB, FAISS integration
-- **Retrieval**: Semantic search and document ranking
-- **Generation**: Context-aware answer generation
+### API Reference
+Complete API documentation for tool development and integration.
+
+**[→ Tools API Reference](../api/tools.md)**
+
+## Quick Links
+
+- [Getting Started with Tools](../getting-started/quickstart.md#tools)
+- [Tool Configuration](../getting-started/configuration.md#tools)
+- [Tool Development](../development/contributing.md#tools)
+- [Tool Testing](../development/testing.md#tools)
+
+---
+
+*This documentation provides an overview of the tools ecosystem. For detailed information about specific tools, please follow the links above to the relevant documentation sections.*
