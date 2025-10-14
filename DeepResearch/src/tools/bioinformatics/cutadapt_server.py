@@ -68,6 +68,8 @@ try:
     )
     from DeepResearch.src.datatypes.mcp import (  # type: ignore[import]
         MCPServerConfig,
+        MCPServerDeployment,
+        MCPServerStatus,
         MCPServerType,
     )
 
@@ -77,6 +79,8 @@ except ImportError:
     BASE_CLASS_AVAILABLE = False
     MCPServerBase = object  # type: ignore[assignment]
     MCPServerConfig = type(None)  # type: ignore[assignment]
+    MCPServerDeployment = type(None)  # type: ignore[assignment]
+    MCPServerStatus = type(None)  # type: ignore[assignment]
     MCPServerType = type(None)  # type: ignore[assignment]
 
 # Create MCP server instance if FastMCP is available
@@ -571,6 +575,27 @@ class CutadaptServer(MCPServerBase if BASE_CLASS_AVAILABLE else object):
         return self.run_tool(
             operation, **{k: v for k, v in params.items() if k != "operation"}
         )
+
+    async def deploy_with_testcontainers(self) -> MCPServerDeployment:
+        """Deploy the server using testcontainers."""
+        # Implementation for testcontainers deployment
+        # This is a placeholder - actual implementation would use testcontainers
+        from datetime import datetime
+
+        return MCPServerDeployment(
+            server_name="cutadapt-server",
+            server_type=MCPServerType.CUSTOM,
+            container_id="cutadapt-test-container",
+            status=MCPServerStatus.RUNNING,
+            configuration=self.config,
+            started_at=datetime.now(),
+        )
+
+    async def stop_with_testcontainers(self) -> bool:
+        """Stop the server deployed with testcontainers."""
+        # Implementation for stopping testcontainers deployment
+        # This is a placeholder - actual implementation would stop the container
+        return True
 
 
 if __name__ == "__main__":
