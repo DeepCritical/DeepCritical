@@ -3,8 +3,11 @@ Global pytest configuration for DeepCritical testing framework.
 """
 
 import os
+import sys
+import types
 from contextlib import ExitStack
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -12,6 +15,14 @@ import pytest
 RATELIMITER_TARGETS = [
     "DeepResearch.src.tools.bioinformatics_tools.limiter.hit",
 ]
+
+
+# Mock fastmcp to prevent import-time validation errors
+mock_fastmcp = cast("Any", types.ModuleType("fastmcp"))
+mock_fastmcp.Settings = lambda *a, **kw: None
+
+sys.modules["fastmcp"] = mock_fastmcp
+sys.modules["fastmcp.settings"] = mock_fastmcp
 
 
 def pytest_configure(config):
