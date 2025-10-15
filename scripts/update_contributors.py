@@ -137,9 +137,6 @@ def update_contributors_file(
     before = content[: start_idx + len(start_marker)]
     after = content[end_idx:]
 
-    # Update the timestamp
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
-
     new_content = f"""{before}
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
