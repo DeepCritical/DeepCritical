@@ -826,6 +826,31 @@ print(f"Success rate: {summary['success_rate']:.2%}")
 print(f"Tools used: {summary['tools_used']}")
 ```
 
+## 👥 Contributors
+
+DeepCritical is built by an amazing community of contributors! We automatically recognize and celebrate everyone who helps make this project better.
+
+### 🌟 Featured Contributors
+
+Our [Contributors page](CONTRIBUTORS.md) showcases all the wonderful people who contribute to DeepCritical.
+
+- **Contributors**: See our [contributor graph](https://github.com/DeepCritical/DeepCritical/graphs/contributors) for commit activity
+- **Recent Activity**: Check the [pulse](https://github.com/DeepCritical/DeepCritical/pulse) for recent contributions
+- **Community**: Join our [discussions](https://github.com/DeepCritical/DeepCritical/discussions) to get involved
+
+### 🤝 Want to Contribute?
+
+We welcome contributions of all kinds! Here's how to get started:
+
+1. **🐛 Found a Bug?** [Report it](https://github.com/DeepCritical/DeepCritical/issues/new?template=bug_report.yml)
+2. **💡 Have an Idea?** [Suggest a feature](https://github.com/DeepCritical/DeepCritical/issues/new?template=feature_request.yml)
+3. **📝 Want to Improve Docs?** [Help with documentation](https://github.com/DeepCritical/DeepCritical/issues/new?template=documentation.yml)
+4. **💻 Ready to Code?** Check our [Contributing Guide](CONTRIBUTING.md)
+
+Every contribution matters, no matter how small! 🚀
+
+---
+
 ## 📚 References
 
 - [Hydra Documentation](https://hydra.cc/docs/intro/) - Configuration management
