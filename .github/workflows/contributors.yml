@@ -1,0 +1,81 @@
+name: Update Contributors
+
+on:
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  push:
+    branches: [ main ]
+    paths: [ 'CONTRIBUTORS.md' ]
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-contributors:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyYAML requests
+
+    - name: Update contributors
+      run: |
+        python scripts/update_contributors.py
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO_OWNER: ${{ github.repository_owner }}
+        REPO_NAME: ${{ github.event.repository.name }}
+
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit and push changes
+      if: steps.verify-changed-files.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add CONTRIBUTORS.md
+        git commit -m "docs: update contributors list [skip ci]"
+        git push
+
+    - name: Create Pull Request for manual updates
+      if: github.event_name == 'workflow_dispatch' && steps.verify-changed-files.outputs.changes == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "docs: update contributors list"
+        title: "🤖 Automated Contributors Update"
+        body: |
+          This PR updates the contributors list in CONTRIBUTORS.md.
+
+          **Changes:**
+          - Updated contributor information from GitHub API
+          - Refreshed contributor avatars and links
+          - Added any new contributors since last update
+
+          This is an automated update - please review and merge if everything looks correct.
+        branch: automated/contributors-update
+        delete-branch: true
+        draft: false

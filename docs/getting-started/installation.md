@@ -65,10 +65,84 @@ For enhanced functionality, consider installing:
 pip install neo4j biopython
 
 # For vector databases (RAG)
-pip install chromadb qdrant-client
+pip install chromadb qdrant-client neo4j  # Neo4j for graph-based vector storage
 
 # For advanced visualization
 pip install plotly matplotlib
+```
+
+## Neo4j Setup (Optional)
+
+Neo4j provides graph-based vector storage for enhanced RAG capabilities. To use Neo4j as a vector store:
+
+### 1. Install Neo4j
+
+**Using Docker (Recommended):**
+```bash
+# Pull and run Neo4j with vector index support (Neo4j 5.11+)
+docker run \
+    --name neo4j-vector \
+    -p7474:7474 -p7687:7687 \
+    -d \
+    -e NEO4J_AUTH=neo4j/password \
+    -e NEO4J_PLUGINS='["graph-data-science"]' \
+    neo4j:5.18
+```
+
+**Using Desktop:**
+- Download from [neo4j.com/download](https://neo4j.com/download/)
+- Create a new project
+- Install "Graph Data Science" plugin for vector operations
+
+### 2. Verify Installation
+
+```bash
+# Test connection
+curl -u neo4j:password http://localhost:7474/db/neo4j/tx/commit \
+  -H "Content-Type: application/json" \
+  -d '{"statements":[{"statement":"RETURN '\''Neo4j is running'\''"}]}'
+```
+
+### 3. Configure DeepCritical
+
+Update your configuration to use Neo4j:
+
+```yaml
+# configs/rag/vector_store/neo4j.yaml
+vector_store:
+  type: "neo4j"
+  connection:
+    uri: "neo4j://localhost:7687"
+    username: "neo4j"
+    password: "password"
+    database: "neo4j"
+    encrypted: false
+
+  index:
+    index_name: "document_vectors"
+    node_label: "Document"
+    vector_property: "embedding"
+    dimensions: 384
+    metric: "cosine"
+```
+
+### 4. Test Vector Operations
+
+```bash
+# Test Neo4j vector store
+uv run python -c "
+from deepresearch.vector_stores.neo4j_vector_store import Neo4jVectorStore
+from deepresearch.datatypes.rag import VectorStoreConfig
+import asyncio
+
+async def test():
+    config = VectorStoreConfig(store_type='neo4j')
+    store = Neo4jVectorStore(config)
+    count = await store.count_documents()
+    print(f'Documents in store: {count}')
+
+asyncio.run(test())
+"
 ```
 
 ## Troubleshooting

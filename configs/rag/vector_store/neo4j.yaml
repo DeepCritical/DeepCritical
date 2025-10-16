@@ -1,13 +1,56 @@
-# Neo4j Vector Store Configuration
+# Neo4j Vector Store Configuration (DeepCritical)
 store_type: "neo4j"
-connection_string: "bolt://localhost:7687"
-host: "localhost"
-port: 7687
-database: "neo4j"
-collection_name: "vector_index"
-api_key: null
-embedding_dimension: 1536
-distance_metric: "cosine"
-index_type: "hnsw"
-username: "neo4j"
-password: "password"
+
+# Connection settings
+connection:
+  uri: "neo4j://localhost:7687"
+  username: "neo4j"
+  password: "password"
+  database: "neo4j"
+  encrypted: false
+
+# Vector index configuration
+index:
+  index_name: "publication_abstract_vector"
+  node_label: "Publication"
+  vector_property: "abstract_embedding"
+  dimensions: 384
+  metric: "cosine"
+
+# Search defaults
+search_defaults:
+  top_k: 10
+  score_threshold: 0.0
+  max_results: 1000
+  include_metadata: true
+  include_scores: true
+
+# Batch operation settings
+batch_size: 100
+max_connections: 10
+
+# Health check configuration
+health:
+  enabled: true
+  interval_seconds: 60
+  timeout_seconds: 10
+  max_failures: 3
+  retry_delay_seconds: 5
+
+# Migration settings
+migration:
+  create_constraints: true
+  create_indexes: true
+  vector_indexes:
+    - index_name: "publication_abstract_vector"
+      node_label: "Publication"
+      vector_property: "abstract_embedding"
+      dimensions: 384
+      metric: "cosine"
+    - index_name: "document_content_vector"
+      node_label: "Document"
+      vector_property: "embedding"
+      dimensions: 384
+      metric: "cosine"
+  schema_validation: true
+  backup_before_migration: false

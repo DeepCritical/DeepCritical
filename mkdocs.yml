@@ -188,6 +188,7 @@ nav:
       - Bioinformatics Tools: user-guide/tools/bioinformatics.md
       - Search Tools: user-guide/tools/search.md
       - RAG Tools: user-guide/tools/rag.md
+      - Neo4j Integration: user-guide/tools/neo4j-integration.md
       - Knowledge Query Tools: user-guide/tools/knowledge-query.md
   - API Reference:
     - Overview: api/index.md

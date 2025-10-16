@@ -1,0 +1,34 @@
+# Neo4j Database Setup Operation (Full Pipeline)
+operation: "full_pipeline"
+neo4j: ${db.neo4j}
+
+# Enable all setup operations
+complete:
+  enabled: true
+  enrich_abstracts: true
+  enrich_citations: true
+  enrich_authors: true
+  add_semantic_keywords: true
+  update_metrics: true
+  validate_only: false
+
+fix_authors:
+  enabled: true
+  fix_names: true
+  normalize_names: true
+  fix_affiliations: true
+  fix_links: true
+  consolidate_duplicates: true
+  validate_only: false
+
+crossref:
+  enabled: true
+  enrich_publications: true
+  update_metadata: true
+  validate_only: false
+
+vector_indexes:
+  enabled: true
+  create_publication_index: true
+  create_document_index: true
+  create_chunk_index: true

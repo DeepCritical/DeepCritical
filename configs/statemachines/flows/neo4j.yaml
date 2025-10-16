@@ -1,0 +1,89 @@
+# Neo4j Vector Store Flow Configuration
+# This configuration defines Neo4j vector store workflow parameters
+
+enabled: false
+
+# Neo4j vector store configuration
+neo4j_vector_store:
+  enabled: true
+  store_type: "neo4j"
+
+  # Connection settings (inherited from db/neo4j.yaml)
+  connection:
+    uri: "${db.uri}"
+    username: "${db.username}"
+    password: "${db.password}"
+    database: "${db.database}"
+    encrypted: "${db.encrypted}"
+
+  # Vector index configuration
+  index:
+    index_name: "document_vectors"
+    node_label: "Document"
+    vector_property: "embedding"
+    dimensions: 384
+    metric: "cosine"
+
+  # Search defaults
+  search_defaults:
+    top_k: 10
+    score_threshold: 0.0
+    max_results: 1000
+    include_metadata: true
+    include_scores: true
+
+  # Batch operation settings
+  batch_size: 100
+  max_connections: 10
+
+  # Health check configuration
+  health:
+    enabled: true
+    interval_seconds: 60
+    timeout_seconds: 10
+    max_failures: 3
+    retry_delay_seconds: 5
+
+  # Migration settings
+  migration:
+    create_constraints: true
+    create_indexes: true
+    vector_indexes:
+      - index_name: "document_vectors"
+        node_label: "Document"
+        vector_property: "embedding"
+        dimensions: 384
+        metric: "cosine"
+      - index_name: "chunk_vectors"
+        node_label: "Chunk"
+        vector_property: "embedding"
+        dimensions: 384
+        metric: "cosine"
+    schema_validation: true
+    backup_before_migration: false
+
+# Embedding configuration
+embeddings:
+  model_type: "custom"
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  api_key: null
+  base_url: "localhost:8001"
+  num_dimensions: 384
+  batch_size: 32
+  max_retries: 3
+  timeout: 30.0
+
+# Document processing settings
+chunk_size: 1000
+chunk_overlap: 200
+max_context_length: 4000
+
+# Processing settings
+batch_size: 32
+max_retries: 3
+timeout: 30.0
+
+# Output settings
+output_format: "detailed"
+include_sources: true
+include_scores: true

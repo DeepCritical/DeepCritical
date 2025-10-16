@@ -23,6 +23,14 @@ if TYPE_CHECKING:
 
     import numpy as np
 
+# Import numpy for runtime use (optional)
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+
 
 class SearchType(str, Enum):
     """Types of vector search operations."""
@@ -80,8 +88,8 @@ class Document(BaseModel):
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Document metadata"
     )
-    embedding: list[float] | np.ndarray | None = Field(
-        None, description="Document embedding vector"
+    embedding: list[float] | Any | None = Field(
+        None, description="Document embedding vector (list[float] or numpy array)"
     )
     created_at: datetime = Field(
         default_factory=datetime.now, description="Creation timestamp"
@@ -1024,3 +1032,7 @@ class RAGWorkflowState(BaseModel):
             }
         }
     )
+
+
+# Rebuild models to resolve forward references
+Document.model_rebuild()

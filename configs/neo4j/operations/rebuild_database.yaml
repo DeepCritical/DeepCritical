@@ -1,0 +1,12 @@
+# Neo4j Database Rebuild Operation
+operation: "rebuild_database"
+neo4j: ${db.neo4j}
+
+rebuild:
+  enabled: true
+  search_query: "artificial intelligence machine learning"
+  data_dir: "data"
+  max_papers_search: 1000
+  max_papers_enrich: 500
+  max_papers_import: 500
+  clear_database_first: true

@@ -1,0 +1,72 @@
+# Neo4j Orchestrator Operations Configuration
+
+# Default operation to run
+operation: "test_connection"
+
+# Database configuration (references configs/db/neo4j.yaml)
+neo4j: ${db.neo4j}
+
+# ============================================================================
+# REBUILD DATABASE OPERATION
+# ============================================================================
+rebuild:
+  enabled: false
+  search_query: "machine learning"
+  data_dir: "data"
+  max_papers_search: null
+  max_papers_enrich: null
+  max_papers_import: null
+  clear_database_first: false
+
+# ============================================================================
+# DATA COMPLETION OPERATION
+# ============================================================================
+complete:
+  enabled: true
+  enrich_abstracts: true
+  enrich_citations: true
+  enrich_authors: true
+  add_semantic_keywords: true
+  update_metrics: true
+  validate_only: false
+
+# ============================================================================
+# AUTHOR DATA FIXING OPERATION
+# ============================================================================
+fix_authors:
+  enabled: true
+  fix_names: true
+  normalize_names: true
+  fix_affiliations: true
+  fix_links: true
+  consolidate_duplicates: true
+  validate_only: false
+
+# ============================================================================
+# CROSSREF INTEGRATION OPERATION
+# ============================================================================
+crossref:
+  enabled: true
+  enrich_publications: true
+  update_metadata: true
+  validate_only: false
+
+# ============================================================================
+# VECTOR INDEX SETUP OPERATION
+# ============================================================================
+vector_indexes:
+  enabled: true
+  create_publication_index: true
+  create_document_index: true
+  create_chunk_index: true
+
+# ============================================================================
+# EMBEDDINGS GENERATION OPERATION
+# ============================================================================
+embeddings:
+  enabled: false
+  generate_publications: true
+  generate_documents: true
+  generate_chunks: true
+  batch_size: 50
+  force_regenerate: false

@@ -1,0 +1,11 @@
+# Neo4j Database Configuration
+uri: "neo4j://localhost:7687"
+username: "neo4j"
+password: "password"
+database: "neo4j"
+encrypted: false
+
+# Connection pool settings
+max_connection_pool_size: 10
+connection_timeout: 30
+max_transaction_retry_time: 30

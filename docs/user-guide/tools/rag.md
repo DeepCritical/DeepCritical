@@ -247,7 +247,7 @@ rag:
     normalize: true
 
   vector_store:
-    type: "chroma"  # or "qdrant", "weaviate", "pinecone"
+    type: "chroma"  # or "qdrant", "weaviate", "pinecone", "neo4j"
     collection_name: "deepcritical_docs"
     persist_directory: "./chroma_db"
 
@@ -273,6 +273,8 @@ rag:
 ```
 
 ### Vector Store Configuration
+
+#### Chroma Configuration
 ```yaml
 # configs/rag/vector_store/chroma.yaml
 vector_store:
@@ -297,6 +299,41 @@ vector_store:
     parameters:
       M: 16
       efConstruction: 200
+```
+
+#### Neo4j Configuration
+```yaml
+# configs/rag/vector_store/neo4j.yaml
+vector_store:
+  type: "neo4j"
+  connection:
+    uri: "neo4j://localhost:7687"
+    username: "neo4j"
+    password: "password"
+    database: "neo4j"
+    encrypted: false
+
+  index:
+    index_name: "document_vectors"
+    node_label: "Document"
+    vector_property: "embedding"
+    dimensions: 384
+    metric: "cosine"
+
+  search:
+    top_k: 5
+    score_threshold: 0.0
+    include_metadata: true
+    include_scores: true
+
+  batch:
+    size: 100
+    max_retries: 3
+
+  health:
+    enabled: true
+    interval_seconds: 60
+    timeout_seconds: 10
 ```
 
 ## Usage Examples

@@ -500,7 +500,7 @@ if FASTMCP_AVAILABLE and mcp:
     cutadapt_tool = mcp.tool()(cutadapt)
 
 
-class CutadaptServer(MCPServerBase if BASE_CLASS_AVAILABLE else object):
+class CutadaptServer(MCPServerBase if BASE_CLASS_AVAILABLE else object):  # type: ignore
     """MCP Server for Cutadapt adapter trimming tool."""
 
     def __init__(self, config=None, enable_fastmcp: bool = True):

@@ -3,6 +3,8 @@
 defaults:
   - challenge: default
   - workflow_orchestration: default
+  - db: neo4j
+  - neo4j: orchestrator
   - _self_
   - override hydra/job_logging: default
   - override hydra/hydra_logging: default
@@ -109,3 +111,7 @@ vllm_tests:
     continue_on_module_failure: true
     retry_failed_prompts: true
     max_retries_per_prompt: 2
+
+# Neo4j Configuration (inherited from neo4j/orchestrator.yaml)
+neo4j:
+  operation: "test_connection"
