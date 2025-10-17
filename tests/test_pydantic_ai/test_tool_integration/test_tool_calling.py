@@ -1,92 +1,43 @@
-"""
-Tool calling tests for Pydantic AI framework.
-"""
+"""Tool calling tests using real Pydantic AI agents."""
 
-import asyncio
-from unittest.mock import Mock
+from __future__ import annotations
+
+import json
 
 import pytest
-from pydantic_ai import Agent, RunContext
 
 
 class TestPydanticAIToolCalling:
-    """Test Pydantic AI tool calling functionality."""
+    """Validate live tool invocations via ``TestModel``."""
 
     @pytest.mark.asyncio
-    @pytest.mark.optional
     @pytest.mark.pydantic_ai
-    async def test_agent_tool_registration(self):
-        """Test that tools are properly registered with agents."""
-        # Create a mock agent with tool registration
-        agent = Mock(spec=Agent)
-        agent.tools = []
+    async def test_registered_tools_execute(self, agent_bundle, agent_dependencies):
+        result = await agent_bundle.agent.run("Execute tools", deps=agent_dependencies)
+        payload = json.loads(result.output)
 
-        # Mock tool registration
-        def mock_tool_registration(func):
-            agent.tools.append(func)
-            return func
-
-        # Register a test tool
-        @mock_tool_registration
-        def test_tool(param: str) -> str:
-            """Test tool function."""
-            return f"Processed: {param}"
-
-        assert len(agent.tools) == 1
-        assert agent.tools[0] == test_tool
+        assert payload["web_search"]["results"]
+        assert payload["calculator"]["total"] >= 0
+        assert agent_bundle.state["calls"] == [
+            ("web_search", agent_bundle.state["context"]["queries"][0]),
+            ("calculator", tuple(agent_bundle.state["context"]["numbers"][0])),
+        ]
 
     @pytest.mark.asyncio
-    @pytest.mark.optional
     @pytest.mark.pydantic_ai
-    async def test_tool_execution_with_dependencies(self):
-        """Test tool execution with dependency injection."""
-        # Mock agent dependencies
-        deps = {
-            "model_name": "anthropic:claude-sonnet-4-0",
-            "temperature": 0.7,
-            "max_tokens": 1000,
-        }
-
-        # Mock tool execution context
-        ctx = Mock(spec=RunContext)
-        ctx.deps = deps
-
-        # Test tool function with context
-        def test_tool_with_deps(param: str, ctx: RunContext) -> str:
-            deps_str = str(ctx.deps) if ctx.deps is not None else "None"
-            return f"Deps: {deps_str}, Param: {param}"
-
-        result = test_tool_with_deps("test", ctx)
-        assert "test" in result
+    async def test_tool_calls_append_dependency_tracking(
+        self, agent_bundle, agent_dependencies
+    ):
+        await agent_bundle.agent.run("Track deps", deps=agent_dependencies)
+        assert len(agent_bundle.state["deps"]) == 2
+        assert agent_dependencies.tools[-2:] == ["web_search", "calculator"]
 
     @pytest.mark.asyncio
-    @pytest.mark.optional
     @pytest.mark.pydantic_ai
-    async def test_error_handling_in_tools(self):
-        """Test error handling in tool functions."""
-
-        def failing_tool(param: str) -> str:
-            if param == "fail":
-                raise ValueError("Test error")
-            return f"Success: {param}"
-
-        # Test successful execution
-        result = failing_tool("success")
-        assert result == "Success: success"
-
-        # Test error handling
-        with pytest.raises(ValueError, match="Test error"):
-            failing_tool("fail")
-
-    @pytest.mark.asyncio
-    @pytest.mark.optional
-    @pytest.mark.pydantic_ai
-    async def test_async_tool_execution(self):
-        """Test asynchronous tool execution."""
-
-        async def async_test_tool(param: str) -> str:
-            await asyncio.sleep(0.1)  # Simulate async operation
-            return f"Async result: {param}"
-
-        result = await async_test_tool("test")
-        assert result == "Async result: test"
+    async def test_sequential_runs_accumulate_results(
+        self, agent_bundle, agent_dependencies
+    ):
+        await agent_bundle.agent.run("Run 1", deps=agent_dependencies)
+        await agent_bundle.agent.run("Run 2", deps=agent_dependencies)
+        assert len(agent_bundle.state["context"]["queries"]) == 2
+        assert len(agent_bundle.state["context"]["numbers"]) == 2
