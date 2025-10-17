@@ -6,8 +6,21 @@ import json
 
 import pytest
 
-from DeepResearch.src.datatypes.agents import AgentDependencies
-from pydantic_ai import RunContext
+try:
+    from DeepResearch.src.datatypes.agents import AgentDependencies
+except ImportError as exc:  # pragma: no cover - exercised in missing-deps envs
+    pytest.skip(
+        f"DeepResearch optional dependencies unavailable: {exc}",
+        allow_module_level=True,
+    )
+
+try:
+    from pydantic_ai import RunContext
+except ModuleNotFoundError as exc:  # pragma: no cover - exercised in CI skips
+    pytest.skip(
+        f"pydantic_ai dependency unavailable: {exc}",
+        allow_module_level=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -26,7 +39,7 @@ async def test_end_to_end_agent_run(agent_bundle, agent_dependencies):
 
 @pytest.mark.asyncio
 @pytest.mark.pydantic_ai
-async def test_custom_agent_configuration(make_test_agent):
+async def test_custom_agent_configuration(make_test_agent, agent_dependencies):
     """Validate that custom tool combinations can be executed."""
 
     def register_formatter(agent, state):
@@ -39,7 +52,8 @@ async def test_custom_agent_configuration(make_test_agent):
             return {"max": max(values), "min": min(values)}
 
     bundle = make_test_agent(["formatter"], overrides={"formatter": register_formatter})
-    result = await bundle.agent.run("Format", deps=AgentDependencies())
+    deps_cls = type(agent_dependencies)
+    result = await bundle.agent.run("Format", deps=deps_cls())
     payload = json.loads(result.output)
 
     assert payload["formatter"]["max"] >= payload["formatter"]["min"]

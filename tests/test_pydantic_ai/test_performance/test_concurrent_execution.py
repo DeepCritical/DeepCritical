@@ -7,8 +7,6 @@ import json
 
 import pytest
 
-from DeepResearch.src.datatypes.agents import AgentDependencies
-
 
 class TestConcurrentExecution:
     """Ensure multiple agent runs succeed concurrently."""
@@ -17,9 +15,10 @@ class TestConcurrentExecution:
     @pytest.mark.pydantic_ai
     async def test_parallel_runs(self, make_test_agent):
         bundle = make_test_agent()
+        deps_cls = bundle.agent.deps_type
 
         async def _run(idx: int):
-            deps = AgentDependencies(
+            deps = deps_cls(
                 config={"run": idx},
                 tools=[],
                 other_agents=["planner"],

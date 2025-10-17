@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 import pytest
 
 from tests.utils.mocks.mock_agents import (
@@ -9,6 +11,13 @@ from tests.utils.mocks.mock_agents import (
     MockExecutorAgent,
     MockPlannerAgent,
 )
+
+
+class WorkflowState(TypedDict):
+    """Structured workflow state used during orchestration."""
+
+    step: int
+    log: list[str]
 
 
 class TestWorkflowStates:
@@ -21,7 +30,7 @@ class TestWorkflowStates:
         executor = MockExecutorAgent()
         evaluator = MockEvaluatorAgent()
 
-        state = {"step": 0, "log": []}
+        state: WorkflowState = {"step": 0, "log": []}
 
         async def orchestrate(query: str) -> dict[str, str]:
             state["step"] = 1

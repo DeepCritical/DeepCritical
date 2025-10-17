@@ -3,17 +3,46 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence, TypedDict
 
 import pytest
 
-from DeepResearch.src.datatypes.agents import AgentDependencies
+try:
+    from DeepResearch.src.datatypes.agents import AgentDependencies
+except ImportError as exc:  # pragma: no cover - exercised in missing-deps envs
+    pytest.skip(
+        f"DeepResearch optional dependencies unavailable: {exc}",
+        allow_module_level=True,
+    )
 
-pydantic_ai = pytest.importorskip("pydantic_ai")
-pytest.importorskip("pydantic_ai.models.test")
+try:
+    from pydantic_ai import Agent, RunContext
+    from pydantic_ai.models.test import TestModel
+except ModuleNotFoundError as exc:  # pragma: no cover - exercised in CI skips
+    pytest.skip(
+        f"pydantic_ai dependency unavailable: {exc}",
+        allow_module_level=True,
+    )
 
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.test import TestModel
+
+class ContextState(TypedDict):
+    """Structured context captured during tool execution."""
+
+    queries: list[str]
+    numbers: list[list[int]]
+    combined: list[str]
+
+
+class AgentExecutionState(TypedDict, total=False):
+    """Execution metadata collected for assertions."""
+
+    calls: list[tuple[str, Any]]
+    deps: list[Any]
+    context: ContextState
+    failures: int
+    formatter_calls: int
+    unstable_calls: int
+    resilient_calls: int
 
 
 @dataclass(slots=True)
@@ -21,10 +50,10 @@ class AgentTestBundle:
     """Container for a test agent instance and captured execution state."""
 
     agent: Agent
-    state: dict[str, Any]
+    state: AgentExecutionState
 
 
-ToolOverride = Callable[[Agent, dict[str, Any]], None]
+ToolOverride = Callable[[Agent, AgentExecutionState], None]
 
 
 @pytest.fixture
@@ -46,7 +75,7 @@ def make_test_agent() -> Callable[
     ) -> AgentTestBundle:
         tools_to_register: list[str] = list(call_tools or ("web_search", "calculator"))
         overrides = overrides or {}
-        state: dict[str, Any] = {
+        state: AgentExecutionState = {
             "calls": [],
             "deps": [],
             "context": {"queries": [], "numbers": [], "combined": []},

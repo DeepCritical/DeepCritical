@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, TypedDict
+
 import pytest
 
 from tests.utils.mocks.mock_agents import (
@@ -9,6 +11,13 @@ from tests.utils.mocks.mock_agents import (
     MockExecutorAgent,
     MockPlannerAgent,
 )
+
+
+class SharedState(TypedDict):
+    """Shared state exchanged between mock agents."""
+
+    query: str
+    history: list[dict[str, Any]]
 
 
 class TestAgentCommunication:
@@ -37,7 +46,10 @@ class TestAgentCommunication:
         executor = MockExecutorAgent()
         evaluator = MockEvaluatorAgent()
 
-        shared_state = {"query": "Analyze gene expression", "history": []}
+        shared_state: SharedState = {
+            "query": "Analyze gene expression",
+            "history": [],
+        }
 
         plan = await planner.plan(shared_state["query"], shared_state)
         shared_state["history"].append(plan)
