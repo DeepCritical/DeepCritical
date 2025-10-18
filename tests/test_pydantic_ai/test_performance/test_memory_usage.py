@@ -21,4 +21,6 @@ class TestMemoryUsage:
 
         stats = snapshot_after.compare_to(snapshot_before, "lineno")
         allocated = sum(stat.size_diff for stat in stats)
-        assert allocated < 1_000_000, f"Excessive memory allocation detected: {allocated} bytes"
+        assert allocated < 1_000_000, (
+            f"Excessive memory allocation detected: {allocated} bytes"
+        )

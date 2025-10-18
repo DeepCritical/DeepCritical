@@ -27,6 +27,8 @@ class TestConcurrentExecution:
             return await bundle.agent.run(f"Concurrent run {idx}", deps=deps)
 
         results = await asyncio.gather(*[_run(idx) for idx in range(5)])
-        totals = [json.loads(result.output)["calculator"]["total"] for result in results]
+        totals = [
+            json.loads(result.output)["calculator"]["total"] for result in results
+        ]
         assert len(totals) == 5
         assert all(total >= 0 for total in totals)

@@ -55,7 +55,9 @@ class TestAgentCommunication:
         shared_state["history"].append(plan)
         result = await executor.execute(plan, shared_state)
         shared_state["history"].append(result)
-        evaluation = await evaluator.evaluate(result, shared_state["query"], shared_state)
+        evaluation = await evaluator.evaluate(
+            result, shared_state["query"], shared_state
+        )
         shared_state["history"].append(evaluation)
 
         assert len(shared_state["history"]) == 3

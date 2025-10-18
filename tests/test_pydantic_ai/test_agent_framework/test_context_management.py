@@ -27,6 +27,8 @@ class TestContextManagement:
 
         assert "web_search" in payload
         assert "calculator" in payload
-        assert agent_bundle.state["context"]["combined"], "Combined context not captured"
+        assert agent_bundle.state["context"]["combined"], (
+            "Combined context not captured"
+        )
         last_entry = agent_bundle.state["context"]["combined"][0]
         assert "->" in last_entry

@@ -40,7 +40,9 @@ class TestToolErrorHandling:
                 state["unstable_calls"] += 1
                 raise RuntimeError("Simulated failure")
 
-        bundle = make_test_agent(["unstable"], overrides={"unstable": register_unstable})
+        bundle = make_test_agent(
+            ["unstable"], overrides={"unstable": register_unstable}
+        )
 
         deps_cls = type(agent_dependencies)
 
@@ -67,7 +69,9 @@ class TestToolErrorHandling:
                     raise RuntimeError("First attempt fails")
                 return {"status": "recovered"}
 
-        bundle = make_test_agent(["resilient"], overrides={"resilient": register_resilient})
+        bundle = make_test_agent(
+            ["resilient"], overrides={"resilient": register_resilient}
+        )
 
         deps_cls = type(agent_dependencies)
 

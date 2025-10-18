@@ -12,7 +12,9 @@ class TestResponseTimes:
 
     @pytest.mark.asyncio
     @pytest.mark.pydantic_ai
-    async def test_response_time_under_threshold(self, agent_bundle, agent_dependencies):
+    async def test_response_time_under_threshold(
+        self, agent_bundle, agent_dependencies
+    ):
         start = time.perf_counter()
         await agent_bundle.agent.run("Measure latency", deps=agent_dependencies)
         duration = time.perf_counter() - start
