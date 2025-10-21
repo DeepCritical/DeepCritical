@@ -6,11 +6,15 @@ from ..datatypes.neo4j_types import (
     VectorSearchDefaults,
 )
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
+from .faiss_config import FaissVectorStoreConfig
+from .faiss_vector_store import FaissVectorStore
 from .neo4j_vector_store import Neo4jVectorStore
 
 __all__ = [
     "Neo4jVectorStore",
     "Neo4jVectorStoreConfig",
+    "FaissVectorStore",
+    "FaissVectorStoreConfig",
     "create_vector_store",
 ]
 
@@ -77,5 +81,12 @@ def create_vector_store(
         return Neo4jVectorStore(
             vector_store_config, embeddings, neo4j_config=connection
         )
+
+    if config.store_type == VectorStoreType.FAISS:
+        if isinstance(config, FaissVectorStoreConfig):
+            faiss_config = config
+        else:
+            faiss_config = FaissVectorStoreConfig.model_validate(config.model_dump())
+        return FaissVectorStore(faiss_config, embeddings)
 
     raise ValueError(f"Unsupported vector store type: {config.store_type}")
