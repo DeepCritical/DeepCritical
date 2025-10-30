@@ -25,6 +25,7 @@ dependencies = [
   "pydantic-ai>=0.0.16",
   "pydantic-graph>=0.2.0",
   "python-dateutil>=2.9.0.post0",
+  "python-dotenv>=1.0.0",
   "testcontainers",
   "trafilatura>=2.0.0",
   "psutil>=5.9.0",

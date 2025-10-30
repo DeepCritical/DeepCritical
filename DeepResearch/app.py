@@ -2,11 +2,19 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Annotated, Any
 
 import hydra
+from dotenv import load_dotenv
 from omegaconf import DictConfig
 from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
+
+# Load environment variables from .env file if it exists
+# This should happen BEFORE any other imports that might use env vars
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path, override=False)  # override=False: don't override existing env vars
 
 from .agents import ExecutionHistory, ExecutorAgent, ParserAgent, PlannerAgent
 from .src.agents.agent_orchestrator import AgentOrchestrator
