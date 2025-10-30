@@ -310,9 +310,18 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies and create virtual environment
 uv sync
 
+# Set up environment variables (REQUIRED for API access)
+cp .env.example .env
+# Edit .env and add your API keys:
+#   - ANTHROPIC_API_KEY (required for Claude)
+#   - SERPER_API_KEY (required for web search)
+#   - OPENAI_API_KEY (optional)
+
 # Run the application
 uv run deepresearch --help
 ```
+
+**⚠️ Important:** You must configure API keys in `.env` before running. See [Environment Setup](#environment-setup) below.
 
 #### Using pip (Alternative)
 
@@ -324,7 +333,38 @@ python -m venv .venv && .venv\Scripts\activate
 pip install -e .
 ```
 
-### 2) Basic Usage
+### 2) Environment Setup
+
+#### API Keys Configuration
+
+DeepCritical requires API keys to function. Configure them using the `.env` file:
+
+```bash
+# 1. Copy the example file
+cp .env.example .env
+
+# 2. Edit .env and add your keys
+nano .env  # or use your preferred editor
+```
+
+**Required API Keys:**
+
+| Service | Purpose | Get Key From | Environment Variable |
+|---------|---------|--------------|---------------------|
+| Anthropic Claude | Main LLM for reasoning | https://console.anthropic.com/ | `ANTHROPIC_API_KEY` |
+| Serper | Web search (DeepSearch flow) | https://serper.dev/ | `SERPER_API_KEY` |
+| OpenAI | Alternative LLM & embeddings (optional) | https://platform.openai.com/ | `OPENAI_API_KEY` |
+
+**Example `.env` file:**
+```bash
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+SERPER_API_KEY=your-serper-key-here
+OPENAI_API_KEY=sk-your-openai-key-here  # optional
+```
+
+The `.env` file is automatically loaded by DeepCritical on startup. See `.env.example` for all available configuration options.
+
+### 3) Basic Usage
 
 #### Using uv (Recommended)
 
@@ -349,7 +389,7 @@ python -m deepresearch.app
 python -m deepresearch.app question="What are PRIME's core contributions?"
 ```
 
-### 3) PRIME Flow (Protein Engineering)
+### 4) PRIME Flow (Protein Engineering)
 
 #### Using uv (Recommended)
 

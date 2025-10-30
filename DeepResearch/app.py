@@ -14,8 +14,12 @@ from pydantic_graph import BaseNode, Edge, End, Graph, GraphRunContext
 # This should happen BEFORE any other imports that might use env vars
 env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
-    load_dotenv(env_path, override=False)  # override=False: don't override existing env vars
+    load_dotenv(
+        env_path, override=False
+    )  # override=False: don't override existing env vars
 
+# Module imports MUST come after load_dotenv to ensure env vars are set first
+# ruff: noqa: E402
 from .agents import ExecutionHistory, ExecutorAgent, ParserAgent, PlannerAgent
 from .src.agents.agent_orchestrator import AgentOrchestrator
 from .src.agents.prime_executor import ExecutionContext, ToolExecutor
