@@ -15,9 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contributing guidelines and code of conduct
 - Repository settings configuration
 - Dependabot configuration for automated dependency updates
+- `.env.example` file with comprehensive documentation of all environment variables
+- `python-dotenv` dependency for automatic `.env` file loading
+- Environment setup documentation in README with API key configuration guide
 
 ### Changed
 - Enhanced project documentation structure
+- Updated README with detailed environment setup section and API key requirements
+- DeepResearch app now automatically loads environment variables from `.env` file on startup
 
 ### Fixed
 - Improved issue and PR management workflows
