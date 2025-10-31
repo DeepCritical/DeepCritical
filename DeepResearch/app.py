@@ -748,22 +748,6 @@ class Synthesize(BaseNode[ResearchState]):
         return End(answer)
 
 
-# --- Graph ---
-# Note: The actual graph is created in run_graph() with all nodes instantiated
-# This creates a minimal graph for reference, but the full graph with all nodes is in run_graph()
-research_graph = Graph(
-    nodes=(
-        Plan,
-        Search,
-        Analyze,
-        Synthesize,
-        PrimaryREACTWorkflow,
-        EnhancedREACTWorkflow,
-    ),
-    state_type=ResearchState,
-)
-
-
 # --- Challenge-specific nodes ---
 @dataclass
 class PrepareChallenge(BaseNode[ResearchState]):
