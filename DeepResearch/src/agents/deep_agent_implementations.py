@@ -11,7 +11,7 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_ai import Agent, ModelRetry
@@ -168,7 +168,7 @@ class BaseDeepAgent:
             # Process middleware
             if self.middleware_pipeline:
                 middleware_results = await self.middleware_pipeline.process(
-                    self.agent, context
+                    cast("Agent | None", self.agent), context
                 )
                 # Check for middleware failures
                 for result in middleware_results:
