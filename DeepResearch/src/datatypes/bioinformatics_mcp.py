@@ -109,6 +109,7 @@ class MCPServerBase(ABC):
     def __init__(self, config: MCPServerConfig):
         self.config = config
         self.name = config.server_name
+        self.version = getattr(config, "version", "1.0.0")  # Add version attribute
         self.server_type = config.server_type
         self.tools: dict[str, RegisteredTool] = {}
         self.pydantic_ai_tools: list[Tool] = []
