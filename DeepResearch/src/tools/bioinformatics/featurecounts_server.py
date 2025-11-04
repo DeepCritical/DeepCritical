@@ -38,7 +38,7 @@ class FeatureCountsServer(MCPServerBase):
             )
         super().__init__(config)
 
-    def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def run(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Run Featurecounts operation based on parameters.
 
@@ -96,7 +96,11 @@ class FeatureCountsServer(MCPServerBase):
                 }
 
             # Call the appropriate method
-            return method(**method_params)
+            result = method(**method_params)
+            # Await if it's a coroutine
+            if asyncio.iscoroutine(result):
+                return await result
+            return result
         except Exception as e:
             return {
                 "success": False,
