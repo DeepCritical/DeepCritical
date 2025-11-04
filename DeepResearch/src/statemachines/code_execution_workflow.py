@@ -547,7 +547,7 @@ class CodeExecutionWorkflow:
         # Execute workflow
         final_state = await self.graph.run(initial_state)
 
-        return cast(CodeExecutionWorkflowState, final_state)
+        return cast("CodeExecutionWorkflowState", final_state)
 
 
 # Convenience functions for direct usage

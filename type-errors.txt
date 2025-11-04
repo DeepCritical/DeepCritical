@@ -1,0 +1,3248 @@
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/agents.py:233:56
+    |
+232 |             # Execute with Pydantic AI
+233 |             result = await self._agent.run(input_data, deps=execution_deps)
+    |                                                        ^^^^^^^^^^^^^^^^^^^ Expected `None`, found `AgentDependencies | Unknown`
+234 |
+235 |             execution_time = time.time() - start_time
+    |
+info: Element `AgentDependencies` of this union is not assignable to `None`
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:366:17
+    |
+364 |             try:
+365 |                 tool_runner = registry.make(tool_name)
+366 |                 self._agent.tool(tool_runner.run)
+    |                 ^^^^^^^^^^^^^^^^
+367 |             except Exception:
+368 |                 pass
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:466:13
+    |
+464 |             # Register web search tools
+465 |             web_search_tool = WebSearchTool()
+466 |             self._agent.tool(web_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+467 |
+468 |             chunked_search_tool = ChunkedSearchTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:469:13
+    |
+468 |             chunked_search_tool = ChunkedSearchTool()
+469 |             self._agent.tool(chunked_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+470 |
+471 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:504:13
+    |
+502 |             # Register RAG tools
+503 |             integrated_search_tool = IntegratedSearchTool()
+504 |             self._agent.tool(integrated_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+505 |
+506 |             rag_search_tool = RAGSearchTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:507:13
+    |
+506 |             rag_search_tool = RAGSearchTool()
+507 |             self._agent.tool(rag_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+508 |
+509 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:547:13
+    |
+545 |             # Register bioinformatics tools
+546 |             fusion_tool = BioinformaticsFusionTool()
+547 |             self._agent.tool(fusion_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+548 |
+549 |             reasoning_tool = BioinformaticsReasoningTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:550:13
+    |
+549 |             reasoning_tool = BioinformaticsReasoningTool()
+550 |             self._agent.tool(reasoning_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+551 |
+552 |             workflow_tool = BioinformaticsWorkflowTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:553:13
+    |
+552 |             workflow_tool = BioinformaticsWorkflowTool()
+553 |             self._agent.tool(workflow_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+554 |
+555 |             go_tool = GOAnnotationTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:556:13
+    |
+555 |             go_tool = GOAnnotationTool()
+556 |             self._agent.tool(go_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+557 |
+558 |             pubmed_tool = PubMedRetrievalTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:559:13
+    |
+558 |             pubmed_tool = PubMedRetrievalTool()
+559 |             self._agent.tool(pubmed_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+560 |
+561 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:610:13
+    |
+608 |             # Register deep search tools
+609 |             web_search_tool = WebSearchTool()
+610 |             self._agent.tool(web_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+611 |
+612 |             url_visit_tool = URLVisitTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:613:13
+    |
+612 |             url_visit_tool = URLVisitTool()
+613 |             self._agent.tool(url_visit_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+614 |
+615 |             reflection_tool = ReflectionTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:616:13
+    |
+615 |             reflection_tool = ReflectionTool()
+616 |             self._agent.tool(reflection_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+617 |
+618 |             answer_tool = AnswerGeneratorTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:619:13
+    |
+618 |             answer_tool = AnswerGeneratorTool()
+619 |             self._agent.tool(answer_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+620 |
+621 |             rewriter_tool = QueryRewriterTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:622:13
+    |
+621 |             rewriter_tool = QueryRewriterTool()
+622 |             self._agent.tool(rewriter_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+623 |
+624 |             workflow_tool = DeepSearchWorkflowTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:625:13
+    |
+624 |             workflow_tool = DeepSearchWorkflowTool()
+625 |             self._agent.tool(workflow_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+626 |
+627 |             agent_tool = DeepSearchAgentTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:628:13
+    |
+627 |             agent_tool = DeepSearchAgentTool()
+628 |             self._agent.tool(agent_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+629 |
+630 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:654:13
+    |
+652 |             # Register evaluation tools
+653 |             evaluator_tool = EvaluatorTool()
+654 |             self._agent.tool(evaluator_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+655 |
+656 |             error_analyzer_tool = ErrorAnalyzerTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:657:13
+    |
+656 |             error_analyzer_tool = ErrorAnalyzerTool()
+657 |             self._agent.tool(error_analyzer_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+658 |
+659 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:709:13
+    |
+708 |             # Register DeepAgent tools
+709 |             self._agent.tool(write_todos_tool)
+    |             ^^^^^^^^^^^^^^^^
+710 |             self._agent.tool(task_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:710:13
+    |
+708 |             # Register DeepAgent tools
+709 |             self._agent.tool(write_todos_tool)
+710 |             self._agent.tool(task_tool)
+    |             ^^^^^^^^^^^^^^^^
+711 |
+712 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:773:13
+    |
+772 |             # Register DeepAgent tools
+773 |             self._agent.tool(list_files_tool)
+    |             ^^^^^^^^^^^^^^^^
+774 |             self._agent.tool(read_file_tool)
+775 |             self._agent.tool(write_file_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:774:13
+    |
+772 |             # Register DeepAgent tools
+773 |             self._agent.tool(list_files_tool)
+774 |             self._agent.tool(read_file_tool)
+    |             ^^^^^^^^^^^^^^^^
+775 |             self._agent.tool(write_file_tool)
+776 |             self._agent.tool(edit_file_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:775:13
+    |
+773 |             self._agent.tool(list_files_tool)
+774 |             self._agent.tool(read_file_tool)
+775 |             self._agent.tool(write_file_tool)
+    |             ^^^^^^^^^^^^^^^^
+776 |             self._agent.tool(edit_file_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:776:13
+    |
+774 |             self._agent.tool(read_file_tool)
+775 |             self._agent.tool(write_file_tool)
+776 |             self._agent.tool(edit_file_tool)
+    |             ^^^^^^^^^^^^^^^^
+777 |
+778 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:833:13
+    |
+832 |             # Register DeepAgent tools
+833 |             self._agent.tool(task_tool)
+    |             ^^^^^^^^^^^^^^^^
+834 |
+835 |             # Register existing research tools
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:837:13
+    |
+835 |             # Register existing research tools
+836 |             web_search_tool = WebSearchTool()
+837 |             self._agent.tool(web_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+838 |
+839 |             rag_search_tool = RAGSearchTool()
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:840:13
+    |
+839 |             rag_search_tool = RAGSearchTool()
+840 |             self._agent.tool(rag_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+841 |
+842 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:903:13
+    |
+902 |             # Register DeepAgent tools
+903 |             self._agent.tool(task_tool)
+    |             ^^^^^^^^^^^^^^^^
+904 |
+905 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:981:13
+    |
+980 |             # Register DeepAgent tools
+981 |             self._agent.tool(task_tool)
+    |             ^^^^^^^^^^^^^^^^
+982 |             self._agent.tool(write_todos_tool)
+983 |             self._agent.tool(list_files_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:982:13
+    |
+980 |             # Register DeepAgent tools
+981 |             self._agent.tool(task_tool)
+982 |             self._agent.tool(write_todos_tool)
+    |             ^^^^^^^^^^^^^^^^
+983 |             self._agent.tool(list_files_tool)
+984 |             self._agent.tool(read_file_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:983:13
+    |
+981 |             self._agent.tool(task_tool)
+982 |             self._agent.tool(write_todos_tool)
+983 |             self._agent.tool(list_files_tool)
+    |             ^^^^^^^^^^^^^^^^
+984 |             self._agent.tool(read_file_tool)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:984:13
+    |
+982 |             self._agent.tool(write_todos_tool)
+983 |             self._agent.tool(list_files_tool)
+984 |             self._agent.tool(read_file_tool)
+    |             ^^^^^^^^^^^^^^^^
+985 |
+986 |             # Register existing tools
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/agents.py:988:13
+    |
+986 |             # Register existing tools
+987 |             web_search_tool = WebSearchTool()
+988 |             self._agent.tool(web_search_tool.run)
+    |             ^^^^^^^^^^^^^^^^
+989 |
+990 |         except Exception:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `parse_question`
+    --> DeepResearch/agents.py:1060:28
+     |
+1058 |             # Step 1: Parse the question
+1059 |             parser = self.agents[AgentType.PARSER]
+1060 |             parsed = await parser.parse_question(question)
+     |                            ^^^^^^^^^^^^^^^^^^^^^
+1061 |
+1062 |             # Step 2: Create execution plan
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `create_plan`
+    --> DeepResearch/agents.py:1064:26
+     |
+1062 |             # Step 2: Create execution plan
+1063 |             planner = self.agents[AgentType.PLANNER]
+1064 |             plan = await planner.create_plan(parsed)
+     |                          ^^^^^^^^^^^^^^^^^^^
+1065 |
+1066 |             # Step 3: Execute based on workflow type
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `evaluate`
+    --> DeepResearch/agents.py:1082:32
+     |
+1080 |             # Step 4: Evaluate results
+1081 |             evaluator = self.agents[AgentType.EVALUATOR]
+1082 |             evaluation = await evaluator.evaluate(question, result.get("answer", ""))
+     |                                ^^^^^^^^^^^^^^^^^^
+1083 |
+1084 |             execution_time = time.time() - start_time
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `execute_plan`
+    --> DeepResearch/agents.py:1112:22
+     |
+1110 |         """Execute standard research workflow."""
+1111 |         executor = self.agents[AgentType.EXECUTOR]
+1112 |         return await executor.execute_plan(plan, self.history)
+     |                      ^^^^^^^^^^^^^^^^^^^^^
+1113 |
+1114 |     async def _execute_bioinformatics_workflow(
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `fuse_data`
+    --> DeepResearch/agents.py:1129:31
+     |
+1128 |         # Fuse data
+1129 |         fused_dataset = await bioinformatics_agent.fuse_data(fusion_request)
+     |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1130 |
+1131 |         # Create reasoning task
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `perform_reasoning`
+    --> DeepResearch/agents.py:1140:34
+     |
+1139 |         # Perform reasoning
+1140 |         reasoning_result = await bioinformatics_agent.perform_reasoning(
+     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1141 |             reasoning_task, fused_dataset
+1142 |         )
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `deep_search`
+    --> DeepResearch/agents.py:1155:22
+     |
+1153 |         """Execute deep search workflow."""
+1154 |         deepsearch_agent = self.agents[AgentType.DEEPSEARCH]
+1155 |         return await deepsearch_agent.deep_search(question)
+     |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1156 |
+1157 |     async def _execute_rag_workflow(
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `query`
+    --> DeepResearch/agents.py:1167:30
+     |
+1166 |         # Perform RAG query
+1167 |         rag_response = await rag_agent.query(rag_query)
+     |                              ^^^^^^^^^^^^^^^
+1168 |
+1169 |         return {
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `handle_general_task`
+    --> DeepResearch/agents.py:1191:28
+     |
+1189 |         if AgentType.DEEP_AGENT_GENERAL in self.agents:
+1190 |             general_agent = self.agents[AgentType.DEEP_AGENT_GENERAL]
+1191 |             result = await general_agent.handle_general_task(question, initial_state)
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1192 |
+1193 |             if result.success:
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `BaseAgent` has no attribute `orchestrate_tasks`
+    --> DeepResearch/agents.py:1209:28
+     |
+1207 |         if AgentType.DEEP_AGENT_ORCHESTRATION in self.agents:
+1208 |             orchestration_agent = self.agents[AgentType.DEEP_AGENT_ORCHESTRATION]
+1209 |             result = await orchestration_agent.orchestrate_tasks(
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1210 |                 question, initial_state
+1211 |             )
+     |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_create_app_configuration` is incorrect
+   --> DeepResearch/app.py:469:57
+    |
+467 |         try:
+468 |             # Create app configuration from Hydra config
+469 |             app_config = self._create_app_configuration(cfg, app_mode)
+    |                                                         ^^^ Expected `DictConfig`, found `DictConfig | None`
+470 |             ctx.state.app_configuration = app_config
+    |
+info: Element `None` of this union is not assignable to `DictConfig`
+info: Method defined here
+   --> DeepResearch/app.py:511:9
+    |
+509 |             return End(f"Error: {error_msg}")
+510 |
+511 |     def _create_app_configuration(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+512 |         self, cfg: DictConfig, app_mode: AppMode
+    |               --------------- Parameter declared here
+513 |     ) -> AppConfiguration:
+514 |         """Create app configuration from Hydra config."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_create_app_configuration` is incorrect
+   --> DeepResearch/app.py:469:62
+    |
+467 |         try:
+468 |             # Create app configuration from Hydra config
+469 |             app_config = self._create_app_configuration(cfg, app_mode)
+    |                                                              ^^^^^^^^ Expected `AppMode`, found `AppMode | None`
+470 |             ctx.state.app_configuration = app_config
+    |
+info: Element `None` of this union is not assignable to `AppMode`
+info: Method defined here
+   --> DeepResearch/app.py:511:9
+    |
+509 |             return End(f"Error: {error_msg}")
+510 |
+511 |     def _create_app_configuration(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+512 |         self, cfg: DictConfig, app_mode: AppMode
+    |                                ----------------- Parameter declared here
+513 |     ) -> AppConfiguration:
+514 |         """Create app configuration from Hydra config."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_extract_summary` is incorrect
+   --> DeepResearch/app.py:944:55
+    |
+942 |             # Extract key results from data bag
+943 |             data_bag = results.get("data_bag", {})
+944 |             summary = self._extract_summary(data_bag, problem)
+    |                                                       ^^^^^^^ Expected `StructuredProblem`, found `StructuredProblem | None`
+945 |             answer = f"PRIME Analysis Complete\n\nQ: {ctx.state.question}\n\n{summary}"
+946 |         else:
+    |
+info: Element `None` of this union is not assignable to `StructuredProblem`
+info: Method defined here
+   --> DeepResearch/app.py:955:9
+    |
+953 |         return End(answer)
+954 |
+955 |     def _extract_summary(
+    |         ^^^^^^^^^^^^^^^^
+956 |         self, data_bag: dict[str, Any], problem: StructuredProblem
+    |                                         -------------------------- Parameter declared here
+957 |     ) -> str:
+958 |         """Extract a summary from the execution results."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/agent_orchestrator.py:259:68
+    |
+257 |         try:
+258 |             # Execute the orchestrator agent
+259 |             result = await self.orchestrator_agent.run(user_input, deps=deps)
+    |                                                                    ^^^^^^^^^ Expected `None`, found `OrchestratorDependencies`
+260 |
+261 |             # Process results and create final answer
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+  --> DeepResearch/src/agents/bioinformatics_agents.py:76:54
+   |
+74 |         )
+75 |
+76 |         result = await self.agent.run(fusion_prompt, deps=deps)
+   |                                                      ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+77 |         return result.data
+   |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/bioinformatics_agents.py:113:58
+    |
+111 |         )
+112 |
+113 |         result = await self.agent.run(processing_prompt, deps=deps)
+    |                                                          ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+114 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/bioinformatics_agents.py:155:57
+    |
+153 |         )
+154 |
+155 |         result = await self.agent.run(reasoning_prompt, deps=deps)
+    |                                                         ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+156 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/bioinformatics_agents.py:195:55
+    |
+193 |         )
+194 |
+195 |         result = await self.agent.run(quality_prompt, deps=deps)
+    |                                                       ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+196 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `dataset` may be missing on object of type `Unknown | DataFusionResult`
+   --> DeepResearch/src/agents/bioinformatics_agents.py:256:34
+    |
+255 |         # Step 2: Construct dataset from fusion result
+256 |         dataset = FusedDataset(**fusion_result.dataset)
+    |                                  ^^^^^^^^^^^^^^^^^^^^^
+257 |
+258 |         # Step 3: Assess data quality
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `execute` may be missing on object of type `Unknown | CodeExecutionWorkflow | None`
+   --> DeepResearch/src/agents/code_execution_orchestrator.py:197:23
+    |
+195 |         }
+196 |
+197 |         state = await self.workflow.execute(
+    |                       ^^^^^^^^^^^^^^^^^^^^^
+198 |             user_query=user_message, code_type=code_type, **workflow_config
+199 |         )
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `data` may be missing on object of type `Unknown | AgentRunResult[str]`
+   --> DeepResearch/src/agents/code_generation_agent.py:192:20
+    |
+190 |             f"Generate a bash command for: {description}"
+191 |         )
+192 |         return str(result.data).strip()
+    |                    ^^^^^^^^^^^
+193 |
+194 |     async def generate_python_code(self, description: str) -> str:
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `data` may be missing on object of type `Unknown | AgentRunResult[str]`
+   --> DeepResearch/src/agents/code_generation_agent.py:204:20
+    |
+202 |         """
+203 |         result = await self.python_agent.run(f"Generate Python code for: {description}")
+204 |         return str(result.data).strip()
+    |                    ^^^^^^^^^^^
+205 |
+206 |     async def generate_code(
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `data` may be missing on object of type `Unknown | AgentRunResult[str]`
+   --> DeepResearch/src/agents/code_generation_agent.py:228:24
+    |
+226 |             f"Analyze and generate code for: {description}"
+227 |         )
+228 |         response = str(result.data).strip()
+    |                        ^^^^^^^^^^^
+229 |
+230 |         # Parse response format: TYPE: [BASH|PYTHON]\nCODE: [code]
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/agents/code_generation_agent.py:447:13
+    |
+445 |         self.generation_agent = CodeGenerationAgent(
+446 |             model_name=generation_model,
+447 |             max_retries=self.execution_config.get("max_retries", 3),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `int`, found `Any | int | float`
+448 |             timeout=self.execution_config.get("timeout", 60.0),
+449 |         )
+    |
+info: Element `float` of this union is not assignable to `int`
+info: Method defined here
+  --> DeepResearch/src/agents/code_generation_agent.py:29:9
+   |
+27 |     """Agent that generates code (bash commands or Python scripts) from natural language."""
+28 |
+29 |     def __init__(
+   |         ^^^^^^^^
+30 |         self,
+31 |         model_name: str = "anthropic:claude-sonnet-4-0",
+32 |         max_retries: int = 3,
+   |         -------------------- Parameter declared here
+33 |         timeout: float = 60.0,
+34 |     ):
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/agents/code_generation_agent.py:452:42
+    |
+451 |         self.execution_agent = CodeExecutionAgent(
+452 |             model_name=generation_model, **self.execution_config
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^ Expected `bool`, found `Any | int | float`
+453 |         )
+    |
+info: Union elements `int` and `float` are not assignable to `bool`
+info: Method defined here
+   --> DeepResearch/src/agents/code_generation_agent.py:293:9
+    |
+291 |     """Agent that executes generated code using the AG2 execution framework."""
+292 |
+293 |     def __init__(
+    |         ^^^^^^^^
+294 |         self,
+295 |         model_name: str = "anthropic:claude-sonnet-4-0",
+296 |         use_docker: bool = True,
+    |         ----------------------- Parameter declared here
+297 |         use_jupyter: bool = False,
+298 |         jupyter_config: dict[str, Any] | None = None,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/agents/code_generation_agent.py:452:42
+    |
+451 |         self.execution_agent = CodeExecutionAgent(
+452 |             model_name=generation_model, **self.execution_config
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^ Expected `bool`, found `Any | int | float`
+453 |         )
+    |
+info: Union elements `int` and `float` are not assignable to `bool`
+info: Method defined here
+   --> DeepResearch/src/agents/code_generation_agent.py:293:9
+    |
+291 |     """Agent that executes generated code using the AG2 execution framework."""
+292 |
+293 |     def __init__(
+    |         ^^^^^^^^
+294 |         self,
+295 |         model_name: str = "anthropic:claude-sonnet-4-0",
+296 |         use_docker: bool = True,
+297 |         use_jupyter: bool = False,
+    |         ------------------------- Parameter declared here
+298 |         jupyter_config: dict[str, Any] | None = None,
+299 |         max_retries: int = 3,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/agents/code_generation_agent.py:452:42
+    |
+451 |         self.execution_agent = CodeExecutionAgent(
+452 |             model_name=generation_model, **self.execution_config
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^ Expected `dict[str, Any] | None`, found `Any | int | float`
+453 |         )
+    |
+info: Union elements `int` and `float` are not assignable to `dict[str, Any] | None`
+info: Method defined here
+   --> DeepResearch/src/agents/code_generation_agent.py:293:9
+    |
+291 |     """Agent that executes generated code using the AG2 execution framework."""
+292 |
+293 |     def __init__(
+    |         ^^^^^^^^
+294 |         self,
+295 |         model_name: str = "anthropic:claude-sonnet-4-0",
+296 |         use_docker: bool = True,
+297 |         use_jupyter: bool = False,
+298 |         jupyter_config: dict[str, Any] | None = None,
+    |         -------------------------------------------- Parameter declared here
+299 |         max_retries: int = 3,
+300 |         timeout: float = 60.0,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/agents/code_generation_agent.py:452:42
+    |
+451 |         self.execution_agent = CodeExecutionAgent(
+452 |             model_name=generation_model, **self.execution_config
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^ Expected `int`, found `Any | int | float`
+453 |         )
+    |
+info: Element `float` of this union is not assignable to `int`
+info: Method defined here
+   --> DeepResearch/src/agents/code_generation_agent.py:293:9
+    |
+291 |     """Agent that executes generated code using the AG2 execution framework."""
+292 |
+293 |     def __init__(
+    |         ^^^^^^^^
+294 |         self,
+295 |         model_name: str = "anthropic:claude-sonnet-4-0",
+    |
+   ::: DeepResearch/src/agents/code_generation_agent.py:299:9
+    |
+297 |         use_jupyter: bool = False,
+298 |         jupyter_config: dict[str, Any] | None = None,
+299 |         max_retries: int = 3,
+    |         -------------------- Parameter declared here
+300 |         timeout: float = 60.0,
+301 |     ):
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `data` may be missing on object of type `Unknown | AgentRunResult[str]`
+   --> DeepResearch/src/agents/code_improvement_agent.py:192:33
+    |
+191 |         result = await self.analysis_agent.run(analysis_prompt)
+192 |         analysis_response = str(result.data).strip()
+    |                                 ^^^^^^^^^^^
+193 |
+194 |         # Parse the structured response
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `data` may be missing on object of type `Unknown | AgentRunResult[str]`
+   --> DeepResearch/src/agents/code_improvement_agent.py:245:36
+    |
+244 |         result = await agent.run(improvement_prompt)
+245 |         improvement_response = str(result.data).strip()
+    |                                    ^^^^^^^^^^^
+246 |
+247 |         # Parse the improvement response
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `Agent[None, str] | None` has no attribute `add_tool`
+   --> DeepResearch/src/agents/deep_agent_implementations.py:140:17
+    |
+138 |         for tool_name in self.config.tools:
+139 |             if tool_name in tool_map:
+140 |                 self.agent.add_tool(tool_map[tool_name])
+    |                 ^^^^^^^^^^^^^^^^^^^
+141 |
+142 |     def _initialize_middleware(self) -> None:
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `process` is incorrect
+   --> DeepResearch/src/agents/deep_agent_implementations.py:169:33
+    |
+167 |             if self.middleware_pipeline:
+168 |                 middleware_results = await self.middleware_pipeline.process(
+169 |                     self.agent, context
+    |                                 ^^^^^^^ Expected `RunContext[DeepAgentState]`, found `DeepAgentState`
+170 |                 )
+171 |                 # Check for middleware failures
+    |
+info: Method defined here
+   --> DeepResearch/src/datatypes/middleware.py:424:15
+    |
+422 |         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
+423 |
+424 |     async def process(
+    |               ^^^^^^^
+425 |         self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    |                             ------------------------------- Parameter declared here
+426 |     ) -> list[MiddlewareResult]:
+427 |         """Process all middleware in the pipeline."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/src/agents/deep_agent_implementations.py:219:36
+    |
+217 |             try:
+218 |                 if isinstance(input_data, str):
+219 |                     result = await self.agent.run(input_data, deps=context)
+    |                                    ^^^^^^^^^^^^^^
+220 |                 else:
+221 |                     result = await self.agent.run(input_data, deps=context)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/deep_agent_implementations.py:219:63
+    |
+217 |             try:
+218 |                 if isinstance(input_data, str):
+219 |                     result = await self.agent.run(input_data, deps=context)
+    |                                                               ^^^^^^^^^^^^ Expected `None`, found `DeepAgentState`
+220 |                 else:
+221 |                     result = await self.agent.run(input_data, deps=context)
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[None, str] | None`
+   --> DeepResearch/src/agents/deep_agent_implementations.py:221:36
+    |
+219 |                     result = await self.agent.run(input_data, deps=context)
+220 |                 else:
+221 |                     result = await self.agent.run(input_data, deps=context)
+    |                                    ^^^^^^^^^^^^^^
+222 |
+223 |                 return result
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/deep_agent_implementations.py:221:51
+    |
+219 |                     result = await self.agent.run(input_data, deps=context)
+220 |                 else:
+221 |                     result = await self.agent.run(input_data, deps=context)
+    |                                                   ^^^^^^^^^^ Expected `str | Sequence[@Todo] | None`, found `dict[str, Any]`
+222 |
+223 |                 return result
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |         ---------------------------------------------------------------- Parameter declared here
+118 |         *,
+119 |         output_type: None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/deep_agent_implementations.py:221:63
+    |
+219 |                     result = await self.agent.run(input_data, deps=context)
+220 |                 else:
+221 |                     result = await self.agent.run(input_data, deps=context)
+    |                                                               ^^^^^^^^^^^^ Expected `None`, found `DeepAgentState`
+222 |
+223 |                 return result
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `AgentOrchestrator & ~AlwaysFalsy` has no attribute `execute_task`
+   --> DeepResearch/src/agents/deep_agent_implementations.py:551:19
+    |
+549 |         """Execute a task using the appropriate agent."""
+550 |         return (
+551 |             await self.orchestrator.execute_task(task)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+552 |             if self.orchestrator
+553 |             else AgentExecutionResult(
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_get_default_system_prompt` is incorrect
+  --> DeepResearch/src/agents/multi_agent_coordinator.py:62:56
+   |
+60 |                     model=agent_config.model_name,
+61 |                     system_prompt=agent_config.system_prompt
+62 |                     or self._get_default_system_prompt(agent_config.role),
+   |                                                        ^^^^^^^^^^^^^^^^^ Expected `AgentRole`, found `Unknown | AgentRole`
+63 |                     instructions=self._get_default_instructions(agent_config.role),
+64 |                 )
+   |
+info: Element `AgentRole` of this union is not assignable to `AgentRole`
+info: Method defined here
+  --> DeepResearch/src/agents/multi_agent_coordinator.py:78:9
+   |
+76 |         }
+77 |
+78 |     def _get_default_system_prompt(self, role: AgentRole) -> str:
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^       --------------- Parameter declared here
+79 |         """Get default system prompt for an agent role."""
+80 |         return get_system_prompt(role.value)
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_get_default_instructions` is incorrect
+  --> DeepResearch/src/agents/multi_agent_coordinator.py:63:65
+   |
+61 |                     system_prompt=agent_config.system_prompt
+62 |                     or self._get_default_system_prompt(agent_config.role),
+63 |                     instructions=self._get_default_instructions(agent_config.role),
+   |                                                                 ^^^^^^^^^^^^^^^^^ Expected `AgentRole`, found `Unknown | AgentRole`
+64 |                 )
+65 |                 self._register_agent_tools(agent, agent_config)
+   |
+info: Element `AgentRole` of this union is not assignable to `AgentRole`
+info: Method defined here
+  --> DeepResearch/src/agents/multi_agent_coordinator.py:82:9
+   |
+80 |         return get_system_prompt(role.value)
+81 |
+82 |     def _get_default_instructions(self, role: AgentRole) -> list[str]:
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^       --------------- Parameter declared here
+83 |         """Get default instructions for an agent role."""
+84 |         return get_instructions(role.value)
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[missing-argument]: No argument provided for required parameter `cfg`
+  --> DeepResearch/src/agents/rag_agent.py:37:9
+   |
+35 |         embeddings: Embeddings | None = None,
+36 |     ):
+37 |         super().__init__()
+   |         ^^^^^^^^^^^^^^^^^^
+38 |         self.agent_type = "rag"
+39 |         self.vector_store: VectorStore | None = None
+   |
+info: rule `missing-argument` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+  --> DeepResearch/src/agents/rag_agent.py:69:17
+   |
+67 |             return RAGResponse(
+68 |                 query=query.text,
+69 |                 retrieved_documents=retrieved_documents,
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `list[SearchResult]`, found `list[Document]`
+70 |                 generated_answer=generated_answer,
+71 |                 context=context,
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[non-subscriptable]: Cannot subscript object of type `CoroutineType[Any, Any, list[SearchResult]]` with no `__getitem__` method
+   --> DeepResearch/src/agents/rag_agent.py:106:27
+    |
+104 |             # Convert SearchResult to Document
+105 |             documents = []
+106 |             for result in search_results[:limit]:
+    |                           ^^^^^^^^^^^^^^
+107 |                 documents.append(result.document)
+    |
+info: rule `non-subscriptable` is enabled by default
+
+error[non-subscriptable]: Cannot subscript object of type `CoroutineType[Any, Any, list[SearchResult]]` with no `__getitem__` method
+   --> DeepResearch/src/agents/rag_agent.py:183:20
+    |
+182 |           try:
+183 |               return self.vector_store.search(
+    |  ____________________^
+184 | |                 query=query,
+185 | |                 search_type=search_type,
+186 | |             )[:limit]
+    | |_____________^
+187 |           except Exception as e:
+188 |               print(f"Error searching documents: {e}")
+    |
+info: rule `non-subscriptable` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+  --> DeepResearch/src/agents/search_agent.py:67:57
+   |
+66 |             # Run the agent
+67 |             result = await self.agent.run(user_message, deps=deps)
+   |                                                         ^^^^^^^^^ Expected `None`, found `SearchAgentDependencies`
+68 |
+69 |             # Extract processing time if available
+   |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+  --> DeepResearch/src/agents/search_agent.py:96:57
+   |
+94 |             deps = {"days": days}
+95 |             user_message = SearchAgentPrompts.get_analytics_request_prompt(days)
+96 |             result = await self.agent.run(user_message, deps=deps)
+   |                                                         ^^^^^^^^^ Expected `None`, found `dict[Unknown | str, Unknown | int]`
+97 |             return result.data if hasattr(result, "data") else {}
+98 |         except Exception as e:
+   |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `health` may be missing on object of type `Unknown | VLLMClient`
+  --> DeepResearch/src/agents/vllm_agent.py:39:15
+   |
+37 |         """Initialize the VLLM agent."""
+38 |         # Test connection
+39 |         await self.client.health()
+   |               ^^^^^^^^^^^^^^^^^^
+40 |
+41 |     async def chat(
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `chat_completions` may be missing on object of type `Unknown | VLLMClient`
+  --> DeepResearch/src/agents/vllm_agent.py:56:26
+   |
+54 |         )
+55 |
+56 |         response = await self.client.chat_completions(request)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+57 |         return response.choices[0].message.content
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `completions` may be missing on object of type `Unknown | VLLMClient`
+  --> DeepResearch/src/agents/vllm_agent.py:72:26
+   |
+70 |         )
+71 |
+72 |         response = await self.client.completions(request)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^
+73 |         return response.choices[0].text
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `embeddings` may be missing on object of type `Unknown | VLLMClient`
+  --> DeepResearch/src/agents/vllm_agent.py:88:26
+   |
+86 |         request = EmbeddingRequest(model=embedding_model, input=texts, **kwargs)
+87 |
+88 |         response = await self.client.embeddings(request)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^
+89 |         return [item.embedding for item in response.data]
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `chat_completions_stream` may be missing on object of type `Unknown | VLLMClient`
+   --> DeepResearch/src/agents/vllm_agent.py:108:28
+    |
+107 |         full_response = ""
+108 |         async for chunk in self.client.chat_completions_stream(request):
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+109 |             full_response += chunk
+110 |         return full_response
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/agents/workflow_orchestrator.py:264:59
+    |
+263 |         # Execute primary agent
+264 |         result = await self.primary_agent.run(user_input, deps=deps)
+    |                                                           ^^^^^^^^^ Expected `None`, found `OrchestratorDependencies`
+265 |
+266 |         # Update state
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_collaborative_pattern_workflow` is incorrect
+  --> DeepResearch/src/agents/workflow_pattern_agents.py:81:21
+   |
+79 |                     agent_types=agent_types,
+80 |                     agent_executors=agent_executors,
+81 |                     config=self.dependencies.config,
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+82 |                 )
+83 |             elif self.pattern == InteractionPattern.SEQUENTIAL:
+   |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:673:11
+    |
+673 | async def run_collaborative_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+674 |     question: str,
+675 |     agents: list[str],
+676 |     agent_types: dict[str, AgentType],
+677 |     agent_executors: dict[str, Any],
+678 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+679 | ) -> str:
+680 |     """Run collaborative pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_sequential_pattern_workflow` is incorrect
+  --> DeepResearch/src/agents/workflow_pattern_agents.py:89:21
+   |
+87 |                     agent_types=agent_types,
+88 |                     agent_executors=agent_executors,
+89 |                     config=self.dependencies.config,
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+90 |                 )
+91 |             elif self.pattern == InteractionPattern.HIERARCHICAL:
+   |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:696:11
+    |
+696 | async def run_sequential_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+697 |     question: str,
+698 |     agents: list[str],
+699 |     agent_types: dict[str, AgentType],
+700 |     agent_executors: dict[str, Any],
+701 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+702 | ) -> str:
+703 |     """Run sequential pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_hierarchical_pattern_workflow` is incorrect
+   --> DeepResearch/src/agents/workflow_pattern_agents.py:105:21
+    |
+103 |                     agent_types=agent_types,
+104 |                     agent_executors=agent_executors,
+105 |                     config=self.dependencies.config,
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+106 |                 )
+107 |             else:
+    |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:719:11
+    |
+719 | async def run_hierarchical_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+720 |     question: str,
+721 |     coordinator_id: str,
+    |
+   ::: DeepResearch/src/statemachines/workflow_pattern_statemachines.py:725:5
+    |
+723 |     agent_types: dict[str, AgentType],
+724 |     agent_executors: dict[str, Any],
+725 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+726 | ) -> str:
+727 |     """Run hierarchical pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_select_optimal_pattern` is incorrect
+   --> DeepResearch/src/agents/workflow_pattern_agents.py:422:21
+    |
+420 |                     problem_complexity="medium",  # Would be analyzed from question
+421 |                     agent_count=len(available_agents),
+422 |                     agent_capabilities=list(available_agents.values()),
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `list[str]`, found `list[AgentType]`
+423 |                     coordination_requirements=coordination_requirements,
+424 |                 )
+    |
+info: Method defined here
+   --> DeepResearch/src/agents/workflow_pattern_agents.py:363:9
+    |
+361 |             pass
+362 |
+363 |     def _select_optimal_pattern(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+364 |         self,
+365 |         problem_complexity: str,
+366 |         agent_count: int,
+367 |         agent_capabilities: list[str],
+    |         ----------------------------- Parameter declared here
+368 |         coordination_requirements: dict[str, Any] | None = None,
+369 |     ) -> InteractionPattern:
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[deprecated]: The function `copy` is deprecated
+   --> DeepResearch/src/datatypes/agent_framework_options.py:110:25
+    |
+109 |         # Start with a copy of self
+110 |         combined = self.copy()
+    |                         ^^^^ The `copy` method is deprecated; use `model_copy` instead. See the docstring of `BaseModel.copy` for details about how to handle `include` and `exclude`.
+111 |
+112 |         # Apply updates from other
+    |
+info: rule `deprecated` is enabled by default
+
+error[invalid-assignment]: Method `__setitem__` of type `bound method dict[str, Tool[None]].__setitem__(key: str, value: Tool[None], /) -> None` cannot be called with a key of type `str` and a value of type `dict[Unknown | str, Unknown | (Tool[None] & ~AlwaysFalsy)]` on object of type `dict[str, Tool[None]]`
+   --> DeepResearch/src/datatypes/bioinformatics_mcp.py:128:21
+    |
+126 |                 if tool:
+127 |                     # Store both the method and tool spec for later retrieval
+128 |                     self.tools[name] = {
+    |                     ^^^^^^^^^^
+129 |                         "method": method,
+130 |                         "tool": tool,
+    |
+info: rule `invalid-assignment` is enabled by default
+
+error[call-non-callable]: Object of type `object` is not callable
+   --> DeepResearch/src/datatypes/chunk_dataclass.py:111:39
+    |
+109 |         if self.embedding is not None:
+110 |             if hasattr(self.embedding, "tolist"):
+111 |                 result["embedding"] = self.embedding.tolist()
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^
+112 |             else:
+113 |                 result["embedding"] = self.embedding
+    |
+info: rule `call-non-callable` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_auth_header` may be missing on object of type `AuthConfig | None`
+   --> DeepResearch/src/datatypes/postgres_dataclass.py:665:23
+    |
+664 |         # Add auth header
+665 |         auth_header = self.config.auth.get_auth_header()
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+666 |         if auth_header:
+667 |             headers[auth_header[0]] = auth_header[1]
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to function `__init__` is incorrect
+  --> DeepResearch/src/datatypes/pydantic_ai_tools.py:36:13
+   |
+35 |         ToolRunner.__init__(
+36 |             self,
+   |             ^^^^ Expected `ToolRunner`, found `Self@__init__`
+37 |             ToolSpec(
+38 |                 name="web_search",
+   |
+info: Function defined here
+  --> DeepResearch/src/tools/base.py:29:9
+   |
+27 |     spec: ToolSpec
+28 |
+29 |     def __init__(self, spec: ToolSpec):
+   |         ^^^^^^^^ ---- Parameter declared here
+30 |         self.spec = spec
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@run` has no attribute `validate`
+  --> DeepResearch/src/datatypes/pydantic_ai_tools.py:46:19
+   |
+45 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+46 |         ok, err = self.validate(params)
+   |                   ^^^^^^^^^^^^^
+47 |         if not ok:
+48 |             return {"success": False, "error": err}
+   |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to function `__init__` is incorrect
+   --> DeepResearch/src/datatypes/pydantic_ai_tools.py:104:13
+    |
+103 |         ToolRunner.__init__(
+104 |             self,
+    |             ^^^^ Expected `ToolRunner`, found `Self@__init__`
+105 |             ToolSpec(
+106 |                 name="pyd_code_exec",
+    |
+info: Function defined here
+  --> DeepResearch/src/tools/base.py:29:9
+   |
+27 |     spec: ToolSpec
+28 |
+29 |     def __init__(self, spec: ToolSpec):
+   |         ^^^^^^^^ ---- Parameter declared here
+30 |         self.spec = spec
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@run` has no attribute `validate`
+   --> DeepResearch/src/datatypes/pydantic_ai_tools.py:114:19
+    |
+113 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+114 |         ok, err = self.validate(params)
+    |                   ^^^^^^^^^^^^^
+115 |         if not ok:
+116 |             return {"success": False, "error": err}
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to function `__init__` is incorrect
+   --> DeepResearch/src/datatypes/pydantic_ai_tools.py:174:13
+    |
+173 |         ToolRunner.__init__(
+174 |             self,
+    |             ^^^^ Expected `ToolRunner`, found `Self@__init__`
+175 |             ToolSpec(
+176 |                 name="pyd_url_context",
+    |
+info: Function defined here
+  --> DeepResearch/src/tools/base.py:29:9
+   |
+27 |     spec: ToolSpec
+28 |
+29 |     def __init__(self, spec: ToolSpec):
+   |         ^^^^^^^^ ---- Parameter declared here
+30 |         self.spec = spec
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@run` has no attribute `validate`
+   --> DeepResearch/src/datatypes/pydantic_ai_tools.py:184:19
+    |
+183 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+184 |         ok, err = self.validate(params)
+    |                   ^^^^^^^^^^^^^
+185 |         if not ok:
+186 |             return {"success": False, "error": err}
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+    --> DeepResearch/src/datatypes/vllm_dataclass.py:1253:29
+     |
+1251 |         )
+1252 |
+1253 |     def get_engine(self) -> LLMEngine:
+     |                             --------- Expected `LLMEngine` because of return type
+1254 |         """Get the underlying engine."""
+1255 |         return self.engine
+     |                ^^^^^^^^^^^ expected `LLMEngine`, found `LLMEngine | None`
+     |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-await]: `dict[str, Any]` is not awaitable
+    --> DeepResearch/src/datatypes/workflow_patterns.py:317:37
+     |
+ 315 |               if coord_result["success"]:
+ 316 |                   # Execute subordinate agents
+ 317 |                   sub_results = await self._execute_hierarchical_subordinates(
+     |  _____________________________________^
+ 318 | |                     coord_result["data"]
+ 319 | |                 )
+     | |_________________^
+ 320 |                   self.state.results.update(sub_results)
+ 321 |               else:
+     |
+    ::: stdlib/builtins.pyi:2918:7
+     |
+2917 |   @disjoint_base
+2918 |   class dict(MutableMapping[_KT, _VT]):
+     |         ---- type defined here
+2919 |       """dict() -> new empty dictionary
+2920 |       dict(mapping) -> new dictionary initialized from a mapping object's
+     |
+info: `__await__` is missing
+info: rule `invalid-await` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+  --> DeepResearch/src/prompts/bioinformatics_agent_implementations.py:76:54
+   |
+74 |         )
+75 |
+76 |         result = await self.agent.run(fusion_prompt, deps=deps)
+   |                                                      ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+77 |         return result.data
+   |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/prompts/bioinformatics_agent_implementations.py:113:58
+    |
+111 |         )
+112 |
+113 |         result = await self.agent.run(processing_prompt, deps=deps)
+    |                                                          ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+114 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/prompts/bioinformatics_agent_implementations.py:155:57
+    |
+153 |         )
+154 |
+155 |         result = await self.agent.run(reasoning_prompt, deps=deps)
+    |                                                         ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+156 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/prompts/bioinformatics_agent_implementations.py:195:55
+    |
+193 |         )
+194 |
+195 |         result = await self.agent.run(quality_prompt, deps=deps)
+    |                                                       ^^^^^^^^^ Expected `None`, found `BioinformaticsAgentDeps`
+196 |         return result.data
+    |
+info: Matching overload defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:115:15
+    |
+114 |     @overload
+115 |     async def run(
+    |               ^^^
+116 |         self,
+117 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
+    |
+   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:123:9
+    |
+121 |         deferred_tool_results: DeferredToolResults | None = None,
+122 |         model: models.Model | models.KnownModelName | str | None = None,
+123 |         deps: AgentDepsT = None,
+    |         ----------------------- Parameter declared here
+124 |         model_settings: ModelSettings | None = None,
+125 |         usage_limits: _usage.UsageLimits | None = None,
+    |
+info: Non-matching overloads for bound method `run`:
+info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: list[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `dataset` may be missing on object of type `Unknown | DataFusionResult`
+   --> DeepResearch/src/prompts/bioinformatics_agent_implementations.py:256:34
+    |
+255 |         # Step 2: Construct dataset from fusion result
+256 |         dataset = FusedDataset(**fusion_result.dataset)
+    |                                  ^^^^^^^^^^^^^^^^^^^^^
+257 |
+258 |         # Step 3: Assess data quality
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Unknown | Graph[None, None, None] | Graph`
+   --> DeepResearch/src/statemachines/code_execution_workflow.py:548:29
+    |
+547 |         # Execute workflow
+548 |         final_state = await self.graph.run(initial_state)
+    |                             ^^^^^^^^^^^^^^
+549 |
+550 |         return final_state
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `run` is incorrect
+   --> DeepResearch/src/statemachines/code_execution_workflow.py:548:44
+    |
+547 |         # Execute workflow
+548 |         final_state = await self.graph.run(initial_state)
+    |                                            ^^^^^^^^^^^^^ Expected `BaseNode[None, None, None]`, found `CodeExecutionWorkflowState`
+549 |
+550 |         return final_state
+    |
+info: Method defined here
+   --> .venv/lib/python3.12/site-packages/pydantic_graph/graph.py:106:15
+    |
+104 |         self._validate_edges()
+105 |
+106 |     async def run(
+    |               ^^^
+107 |         self,
+108 |         start_node: BaseNode[StateT, DepsT, RunEndT],
+    |         -------------------------------------------- Parameter declared here
+109 |         *,
+110 |         state: StateT = None,
+    |
+info: Union variant `bound method Graph[None, None, None].run(start_node: BaseNode[None, None, None], *, state: None = None, deps: None = None, persistence: BaseStatePersistence[None, None] | None = None, infer_name: bool = Literal[True]) -> CoroutineType[Any, Any, GraphRunResult[None, None]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (bound method Graph[None, None, None].run(start_node: BaseNode[None, None, None], *, state: None = None, deps: None = None, persistence: BaseStatePersistence[None, None] | None = None, infer_name: bool = Literal[True]) -> CoroutineType[Any, Any, GraphRunResult[None, None]])`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/statemachines/code_execution_workflow.py:550:16
+    |
+548 |         final_state = await self.graph.run(initial_state)
+549 |
+550 |         return final_state
+    |                ^^^^^^^^^^^ expected `CodeExecutionWorkflowState`, found `Unknown | GraphRunResult[None, None]`
+    |
+   ::: DeepResearch/src/statemachines/code_execution_workflow.py:517:10
+    |
+515 |         enable_improvement: bool = True,
+516 |         max_improvement_attempts: int = 3,
+517 |     ) -> CodeExecutionWorkflowState:
+    |          -------------------------- Expected `CodeExecutionWorkflowState` because of return type
+518 |         """Execute the complete code generation and execution workflow.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `AgentRunResult[str]` has no attribute `data`
+   --> DeepResearch/src/tools/bioinformatics/bcftools_server.py:440:16
+    |
+438 |         agent = self.get_pydantic_ai_agent()
+439 |         result = await agent.run(query)
+440 |         return result.data
+    |                ^^^^^^^^^^^
+441 |
+442 |     @mcp_tool()
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/fastp_server.py:124:20
+    |
+123 |             # Call the appropriate method
+124 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+125 |         except Exception as e:
+126 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/fastp_server.py:51:46
+    |
+ 49 |             super().__init__(config)
+ 50 |
+ 51 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 52 |         """
+ 53 |         Run Fastp operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/featurecounts_server.py:99:20
+    |
+ 98 |             # Call the appropriate method
+ 99 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+100 |         except Exception as e:
+101 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/featurecounts_server.py:41:46
+    |
+ 39 |         super().__init__(config)
+ 40 |
+ 41 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 42 |         """
+ 43 |         Run Featurecounts operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/kallisto_server.py:125:20
+    |
+124 |             # Call the appropriate method
+125 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+126 |         except Exception as e:
+127 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/kallisto_server.py:60:46
+    |
+ 58 |         super().__init__(config)
+ 59 |
+ 60 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 61 |         """
+ 62 |         Run Kallisto operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `with_name` is incorrect
+    --> DeepResearch/src/tools/bioinformatics/meme_server.py:1666:37
+     |
+1664 |                 # Find and stop container
+1665 |                 container = DockerContainer("condaforge/miniforge3:latest")
+1666 |                 container.with_name(self.container_name)
+     |                                     ^^^^^^^^^^^^^^^^^^^ Expected `str`, found `str | None`
+1667 |                 container.stop()
+     |
+info: Element `None` of this union is not assignable to `str`
+info: Method defined here
+   --> .venv/lib/python3.12/site-packages/testcontainers/core/container.py:263:9
+    |
+261 |         return self
+262 |
+263 |     def with_name(self, name: str) -> Self:
+    |         ^^^^^^^^^       --------- Parameter declared here
+264 |         self._name = name
+265 |         return self
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/salmon_server.py:112:20
+    |
+111 |             # Call the appropriate method
+112 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+113 |         except Exception as e:
+114 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/salmon_server.py:49:46
+    |
+ 47 |         super().__init__(config)
+ 48 |
+ 49 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 50 |         """
+ 51 |         Run Salmon operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/star_server.py:164:20
+    |
+163 |             # Call the appropriate method
+164 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+165 |         except Exception as e:
+166 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/star_server.py:109:46
+    |
+107 |         }
+108 |
+109 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+110 |         """
+111 |         Run Star operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/stringtie_server.py:123:20
+    |
+122 |             # Call the appropriate method
+123 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+124 |         except Exception as e:
+125 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/stringtie_server.py:63:46
+    |
+ 61 |         super().__init__(config)
+ 62 |
+ 63 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 64 |         """
+ 65 |         Run Stringtie operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-return-type]: Return type does not match returned value
+   --> DeepResearch/src/tools/bioinformatics/trimgalore_server.py:100:20
+    |
+ 99 |             # Call the appropriate method
+100 |             return method(**method_params)
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^ expected `dict[str, Any]`, found `Unknown | CoroutineType[Any, Any, bool] | dict[str, Any]`
+101 |         except Exception as e:
+102 |             return {
+    |
+   ::: DeepResearch/src/tools/bioinformatics/trimgalore_server.py:42:46
+    |
+ 40 |         super().__init__(config)
+ 41 |
+ 42 |     def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    |                                              -------------- Expected `dict[str, Any]` because of return type
+ 43 |         """
+ 44 |         Run Trimgalore operation based on parameters.
+    |
+info: rule `invalid-return-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_parse_workflow_output` is incorrect
+  --> DeepResearch/src/tools/deepsearch_workflow_tool.py:97:58
+   |
+96 |             # Parse the output to extract structured information
+97 |             parsed_results = self._parse_workflow_output(final_output)
+   |                                                          ^^^^^^^^^^^^ Expected `str`, found `dict[Unknown | str, Unknown | str]`
+98 |
+99 |             return ExecutionResult(
+   |
+info: Method defined here
+   --> DeepResearch/src/tools/deepsearch_workflow_tool.py:115:9
+    |
+113 |             )
+114 |
+115 |     def _parse_workflow_output(self, output: str) -> WorkflowOutput:
+    |         ^^^^^^^^^^^^^^^^^^^^^^       ----------- Parameter declared here
+116 |         """Parse the workflow output to extract structured information."""
+117 |         lines = output.split("\n")
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_enhance_with_agent_personality` is incorrect
+   --> DeepResearch/src/tools/deepsearch_workflow_tool.py:237:17
+    |
+235 |             # Enhance output with agent personality
+236 |             enhanced_response = self._enhance_with_agent_personality(
+237 |                 final_output, agent_personality, output_format
+    |                 ^^^^^^^^^^^^ Expected `str`, found `dict[Unknown | str, Unknown | str]`
+238 |             )
+    |
+info: Method defined here
+   --> DeepResearch/src/tools/deepsearch_workflow_tool.py:295:9
+    |
+293 |         return config
+294 |
+295 |     def _enhance_with_agent_personality(
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+296 |         self, output: str, personality: str, format_type: str
+    |               ----------- Parameter declared here
+297 |     ) -> str:
+298 |         """Enhance output with agent personality."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-assignment]: Object of type `Literal["stopped"]` is not assignable to attribute `status` of type `MCPServerStatus`
+   --> DeepResearch/src/tools/mcp_server_tools.py:188:13
+    |
+186 |         if server_name in self.deployments:
+187 |             deployment = self.deployments[server_name]
+188 |             deployment.status = "stopped"
+    |             ^^^^^^^^^^^^^^^^^
+189 |             return True
+190 |         return False
+    |
+info: rule `invalid-assignment` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_evaluator_schema` may be missing on object of type `Unknown | DeepSearchSchemas`
+   --> DeepResearch/src/utils/deepsearch_utils.py:461:9
+    |
+459 |     ) -> dict[str, Any]:
+460 |         """Evaluate the quality of an answer."""
+461 |         self.schemas.get_evaluator_schema(evaluation_type)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+462 |
+463 |         # Mock evaluation - in real implementation, this would use AI
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-assignment]: Object of type `Literal["stopped"]` is not assignable to attribute `status` of type `MCPServerStatus`
+   --> DeepResearch/src/utils/docker_compose_deployer.py:213:29
+    |
+212 |                         if result.returncode == 0:
+213 |                             deployment.status = "stopped"
+    |                             ^^^^^^^^^^^^^^^^^
+214 |                             logger.info("Stopped MCP server '%s'", server_name)
+215 |                         else:
+    |
+info: rule `invalid-assignment` is enabled by default
+
+error[invalid-assignment]: Object of type `Literal["stopped"]` is not assignable to attribute `status` of type `MCPServerStatus`
+   --> DeepResearch/src/utils/docker_compose_deployer.py:259:29
+    |
+258 |                         if result.returncode == 0:
+259 |                             deployment.status = "stopped"
+    |                             ^^^^^^^^^^^^^^^^^
+260 |                             del self.deployments[server_name]
+261 |                             del self.compose_files[server_name]
+    |
+info: rule `invalid-assignment` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/utils/docker_compose_deployer.py:570:17
+    |
+568 |               # Create code executor if it doesn't exist
+569 |               self.code_executors[server_name] = DockerCommandLineCodeExecutor(
+570 | /                 image=deployment.configuration.image
+571 | |                 if hasattr(deployment.configuration, "image")
+572 | |                 else "python:3.11-slim",
+    | |_______________________________________^ Expected `str`, found `object`
+573 |                   timeout=kwargs.get("timeout", 60),
+574 |                   work_dir=f"/tmp/{server_name}_code_blocks_compose",
+    |
+info: Method defined here
+  --> DeepResearch/src/utils/coding/docker_commandline_code_executor.py:70:9
+   |
+68 |     LANGUAGE_ALIASES: ClassVar[dict[str, str]] = {"py": "python", "js": "javascript"}
+69 |
+70 |     def __init__(
+   |         ^^^^^^^^
+71 |         self,
+72 |         image: str = "python:3-slim",
+   |         ---------------------------- Parameter declared here
+73 |         container_name: str | None = None,
+74 |         timeout: int = 60,
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unsupported-operator]: Operator `+=` is unsupported between objects of type `dict[Unknown, Unknown]` and `Literal[1]`
+   --> DeepResearch/src/utils/execution_history.py:199:9
+    |
+197 |         summary = history.get_execution_summary()
+198 |
+199 |         self.metrics["total_executions"] += 1
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+200 |         if (
+201 |             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@update_metrics` has no attribute `SUCCESS_RATE_THRESHOLD`
+   --> DeepResearch/src/utils/execution_history.py:201:39
+    |
+199 |         self.metrics["total_executions"] += 1
+200 |         if (
+201 |             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+202 |         ):  # Consider successful if >80% success rate
+203 |             self.metrics["successful_executions"] += 1
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unsupported-operator]: Operator `+=` is unsupported between objects of type `dict[Unknown, Unknown]` and `Literal[1]`
+   --> DeepResearch/src/utils/execution_history.py:203:13
+    |
+201 |             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
+202 |         ):  # Consider successful if >80% success rate
+203 |             self.metrics["successful_executions"] += 1
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+204 |         else:
+205 |             self.metrics["failed_executions"] += 1
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Operator `+=` is unsupported between objects of type `dict[Unknown, Unknown]` and `Literal[1]`
+   --> DeepResearch/src/utils/execution_history.py:205:13
+    |
+203 |             self.metrics["successful_executions"] += 1
+204 |         else:
+205 |             self.metrics["failed_executions"] += 1
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+206 |
+207 |         # Update average duration
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Operator `*` is unsupported between objects of type `Unknown | int | dict[Unknown, Unknown]` and `Unknown | int`
+   --> DeepResearch/src/utils/execution_history.py:209:30
+    |
+207 |           # Update average duration
+208 |           if summary["duration"]:
+209 |               total_duration = self.metrics["average_duration"] * (
+    |  ______________________________^
+210 | |                 self.metrics["total_executions"] - 1
+211 | |             )
+    | |_____________^
+212 |               self.metrics["average_duration"] = (
+213 |                   total_duration + summary["duration"]
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[unsupported-operator]: Operator `not in` is not supported for types `Any` and `int`, in comparing `Any` with `Unknown | int | dict[Unknown, Unknown]`
+   --> DeepResearch/src/utils/execution_history.py:218:16
+    |
+216 |         # Update tool performance
+217 |         for tool in summary["tools_used"]:
+218 |             if tool not in self.metrics["tool_performance"]:
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+219 |                 self.metrics["tool_performance"][tool] = {"uses": 0, "successes": 0}
+    |
+info: rule `unsupported-operator` is enabled by default
+
+warning[possibly-missing-implicit-call]: Method `__setitem__` of type `Unknown | int | dict[Unknown, Unknown]` may be missing
+   --> DeepResearch/src/utils/execution_history.py:219:17
+    |
+217 |         for tool in summary["tools_used"]:
+218 |             if tool not in self.metrics["tool_performance"]:
+219 |                 self.metrics["tool_performance"][tool] = {"uses": 0, "successes": 0}
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+220 |
+221 |             self.metrics["tool_performance"][tool]["uses"] += 1
+    |
+info: rule `possibly-missing-implicit-call` is enabled by default
+
+error[non-subscriptable]: Cannot subscript object of type `int` with no `__getitem__` method
+   --> DeepResearch/src/utils/execution_history.py:221:13
+    |
+219 |                 self.metrics["tool_performance"][tool] = {"uses": 0, "successes": 0}
+220 |
+221 |             self.metrics["tool_performance"][tool]["uses"] += 1
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+222 |             if summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD:
+223 |                 self.metrics["tool_performance"][tool]["successes"] += 1
+    |
+info: rule `non-subscriptable` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@update_metrics` has no attribute `SUCCESS_RATE_THRESHOLD`
+   --> DeepResearch/src/utils/execution_history.py:222:42
+    |
+221 |             self.metrics["tool_performance"][tool]["uses"] += 1
+222 |             if summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD:
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+223 |                 self.metrics["tool_performance"][tool]["successes"] += 1
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[non-subscriptable]: Cannot subscript object of type `int` with no `__getitem__` method
+   --> DeepResearch/src/utils/execution_history.py:223:17
+    |
+221 |             self.metrics["tool_performance"][tool]["uses"] += 1
+222 |             if summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD:
+223 |                 self.metrics["tool_performance"][tool]["successes"] += 1
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+224 |
+225 |         # Update error frequency
+    |
+info: rule `non-subscriptable` is enabled by default
+
+warning[possibly-missing-implicit-call]: Method `__setitem__` of type `Unknown | int | dict[Unknown, Unknown]` may be missing
+   --> DeepResearch/src/utils/execution_history.py:227:13
+    |
+225 |         # Update error frequency
+226 |         for error_type, count in summary["failure_patterns"].items():
+227 |             self.metrics["error_frequency"][error_type] = (
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+228 |                 self.metrics["error_frequency"].get(error_type, 0) + count
+229 |             )
+    |
+info: rule `possibly-missing-implicit-call` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | int | dict[Unknown, Unknown]`
+   --> DeepResearch/src/utils/execution_history.py:228:17
+    |
+226 |         for error_type, count in summary["failure_patterns"].items():
+227 |             self.metrics["error_frequency"][error_type] = (
+228 |                 self.metrics["error_frequency"].get(error_type, 0) + count
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+229 |             )
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unsupported-operator]: Operator `not in` is not supported for types `str` and `int`, in comparing `str` with `Unknown | int | dict[Unknown, Unknown]`
+   --> DeepResearch/src/utils/execution_history.py:233:12
+    |
+231 |     def get_tool_reliability(self, tool_name: str) -> float:
+232 |         """Get reliability score for a specific tool."""
+233 |         if tool_name not in self.metrics["tool_performance"]:
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+234 |             return 0.0
+    |
+info: rule `unsupported-operator` is enabled by default
+
+error[non-subscriptable]: Cannot subscript object of type `int` with no `__getitem__` method
+   --> DeepResearch/src/utils/execution_history.py:236:16
+    |
+234 |             return 0.0
+235 |
+236 |         perf = self.metrics["tool_performance"][tool_name]
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+237 |         if perf["uses"] == 0:
+238 |             return 0.0
+    |
+info: rule `non-subscriptable` is enabled by default
+
+error[not-iterable]: Object of type `Unknown | int | dict[Unknown, Unknown]` may not be iterable
+   --> DeepResearch/src/utils/execution_history.py:246:25
+    |
+244 |         tool_scores = [
+245 |             (tool, self.get_tool_reliability(tool))
+246 |             for tool in self.metrics["tool_performance"]
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+247 |         ]
+248 |         tool_scores.sort(key=lambda x: x[1], reverse=True)
+    |
+info: It may not have an `__iter__` method or a `__getitem__` method
+info: rule `not-iterable` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `items` may be missing on object of type `Unknown | int | dict[Unknown, Unknown]`
+   --> DeepResearch/src/utils/execution_history.py:253:30
+    |
+251 |     def get_common_failure_modes(self) -> list[tuple[str, int]]:
+252 |         """Get the most common failure modes."""
+253 |         failure_modes = list(self.metrics["error_frequency"].items())
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+254 |         failure_modes.sort(key=lambda x: x[1], reverse=True)
+255 |         return failure_modes
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_execute_code_simple` is incorrect
+   --> DeepResearch/src/utils/jupyter/jupyter_code_executor.py:129:52
+    |
+128 |                 # Execute code (simplified - in practice would use WebSocket connection)
+129 |                 result = self._execute_code_simple(code)
+    |                                                    ^^^^ Expected `str`, found `dict[str, Any]`
+130 |
+131 |                 if result.get("success", False):
+    |
+info: Method defined here
+   --> DeepResearch/src/utils/jupyter/jupyter_code_executor.py:167:9
+    |
+165 |         )
+166 |
+167 |     def _execute_code_simple(self, code: str) -> dict[str, Any]:
+    |         ^^^^^^^^^^^^^^^^^^^^       --------- Parameter declared here
+168 |         """Execute code using simplified approach.
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[unresolved-attribute]: Object of type `Self@deploy_server` has no attribute `_get_server_implementation`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:114:22
+    |
+112 |         try:
+113 |             # Get server implementation
+114 |             server = self._get_server_implementation(server_name)
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+115 |             if not server:
+116 |                 msg = f"Server implementation for '{server_name}' not found"
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/testcontainers_deployer.py:155:21
+    |
+153 |                 configuration=MCPServerConfig(
+154 |                     server_name=server_name,
+155 |                     server_type=self._get_server_type(server_name),
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `MCPServerType`, found `str`
+156 |                 ),
+157 |             )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/testcontainers_deployer.py:181:17
+    |
+179 |             deployment = MCPServerDeployment(
+180 |                 server_name=server_name,
+181 |                 server_type=self._get_server_type(server_name),
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `MCPServerType`, found `str`
+182 |                 status=MCPServerStatus.FAILED,
+183 |                 error_message=str(e),
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/testcontainers_deployer.py:186:21
+    |
+184 |                 configuration=MCPServerConfig(
+185 |                     server_name=server_name,
+186 |                     server_type=self._get_server_type(server_name),
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `MCPServerType`, found `str`
+187 |                 ),
+188 |             )
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-assignment]: Object of type `Literal["stopped"]` is not assignable to attribute `status` of type `MCPServerStatus`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:202:13
+    |
+200 |         try:
+201 |             # In a real implementation, this would stop the testcontainers container
+202 |             deployment.status = "stopped"
+    |             ^^^^^^^^^^^^^^^^^
+203 |             deployment.finished_at = None  # Would be set by testcontainers
+    |
+info: rule `invalid-assignment` is enabled by default
+
+error[invalid-assignment]: Object of type `Literal["failed"]` is not assignable to attribute `status` of type `MCPServerStatus`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:214:13
+    |
+212 |         except Exception as e:
+213 |             logger.exception("Failed to stop MCP server '%s'", server_name)
+214 |             deployment.status = "failed"
+    |             ^^^^^^^^^^^^^^^^^
+215 |             deployment.error_message = str(e)
+216 |             return False
+    |
+info: rule `invalid-assignment` is enabled by default
+
+error[missing-argument]: No argument provided for required parameter `self` of function `list_tools`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:246:27
+    |
+245 |         # Check if tool exists
+246 |         available_tools = server.list_tools()
+    |                           ^^^^^^^^^^^^^^^^^^^
+247 |         if tool_name not in available_tools:
+248 |             msg = f"Tool '{tool_name}' not found on server '{server_name}'. Available tools: {', '.join(available_tools)}"
+    |
+info: Union variant `def list_tools(self) -> list[str]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (def list_tools(self) -> list[str])`
+info: rule `missing-argument` is enabled by default
+
+error[invalid-argument-type]: Argument to function `execute_tool` is incorrect
+   --> DeepResearch/src/utils/testcontainers_deployer.py:253:40
+    |
+251 |         # Execute tool
+252 |         try:
+253 |             return server.execute_tool(tool_name, **kwargs)
+    |                                        ^^^^^^^^^ Expected `MCPServerBase`, found `str`
+254 |         except Exception as e:
+255 |             msg = f"Tool execution failed: {e}"
+    |
+info: Function defined here
+   --> DeepResearch/src/datatypes/bioinformatics_mcp.py:306:9
+    |
+304 |         return list(self.tools.keys())
+305 |
+306 |     def execute_tool(self, tool_name: str, **kwargs) -> Any:
+    |         ^^^^^^^^^^^^ ---- Parameter declared here
+307 |         """Execute a tool with the given parameters."""
+308 |         if tool_name not in self.tools:
+    |
+info: Union variant `def execute_tool(self, tool_name: str, **kwargs) -> Any` is incompatible with this call site
+info: Attempted to call union type `Unknown | (def execute_tool(self, tool_name: str, **kwargs) -> Any)`
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `name` may be missing on object of type `(Unknown & ~AlwaysFalsy) | (<class 'FastQCServer'> & ~AlwaysFalsy) | (<class 'SamtoolsServer'> & ~AlwaysFalsy) | (<class 'Bowtie2Server'> & ~AlwaysFalsy)`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:317:26
+    |
+316 | if __name__ == "__main__":
+317 |     print(f"MCP Server '{server.name}' v{server.version} ready")
+    |                          ^^^^^^^^^^^
+318 |     print(f"Available tools: {{', '.join(server.list_tools())}}")
+319 | '''
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `version` may be missing on object of type `(Unknown & ~AlwaysFalsy) | (<class 'FastQCServer'> & ~AlwaysFalsy) | (<class 'SamtoolsServer'> & ~AlwaysFalsy) | (<class 'Bowtie2Server'> & ~AlwaysFalsy)`
+   --> DeepResearch/src/utils/testcontainers_deployer.py:317:42
+    |
+316 | if __name__ == "__main__":
+317 |     print(f"MCP Server '{server.name}' v{server.version} ready")
+    |                                          ^^^^^^^^^^^^^^
+318 |     print(f"Available tools: {{', '.join(server.list_tools())}}")
+319 | '''
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `__init__` is incorrect
+   --> DeepResearch/src/utils/testcontainers_deployer.py:481:17
+    |
+479 |               # Create code executor if it doesn't exist
+480 |               self.code_executors[server_name] = DockerCommandLineCodeExecutor(
+481 | /                 image=deployment.configuration.image
+482 | |                 if hasattr(deployment.configuration, "image")
+483 | |                 else "python:3.11-slim",
+    | |_______________________________________^ Expected `str`, found `object`
+484 |                   timeout=kwargs.get("timeout", 60),
+485 |                   work_dir=f"/tmp/{server_name}_code_blocks",
+    |
+info: Method defined here
+  --> DeepResearch/src/utils/coding/docker_commandline_code_executor.py:70:9
+   |
+68 |     LANGUAGE_ALIASES: ClassVar[dict[str, str]] = {"py": "python", "js": "javascript"}
+69 |
+70 |     def __init__(
+   |         ^^^^^^^^
+71 |         self,
+72 |         image: str = "python:3-slim",
+   |         ---------------------------- Parameter declared here
+73 |         container_name: str | None = None,
+74 |         timeout: int = 60,
+   |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `chat_completions` may be missing on object of type `Unknown | VLLMClient`
+  --> DeepResearch/src/utils/vllm_client.py:95:26
+   |
+93 |             **kwargs,
+94 |         )
+95 |         response = await self.client.chat_completions(request)
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+96 |         return response.choices[0].message.content
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `completions` may be missing on object of type `Unknown | VLLMClient`
+   --> DeepResearch/src/utils/vllm_client.py:101:26
+    |
+ 99 |         """Complete text with the VLLM model."""
+100 |         request = CompletionRequest(model="vllm-model", prompt=prompt, **kwargs)
+101 |         response = await self.client.completions(request)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^
+102 |         return response.choices[0].text
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `embeddings` may be missing on object of type `Unknown | VLLMClient`
+   --> DeepResearch/src/utils/vllm_client.py:110:26
+    |
+109 |         request = EmbeddingRequest(model="vllm-embedding-model", input=texts, **kwargs)
+110 |         response = await self.client.embeddings(request)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^
+111 |         return [item.embedding for item in response.data]
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `complete` is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:207:45
+    |
+205 |     async def completions(self, request: CompletionRequest) -> CompletionResponse:
+206 |         """Create completion (OpenAI-compatible)."""
+207 |         response_text = await self.complete(request.prompt)
+    |                                             ^^^^^^^^^^^^^^ Expected `str`, found `str | list[str]`
+208 |         prompt_text = (
+209 |             request.prompt if isinstance(request.prompt, str) else str(request.prompt)
+    |
+info: Element `list[str]` of this union is not assignable to `str`
+info: Method defined here
+   --> DeepResearch/src/utils/vllm_client.py:98:15
+    |
+ 96 |         return response.choices[0].message.content
+ 97 |
+ 98 |     async def complete(self, prompt: str, **kwargs) -> str:
+    |               ^^^^^^^^       ----------- Parameter declared here
+ 99 |         """Complete text with the VLLM model."""
+100 |         request = CompletionRequest(model="vllm-model", prompt=prompt, **kwargs)
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `chat_completions` is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:249:54
+    |
+247 |         for req in request.requests:
+248 |             if hasattr(req, "messages"):  # Chat completion
+249 |                 result = await self.chat_completions(req)
+    |                                                      ^^^ Expected `ChatCompletionRequest`, found `ChatCompletionRequest | (CompletionRequest & <Protocol with members 'messages'>) | (EmbeddingRequest & <Protocol with members 'messages'>)`
+250 |                 results.append(result)
+251 |             elif hasattr(req, "prompt"):  # Completion
+    |
+info: Union elements `CompletionRequest & <Protocol with members 'messages'>` and `EmbeddingRequest & <Protocol with members 'messages'>` are not assignable to `ChatCompletionRequest`
+info: Method defined here
+   --> DeepResearch/src/utils/vllm_client.py:159:15
+    |
+157 |         return {"object": "list", "data": [{"id": "vllm-model", "object": "model"}]}
+158 |
+159 |     async def chat_completions(
+    |               ^^^^^^^^^^^^^^^^
+160 |         self, request: ChatCompletionRequest
+    |               ------------------------------ Parameter declared here
+161 |     ) -> ChatCompletionResponse:
+162 |         """Create chat completion (OpenAI-compatible)."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `completions` is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:252:49
+    |
+250 |                 results.append(result)
+251 |             elif hasattr(req, "prompt"):  # Completion
+252 |                 result = await self.completions(req)
+    |                                                 ^^^ Expected `CompletionRequest`, found `(CompletionRequest & ~<Protocol with members 'messages'>) | (EmbeddingRequest & <Protocol with members 'prompt'> & ~<Protocol with members 'messages'>)`
+253 |                 results.append(result)
+    |
+info: Element `EmbeddingRequest & <Protocol with members 'prompt'> & ~<Protocol with members 'messages'>` of this union is not assignable to `CompletionRequest`
+info: Method defined here
+   --> DeepResearch/src/utils/vllm_client.py:205:15
+    |
+203 |         }
+204 |
+205 |     async def completions(self, request: CompletionRequest) -> CompletionResponse:
+    |               ^^^^^^^^^^^       -------------------------- Parameter declared here
+206 |         """Create completion (OpenAI-compatible)."""
+207 |         response_text = await self.complete(request.prompt)
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:396:58
+    |
+394 |     def build(self) -> VLLMClient:
+395 |         """Build the VLLM client."""
+396 |         return VLLMClient(vllm_config=self._vllm_config, **self._config)
+    |                                                          ^^^^^^^^^^^^^^ Expected `str`, found `Unknown | str | float | int`
+    |
+info: Union elements `float` and `int` are not assignable to `str`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:396:58
+    |
+394 |     def build(self) -> VLLMClient:
+395 |         """Build the VLLM client."""
+396 |         return VLLMClient(vllm_config=self._vllm_config, **self._config)
+    |                                                          ^^^^^^^^^^^^^^ Expected `str | None`, found `Unknown | str | float | int`
+    |
+info: Union elements `float` and `int` are not assignable to `str | None`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:396:58
+    |
+394 |     def build(self) -> VLLMClient:
+395 |         """Build the VLLM client."""
+396 |         return VLLMClient(vllm_config=self._vllm_config, **self._config)
+    |                                                          ^^^^^^^^^^^^^^ Expected `int | float`, found `Unknown | str | float | int`
+    |
+info: Element `str` of this union is not assignable to `int | float`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:396:58
+    |
+394 |     def build(self) -> VLLMClient:
+395 |         """Build the VLLM client."""
+396 |         return VLLMClient(vllm_config=self._vllm_config, **self._config)
+    |                                                          ^^^^^^^^^^^^^^ Expected `int`, found `Unknown | str | float | int`
+    |
+info: Union elements `str` and `float` are not assignable to `int`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+   --> DeepResearch/src/utils/vllm_client.py:396:58
+    |
+394 |     def build(self) -> VLLMClient:
+395 |         """Build the VLLM client."""
+396 |         return VLLMClient(vllm_config=self._vllm_config, **self._config)
+    |                                                          ^^^^^^^^^^^^^^ Expected `int | float`, found `Unknown | str | float | int`
+    |
+info: Element `str` of this union is not assignable to `int | float`
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_collaborative_pattern_workflow` is incorrect
+   --> DeepResearch/src/workflow_patterns.py:206:13
+    |
+204 |             agent_types=agent_types,
+205 |             agent_executors=agent_executors or {},
+206 |             config=self.config.dict(),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+207 |         )
+    |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:673:11
+    |
+673 | async def run_collaborative_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+674 |     question: str,
+675 |     agents: list[str],
+676 |     agent_types: dict[str, AgentType],
+677 |     agent_executors: dict[str, Any],
+678 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+679 | ) -> str:
+680 |     """Run collaborative pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_sequential_pattern_workflow` is incorrect
+   --> DeepResearch/src/workflow_patterns.py:222:13
+    |
+220 |             agent_types=agent_types,
+221 |             agent_executors=agent_executors or {},
+222 |             config=self.config.dict(),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+223 |         )
+    |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:696:11
+    |
+696 | async def run_sequential_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+697 |     question: str,
+698 |     agents: list[str],
+699 |     agent_types: dict[str, AgentType],
+700 |     agent_executors: dict[str, Any],
+701 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+702 | ) -> str:
+703 |     """Run sequential pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_hierarchical_pattern_workflow` is incorrect
+   --> DeepResearch/src/workflow_patterns.py:240:13
+    |
+238 |             agent_types=agent_types,
+239 |             agent_executors=agent_executors or {},
+240 |             config=self.config.dict(),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+241 |         )
+    |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:719:11
+    |
+719 | async def run_hierarchical_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+720 |     question: str,
+721 |     coordinator_id: str,
+    |
+   ::: DeepResearch/src/statemachines/workflow_pattern_statemachines.py:725:5
+    |
+723 |     agent_types: dict[str, AgentType],
+724 |     agent_executors: dict[str, Any],
+725 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+726 | ) -> str:
+727 |     """Run hierarchical pattern workflow."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to function `run_pattern_workflow` is incorrect
+   --> DeepResearch/src/workflow_patterns.py:258:13
+    |
+256 |             agent_types=agent_types,
+257 |             agent_executors=agent_executors or {},
+258 |             config=self.config.dict(),
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `DictConfig | None`, found `Unknown | dict[str, Any]`
+259 |         )
+    |
+info: Element `dict[str, Any]` of this union is not assignable to `DictConfig | None`
+info: Function defined here
+   --> DeepResearch/src/statemachines/workflow_pattern_statemachines.py:744:11
+    |
+744 | async def run_pattern_workflow(
+    |           ^^^^^^^^^^^^^^^^^^^^
+745 |     question: str,
+746 |     pattern: InteractionPattern,
+    |
+   ::: DeepResearch/src/statemachines/workflow_pattern_statemachines.py:750:5
+    |
+748 |     agent_types: dict[str, AgentType],
+749 |     agent_executors: dict[str, Any],
+750 |     config: DictConfig | None = None,
+    |     -------------------------------- Parameter declared here
+751 | ) -> str:
+752 |     """Run workflow with the specified interaction pattern."""
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_test_prompt_batch` is incorrect
+   --> scripts/prompt_testing/test_prompts_vllm_base.py:481:26
+    |
+479 |         # Test all prompts with configuration
+480 |         results = self._test_prompt_batch(
+481 |             vllm_tester, prompts, config, **generation_kwargs
+    |                          ^^^^^^^ Expected `list[tuple[str, str]]`, found `list[tuple[str, str, str]] & ~AlwaysFalsy`
+482 |         )
+    |
+info: Method defined here
+   --> scripts/prompt_testing/test_prompts_vllm_base.py:308:9
+    |
+306 |             logger.warning(f"Prompt {prompt_name} might be missing clear instructions")
+307 |
+308 |     def _test_prompt_batch(
+    |         ^^^^^^^^^^^^^^^^^^
+309 |         self,
+310 |         vllm_tester: VLLMPromptTester,
+311 |         prompts: list[tuple[str, str]],
+    |         ------------------------------ Parameter declared here
+312 |         config: DictConfig | None = None,
+313 |         **generation_kwargs,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:273:24
+    |
+272 |         # Get container configuration from config
+273 |         model_config = self.config.get("model", {})
+    |                        ^^^^^^^^^^^^^^^
+274 |         container_config = model_config.get("container", {})
+275 |         server_config = model_config.get("server", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `VLLMContainer | VLLMContainer` has no attribute `with_cpu_limit`
+   --> scripts/prompt_testing/testcontainers_vllm.py:302:13
+    |
+300 |         resources = container_config.get("resources", {})
+301 |         if resources.get("cpu_limit"):
+302 |             self.container.with_cpu_limit(resources["cpu_limit"])
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+303 |         if resources.get("memory_limit"):
+304 |             self.container.with_memory_limit(resources["memory_limit"])
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+error[unresolved-attribute]: Object of type `VLLMContainer | VLLMContainer` has no attribute `with_memory_limit`
+   --> scripts/prompt_testing/testcontainers_vllm.py:304:13
+    |
+302 |             self.container.with_cpu_limit(resources["cpu_limit"])
+303 |         if resources.get("memory_limit"):
+304 |             self.container.with_memory_limit(resources["memory_limit"])
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+305 |
+306 |         # Start the container
+    |
+info: rule `unresolved-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `start` may be missing on object of type `VLLMContainer | VLLMContainer`
+   --> scripts/prompt_testing/testcontainers_vllm.py:308:9
+    |
+306 |         # Start the container
+307 |         logger.info("Starting container with timeout: %ds", self.container_timeout)
+308 |         self.container.start()
+    |         ^^^^^^^^^^^^^^^^^^^^
+309 |
+310 |         # Wait for container to be ready with configured timeout
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_connection_url` may be missing on object of type `VLLMContainer | VLLMContainer`
+   --> scripts/prompt_testing/testcontainers_vllm.py:313:53
+    |
+311 |         self._wait_for_ready(self.container_timeout)
+312 |
+313 |         logger.info("VLLM container started at %s", self.container.get_connection_url())
+    |                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+314 |
+315 |     def stop_container(self):
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `stop` may be missing on object of type `(VLLMContainer & ~AlwaysFalsy) | (VLLMContainer & ~AlwaysFalsy)`
+   --> scripts/prompt_testing/testcontainers_vllm.py:319:13
+    |
+317 |         if self.container:
+318 |             logger.info("Stopping VLLM container")
+319 |             self.container.stop()
+    |             ^^^^^^^^^^^^^^^^^^^
+320 |             self.container = None
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:328:13
+    |
+326 |         # Use configured timeout or default
+327 |         health_check_config = (
+328 |             self.config.get("model", {}).get("server", {}).get("health_check", {})
+    |             ^^^^^^^^^^^^^^^
+329 |         )
+330 |         check_timeout = timeout or health_check_config.get("timeout_seconds", 5)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_connection_url` may be missing on object of type `VLLMContainer | VLLMContainer | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:335:18
+    |
+334 |         start_time = time.time()
+335 |         url = f"{self.container.get_connection_url()}{health_check_config.get('endpoint', '/health')}"
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+336 |
+337 |         retry_count = 0
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:367:29
+    |
+366 |         # Check for common prompt patterns if validation is strict
+367 |         validation_config = self.config.get("testing", {}).get("validation", {})
+    |                             ^^^^^^^^^^^^^^^
+368 |         if validation_config.get("validate_prompt_structure", True):
+369 |             # Check for instructions or role definition
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:394:29
+    |
+392 |             raise ValueError(msg)
+393 |
+394 |         validation_config = self.config.get("testing", {}).get("validation", {})
+    |                             ^^^^^^^^^^^^^^^
+395 |         assertions_config = self.config.get("testing", {}).get("assertions", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:395:29
+    |
+394 |         validation_config = self.config.get("testing", {}).get("validation", {})
+395 |         assertions_config = self.config.get("testing", {}).get("assertions", {})
+    |                             ^^^^^^^^^^^^^^^
+396 |
+397 |         # Check minimum response length
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:451:29
+    |
+450 |         # Get generation configuration
+451 |         generation_config = self.config.get("model", {}).get("generation", {})
+    |                             ^^^^^^^^^^^^^^^
+452 |         test_config = self.config.get("testing", {})
+453 |         validation_config = test_config.get("validation", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:452:23
+    |
+450 |         # Get generation configuration
+451 |         generation_config = self.config.get("model", {}).get("generation", {})
+452 |         test_config = self.config.get("testing", {})
+    |                       ^^^^^^^^^^^^^^^
+453 |         validation_config = test_config.get("validation", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> scripts/prompt_testing/testcontainers_vllm.py:529:28
+    |
+528 |         # Save artifact if enabled
+529 |         artifacts_config = self.config.get("vllm_tests", {}).get("artifacts", {})
+    |                            ^^^^^^^^^^^^^^^
+530 |         if artifacts_config.get("save_individual_results", True):
+531 |             self._save_artifact(result)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_connection_url` may be missing on object of type `(VLLMContainer & ~AlwaysFalsy) | (VLLMContainer & ~AlwaysFalsy)`
+   --> scripts/prompt_testing/testcontainers_vllm.py:559:18
+    |
+557 |         }
+558 |
+559 |         url = f"{self.container.get_connection_url()}/v1/completions"
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+560 |
+561 |         response = requests.post(
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_connection_url` may be missing on object of type `(VLLMContainer & ~AlwaysFalsy) | (VLLMContainer & ~AlwaysFalsy)`
+   --> scripts/prompt_testing/testcontainers_vllm.py:717:31
+    |
+715 |             "status": "running",
+716 |             "model": self.model_name,
+717 |             "connection_url": self.container.get_connection_url(),
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+718 |             "container_id": getattr(self.container, "_container", {}).get(
+719 |                 "Id", "unknown"
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `_test_prompt_batch` is incorrect
+   --> tests/test_prompts_vllm/test_prompts_vllm_base.py:487:26
+    |
+485 |         # Test all prompts with configuration
+486 |         results = self._test_prompt_batch(
+487 |             vllm_tester, prompts, config, **generation_kwargs
+    |                          ^^^^^^^ Expected `list[tuple[str, str]]`, found `list[tuple[str, str, str]] & ~AlwaysFalsy`
+488 |         )
+    |
+info: Method defined here
+   --> tests/test_prompts_vllm/test_prompts_vllm_base.py:314:9
+    |
+312 |             logger.warning("Prompt %s might be missing clear instructions", prompt_name)
+313 |
+314 |     def _test_prompt_batch(
+    |         ^^^^^^^^^^^^^^^^^^
+315 |         self,
+316 |         vllm_tester: VLLMPromptTester,
+317 |         prompts: list[tuple[str, str]],
+    |         ------------------------------ Parameter declared here
+318 |         config: DictConfig | None = None,
+319 |         **generation_kwargs,
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `BaseNode` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:51:20
+   |
+50 |     def test_base_node_is_generic(self):
+51 |         BaseNode = self.module.BaseNode
+   |                    ^^^^^^^^^^^^^^^^^^^^
+52 |         assert hasattr(BaseNode, "__parameters__")
+53 |         assert BaseNode.__parameters__[0].__name__ == "T"
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `BaseNode` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:57:13
+   |
+55 |     def test_fallback_classes_are_isolated(self):
+56 |         classes = [
+57 |             self.module.BaseNode,
+   |             ^^^^^^^^^^^^^^^^^^^^
+58 |             self.module.Edge,
+59 |             self.module.End,
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `Edge` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:58:13
+   |
+56 |         classes = [
+57 |             self.module.BaseNode,
+58 |             self.module.Edge,
+   |             ^^^^^^^^^^^^^^^^
+59 |             self.module.End,
+60 |             self.module.Graph,
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `End` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:59:13
+   |
+57 |             self.module.BaseNode,
+58 |             self.module.Edge,
+59 |             self.module.End,
+   |             ^^^^^^^^^^^^^^^
+60 |             self.module.Graph,
+61 |             self.module.GraphRunContext,
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `Graph` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:60:13
+   |
+58 |             self.module.Edge,
+59 |             self.module.End,
+60 |             self.module.Graph,
+   |             ^^^^^^^^^^^^^^^^^
+61 |             self.module.GraphRunContext,
+62 |         ]
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `GraphRunContext` may be missing on object of type `Unknown | ModuleType`
+  --> tests/test_statemachines/test_pydantic_graph_fallback.py:61:13
+   |
+59 |             self.module.End,
+60 |             self.module.Graph,
+61 |             self.module.GraphRunContext,
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+62 |         ]
+63 |         assert len({cls.__name__ for cls in classes}) == len(classes)
+   |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:193:24
+    |
+192 |         # Get container configuration from config
+193 |         model_config = self.config.get("model", {})
+    |                        ^^^^^^^^^^^^^^^
+194 |         container_config = model_config.get("container", {})
+195 |         server_config = model_config.get("server", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get_connection_url` may be missing on object of type `Any | None`
+   --> tests/testcontainers_vllm.py:265:18
+    |
+264 |         start_time = time.time()
+265 |         url = f"{self.container.get_connection_url()}{health_check_config.get('endpoint', '/health')}"
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+266 |
+267 |         retry_count = 0
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:316:29
+    |
+315 |         # Get generation configuration
+316 |         generation_config = self.config.get("model", {}).get("generation", {})
+    |                             ^^^^^^^^^^^^^^^
+317 |         test_config = self.config.get("testing", {})
+318 |         validation_config = test_config.get("validation", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:317:23
+    |
+315 |         # Get generation configuration
+316 |         generation_config = self.config.get("model", {}).get("generation", {})
+317 |         test_config = self.config.get("testing", {})
+    |                       ^^^^^^^^^^^^^^^
+318 |         validation_config = test_config.get("validation", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:391:28
+    |
+390 |         # Save artifact if enabled
+391 |         artifacts_config = self.config.get("vllm_tests", {}).get("artifacts", {})
+    |                            ^^^^^^^^^^^^^^^
+392 |         if artifacts_config.get("save_individual_results", True):
+393 |             self._save_artifact(result)
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:505:29
+    |
+504 |         # Check for common prompt patterns if validation is strict
+505 |         validation_config = self.config.get("testing", {}).get("validation", {})
+    |                             ^^^^^^^^^^^^^^^
+506 |         if validation_config.get("validate_prompt_structure", True):
+507 |             # Check for instructions or role definition
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:531:29
+    |
+529 |             raise ValueError(f"Response for prompt {prompt_name} is not a string")
+530 |
+531 |         validation_config = self.config.get("testing", {}).get("validation", {})
+    |                             ^^^^^^^^^^^^^^^
+532 |         assertions_config = self.config.get("testing", {}).get("assertions", {})
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+warning[possibly-missing-attribute]: Attribute `get` may be missing on object of type `Unknown | DictConfig | None`
+   --> tests/testcontainers_vllm.py:532:29
+    |
+531 |         validation_config = self.config.get("testing", {}).get("validation", {})
+532 |         assertions_config = self.config.get("testing", {}).get("assertions", {})
+    |                             ^^^^^^^^^^^^^^^
+533 |
+534 |         # Check minimum response length
+    |
+info: rule `possibly-missing-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `get_exposed_port` is incorrect
+  --> tests/utils/testcontainers/container_managers.py:91:38
+   |
+89 |         """Get the connection URL for the VLLM server."""
+90 |         host = self.get_container_host_ip()
+91 |         port = self.get_exposed_port("8000")
+   |                                      ^^^^^^ Expected `int`, found `Literal["8000"]`
+92 |         return f"http://{host}:{port}"
+   |
+info: Method defined here
+   --> .venv/lib/python3.12/site-packages/testcontainers/core/container.py:246:9
+    |
+244 |             assert_never(connection_mode)
+245 |
+246 |     def get_exposed_port(self, port: int) -> int:
+    |         ^^^^^^^^^^^^^^^^       --------- Parameter declared here
+247 |         from testcontainers.core.wait_strategies import ContainerStatusWaitStrategy as C
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `get_exposed_port` is incorrect
+   --> tests/utils/testcontainers/container_managers.py:110:38
+    |
+108 |         """Get the connection URL for the container."""
+109 |         host = self.get_container_host_ip()
+110 |         port = self.get_exposed_port("8000")
+    |                                      ^^^^^^ Expected `int`, found `Literal["8000"]`
+111 |         return f"http://{host}:{port}"
+    |
+info: Method defined here
+   --> .venv/lib/python3.12/site-packages/testcontainers/core/container.py:246:9
+    |
+244 |             assert_never(connection_mode)
+245 |
+246 |     def get_exposed_port(self, port: int) -> int:
+    |         ^^^^^^^^^^^^^^^^       --------- Parameter declared here
+247 |         from testcontainers.core.wait_strategies import ContainerStatusWaitStrategy as C
+    |
+info: rule `invalid-argument-type` is enabled by default
+
+Found 204 diagnostics
