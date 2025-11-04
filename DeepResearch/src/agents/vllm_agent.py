@@ -26,7 +26,7 @@ class VLLMAgent:
 
     def __init__(self, config: VLLMAgentConfig):
         self.config = config
-        self.client = VLLMClient(**config.client_config)
+        self.client: VLLMClient = VLLMClient(**config.client_config)
         self.dependencies = VLLMAgentDependencies(
             vllm_client=self.client,
             default_model=config.default_model,
