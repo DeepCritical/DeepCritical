@@ -8,6 +8,7 @@ Pydantic AI that align with DeepCritical's architecture.
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -221,8 +222,6 @@ class BaseDeepAgent:
                 else:
                     # JSON-encode dict to preserve structure for downstream consumers
                     # (str() would create lossy Python repr like "{'key': 'value'}")
-                    import json
-
                     input_str = json.dumps(input_data)
                     result = await self.agent.run(input_str, deps=context)
 

@@ -454,19 +454,19 @@ class CodeExecutionAgentSystem:
             "timeout": 60.0,
         }
 
-        # Extract config values with proper type checking to avoid coercion bugs
-        # (e.g., bool("false") == True, int(None) raises)
+        # Extract config values with proper type checking - fall back to defaults if wrong type
+        # This avoids coercion bugs: bool("false") == True, int(None) raises TypeError
         use_docker_val = self.execution_config.get("use_docker", True)
-        use_docker = use_docker_val if isinstance(use_docker_val, bool) else bool(use_docker_val)
+        use_docker = use_docker_val if isinstance(use_docker_val, bool) else True
 
         use_jupyter_val = self.execution_config.get("use_jupyter", False)
-        use_jupyter = use_jupyter_val if isinstance(use_jupyter_val, bool) else bool(use_jupyter_val)
+        use_jupyter = use_jupyter_val if isinstance(use_jupyter_val, bool) else False
 
         max_retries_val = self.execution_config.get("max_retries", 3)
-        max_retries = max_retries_val if isinstance(max_retries_val, int) else int(max_retries_val)
+        max_retries = max_retries_val if isinstance(max_retries_val, int) else 3
 
         timeout_val = self.execution_config.get("timeout", 60.0)
-        timeout = timeout_val if isinstance(timeout_val, (int, float)) else float(timeout_val)
+        timeout = timeout_val if isinstance(timeout_val, (int, float)) else 60.0
 
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
