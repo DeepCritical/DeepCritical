@@ -159,6 +159,9 @@ class BaseDeepAgent:
                 success=False, error="Agent not initialized", execution_time=0.0
             )
 
+        # Type guard: after the check above, self.agent is guaranteed to be non-None
+        assert self.agent is not None
+
         start_time = time.time()
         iterations_used = 0
         tools_used = []
@@ -216,6 +219,9 @@ class BaseDeepAgent:
         self, input_data: str | dict[str, Any], context: DeepAgentState
     ) -> Any:
         """Execute agent with retry logic."""
+        # Type guard: self.agent must be initialized before calling this method
+        assert self.agent is not None
+
         last_error = None
 
         for attempt in range(self.config.retry_attempts + 1):
