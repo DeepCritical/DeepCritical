@@ -11,6 +11,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
+from omegaconf import DictConfig
+
 from ..datatypes.rag import (
     Document,
     Embeddings,
@@ -31,10 +33,11 @@ class RAGAgent(ResearchAgent):
 
     def __init__(
         self,
+        cfg: DictConfig,
         vector_store_config: VectorStoreConfig | None = None,
         embeddings: Embeddings | None = None,
     ):
-        super().__init__()
+        super().__init__(cfg)
         self.agent_type = "rag"
         self.vector_store: VectorStore | None = None
         self.embeddings: Embeddings | None = embeddings

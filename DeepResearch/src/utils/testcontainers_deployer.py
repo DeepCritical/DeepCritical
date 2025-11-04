@@ -242,6 +242,11 @@ class TestcontainersDeployer:
             msg = f"Server implementation for '{server_name}' not found"
             raise ValueError(msg)
 
+        # Ensure server is an instance, not a class
+        if isinstance(server, type):
+            server = server()
+            self.server_implementations[server_name] = server
+
         # Check if tool exists
         available_tools = server.list_tools()
         if tool_name not in available_tools:
@@ -254,6 +259,19 @@ class TestcontainersDeployer:
         except Exception as e:
             msg = f"Tool execution failed: {e}"
             raise ValueError(msg)
+
+    def _get_server_implementation(self, server_name: str):
+        """Get or create server implementation instance."""
+        server = self.server_implementations.get(server_name)
+        if server is None:
+            return None
+
+        # If it's a class (type), instantiate it
+        if isinstance(server, type):
+            server = server()
+            self.server_implementations[server_name] = server
+
+        return server
 
     def _get_server_type(self, server_name: str) -> str:
         """Get the server type from the server name."""
