@@ -199,29 +199,29 @@ class ExecutionTracker:
         summary = history.get_execution_summary()
 
         # Type-safe metric updates
-        total_execs = cast(int, self.metrics["total_executions"])
+        total_execs = cast("int", self.metrics["total_executions"])
         self.metrics["total_executions"] = total_execs + 1
         
         if (
             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
         ):  # Consider successful if >80% success rate
-            successful = cast(int, self.metrics["successful_executions"])
+            successful = cast("int", self.metrics["successful_executions"])
             self.metrics["successful_executions"] = successful + 1
         else:
-            failed = cast(int, self.metrics["failed_executions"])
+            failed = cast("int", self.metrics["failed_executions"])
             self.metrics["failed_executions"] = failed + 1
 
         # Update average duration
         if summary["duration"]:
-            avg_duration = cast(float, self.metrics["average_duration"])
-            total_execs_now = cast(int, self.metrics["total_executions"])
+            avg_duration = cast("float", self.metrics["average_duration"])
+            total_execs_now = cast("int", self.metrics["total_executions"])
             total_duration = avg_duration * (total_execs_now - 1)
             self.metrics["average_duration"] = (
                 total_duration + summary["duration"]
             ) / total_execs_now
 
         # Update tool performance
-        tool_perf = cast(dict, self.metrics["tool_performance"])
+        tool_perf = cast("dict", self.metrics["tool_performance"])
         for tool in summary["tools_used"]:
             if tool not in tool_perf:
                 tool_perf[tool] = {"uses": 0, "successes": 0}
@@ -238,7 +238,7 @@ class ExecutionTracker:
 
     def get_tool_reliability(self, tool_name: str) -> float:
         """Get reliability score for a specific tool."""
-        tool_perf = cast(dict, self.metrics["tool_performance"])
+        tool_perf = cast("dict", self.metrics["tool_performance"])
         if tool_name not in tool_perf:
             return 0.0
 
