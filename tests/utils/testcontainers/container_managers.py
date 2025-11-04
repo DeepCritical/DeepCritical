@@ -88,7 +88,7 @@ class VLLMContainer(DockerContainer):
     def get_connection_url(self) -> str:
         """Get the connection URL for the VLLM server."""
         host = self.get_container_host_ip()
-        port = self.get_exposed_port("8000")
+        port = self.get_exposed_port(8000)
         return f"http://{host}:{port}"
 
 
@@ -107,5 +107,5 @@ class BioinformaticsContainer(DockerContainer):
     def get_connection_url(self) -> str:
         """Get the connection URL for the container."""
         host = self.get_container_host_ip()
-        port = self.get_exposed_port("8000")
+        port = self.get_exposed_port(8000)
         return f"http://{host}:{port}"
