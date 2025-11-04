@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
+    TypedDict,
     cast,
     get_type_hints,
 )
@@ -90,6 +91,14 @@ class ToolSpec(BaseModel):
     )
 
 
+class RegisteredTool(TypedDict):
+    """Type-safe structure for registered MCP tools."""
+
+    method: Callable[..., Any]
+    tool: Tool
+    spec: MCPToolSpec
+
+
 class MCPServerBase(ABC):
     """Enhanced base class for MCP server implementations with Pydantic AI integration.
 
@@ -101,7 +110,7 @@ class MCPServerBase(ABC):
         self.config = config
         self.name = config.server_name
         self.server_type = config.server_type
-        self.tools: dict[str, Any] = {}
+        self.tools: dict[str, RegisteredTool] = {}
         self.pydantic_ai_tools: list[Tool] = []
         self.pydantic_ai_agent: Agent | None = None
         self.container_id: str | None = None
