@@ -82,7 +82,7 @@ class BaseDeepAgent:
 
     def __init__(self, config: AgentConfig):
         self.config = config
-        self.agent: Agent | None = None
+        self.agent: Agent[DeepAgentState, str] | None = None
         self.middleware_pipeline: MiddlewarePipeline | None = None
         self.metrics = AgentMetrics(agent_name=config.name)
         self._initialize_agent()
@@ -93,7 +93,7 @@ class BaseDeepAgent:
         system_prompt = self._build_system_prompt()
 
         # Create agent
-        self.agent = Agent(
+        self.agent = Agent[DeepAgentState, str](
             model=self.config.model_name,
             system_prompt=system_prompt,
             deps_type=DeepAgentState,

@@ -299,9 +299,9 @@ class VLLMPromptTester:
         # Set resource limits if configured
         resources = container_config.get("resources", {})
         if resources.get("cpu_limit"):
-            self.container.with_cpu_limit(resources["cpu_limit"])
+            self.container.with_cpu_limit(resources["cpu_limit"])  # type: ignore[unresolved-attribute]
         if resources.get("memory_limit"):
-            self.container.with_memory_limit(resources["memory_limit"])
+            self.container.with_memory_limit(resources["memory_limit"])  # type: ignore[unresolved-attribute]
 
         # Start the container
         logger.info("Starting container with timeout: %ds", self.container_timeout)

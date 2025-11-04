@@ -107,7 +107,7 @@ class ChatOptions(BaseModel):
             return self
 
         # Start with a copy of self
-        combined = self.copy()
+        combined = self.model_copy()
 
         # Apply updates from other
         for field_name, field_value in other.model_dump(

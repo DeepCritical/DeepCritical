@@ -95,7 +95,7 @@ class BaseAgent(ABC):
     def _initialize_agent(self, system_prompt: str | None, instructions: str | None):
         """Initialize the Pydantic AI agent."""
         try:
-            self._agent = Agent(
+            self._agent = Agent[AgentDependencies, str](
                 self.model_name,
                 deps_type=AgentDependencies,
                 system_prompt=system_prompt or self._get_default_system_prompt(),

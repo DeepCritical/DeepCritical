@@ -214,7 +214,7 @@ class ExecutionTracker:
         # Update average duration
         if summary["duration"]:
             avg_duration = cast("float", self.metrics["average_duration"])
-            total_execs_now = cast("int", self.metrics["total_executions"])
+            total_execs_now = self.metrics["total_executions"]
             total_duration = avg_duration * (total_execs_now - 1)
             self.metrics["average_duration"] = (
                 total_duration + summary["duration"]
