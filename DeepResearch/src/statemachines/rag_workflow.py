@@ -397,7 +397,7 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
             # Execute query using agent
             start_time = time.time()
-            rag_response = rag_agent.execute_rag_query(rag_query)
+            rag_response = await rag_agent.execute_rag_query(rag_query)
             processing_time = time.time() - start_time
 
             if rag_response:
