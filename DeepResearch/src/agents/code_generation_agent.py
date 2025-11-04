@@ -462,7 +462,12 @@ class CodeExecutionAgentSystem:
         )
 
         self.execution_agent = CodeExecutionAgent(
-            model_name=generation_model, **self.execution_config
+            model_name=generation_model,
+            use_docker=bool(self.execution_config.get("use_docker", True)),
+            use_jupyter=bool(self.execution_config.get("use_jupyter", False)),
+            jupyter_config=self.execution_config.get("jupyter_config"),
+            max_retries=int(self.execution_config.get("max_retries", 3)),
+            timeout=float(self.execution_config.get("timeout", 60.0)),
         )
 
     async def process_request(

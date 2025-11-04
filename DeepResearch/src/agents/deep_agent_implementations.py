@@ -219,7 +219,9 @@ class BaseDeepAgent:
                 if isinstance(input_data, str):
                     result = await self.agent.run(input_data, deps=context)
                 else:
-                    result = await self.agent.run(input_data, deps=context)
+                    # Convert dict to string representation
+                    input_str = str(input_data)
+                    result = await self.agent.run(input_str, deps=context)
 
                 return result
 
