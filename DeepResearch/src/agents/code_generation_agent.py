@@ -457,8 +457,8 @@ class CodeExecutionAgentSystem:
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
             model_name=generation_model,
-            max_retries=self.execution_config.get("max_retries", 3),
-            timeout=self.execution_config.get("timeout", 60.0),
+            max_retries=int(self.execution_config.get("max_retries", 3)),
+            timeout=float(self.execution_config.get("timeout", 60.0)),
         )
 
         self.execution_agent = CodeExecutionAgent(

@@ -57,9 +57,18 @@ class BaseMiddleware:
         self.name = self.__class__.__name__
 
     async def process(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> MiddlewareResult:
-        """Process the middleware logic."""
+        """Process the middleware logic.
+
+        Args:
+            agent: The agent instance (may be None if not available)
+            state: The current agent state
+            **kwargs: Additional middleware-specific arguments
+
+        Returns:
+            MiddlewareResult with execution status
+        """
         start_time = time.time()
         try:
             if not self.config.enabled:
@@ -69,7 +78,7 @@ class BaseMiddleware:
                     metadata={"skipped": True, "reason": "disabled"},
                 )
 
-            result = await self._execute(agent, ctx, **kwargs)
+            result = await self._execute(agent, state, **kwargs)
             execution_time = time.time() - start_time
 
             return MiddlewareResult(
@@ -89,7 +98,7 @@ class BaseMiddleware:
             )
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute the middleware logic. Override in subclasses."""
         return {"modified_state": False, "metadata": {}}
@@ -106,21 +115,22 @@ class PlanningMiddleware(BaseMiddleware):
         self.tools = [write_todos_tool]
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute planning middleware logic."""
         # Register planning tools with the agent
-        for tool in self.tools:
-            if hasattr(agent, "add_tool"):
-                add_tool_method = getattr(agent, "add_tool", None)
-                if add_tool_method is not None and callable(add_tool_method):
-                    add_tool_method(tool)
+        if agent is not None:
+            for tool in self.tools:
+                if hasattr(agent, "add_tool"):
+                    add_tool_method = getattr(agent, "add_tool", None)
+                    if add_tool_method is not None and callable(add_tool_method):
+                        add_tool_method(tool)
 
         # Add planning context to system prompt
-        planning_state = ctx.deps.get_planning_state()
+        planning_state = state.get_planning_state()
         if planning_state.todos:
             todo_summary = f"Current todos: {len(planning_state.todos)} total, {len(planning_state.get_pending_todos())} pending, {len(planning_state.get_in_progress_todos())} in progress"
-            ctx.deps.shared_state["planning_summary"] = todo_summary
+            state.shared_state["planning_summary"] = todo_summary
 
         return {
             "modified_state": True,
@@ -147,23 +157,24 @@ class FilesystemMiddleware(BaseMiddleware):
         self.tools = [list_files_tool, read_file_tool, write_file_tool, edit_file_tool]
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute filesystem middleware logic."""
         # Register filesystem tools with the agent
-        for tool in self.tools:
-            if hasattr(agent, "add_tool"):
-                add_tool_method = getattr(agent, "add_tool", None)
-                if add_tool_method is not None and callable(add_tool_method):
-                    add_tool_method(tool)
+        if agent is not None:
+            for tool in self.tools:
+                if hasattr(agent, "add_tool"):
+                    add_tool_method = getattr(agent, "add_tool", None)
+                    if add_tool_method is not None and callable(add_tool_method):
+                        add_tool_method(tool)
 
         # Add filesystem context to system prompt
-        filesystem_state = ctx.deps.get_filesystem_state()
+        filesystem_state = state.get_filesystem_state()
         if filesystem_state.files:
             file_summary = (
                 f"Available files: {len(filesystem_state.files)} files in filesystem"
             )
-            ctx.deps.shared_state["filesystem_summary"] = file_summary
+            state.shared_state["filesystem_summary"] = file_summary
 
         return {
             "modified_state": True,
@@ -193,15 +204,16 @@ class SubAgentMiddleware(BaseMiddleware):
         self._agent_registry: dict[str, Agent] = {}
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute subagent middleware logic."""
         # Register task tool with the agent
-        for tool in self.tools:
-            if hasattr(agent, "add_tool"):
-                add_tool_method = getattr(agent, "add_tool", None)
-                if add_tool_method is not None and callable(add_tool_method):
-                    add_tool_method(tool)
+        if agent is not None:
+            for tool in self.tools:
+                if hasattr(agent, "add_tool"):
+                    add_tool_method = getattr(agent, "add_tool", None)
+                    if add_tool_method is not None and callable(add_tool_method):
+                        add_tool_method(tool)
 
         # Initialize subagents if not already done
         if not self._agent_registry:
@@ -212,7 +224,7 @@ class SubAgentMiddleware(BaseMiddleware):
             f"- {sa.name}: {sa.description}" for sa in self.subagents
         ]
         if subagent_descriptions:
-            ctx.deps.shared_state["available_subagents"] = subagent_descriptions
+            state.shared_state["available_subagents"] = subagent_descriptions
 
         return {
             "modified_state": True,
@@ -318,11 +330,11 @@ class SummarizationMiddleware(BaseMiddleware):
         self.messages_to_keep = messages_to_keep
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute summarization middleware logic."""
         # Check if conversation history needs summarization
-        conversation_history = ctx.deps.conversation_history
+        conversation_history = state.conversation_history
 
         if len(conversation_history) > self.messages_to_keep:
             # Estimate token count (rough approximation)
@@ -344,7 +356,7 @@ class SummarizationMiddleware(BaseMiddleware):
                 }
 
                 # Update conversation history
-                ctx.deps.conversation_history = [summary, *recent_messages]
+                state.conversation_history = [summary, *recent_messages]
 
                 return {
                     "modified_state": True,
@@ -379,13 +391,13 @@ class PromptCachingMiddleware(BaseMiddleware):
         self._cache: dict[str, Any] = {}
 
     async def _execute(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> dict[str, Any]:
         """Execute prompt caching middleware logic."""
         # This is a simplified implementation
         # In practice, you would implement proper prompt caching
 
-        cache_key = self._generate_cache_key(ctx)
+        cache_key = self._generate_cache_key(state)
 
         if cache_key in self._cache:
             # Use cached result
@@ -400,11 +412,11 @@ class PromptCachingMiddleware(BaseMiddleware):
             "metadata": {"cache_hit": False, "cache_key": cache_key},
         }
 
-    def _generate_cache_key(self, ctx: RunContext[DeepAgentState]) -> str:
+    def _generate_cache_key(self, state: DeepAgentState) -> str:
         """Generate a cache key for the current context."""
         # Simplified cache key generation
         # In practice, this would be more sophisticated
-        return f"prompt_cache_{hash(str(ctx.deps.conversation_history[-5:]))}"
+        return f"prompt_cache_{hash(str(state.conversation_history[-5:]))}"
 
 
 class MiddlewarePipeline:
@@ -422,14 +434,23 @@ class MiddlewarePipeline:
         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
 
     async def process(
-        self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+        self, agent: Agent | None, state: DeepAgentState, **kwargs
     ) -> list[MiddlewareResult]:
-        """Process all middleware in the pipeline."""
+        """Process all middleware in the pipeline.
+
+        Args:
+            agent: The agent instance (may be None if not available)
+            state: The current agent state
+            **kwargs: Additional middleware-specific arguments
+
+        Returns:
+            List of MiddlewareResult from each middleware in the pipeline
+        """
         results = []
 
         for middleware in self.middleware:
             try:
-                result = await middleware.process(agent, ctx, **kwargs)
+                result = await middleware.process(agent, state, **kwargs)
                 results.append(result)
 
                 # If middleware failed and is critical, stop processing
