@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .execution_status import ExecutionStatus
 
@@ -198,31 +198,37 @@ class ExecutionTracker:
         """Update metrics based on execution history."""
         summary = history.get_execution_summary()
 
-        self.metrics["total_executions"] += 1
+        # Type-safe metric updates
+        total_execs = cast(int, self.metrics["total_executions"])
+        self.metrics["total_executions"] = total_execs + 1
+        
         if (
             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
         ):  # Consider successful if >80% success rate
-            self.metrics["successful_executions"] += 1
+            successful = cast(int, self.metrics["successful_executions"])
+            self.metrics["successful_executions"] = successful + 1
         else:
-            self.metrics["failed_executions"] += 1
+            failed = cast(int, self.metrics["failed_executions"])
+            self.metrics["failed_executions"] = failed + 1
 
         # Update average duration
         if summary["duration"]:
-            total_duration = self.metrics["average_duration"] * (
-                self.metrics["total_executions"] - 1
-            )
+            avg_duration = cast(float, self.metrics["average_duration"])
+            total_execs_now = cast(int, self.metrics["total_executions"])
+            total_duration = avg_duration * (total_execs_now - 1)
             self.metrics["average_duration"] = (
                 total_duration + summary["duration"]
-            ) / self.metrics["total_executions"]
+            ) / total_execs_now
 
         # Update tool performance
+        tool_perf = cast(dict, self.metrics["tool_performance"])
         for tool in summary["tools_used"]:
-            if tool not in self.metrics["tool_performance"]:
-                self.metrics["tool_performance"][tool] = {"uses": 0, "successes": 0}
+            if tool not in tool_perf:
+                tool_perf[tool] = {"uses": 0, "successes": 0}
 
-            self.metrics["tool_performance"][tool]["uses"] += 1
+            tool_perf[tool]["uses"] += 1
             if summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD:
-                self.metrics["tool_performance"][tool]["successes"] += 1
+                tool_perf[tool]["successes"] += 1
 
         # Update error frequency
         for error_type, count in summary["failure_patterns"].items():
@@ -232,10 +238,11 @@ class ExecutionTracker:
 
     def get_tool_reliability(self, tool_name: str) -> float:
         """Get reliability score for a specific tool."""
-        if tool_name not in self.metrics["tool_performance"]:
+        tool_perf = cast(dict, self.metrics["tool_performance"])
+        if tool_name not in tool_perf:
             return 0.0
 
-        perf = self.metrics["tool_performance"][tool_name]
+        perf = tool_perf[tool_name]
         if perf["uses"] == 0:
             return 0.0
 
