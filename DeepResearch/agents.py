@@ -359,6 +359,8 @@ class ExecutorAgent(BaseAgent):
 
     def _register_tools(self):
         """Register execution tools."""
+        if self._agent is None:
+            return
         # Register all available tools
         for tool_name in registry.list():
             try:
@@ -458,6 +460,8 @@ class SearchAgent(BaseAgent):
 
     def _register_tools(self):
         """Register search tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.websearch_tools import ChunkedSearchTool, WebSearchTool
 
@@ -493,6 +497,8 @@ class RAGAgent(BaseAgent):
 
     def _register_tools(self):
         """Register RAG tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.integrated_search_tools import (
                 IntegratedSearchTool,
@@ -533,6 +539,8 @@ class BioinformaticsAgent(BaseAgent):
 
     def _register_tools(self):
         """Register bioinformatics tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.bioinformatics_tools import (
                 BioinformaticsFusionTool,
@@ -592,6 +600,8 @@ class DeepSearchAgent(BaseAgent):
 
     def _register_tools(self):
         """Register deep search tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deepsearch_tools import (
                 AnswerGeneratorTool,
@@ -646,6 +656,8 @@ class EvaluatorAgent(BaseAgent):
 
     def _register_tools(self):
         """Register evaluation tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.workflow_tools import ErrorAnalyzerTool, EvaluatorTool
 
@@ -702,6 +714,8 @@ class DeepAgentPlanningAgent(BaseAgent):
 
     def _register_tools(self):
         """Register planning tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deep_agent_tools import task_tool, write_todos_tool
 
@@ -761,6 +775,8 @@ class DeepAgentFilesystemAgent(BaseAgent):
 
     def _register_tools(self):
         """Register filesystem tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deep_agent_tools import (
                 edit_file_tool,
@@ -824,6 +840,8 @@ class DeepAgentResearchAgent(BaseAgent):
 
     def _register_tools(self):
         """Register research tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deep_agent_tools import task_tool
             from .src.tools.integrated_search_tools import RAGSearchTool
@@ -896,6 +914,8 @@ class DeepAgentOrchestrationAgent(BaseAgent):
 
     def _register_tools(self):
         """Register orchestration tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deep_agent_tools import task_tool
 
@@ -968,6 +988,8 @@ class DeepAgentGeneralAgent(BaseAgent):
 
     def _register_tools(self):
         """Register general tools."""
+        if self._agent is None:
+            return
         try:
             from .src.tools.deep_agent_tools import (
                 list_files_tool,
