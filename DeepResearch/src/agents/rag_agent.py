@@ -94,7 +94,7 @@ class RAGAgent(ResearchAgent):
                 processing_time=processing_time,
             )
 
-    async def retrieve_documents(self, query: str, limit: int = 5) -> list[Document]:
+    async def retrieve_documents(self, query: str, limit: int = 5) -> list[SearchResult]:
         """Retrieve relevant documents for a query."""
         if not self.vector_store:
             return []
@@ -106,25 +106,22 @@ class RAGAgent(ResearchAgent):
                 search_type=SearchType.SIMILARITY,
             )
 
-            # Convert SearchResult to Document
-            documents = []
-            for result in search_results[:limit]:
-                documents.append(result.document)
-
-            return documents
+            # Return SearchResult objects (with document, score, rank)
+            return search_results[:limit]
         except Exception as e:
             print(f"Error during document retrieval: {e}")
             return []
 
-    def generate_answer(self, query: str, documents: list[Document]) -> str:
+    def generate_answer(self, query: str, search_results: list[SearchResult]) -> str:
         """Generate an answer based on retrieved documents."""
-        if not documents:
+        if not search_results:
             return "No relevant documents found to answer the query."
 
         # For now, return a simple concatenation
         # In a real implementation, this would use an LLM to generate an answer
         doc_summaries = []
-        for i, doc in enumerate(documents, 1):
+        for i, result in enumerate(search_results, 1):
+            doc = result.document
             content_preview = (
                 doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
             )
@@ -132,18 +129,19 @@ class RAGAgent(ResearchAgent):
 
         return f"""Based on the retrieved documents, here's what I found regarding: "{query}"
 
-Context from {len(documents)} documents:
+Context from {len(search_results)} documents:
 {chr(10).join(doc_summaries)}
 
 Note: This is a basic implementation. A full RAG system would use an LLM to generate a more coherent and contextual answer based on the retrieved documents."""
 
-    def _build_context(self, documents: list[Document]) -> str:
+    def _build_context(self, search_results: list[SearchResult]) -> str:
         """Build context string from retrieved documents."""
-        if not documents:
+        if not search_results:
             return ""
 
         context_parts = []
-        for i, doc in enumerate(documents, 1):
+        for i, result in enumerate(search_results, 1):
+            doc = result.document
             context_parts.append(f"[Document {i}]\n{doc.content}\n")
 
         return "\n".join(context_parts)
