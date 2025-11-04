@@ -201,7 +201,7 @@ class ExecutionTracker:
         # Type-safe metric updates
         total_execs = cast("int", self.metrics["total_executions"])
         self.metrics["total_executions"] = total_execs + 1
-        
+
         if (
             summary["success_rate"] > self.SUCCESS_RATE_THRESHOLD
         ):  # Consider successful if >80% success rate

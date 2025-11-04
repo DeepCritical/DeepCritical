@@ -1128,9 +1128,9 @@ class MultiAgentOrchestrator:
         )
 
         # Fuse data
-        fused_dataset = await cast("BioinformaticsAgent", bioinformatics_agent).fuse_data(
-            fusion_request
-        )
+        fused_dataset = await cast(
+            "BioinformaticsAgent", bioinformatics_agent
+        ).fuse_data(fusion_request)
 
         # Create reasoning task
         reasoning_task = ReasoningTask(
@@ -1192,14 +1192,16 @@ class MultiAgentOrchestrator:
         # Use general DeepAgent for orchestration
         if AgentType.DEEP_AGENT_GENERAL in self.agents:
             general_agent = self.agents[AgentType.DEEP_AGENT_GENERAL]
-            result = await cast("DeepAgentGeneralAgent", general_agent).handle_general_task(
-                question, initial_state
-            )
+            result = await cast(
+                "DeepAgentGeneralAgent", general_agent
+            ).handle_general_task(question, initial_state)
 
             if result.success:
                 return {
                     "deep_agent_result": result.result,
-                    "answer": result.result.get("final_result", "DeepAgent workflow completed")
+                    "answer": result.result.get(
+                        "final_result", "DeepAgent workflow completed"
+                    )
                     if result.result is not None
                     else "DeepAgent workflow completed",
                     "execution_metadata": {

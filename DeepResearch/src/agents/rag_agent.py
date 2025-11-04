@@ -59,7 +59,9 @@ class RAGAgent(ResearchAgent):
 
         try:
             # Retrieve relevant documents
-            retrieved_documents = await self.retrieve_documents(query.text, query.top_k or 5)
+            retrieved_documents = await self.retrieve_documents(
+                query.text, query.top_k or 5
+            )
 
             # Generate answer based on retrieved documents
             context = self._build_context(retrieved_documents)

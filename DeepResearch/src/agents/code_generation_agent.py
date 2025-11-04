@@ -336,7 +336,10 @@ class CodeExecutionAgent:
             from DeepResearch.src.utils.jupyter.base import JupyterConnectionInfo
 
             # Validate required fields for Jupyter connection
-            if "host" not in self.jupyter_config or "use_https" not in self.jupyter_config:
+            if (
+                "host" not in self.jupyter_config
+                or "use_https" not in self.jupyter_config
+            ):
                 msg = "jupyter_config must contain 'host' and 'use_https' when use_jupyter=True"
                 raise ValueError(msg)
 
