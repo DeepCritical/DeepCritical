@@ -5,6 +5,7 @@ This agent demonstrates how to use the websearch and analytics tools with Pydant
 for intelligent search and retrieval operations.
 """
 
+import json
 from typing import Any, cast
 
 from pydantic_ai import Agent
@@ -103,7 +104,10 @@ class SearchAgent:
             )
             user_message = SearchAgentPrompts.get_analytics_request_prompt(days)
             result = await self.agent.run(user_message, deps=deps)
-            return result.data if hasattr(result, "data") else {}
+            # Agent returns str (JSON string from tool), parse it to dict
+            if hasattr(result, "data") and isinstance(result.data, str):
+                return cast(dict[str, Any], json.loads(result.data))
+            return {}
         except Exception as e:
             return {"error": str(e)}
 
