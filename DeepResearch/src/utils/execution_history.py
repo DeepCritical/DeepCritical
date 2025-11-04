@@ -182,8 +182,10 @@ class ExecutionHistory:
 class ExecutionTracker:
     """Utility class for tracking execution metrics and performance."""
 
+    SUCCESS_RATE_THRESHOLD = 0.8
+
     def __init__(self):
-        self.metrics = {
+        self.metrics: dict[str, Any] = {
             "total_executions": 0,
             "successful_executions": 0,
             "failed_executions": 0,

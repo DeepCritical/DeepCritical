@@ -53,13 +53,13 @@ class RAGAgent(ResearchAgent):
                 "Vector store config must be provided when embeddings is specified"
             )
 
-    def execute_rag_query(self, query: RAGQuery) -> RAGResponse:
+    async def execute_rag_query(self, query: RAGQuery) -> RAGResponse:
         """Execute a RAG query and return the response."""
         start_time = time.time()
 
         try:
             # Retrieve relevant documents
-            retrieved_documents = self.retrieve_documents(query.text, query.top_k or 5)
+            retrieved_documents = await self.retrieve_documents(query.text, query.top_k or 5)
 
             # Generate answer based on retrieved documents
             context = self._build_context(retrieved_documents)
@@ -92,14 +92,14 @@ class RAGAgent(ResearchAgent):
                 processing_time=processing_time,
             )
 
-    def retrieve_documents(self, query: str, limit: int = 5) -> list[Document]:
+    async def retrieve_documents(self, query: str, limit: int = 5) -> list[Document]:
         """Retrieve relevant documents for a query."""
         if not self.vector_store:
             return []
 
         try:
             # Perform similarity search
-            search_results = self.vector_store.search(
+            search_results = await self.vector_store.search(
                 query=query,
                 search_type=SearchType.SIMILARITY,
             )
@@ -172,7 +172,7 @@ Note: This is a basic implementation. A full RAG system would use an LLM to gene
             print(f"Error adding document chunks: {e}")
             return False
 
-    def search_documents(
+    async def search_documents(
         self,
         query: str,
         search_type: SearchType = SearchType.SIMILARITY,
@@ -183,10 +183,11 @@ Note: This is a basic implementation. A full RAG system would use an LLM to gene
             return []
 
         try:
-            return self.vector_store.search(
+            results = await self.vector_store.search(
                 query=query,
                 search_type=search_type,
-            )[:limit]
+            )
+            return results[:limit]
         except Exception as e:
             print(f"Error searching documents: {e}")
             return []
