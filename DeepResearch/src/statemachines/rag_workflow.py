@@ -384,10 +384,13 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         """Execute RAG query using RAGAgent."""
         try:
             # Import here to avoid circular import
+            from omegaconf import DictConfig, OmegaConf
+
             from DeepResearch.src.agents import RAGAgent
 
-            # Create RAGAgent
-            rag_agent = RAGAgent()
+            # Create RAGAgent with config from state or empty config
+            cfg = ctx.state.config if ctx.state.config is not None else OmegaConf.create()
+            rag_agent = RAGAgent(cfg)
             # await rag_agent.initialize()  # Method doesn't exist
 
             # Create RAG query

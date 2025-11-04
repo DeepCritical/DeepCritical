@@ -335,7 +335,17 @@ class CodeExecutionAgent:
         if use_jupyter:
             from DeepResearch.src.utils.jupyter.base import JupyterConnectionInfo
 
-            conn_info = JupyterConnectionInfo(**self.jupyter_config)
+            # Validate required fields for Jupyter connection
+            if "host" not in self.jupyter_config or "use_https" not in self.jupyter_config:
+                msg = "jupyter_config must contain 'host' and 'use_https' when use_jupyter=True"
+                raise ValueError(msg)
+
+            conn_info = JupyterConnectionInfo(
+                host=str(self.jupyter_config["host"]),
+                use_https=bool(self.jupyter_config["use_https"]),
+                port=self.jupyter_config.get("port"),
+                token=self.jupyter_config.get("token"),
+            )
             self.jupyter_executor = JupyterCodeExecutor(conn_info)
 
         self.python_tool = PythonCodeExecutionTool(
