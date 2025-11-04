@@ -73,7 +73,7 @@ class SearchAgent:
 
             # Check if the result contains processing information
             if hasattr(result, "data") and isinstance(result.data, dict):
-                result_dict = cast(dict[str, Any], result.data)
+                result_dict = cast("dict[str, Any]", result.data)
                 processing_time = result_dict.get("processing_time")
                 analytics_recorded = result_dict.get("analytics_recorded", False)
 
@@ -93,13 +93,13 @@ class SearchAgent:
     async def get_analytics(self, days: int = 30) -> dict[str, Any]:
         """Get analytics data for the specified number of days."""
         try:
-            # Create proper dependencies - use dummy values for required fields
+            # Create proper dependencies - use config values instead of hardcoding
             deps = SearchAgentDependencies(
                 query="analytics",
                 search_type="analytics",
                 num_results=0,
-                chunk_size=1000,
-                chunk_overlap=200,
+                chunk_size=self.config.chunk_size,
+                chunk_overlap=self.config.chunk_overlap,
             )
             user_message = SearchAgentPrompts.get_analytics_request_prompt(days)
             result = await self.agent.run(user_message, deps=deps)

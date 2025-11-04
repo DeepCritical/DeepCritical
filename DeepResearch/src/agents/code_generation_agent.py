@@ -454,19 +454,44 @@ class CodeExecutionAgentSystem:
             "timeout": 60.0,
         }
 
-        # Extract config values with proper type checking - fall back to defaults if wrong type
-        # This avoids coercion bugs: bool("false") == True, int(None) raises TypeError
-        use_docker_val = self.execution_config.get("use_docker", True)
-        use_docker = use_docker_val if isinstance(use_docker_val, bool) else True
+        # Extract config values with proper type parsing
+        # Parse common string representations ("false", "0", "5") to avoid silently discarding config
+        def parse_bool(value: Any, default: bool) -> bool:
+            """Parse boolean from various representations."""
+            if isinstance(value, bool):
+                return value
+            if value is None:
+                return default
+            if isinstance(value, str):
+                return value.lower() in ("true", "1", "yes", "on")
+            return bool(value)
 
-        use_jupyter_val = self.execution_config.get("use_jupyter", False)
-        use_jupyter = use_jupyter_val if isinstance(use_jupyter_val, bool) else False
+        def parse_int(value: Any, default: int) -> int:
+            """Parse integer from various representations."""
+            if isinstance(value, int):
+                return value
+            if value is None:
+                return default
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return default
 
-        max_retries_val = self.execution_config.get("max_retries", 3)
-        max_retries = max_retries_val if isinstance(max_retries_val, int) else 3
+        def parse_float(value: Any, default: float) -> float:
+            """Parse float from various representations."""
+            if isinstance(value, (int, float)):
+                return float(value)
+            if value is None:
+                return default
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return default
 
-        timeout_val = self.execution_config.get("timeout", 60.0)
-        timeout = timeout_val if isinstance(timeout_val, (int, float)) else 60.0
+        use_docker = parse_bool(self.execution_config.get("use_docker", True), True)
+        use_jupyter = parse_bool(self.execution_config.get("use_jupyter", False), False)
+        max_retries = parse_int(self.execution_config.get("max_retries", 3), 3)
+        timeout = parse_float(self.execution_config.get("timeout", 60.0), 60.0)
 
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
