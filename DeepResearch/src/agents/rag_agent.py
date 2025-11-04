@@ -94,7 +94,9 @@ class RAGAgent(ResearchAgent):
                 processing_time=processing_time,
             )
 
-    async def retrieve_documents(self, query: str, limit: int = 5) -> list[SearchResult]:
+    async def retrieve_documents(
+        self, query: str, limit: int = 5
+    ) -> list[SearchResult]:
         """Retrieve relevant documents for a query."""
         if not self.vector_store:
             return []

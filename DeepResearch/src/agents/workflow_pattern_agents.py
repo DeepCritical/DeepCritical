@@ -74,7 +74,11 @@ class WorkflowPatternAgent(BaseAgent):
             start_time = time.time()
 
             # Convert config to OmegaConf DictConfig for workflow functions
-            omega_config = OmegaConf.create(self.dependencies.config) if self.dependencies.config else None
+            omega_config = (
+                OmegaConf.create(self.dependencies.config)
+                if self.dependencies.config
+                else None
+            )
 
             # Use the appropriate workflow execution function
             if self.pattern == InteractionPattern.COLLABORATIVE:
@@ -424,7 +428,9 @@ class PatternOrchestratorAgent(BaseAgent):
                 selected_pattern = self._select_optimal_pattern(
                     problem_complexity="medium",  # Would be analyzed from question
                     agent_count=len(available_agents),
-                    agent_capabilities=[str(agent_type) for agent_type in available_agents.values()],
+                    agent_capabilities=[
+                        str(agent_type) for agent_type in available_agents.values()
+                    ],
                     coordination_requirements=coordination_requirements,
                 )
             else:

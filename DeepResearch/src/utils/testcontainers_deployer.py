@@ -507,7 +507,9 @@ if __name__ == "__main__":
             timeout_val = kwargs.get("timeout", 60)
             self.code_executors[server_name] = DockerCommandLineCodeExecutor(
                 image=deployment.configuration.container_image,
-                timeout=int(timeout_val) if not isinstance(timeout_val, int) else timeout_val,
+                timeout=int(timeout_val)
+                if not isinstance(timeout_val, int)
+                else timeout_val,
                 work_dir=f"/tmp/{server_name}_code_blocks",
             )
 
