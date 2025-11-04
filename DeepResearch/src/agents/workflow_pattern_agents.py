@@ -10,6 +10,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from omegaconf import OmegaConf
+
 from DeepResearch.agents import BaseAgent  # Use top-level BaseAgent to satisfy linters
 from DeepResearch.src.datatypes.agents import AgentDependencies, AgentResult, AgentType
 from DeepResearch.src.datatypes.workflow_patterns import InteractionPattern
@@ -71,6 +73,9 @@ class WorkflowPatternAgent(BaseAgent):
         try:
             start_time = time.time()
 
+            # Convert config to OmegaConf DictConfig for workflow functions
+            omega_config = OmegaConf.create(self.dependencies.config) if self.dependencies.config else None
+
             # Use the appropriate workflow execution function
             if self.pattern == InteractionPattern.COLLABORATIVE:
                 result = await run_collaborative_pattern_workflow(
@@ -78,7 +83,7 @@ class WorkflowPatternAgent(BaseAgent):
                     agents=agents,
                     agent_types=agent_types,
                     agent_executors=agent_executors,
-                    config=self.dependencies.config,
+                    config=omega_config,
                 )
             elif self.pattern == InteractionPattern.SEQUENTIAL:
                 result = await run_sequential_pattern_workflow(
@@ -86,7 +91,7 @@ class WorkflowPatternAgent(BaseAgent):
                     agents=agents,
                     agent_types=agent_types,
                     agent_executors=agent_executors,
-                    config=self.dependencies.config,
+                    config=omega_config,
                 )
             elif self.pattern == InteractionPattern.HIERARCHICAL:
                 coordinator_id = input_data.get(
@@ -102,7 +107,7 @@ class WorkflowPatternAgent(BaseAgent):
                     subordinate_ids=subordinate_ids,
                     agent_types=agent_types,
                     agent_executors=agent_executors,
-                    config=self.dependencies.config,
+                    config=omega_config,
                 )
             else:
                 return AgentResult(
@@ -419,7 +424,7 @@ class PatternOrchestratorAgent(BaseAgent):
                 selected_pattern = self._select_optimal_pattern(
                     problem_complexity="medium",  # Would be analyzed from question
                     agent_count=len(available_agents),
-                    agent_capabilities=list(available_agents.values()),
+                    agent_capabilities=[str(agent_type) for agent_type in available_agents.values()],
                     coordination_requirements=coordination_requirements,
                 )
             else:
