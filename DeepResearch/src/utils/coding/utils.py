@@ -24,8 +24,10 @@ def _get_file_name_from_content(code: str, work_dir: Path) -> str | None:
     return None
 
 
-def silence_pip(*args, **kwargs) -> dict[str, Any]:
+def silence_pip(*args, **kwargs) -> str:
     """Silence pip output when installing packages."""
-    # This would implement pip silencing logic
-    # For now, just return empty result
-    return {"returncode": 0, "stdout": "", "stderr": ""}
+    # This would implement pip silencing logic to modify the code
+    # For now, just return the original code unmodified
+    if args:
+        return str(args[0])  # Return first arg (the code string)
+    return ""
