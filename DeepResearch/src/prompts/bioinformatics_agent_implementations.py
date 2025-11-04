@@ -77,7 +77,7 @@ class DataFusionAgent:
         if not hasattr(result, "data"):
             msg = "RunResult missing data attribute"
             raise AttributeError(msg)
-        return cast(DataFusionResult, result.data)
+        return cast("DataFusionResult", result.data)
 
 
 class GOAnnotationAgent:
@@ -117,7 +117,7 @@ class GOAnnotationAgent:
         if not hasattr(result, "data"):
             msg = "RunResult missing data attribute"
             raise AttributeError(msg)
-        return cast(list[GOAnnotation], result.data)
+        return cast("list[GOAnnotation]", result.data)
 
 
 class ReasoningAgent:
@@ -162,7 +162,7 @@ class ReasoningAgent:
         if not hasattr(result, "data"):
             msg = "RunResult missing data attribute"
             raise AttributeError(msg)
-        return cast(ReasoningResult, result.data)
+        return cast("ReasoningResult", result.data)
 
 
 class DataQualityAgent:
@@ -205,7 +205,7 @@ class DataQualityAgent:
         if not hasattr(result, "data"):
             msg = "RunResult missing data attribute"
             raise AttributeError(msg)
-        return cast(dict[str, float], result.data)
+        return cast("dict[str, float]", result.data)
 
 
 class BioinformaticsAgent:

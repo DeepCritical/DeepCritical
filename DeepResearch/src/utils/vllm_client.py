@@ -419,7 +419,7 @@ class VLLMClientBuilder:
         """Build the VLLM client."""
         return VLLMClient(
             base_url=str(self._config.get("base_url", "http://localhost:8000")),
-            api_key=cast(str | None, self._config.get("api_key")),
+            api_key=cast("str | None", self._config.get("api_key")),
             timeout=float(self._config.get("timeout", 60.0)),
             max_retries=int(self._config.get("max_retries", 3)),
             retry_delay=float(self._config.get("retry_delay", 1.0)),

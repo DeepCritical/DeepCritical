@@ -466,7 +466,7 @@ class VLLMPromptTestBase:
             config = self._create_default_test_config()
 
         # Type narrow: config is now DictConfig (not None)
-        config = cast(DictConfig, config)
+        config = cast("DictConfig", config)
 
         logger.info("Testing prompts from module: %s", module_name)
 

@@ -20,6 +20,8 @@ from DeepResearch.src.datatypes.vllm_dataclass import (
 )
 from DeepResearch.src.utils.vllm_client import (
     VLLMAgent as VLLMClientWrapper,
+)
+from DeepResearch.src.utils.vllm_client import (
     VLLMClient,
 )
 

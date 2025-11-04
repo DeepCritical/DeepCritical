@@ -106,7 +106,7 @@ class SearchAgent:
             result = await self.agent.run(user_message, deps=deps)
             # Agent returns str (JSON string from tool), parse it to dict
             if hasattr(result, "data") and isinstance(result.data, str):
-                return cast(dict[str, Any], json.loads(result.data))
+                return cast("dict[str, Any]", json.loads(result.data))
             return {}
         except Exception as e:
             return {"error": str(e)}

@@ -25,7 +25,6 @@ except ImportError:
 
         async def run(self, state: Any) -> Any:
             """Stub method for when pydantic_graph is not available."""
-            pass
 
     class BaseNode(Generic[T]):
         def __init__(self, *args, **kwargs):
@@ -549,7 +548,7 @@ class CodeExecutionWorkflow:
         )
 
         # Execute workflow
-        final_state = await self.graph.run(cast(Any, initial_state))
+        final_state = await self.graph.run(cast("Any", initial_state))
 
         return cast("CodeExecutionWorkflowState", final_state)
 

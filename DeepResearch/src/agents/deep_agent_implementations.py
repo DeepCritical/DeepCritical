@@ -127,15 +127,6 @@ class BaseDeepAgent:
 
     def _add_tools(self) -> None:
         """Add tools to the agent."""
-        tool_map = {
-            "write_todos": write_todos_tool,
-            "list_files": list_files_tool,
-            "read_file": read_file_tool,
-            "write_file": write_file_tool,
-            "edit_file": edit_file_tool,
-            "task": task_tool,
-        }
-
         # Note: Pydantic AI Agent doesn't support add_tool() method
         # Tools must be passed during Agent construction, not added dynamically
         # TODO: Refactor to pass tools during Agent creation in _initialize_agent()
