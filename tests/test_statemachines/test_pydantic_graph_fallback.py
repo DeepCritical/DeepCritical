@@ -48,16 +48,21 @@ class TestPydanticGraphFallbacks:
         assert isinstance(obj, cls)
 
     def test_base_node_is_generic(self):
+        # Type guard: module has BaseNode attribute after fixture setup
+        assert hasattr(self.module, "BaseNode")
         BaseNode = self.module.BaseNode
         assert hasattr(BaseNode, "__parameters__")
-        assert BaseNode.__parameters__[0].__name__ == "T"
+        # Use getattr to avoid subscript warning on dynamic attribute
+        parameters = getattr(BaseNode, "__parameters__")
+        assert parameters[0].__name__ == "T"
 
     def test_fallback_classes_are_isolated(self):
+        # Use getattr to avoid type warnings with dynamically loaded module
         classes = [
-            self.module.BaseNode,
-            self.module.Edge,
-            self.module.End,
-            self.module.Graph,
-            self.module.GraphRunContext,
+            getattr(self.module, "BaseNode"),
+            getattr(self.module, "Edge"),
+            getattr(self.module, "End"),
+            getattr(self.module, "Graph"),
+            getattr(self.module, "GraphRunContext"),
         ]
         assert len({cls.__name__ for cls in classes}) == len(classes)
