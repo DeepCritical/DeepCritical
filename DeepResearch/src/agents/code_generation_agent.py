@@ -454,20 +454,34 @@ class CodeExecutionAgentSystem:
             "timeout": 60.0,
         }
 
+        # Extract config values with proper type checking to avoid coercion bugs
+        # (e.g., bool("false") == True, int(None) raises)
+        use_docker_val = self.execution_config.get("use_docker", True)
+        use_docker = use_docker_val if isinstance(use_docker_val, bool) else bool(use_docker_val)
+
+        use_jupyter_val = self.execution_config.get("use_jupyter", False)
+        use_jupyter = use_jupyter_val if isinstance(use_jupyter_val, bool) else bool(use_jupyter_val)
+
+        max_retries_val = self.execution_config.get("max_retries", 3)
+        max_retries = max_retries_val if isinstance(max_retries_val, int) else int(max_retries_val)
+
+        timeout_val = self.execution_config.get("timeout", 60.0)
+        timeout = timeout_val if isinstance(timeout_val, (int, float)) else float(timeout_val)
+
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
             model_name=generation_model,
-            max_retries=int(self.execution_config.get("max_retries", 3)),
-            timeout=float(self.execution_config.get("timeout", 60.0)),
+            max_retries=max_retries,
+            timeout=timeout,
         )
 
         self.execution_agent = CodeExecutionAgent(
             model_name=generation_model,
-            use_docker=bool(self.execution_config.get("use_docker", True)),
-            use_jupyter=bool(self.execution_config.get("use_jupyter", False)),
+            use_docker=use_docker,
+            use_jupyter=use_jupyter,
             jupyter_config=self.execution_config.get("jupyter_config"),
-            max_retries=int(self.execution_config.get("max_retries", 3)),
-            timeout=float(self.execution_config.get("timeout", 60.0)),
+            max_retries=max_retries,
+            timeout=timeout,
         )
 
     async def process_request(
