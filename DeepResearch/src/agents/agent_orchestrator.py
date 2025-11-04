@@ -51,7 +51,7 @@ class AgentOrchestrator:
 
     def _create_orchestrator_agent(self):
         """Create the orchestrator agent."""
-        self.orchestrator_agent = Agent(
+        self.orchestrator_agent = Agent[OrchestratorDependencies, str](
             model=self.config.model_name,
             deps_type=OrchestratorDependencies,
             system_prompt=self._get_orchestrator_system_prompt(),

@@ -32,8 +32,9 @@ class SearchAgent:
 
     def __init__(self, config: SearchAgentConfig):
         self.config = config
-        self.agent = Agent(
+        self.agent = Agent[SearchAgentDependencies, str](
             model=config.model,
+            deps_type=SearchAgentDependencies,
             system_prompt=self._get_system_prompt(),
             tools=[
                 web_search_tool,

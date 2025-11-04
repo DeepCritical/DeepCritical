@@ -104,7 +104,7 @@ class PrimaryWorkflowOrchestrator:
         # Get prompts from the prompts module
         prompts = WorkflowOrchestratorPrompts()
 
-        self.primary_agent = Agent(
+        self.primary_agent = Agent[OrchestratorDependencies, str](
             model=self.config.primary_workflow.parameters.get(
                 "model_name", "anthropic:claude-sonnet-4-0"
             ),
