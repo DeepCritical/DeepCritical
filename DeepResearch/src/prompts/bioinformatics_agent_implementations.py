@@ -74,6 +74,9 @@ class DataFusionAgent:
         )
 
         result = await self.agent.run(fusion_prompt, deps=deps)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         return result.data
 
 
@@ -111,6 +114,9 @@ class GOAnnotationAgent:
         )
 
         result = await self.agent.run(processing_prompt, deps=deps)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         return result.data
 
 
@@ -153,6 +159,9 @@ class ReasoningAgent:
         )
 
         result = await self.agent.run(reasoning_prompt, deps=deps)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         return result.data
 
 
@@ -193,6 +202,9 @@ class DataQualityAgent:
         )
 
         result = await self.agent.run(quality_prompt, deps=deps)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         return result.data
 
 
@@ -253,7 +265,11 @@ class AgentOrchestrator:
             raise ValueError(msg)
 
         # Step 2: Construct dataset from fusion result
-        dataset = FusedDataset(**fusion_result.dataset)
+        if fusion_result.fused_dataset is None:
+            msg = "Fused dataset is None"
+            raise ValueError(msg)
+
+        dataset = fusion_result.fused_dataset
 
         # Step 3: Assess data quality
         quality_metrics = await self.quality_agent.assess_quality(dataset, deps)
