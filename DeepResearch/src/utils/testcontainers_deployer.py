@@ -328,6 +328,9 @@ class TestcontainersDeployer:
         assert server is not None
 
         # Generate basic server code structure
+        server_name_attr = getattr(server, "name", server_name)
+        server_version = getattr(server, "version", "1.0.0")
+
         return f'''"""
 Auto-generated MCP server for {server_name}.
 """
@@ -338,7 +341,7 @@ from {server.__module__} import {server.__class__.__name__}
 server = {server.__class__.__name__}()
 
 if __name__ == "__main__":
-    print(f"MCP Server '{server.name}' v{server.version} ready")
+    print(f"MCP Server '{server_name_attr}' v{server_version} ready")
     print(f"Available tools: {{', '.join(server.list_tools())}}")
 '''
 
