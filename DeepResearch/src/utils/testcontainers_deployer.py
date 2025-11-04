@@ -18,6 +18,7 @@ from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
     MCPServerDeployment,
     MCPServerStatus,
+    MCPServerType,
 )
 from DeepResearch.src.tools.bioinformatics.bowtie2_server import Bowtie2Server
 from DeepResearch.src.tools.bioinformatics.fastqc_server import FastQCServer
