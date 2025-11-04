@@ -466,7 +466,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
 
         try:
             # Create app configuration from Hydra config
-            app_config = self._create_app_configuration(cfg, app_mode)
+            app_config = self._create_app_configuration(cfg, app_mode)  # type: ignore[arg-type]
             ctx.state.app_configuration = app_config
 
             # Create agent orchestrator
@@ -925,7 +925,7 @@ class PrimeEvaluate(BaseNode[ResearchState]):
         if results["success"]:
             # Extract key results from data bag
             data_bag = results.get("data_bag", {})
-            summary = self._extract_summary(data_bag, problem)
+            summary = self._extract_summary(data_bag, problem)  # type: ignore[arg-type]
             answer = f"PRIME Analysis Complete\n\nQ: {ctx.state.question}\n\n{summary}"
         else:
             # Handle failure case
