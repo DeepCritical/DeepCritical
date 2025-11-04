@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from omegaconf import DictConfig
@@ -477,8 +477,10 @@ class VLLMPromptTestBase:
             return []
 
         # Test all prompts with configuration
+        # Convert from (name, template, content) to (name, template) for batch testing
+        prompts_2tuple = [(name, template) for name, template, _ in prompts]
         results = self._test_prompt_batch(
-            vllm_tester, prompts, config, **generation_kwargs
+            vllm_tester, prompts_2tuple, config, **generation_kwargs
         )
 
         # Check execution time limits
