@@ -273,11 +273,13 @@ class TestcontainersDeployer:
 
         return server
 
-    def _get_server_type(self, server_name: str) -> str:
+    def _get_server_type(self, server_name: str) -> MCPServerType:
         """Get the server type from the server name."""
-        if server_name in self.server_implementations:
-            return server_name
-        return "custom"
+        # Try to match server_name to MCPServerType enum
+        try:
+            return MCPServerType(server_name.lower())
+        except ValueError:
+            return MCPServerType.CUSTOM
 
     async def create_server_files(self, server_name: str, output_dir: str) -> list[str]:
         """Create necessary files for server deployment."""
@@ -495,11 +497,10 @@ if __name__ == "__main__":
 
         if server_name not in self.code_executors:
             # Create code executor if it doesn't exist
+            timeout_val = kwargs.get("timeout", 60)
             self.code_executors[server_name] = DockerCommandLineCodeExecutor(
-                image=deployment.configuration.image
-                if hasattr(deployment.configuration, "image")
-                else "python:3.11-slim",
-                timeout=kwargs.get("timeout", 60),
+                image=deployment.configuration.container_image,
+                timeout=int(timeout_val) if not isinstance(timeout_val, int) else timeout_val,
                 work_dir=f"/tmp/{server_name}_code_blocks",
             )
 
