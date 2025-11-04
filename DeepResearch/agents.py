@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, cast
 
 from pydantic_ai import Agent
 
@@ -1057,11 +1057,11 @@ class MultiAgentOrchestrator:
         try:
             # Step 1: Parse the question
             parser = self.agents[AgentType.PARSER]
-            parsed = await parser.parse_question(question)
+            parsed = await cast("ParserAgent", parser).parse_question(question)
 
             # Step 2: Create execution plan
             planner = self.agents[AgentType.PLANNER]
-            plan = await planner.create_plan(parsed)
+            plan = await cast("PlannerAgent", planner).create_plan(parsed)
 
             # Step 3: Execute based on workflow type
             if workflow_type == "bioinformatics":
@@ -1079,7 +1079,9 @@ class MultiAgentOrchestrator:
 
             # Step 4: Evaluate results
             evaluator = self.agents[AgentType.EVALUATOR]
-            evaluation = await evaluator.evaluate(question, result.get("answer", ""))
+            evaluation = await cast("EvaluatorAgent", evaluator).evaluate(
+                question, result.get("answer", "")
+            )
 
             execution_time = time.time() - start_time
 
@@ -1109,7 +1111,7 @@ class MultiAgentOrchestrator:
     ) -> dict[str, Any]:
         """Execute standard research workflow."""
         executor = self.agents[AgentType.EXECUTOR]
-        return await executor.execute_plan(plan, self.history)
+        return await cast("ExecutorAgent", executor).execute_plan(plan, self.history)
 
     async def _execute_bioinformatics_workflow(
         self, question: str, _parsed: dict[str, Any], _plan: list[dict[str, Any]]
@@ -1126,7 +1128,9 @@ class MultiAgentOrchestrator:
         )
 
         # Fuse data
-        fused_dataset = await bioinformatics_agent.fuse_data(fusion_request)
+        fused_dataset = await cast("BioinformaticsAgent", bioinformatics_agent).fuse_data(
+            fusion_request
+        )
 
         # Create reasoning task
         reasoning_task = ReasoningTask(
@@ -1137,9 +1141,9 @@ class MultiAgentOrchestrator:
         )
 
         # Perform reasoning
-        reasoning_result = await bioinformatics_agent.perform_reasoning(
-            reasoning_task, fused_dataset
-        )
+        reasoning_result = await cast(
+            "BioinformaticsAgent", bioinformatics_agent
+        ).perform_reasoning(reasoning_task, fused_dataset)
 
         return {
             "fused_dataset": fused_dataset.dict(),
@@ -1152,7 +1156,7 @@ class MultiAgentOrchestrator:
     ) -> dict[str, Any]:
         """Execute deep search workflow."""
         deepsearch_agent = self.agents[AgentType.DEEPSEARCH]
-        return await deepsearch_agent.deep_search(question)
+        return await cast("DeepSearchAgent", deepsearch_agent).deep_search(question)
 
     async def _execute_rag_workflow(
         self, question: str, _parsed: dict[str, Any], _plan: list[dict[str, Any]]
@@ -1164,7 +1168,7 @@ class MultiAgentOrchestrator:
         rag_query = RAGQuery(text=question, top_k=5)
 
         # Perform RAG query
-        rag_response = await rag_agent.query(rag_query)
+        rag_response = await cast("RAGAgent", rag_agent).query(rag_query)
 
         return {
             "rag_response": rag_response.dict(),
@@ -1188,7 +1192,9 @@ class MultiAgentOrchestrator:
         # Use general DeepAgent for orchestration
         if AgentType.DEEP_AGENT_GENERAL in self.agents:
             general_agent = self.agents[AgentType.DEEP_AGENT_GENERAL]
-            result = await general_agent.handle_general_task(question, initial_state)
+            result = await cast("DeepAgentGeneralAgent", general_agent).handle_general_task(
+                question, initial_state
+            )
 
             if result.success:
                 return {
@@ -1206,9 +1212,9 @@ class MultiAgentOrchestrator:
         # Fallback to orchestration agent
         if AgentType.DEEP_AGENT_ORCHESTRATION in self.agents:
             orchestration_agent = self.agents[AgentType.DEEP_AGENT_ORCHESTRATION]
-            result = await orchestration_agent.orchestrate_tasks(
-                question, initial_state
-            )
+            result = await cast(
+                "DeepAgentOrchestrationAgent", orchestration_agent
+            ).orchestrate_tasks(question, initial_state)
 
             if result.success:
                 return {
