@@ -136,10 +136,13 @@ class BaseDeepAgent:
             "task": task_tool,
         }
 
-        if self.agent is not None:
-            for tool_name in self.config.tools:
-                if tool_name in tool_map:
-                    self.agent.add_tool(tool_map[tool_name])
+        # Note: Pydantic AI Agent doesn't support add_tool() method
+        # Tools must be passed during Agent construction, not added dynamically
+        # TODO: Refactor to pass tools during Agent creation in _initialize_agent()
+        # if self.agent is not None:
+        #     for tool_name in self.config.tools:
+        #         if tool_name in tool_map:
+        #             self.agent.add_tool(tool_map[tool_name])
 
     def _initialize_middleware(self) -> None:
         """Initialize middleware pipeline."""
@@ -390,7 +393,7 @@ class AgentOrchestrator:
 
     def __init__(self, agents: list[BaseDeepAgent] | None = None):
         self.agents: dict[str, BaseDeepAgent] = {}
-        self.agent_registry: dict[str, Agent] = {}
+        self.agent_registry: dict[str, Agent[Any, Any]] = {}
 
         if agents:
             for agent in agents:
@@ -556,7 +559,10 @@ class DeepAgentImplementation:
             return AgentExecutionResult(
                 success=False, error="Orchestrator not initialized"
             )
-        return await self.orchestrator.execute_task(task)
+        # TODO: Implement agent selection logic to determine which agent to use
+        # AgentOrchestrator has execute_with_agent(agent_name, input_data, context)
+        # For now, use the general agent as default
+        return await self.orchestrator.execute_with_agent("general", task, None)
 
     def get_agent(self, agent_type: str) -> BaseDeepAgent | None:
         """Get a specific agent by type."""
