@@ -62,13 +62,13 @@ class TestAppModuleImport:
     def test_app_node_classes_exist(self):
         """Test that key node classes are accessible."""
         from DeepResearch.app import (
-            Plan,
-            Search,
             Analyze,
-            Synthesize,
+            EvaluateChallenge,
+            Plan,
             PrepareChallenge,
             RunChallenge,
-            EvaluateChallenge,
+            Search,
+            Synthesize,
         )
 
         assert Plan is not None
