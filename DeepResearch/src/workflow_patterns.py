@@ -198,12 +198,16 @@ class WorkflowPatternExecutor:
         agent_executors: dict[str, Any] | None = None,
     ) -> str:
         """Execute collaborative pattern workflow."""
+        from omegaconf import DictConfig, OmegaConf
+
+        config_dict = self.config.dict()
+        config_omega = OmegaConf.create(config_dict) if config_dict else None
         return await run_collaborative_pattern_workflow(
             question=question,
             agents=agents,
             agent_types=agent_types,
             agent_executors=agent_executors or {},
-            config=self.config.dict(),
+            config=config_omega,
         )
 
     async def execute_sequential_pattern(
@@ -214,12 +218,16 @@ class WorkflowPatternExecutor:
         agent_executors: dict[str, Any] | None = None,
     ) -> str:
         """Execute sequential pattern workflow."""
+        from omegaconf import DictConfig, OmegaConf
+
+        config_dict = self.config.dict()
+        config_omega = OmegaConf.create(config_dict) if config_dict else None
         return await run_sequential_pattern_workflow(
             question=question,
             agents=agents,
             agent_types=agent_types,
             agent_executors=agent_executors or {},
-            config=self.config.dict(),
+            config=config_omega,
         )
 
     async def execute_hierarchical_pattern(
@@ -231,13 +239,17 @@ class WorkflowPatternExecutor:
         agent_executors: dict[str, Any] | None = None,
     ) -> str:
         """Execute hierarchical pattern workflow."""
+        from omegaconf import DictConfig, OmegaConf
+
+        config_dict = self.config.dict()
+        config_omega = OmegaConf.create(config_dict) if config_dict else None
         return await run_hierarchical_pattern_workflow(
             question=question,
             coordinator_id=coordinator_id,
             subordinate_ids=subordinate_ids,
             agent_types=agent_types,
             agent_executors=agent_executors or {},
-            config=self.config.dict(),
+            config=config_omega,
         )
 
     async def execute_pattern(
@@ -249,13 +261,17 @@ class WorkflowPatternExecutor:
         agent_executors: dict[str, Any] | None = None,
     ) -> str:
         """Execute workflow with specified pattern."""
+        from omegaconf import DictConfig, OmegaConf
+
+        config_dict = self.config.dict()
+        config_omega = OmegaConf.create(config_dict) if config_dict else None
         return await run_pattern_workflow(
             question=question,
             pattern=pattern,
             agents=agents,
             agent_types=agent_types,
             agent_executors=agent_executors or {},
-            config=self.config.dict(),
+            config=config_omega,
         )
 
 
