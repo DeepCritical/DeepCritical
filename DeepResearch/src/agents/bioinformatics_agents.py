@@ -74,7 +74,7 @@ class DataFusionAgent:
         )
 
         result = await self.agent.run(fusion_prompt, deps=deps)
-        return result.data
+        return result.output
 
 
 class GOAnnotationAgent:
@@ -111,7 +111,7 @@ class GOAnnotationAgent:
         )
 
         result = await self.agent.run(processing_prompt, deps=deps)
-        return result.data
+        return result.output
 
 
 class ReasoningAgent:
@@ -153,7 +153,7 @@ class ReasoningAgent:
         )
 
         result = await self.agent.run(reasoning_prompt, deps=deps)
-        return result.data
+        return result.output
 
 
 class DataQualityAgent:
@@ -193,7 +193,7 @@ class DataQualityAgent:
         )
 
         result = await self.agent.run(quality_prompt, deps=deps)
-        return result.data
+        return result.output
 
 
 class BioinformaticsAgent:
