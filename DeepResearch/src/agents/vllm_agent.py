@@ -18,7 +18,10 @@ from DeepResearch.src.datatypes.vllm_dataclass import (
     QuantizationMethod,
     VllmConfig,
 )
-from DeepResearch.src.utils.vllm_client import VLLMClient
+from DeepResearch.src.utils.vllm_client import (
+    VLLMAgent as VLLMClientWrapper,
+    VLLMClient,
+)
 
 
 class VLLMAgent:
@@ -26,9 +29,10 @@ class VLLMAgent:
 
     def __init__(self, config: VLLMAgentConfig):
         self.config = config
-        self.client: VLLMClient = VLLMClient(**config.client_config)
+        vllm_client_instance = VLLMClient(**config.client_config)
+        self.client = VLLMClientWrapper(vllm_client_instance)
         self.dependencies = VLLMAgentDependencies(
-            vllm_client=self.client,
+            vllm_client=vllm_client_instance,  # Pass base client, not wrapper
             default_model=config.default_model,
             embedding_model=config.embedding_model,
         )
@@ -106,7 +110,10 @@ class VLLMAgent:
 
         full_response = ""
         async for chunk in self.client.chat_completions_stream(request):
-            full_response += chunk
+            # Extract content from chunk dict
+            if isinstance(chunk, dict) and "choices" in chunk:
+                delta_content = chunk["choices"][0].get("delta", {}).get("content", "")
+                full_response += delta_content
         return full_response
 
     def to_pydantic_ai_agent(self):
