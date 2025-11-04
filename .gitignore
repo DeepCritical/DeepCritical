@@ -74,6 +74,9 @@ multirun/
 outputs/
 *.log
 
+# Type checker outputs
+type-errors*.txt
+
 # OS
 .DS_Store
 .DS_Store?
