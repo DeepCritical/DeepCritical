@@ -101,7 +101,7 @@ class MCPServerBase(ABC):
         self.config = config
         self.name = config.server_name
         self.server_type = config.server_type
-        self.tools: dict[str, Tool] = {}
+        self.tools: dict[str, Any] = {}
         self.pydantic_ai_tools: list[Tool] = []
         self.pydantic_ai_agent: Agent | None = None
         self.container_id: str | None = None

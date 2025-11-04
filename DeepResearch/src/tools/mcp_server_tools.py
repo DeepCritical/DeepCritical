@@ -185,7 +185,7 @@ class MCPServerManager:
         """Stop a deployed MCP server."""
         if server_name in self.deployments:
             deployment = self.deployments[server_name]
-            deployment.status = "stopped"
+            deployment.status = MCPServerStatus.STOPPED
             return True
         return False
 

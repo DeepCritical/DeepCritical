@@ -210,7 +210,7 @@ class DockerComposeDeployer:
                         )
 
                         if result.returncode == 0:
-                            deployment.status = "stopped"
+                            deployment.status = MCPServerStatus.STOPPED
                             logger.info("Stopped MCP server '%s'", server_name)
                         else:
                             logger.error(
@@ -256,7 +256,7 @@ class DockerComposeDeployer:
                         )
 
                         if result.returncode == 0:
-                            deployment.status = "stopped"
+                            deployment.status = MCPServerStatus.STOPPED
                             del self.deployments[server_name]
                             del self.compose_files[server_name]
                             logger.info("Removed MCP server '%s'", server_name)

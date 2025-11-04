@@ -199,7 +199,7 @@ class TestcontainersDeployer:
 
         try:
             # In a real implementation, this would stop the testcontainers container
-            deployment.status = "stopped"
+            deployment.status = MCPServerStatus.STOPPED
             deployment.finished_at = None  # Would be set by testcontainers
 
             # Clean up container reference
@@ -211,7 +211,7 @@ class TestcontainersDeployer:
 
         except Exception as e:
             logger.exception("Failed to stop MCP server '%s'", server_name)
-            deployment.status = "failed"
+            deployment.status = MCPServerStatus.FAILED
             deployment.error_message = str(e)
             return False
 
