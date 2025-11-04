@@ -78,6 +78,25 @@ class VLLMClient(BaseModel):
         },
     )
 
+    # Stub methods for type checking - VLLMAgent expects these
+    # In practice, VLLMAgent should implement actual HTTP calls
+    async def chat_completions(
+        self, request: ChatCompletionRequest
+    ) -> ChatCompletionResponse:
+        """Stub method - should be implemented by actual client."""
+        msg = "Not implemented - use VLLMAgent wrapper"
+        raise NotImplementedError(msg)
+
+    async def completions(self, request: CompletionRequest) -> CompletionResponse:
+        """Stub method - should be implemented by actual client."""
+        msg = "Not implemented - use VLLMAgent wrapper"
+        raise NotImplementedError(msg)
+
+    async def embeddings(self, request: EmbeddingRequest) -> EmbeddingResponse:
+        """Stub method - should be implemented by actual client."""
+        msg = "Not implemented - use VLLMAgent wrapper"
+        raise NotImplementedError(msg)
+
 
 class VLLMAgent:
     """Pydantic AI agent wrapper for VLLM client."""
