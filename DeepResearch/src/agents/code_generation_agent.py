@@ -7,7 +7,7 @@ using the vendored AG2 code execution framework for execution.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from pydantic_ai import Agent
 
@@ -504,7 +504,7 @@ class CodeExecutionAgentSystem:
             model_name=generation_model,
             use_docker=use_docker,
             use_jupyter=use_jupyter,
-            jupyter_config=self.execution_config.get("jupyter_config"),
+            jupyter_config=cast(dict[str, Any] | None, self.execution_config.get("jupyter_config")),
             max_retries=max_retries,
             timeout=timeout,
         )
