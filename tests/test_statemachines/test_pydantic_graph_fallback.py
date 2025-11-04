@@ -53,7 +53,7 @@ class TestPydanticGraphFallbacks:
         BaseNode = self.module.BaseNode
         assert hasattr(BaseNode, "__parameters__")
         # Use getattr to avoid subscript warning on dynamic attribute
-        parameters = getattr(BaseNode, "__parameters__")
+        parameters = getattr(BaseNode, "__parameters__")  # noqa: B009
         assert parameters[0].__name__ == "T"
 
     def test_fallback_classes_are_isolated(self):
