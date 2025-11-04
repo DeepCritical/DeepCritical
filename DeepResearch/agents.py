@@ -1146,7 +1146,7 @@ class MultiAgentOrchestrator:
         ).perform_reasoning(reasoning_task, fused_dataset)
 
         return {
-            "fused_dataset": fused_dataset.dict(),
+            "fused_dataset": fused_dataset.model_dump(),
             "reasoning_result": reasoning_result,
             "answer": reasoning_result.get("answer", "No answer generated"),
         }
@@ -1171,7 +1171,7 @@ class MultiAgentOrchestrator:
         rag_response = await cast("RAGAgent", rag_agent).query(rag_query)
 
         return {
-            "rag_response": rag_response.dict(),
+            "rag_response": rag_response.model_dump(),
             "answer": rag_response.generated_answer or "No answer generated",
         }
 
@@ -1199,9 +1199,9 @@ class MultiAgentOrchestrator:
             if result.success:
                 return {
                     "deep_agent_result": result.result,
-                    "answer": result.result.get(
-                        "final_result", "DeepAgent workflow completed"
-                    ),
+                    "answer": result.result.get("final_result", "DeepAgent workflow completed")
+                    if result.result is not None
+                    else "DeepAgent workflow completed",
                     "execution_metadata": {
                         "execution_time": result.execution_time,
                         "tools_used": result.tools_used,
@@ -1221,7 +1221,9 @@ class MultiAgentOrchestrator:
                     "deep_agent_result": result.result,
                     "answer": result.result.get(
                         "result_synthesis", "DeepAgent orchestration completed"
-                    ),
+                    )
+                    if result.result is not None
+                    else "DeepAgent orchestration completed",
                     "execution_metadata": {
                         "execution_time": result.execution_time,
                         "tools_used": result.tools_used,
