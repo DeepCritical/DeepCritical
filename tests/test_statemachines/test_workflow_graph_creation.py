@@ -45,7 +45,7 @@ class TestRunCollaborativePatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            result = await run_collaborative_pattern_workflow(**basic_inputs)
+            result = await run_collaborative_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             assert isinstance(result, str)
             assert result == "Test output"
@@ -62,7 +62,7 @@ class TestRunCollaborativePatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_collaborative_pattern_workflow(**basic_inputs)
+            await run_collaborative_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             mock_graph_factory.assert_called_once()
 
@@ -78,7 +78,7 @@ class TestRunCollaborativePatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_collaborative_pattern_workflow(**basic_inputs)
+            await run_collaborative_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -96,7 +96,7 @@ class TestRunCollaborativePatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_collaborative_pattern_workflow(**basic_inputs)
+            await run_collaborative_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -141,7 +141,7 @@ class TestRunSequentialPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            result = await run_sequential_pattern_workflow(**basic_inputs)
+            result = await run_sequential_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             assert isinstance(result, str)
             assert result == "Sequential output"
@@ -158,7 +158,7 @@ class TestRunSequentialPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_sequential_pattern_workflow(**basic_inputs)
+            await run_sequential_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             mock_graph_factory.assert_called_once()
 
@@ -174,7 +174,7 @@ class TestRunSequentialPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_sequential_pattern_workflow(**basic_inputs)
+            await run_sequential_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -192,7 +192,7 @@ class TestRunSequentialPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_sequential_pattern_workflow(**basic_inputs)
+            await run_sequential_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -238,7 +238,7 @@ class TestRunHierarchicalPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            result = await run_hierarchical_pattern_workflow(**basic_inputs)
+            result = await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             assert isinstance(result, str)
             assert result == "Hierarchical output"
@@ -255,7 +255,7 @@ class TestRunHierarchicalPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             mock_graph_factory.assert_called_once()
 
@@ -271,7 +271,7 @@ class TestRunHierarchicalPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -289,7 +289,7 @@ class TestRunHierarchicalPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -309,7 +309,7 @@ class TestRunHierarchicalPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -332,7 +332,7 @@ class TestRunHierarchicalPatternWorkflow:
 
             basic_inputs["subordinate_ids"] = []
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -353,7 +353,7 @@ class TestRunHierarchicalPatternWorkflow:
             subordinates = [f"sub{i}" for i in range(10)]
             basic_inputs["subordinate_ids"] = subordinates
 
-            await run_hierarchical_pattern_workflow(**basic_inputs)
+            await run_hierarchical_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -394,7 +394,7 @@ class TestRunPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            result = await run_pattern_workflow(**basic_inputs)
+            result = await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             assert isinstance(result, str)
             assert result == "Pattern output"
@@ -411,7 +411,7 @@ class TestRunPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             mock_graph_factory.assert_called_once_with(InteractionPattern.COLLABORATIVE)
 
@@ -429,7 +429,7 @@ class TestRunPatternWorkflow:
 
             basic_inputs["pattern"] = InteractionPattern.COLLABORATIVE
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -449,7 +449,7 @@ class TestRunPatternWorkflow:
 
             basic_inputs["pattern"] = InteractionPattern.SEQUENTIAL
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -469,7 +469,7 @@ class TestRunPatternWorkflow:
 
             basic_inputs["pattern"] = InteractionPattern.HIERARCHICAL
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -487,7 +487,7 @@ class TestRunPatternWorkflow:
             mock_graph.run = AsyncMock(return_value=mock_result)
             mock_graph_factory.return_value = mock_graph
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
@@ -513,7 +513,7 @@ class TestRunPatternWorkflow:
             custom_config = Mock()
             basic_inputs["config"] = custom_config
 
-            await run_pattern_workflow(**basic_inputs)
+            await run_pattern_workflow(**basic_inputs)  # type: ignore[missing-argument]
 
             call_args = mock_graph.run.call_args
             state = call_args.kwargs["state"]
