@@ -7,6 +7,7 @@ workflow with the existing tool registry system.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
@@ -94,7 +95,8 @@ class DeepSearchWorkflowTool(ToolRunner):
             final_output = {"error": "Deep search workflow not available"}
 
             # Parse the output to extract structured information
-            parsed_results = self._parse_workflow_output(final_output)
+            # Convert dict to string for parsing
+            parsed_results = self._parse_workflow_output(json.dumps(final_output))
 
             return ExecutionResult(
                 success=True,
@@ -233,8 +235,9 @@ class DeepSearchAgentTool(ToolRunner):
             final_output = {"error": "Deep search workflow not available"}
 
             # Enhance output with agent personality
+            # Convert dict to string for enhancement
             enhanced_response = self._enhance_with_agent_personality(
-                final_output, agent_personality, output_format
+                json.dumps(final_output), agent_personality, output_format
             )
 
             # Extract structured information
