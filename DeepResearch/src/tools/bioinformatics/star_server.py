@@ -106,7 +106,7 @@ class STARServer(MCPServerBase):
             "mock": True,  # Indicate this is a mock result
         }
 
-    async def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    def run(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Run Star operation based on parameters.
 
@@ -164,7 +164,7 @@ class STARServer(MCPServerBase):
             result = method(**method_params)
             # Await if it's a coroutine
             if asyncio.iscoroutine(result):
-                return await result
+                return asyncio.run(result)
             return result
         except Exception as e:
             return {

@@ -48,7 +48,7 @@ class FastpServer(MCPServerBase):
             )
             super().__init__(config)
 
-    async def run(self, params: dict[str, Any]) -> dict[str, Any]:
+    def run(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Run Fastp operation based on parameters.
 
@@ -122,9 +122,9 @@ class FastpServer(MCPServerBase):
 
             # Call the appropriate method
             result = method(**method_params)
-            # Await if it's a coroutine
+            # Await if it's a coroutine (run in sync context)
             if asyncio.iscoroutine(result):
-                return await result
+                return asyncio.run(result)
             return result
         except Exception as e:
             return {
