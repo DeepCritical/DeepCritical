@@ -1658,12 +1658,12 @@ dependencies:
     async def stop_with_testcontainers(self) -> bool:
         """Stop MEME server testcontainer."""
         try:
-            if self.container_id:
+            if self.container_id and self.container_name:
                 from testcontainers.core.container import DockerContainer
 
                 # Find and stop container
                 container = DockerContainer("condaforge/miniforge3:latest")
-                container.with_name(self.container_name)
+                container = container.with_name(self.container_name)
                 container.stop()
 
                 self.container_id = None
