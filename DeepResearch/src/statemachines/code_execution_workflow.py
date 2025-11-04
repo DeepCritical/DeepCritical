@@ -6,7 +6,7 @@ using the vendored AG2 framework, supporting bash commands and Python scripts
 with configurable execution environments.
 """
 
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -547,7 +547,7 @@ class CodeExecutionWorkflow:
         # Execute workflow
         final_state = await self.graph.run(initial_state)
 
-        return final_state
+        return cast(CodeExecutionWorkflowState, final_state)
 
 
 # Convenience functions for direct usage
