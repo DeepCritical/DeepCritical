@@ -16,7 +16,6 @@ from typing import Any
 from pydantic_ai import Agent, RunContext
 
 from DeepResearch.src.datatypes.multi_agent import (
-    AgentRole,
     AgentState,
     CoordinationMessage,
     CoordinationResult,
@@ -25,6 +24,7 @@ from DeepResearch.src.datatypes.multi_agent import (
 )
 from DeepResearch.src.datatypes.workflow_orchestration import (
     AgentConfig,
+    AgentRole,
     MultiAgentSystemConfig,
     WorkflowStatus,
 )
