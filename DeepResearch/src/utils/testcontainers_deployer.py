@@ -324,6 +324,9 @@ class TestcontainersDeployer:
         if not server:
             return "# Server implementation not found"
 
+        # Type guard: server exists after the check above
+        assert server is not None
+
         # Generate basic server code structure
         return f'''"""
 Auto-generated MCP server for {server_name}.

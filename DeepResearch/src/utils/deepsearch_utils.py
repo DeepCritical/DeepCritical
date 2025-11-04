@@ -458,6 +458,8 @@ class DeepSearchEvaluator:
         self, question: str, answer: str, evaluation_type: EvaluationType
     ) -> dict[str, Any]:
         """Evaluate the quality of an answer."""
+        # Type guard: schemas is always set in __init__
+        assert self.schemas is not None
         self.schemas.get_evaluator_schema(evaluation_type)
 
         # Mock evaluation - in real implementation, this would use AI

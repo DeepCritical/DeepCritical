@@ -180,6 +180,9 @@ class CodeExecutionOrchestrator:
         self, user_message: str, code_type: str | None = None, **kwargs
     ) -> AgentRunResponse | None:
         """Execute using the state machine workflow."""
+        # Type guard: workflow must be initialized for this method to be called
+        assert self.workflow is not None
+
         workflow_config = {
             "use_docker": kwargs.get("use_docker", self.config.use_docker),
             "use_jupyter": kwargs.get("use_jupyter", self.config.use_jupyter),

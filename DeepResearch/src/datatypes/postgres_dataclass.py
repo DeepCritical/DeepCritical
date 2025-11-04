@@ -661,6 +661,9 @@ class PostgRESTClient:
         """Get request headers."""
         headers = self.config.default_headers.copy()
 
+        # Type guard: auth is guaranteed to be set in __post_init__
+        assert self.config.auth is not None
+
         # Add auth header
         auth_header = self.config.auth.get_auth_header()
         if auth_header:

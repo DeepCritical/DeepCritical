@@ -189,6 +189,9 @@ Provide a detailed analysis of what went wrong and how to fix it.
 """
 
         result = await self.analysis_agent.run(analysis_prompt)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         analysis_response = str(result.data).strip()
 
         # Parse the structured response
@@ -242,6 +245,9 @@ Provide a detailed analysis of what went wrong and how to fix it.
             agent = self.improvement_agent
 
         result = await agent.run(improvement_prompt)
+        if not hasattr(result, "data"):
+            msg = "RunResult missing data attribute"
+            raise AttributeError(msg)
         improvement_response = str(result.data).strip()
 
         # Parse the improvement response
