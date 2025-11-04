@@ -505,7 +505,7 @@ mcp_server = {class_name}()
         if not deployment:
             raise ValueError(f"Server '{server_name}' not deployed")
 
-        if deployment.status != "running":
+        if deployment.status != MCPServerStatus.RUNNING:
             raise ValueError(
                 f"Server '{server_name}' is not running (status: {deployment.status})"
             )

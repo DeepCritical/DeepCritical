@@ -232,7 +232,7 @@ class TestcontainersDeployer:
             msg = f"Server '{server_name}' not deployed"
             raise ValueError(msg)
 
-        if deployment.status != "running":
+        if deployment.status != MCPServerStatus.RUNNING:
             msg = f"Server '{server_name}' is not running (status: {deployment.status})"
             raise ValueError(msg)
 
@@ -394,7 +394,7 @@ if __name__ == "__main__":
         if not deployment:
             return False
 
-        if deployment.status != "running":
+        if deployment.status != MCPServerStatus.RUNNING:
             return False
 
         try:
@@ -431,7 +431,7 @@ if __name__ == "__main__":
         if not deployment:
             raise ValueError(f"Server '{server_name}' not deployed")
 
-        if deployment.status != "running":
+        if deployment.status != MCPServerStatus.RUNNING:
             raise ValueError(
                 f"Server '{server_name}' is not running (status: {deployment.status})"
             )
