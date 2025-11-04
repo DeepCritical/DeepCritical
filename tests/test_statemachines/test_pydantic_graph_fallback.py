@@ -59,10 +59,10 @@ class TestPydanticGraphFallbacks:
     def test_fallback_classes_are_isolated(self):
         # Use getattr to avoid type warnings with dynamically loaded module
         classes = [
-            getattr(self.module, "BaseNode"),
-            getattr(self.module, "Edge"),
-            getattr(self.module, "End"),
-            getattr(self.module, "Graph"),
-            getattr(self.module, "GraphRunContext"),
+            getattr(self.module, "BaseNode"),  # noqa: B009
+            getattr(self.module, "Edge"),  # noqa: B009
+            getattr(self.module, "End"),  # noqa: B009
+            getattr(self.module, "Graph"),  # noqa: B009
+            getattr(self.module, "GraphRunContext"),  # noqa: B009
         ]
         assert len({cls.__name__ for cls in classes}) == len(classes)

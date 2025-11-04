@@ -106,19 +106,15 @@ except ImportError:
 
         def with_cpu_limit(self, *args, **kwargs):
             """Stub method."""
-            pass
 
         def with_memory_limit(self, *args, **kwargs):
             """Stub method."""
-            pass
 
         def start(self):
             """Stub method."""
-            pass
 
         def stop(self):
             """Stub method."""
-            pass
 
         def get_connection_url(self) -> str:
             """Stub method."""
