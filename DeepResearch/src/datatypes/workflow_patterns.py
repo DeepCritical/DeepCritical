@@ -445,7 +445,7 @@ class WorkflowOrchestrator:
 
         return 1.0 - (unique_results - 1) / total_results
 
-    def _execute_hierarchical_subordinates(
+    async def _execute_hierarchical_subordinates(
         self, _coordinator_data: Any
     ) -> dict[str, Any]:
         """Execute subordinate agents in hierarchical pattern."""
