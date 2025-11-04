@@ -187,6 +187,9 @@ class VLLMPromptTester:
 
     def start_container(self):
         """Start VLLM container with configuration-based settings."""
+        # Type guard: config must be set
+        assert self.config is not None
+
         logger.info("Starting VLLM container with model: %s", self.model_name)
 
         # Get container configuration from config
@@ -247,6 +250,10 @@ class VLLMPromptTester:
     def _wait_for_ready(self, timeout: int | None = None):
         """Wait for VLLM container to be ready."""
         import requests
+
+        # Type guards: config and container must be set
+        assert self.config is not None
+        assert self.container is not None
 
         # Use configured timeout or default
         health_check_config = (
@@ -311,6 +318,9 @@ class VLLMPromptTester:
             formatted_prompt = prompt
 
         logger.info("Testing prompt: %s", prompt_name)
+
+        # Type guard: config must be set
+        assert self.config is not None
 
         # Get generation configuration
         generation_config = self.config.get("model", {}).get("generation", {})
@@ -494,6 +504,9 @@ class VLLMPromptTester:
 
     def _validate_prompt_structure(self, prompt: str, prompt_name: str):
         """Validate that a prompt has proper structure using configuration."""
+        # Type guard: config must be set
+        assert self.config is not None
+
         # Check for basic prompt structure
         if not isinstance(prompt, str):
             raise ValueError(f"Prompt {prompt_name} is not a string")
@@ -524,6 +537,9 @@ class VLLMPromptTester:
 
     def _validate_response_structure(self, response: str, prompt_name: str):
         """Validate that a response has proper structure using configuration."""
+        # Type guard: config must be set
+        assert self.config is not None
+
         # Check for basic response structure
         if not isinstance(response, str):
             raise ValueError(f"Response for prompt {prompt_name} is not a string")
