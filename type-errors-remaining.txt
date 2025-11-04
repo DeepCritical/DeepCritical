@@ -1,15 +1,3 @@
-error[invalid-assignment]: Object of type `Agent[None, str]` is not assignable to attribute `_agent` of type `Agent[AgentDependencies, str] | None`
-   --> DeepResearch/agents.py:98:13
-    |
- 96 |         """Initialize the Pydantic AI agent."""
- 97 |         try:
- 98 |             self._agent = Agent(
-    |             ^^^^^^^^^^^
- 99 |                 self.model_name,
-100 |                 deps_type=AgentDependencies,
-    |
-info: rule `invalid-assignment` is enabled by default
-
 warning[possibly-missing-attribute]: Attribute `tool` may be missing on object of type `Agent[AgentDependencies, str] | None`
    --> DeepResearch/agents.py:366:17
     |
@@ -396,40 +384,6 @@ warning[possibly-missing-attribute]: Attribute `tool` may be missing on object o
     |
 info: rule `possibly-missing-attribute` is enabled by default
 
-error[invalid-argument-type]: Argument to bound method `run` is incorrect
-   --> DeepResearch/src/agents/agent_orchestrator.py:259:68
-    |
-257 |         try:
-258 |             # Execute the orchestrator agent
-259 |             result = await self.orchestrator_agent.run(user_input, deps=deps)
-    |                                                                    ^^^^^^^^^ Expected `None`, found `OrchestratorDependencies`
-260 |
-261 |             # Process results and create final answer
-    |
-info: Matching overload defined here
-   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
-    |
-125 |     @overload
-126 |     async def run(
-    |               ^^^
-127 |         self,
-128 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
-    |
-   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:134:9
-    |
-132 |         deferred_tool_results: DeferredToolResults | None = None,
-133 |         model: models.Model | models.KnownModelName | str | None = None,
-134 |         deps: AgentDepsT = None,
-    |         ----------------------- Parameter declared here
-135 |         model_settings: ModelSettings | None = None,
-136 |         usage_limits: _usage.UsageLimits | None = None,
-    |
-info: Non-matching overloads for bound method `run`:
-info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
-info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
-info: rule `invalid-argument-type` is enabled by default
-
 warning[possibly-missing-attribute]: Attribute `dataset` may be missing on object of type `Unknown | DataFusionResult`
    --> DeepResearch/src/agents/bioinformatics_agents.py:264:34
     |
@@ -646,7 +600,7 @@ warning[possibly-missing-attribute]: Attribute `data` may be missing on object o
     |
 info: rule `possibly-missing-attribute` is enabled by default
 
-error[unresolved-attribute]: Object of type `Agent[None, str]` has no attribute `add_tool`
+error[unresolved-attribute]: Object of type `Agent[DeepAgentState, str]` has no attribute `add_tool`
    --> DeepResearch/src/agents/deep_agent_implementations.py:141:21
     |
 139 |             for tool_name in self.config.tools:
@@ -657,6 +611,30 @@ error[unresolved-attribute]: Object of type `Agent[None, str]` has no attribute 
 143 |     def _initialize_middleware(self) -> None:
     |
 info: rule `unresolved-attribute` is enabled by default
+
+error[invalid-argument-type]: Argument to bound method `process` is incorrect
+   --> DeepResearch/src/agents/deep_agent_implementations.py:170:21
+    |
+168 |             if self.middleware_pipeline:
+169 |                 middleware_results = await self.middleware_pipeline.process(
+170 |                     self.agent, context
+    |                     ^^^^^^^^^^ Expected `Agent[None, str]`, found `Agent[DeepAgentState, str] & ~AlwaysFalsy`
+171 |                 )
+172 |                 # Check for middleware failures
+    |
+info: Method defined here
+   --> DeepResearch/src/datatypes/middleware.py:424:15
+    |
+422 |         self.middleware.sort(key=lambda m: m.config.priority, reverse=True)
+423 |
+424 |     async def process(
+    |               ^^^^^^^
+425 |         self, agent: Agent, ctx: RunContext[DeepAgentState], **kwargs
+    |               ------------ Parameter declared here
+426 |     ) -> list[MiddlewareResult]:
+427 |         """Process all middleware in the pipeline."""
+    |
+info: rule `invalid-argument-type` is enabled by default
 
 error[invalid-argument-type]: Argument to bound method `process` is incorrect
    --> DeepResearch/src/agents/deep_agent_implementations.py:170:33
@@ -682,7 +660,7 @@ info: Method defined here
     |
 info: rule `invalid-argument-type` is enabled by default
 
-warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[None, str] | None`
+warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[DeepAgentState, str] | None`
    --> DeepResearch/src/agents/deep_agent_implementations.py:220:36
     |
 218 |             try:
@@ -694,39 +672,7 @@ warning[possibly-missing-attribute]: Attribute `run` may be missing on object of
     |
 info: rule `possibly-missing-attribute` is enabled by default
 
-error[invalid-argument-type]: Argument to bound method `run` is incorrect
-   --> DeepResearch/src/agents/deep_agent_implementations.py:220:63
-    |
-218 |             try:
-219 |                 if isinstance(input_data, str):
-220 |                     result = await self.agent.run(input_data, deps=context)
-    |                                                               ^^^^^^^^^^^^ Expected `None`, found `DeepAgentState`
-221 |                 else:
-222 |                     result = await self.agent.run(input_data, deps=context)
-    |
-info: Matching overload defined here
-   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
-    |
-125 |     @overload
-126 |     async def run(
-    |               ^^^
-127 |         self,
-128 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
-    |
-   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:134:9
-    |
-132 |         deferred_tool_results: DeferredToolResults | None = None,
-133 |         model: models.Model | models.KnownModelName | str | None = None,
-134 |         deps: AgentDepsT = None,
-    |         ----------------------- Parameter declared here
-135 |         model_settings: ModelSettings | None = None,
-136 |         usage_limits: _usage.UsageLimits | None = None,
-    |
-info: Non-matching overloads for bound method `run`:
-info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: rule `invalid-argument-type` is enabled by default
-
-warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[None, str] | None`
+warning[possibly-missing-attribute]: Attribute `run` may be missing on object of type `Agent[DeepAgentState, str] | None`
    --> DeepResearch/src/agents/deep_agent_implementations.py:222:36
     |
 220 |                     result = await self.agent.run(input_data, deps=context)
@@ -764,37 +710,17 @@ info: Non-matching overloads for bound method `run`:
 info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
 info: rule `invalid-argument-type` is enabled by default
 
-error[invalid-argument-type]: Argument to bound method `run` is incorrect
-   --> DeepResearch/src/agents/deep_agent_implementations.py:222:63
+error[invalid-assignment]: Method `__setitem__` of type `bound method dict[str, Agent[None, str]].__setitem__(key: str, value: Agent[None, str], /) -> None` cannot be called with a key of type `Unknown | str` and a value of type `Agent[DeepAgentState, str] & ~AlwaysFalsy` on object of type `dict[str, Agent[None, str]]`
+   --> DeepResearch/src/agents/deep_agent_implementations.py:399:13
     |
-220 |                     result = await self.agent.run(input_data, deps=context)
-221 |                 else:
-222 |                     result = await self.agent.run(input_data, deps=context)
-    |                                                               ^^^^^^^^^^^^ Expected `None`, found `DeepAgentState`
-223 |
-224 |                 return result
+397 |         self.agents[agent.config.name] = agent
+398 |         if agent.agent:
+399 |             self.agent_registry[agent.config.name] = agent.agent
+    |             ^^^^^^^^^^^^^^^^^^^
+400 |
+401 |     def get_agent(self, name: str) -> BaseDeepAgent | None:
     |
-info: Matching overload defined here
-   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
-    |
-125 |     @overload
-126 |     async def run(
-    |               ^^^
-127 |         self,
-128 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
-    |
-   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:134:9
-    |
-132 |         deferred_tool_results: DeferredToolResults | None = None,
-133 |         model: models.Model | models.KnownModelName | str | None = None,
-134 |         deps: AgentDepsT = None,
-    |         ----------------------- Parameter declared here
-135 |         model_settings: ModelSettings | None = None,
-136 |         usage_limits: _usage.UsageLimits | None = None,
-    |
-info: Non-matching overloads for bound method `run`:
-info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: rule `invalid-argument-type` is enabled by default
+info: rule `invalid-assignment` is enabled by default
 
 error[unresolved-attribute]: Object of type `AgentOrchestrator` has no attribute `execute_task`
    --> DeepResearch/src/agents/deep_agent_implementations.py:555:22
@@ -866,48 +792,75 @@ error[invalid-argument-type]: Argument is incorrect
    |
 info: rule `invalid-argument-type` is enabled by default
 
-error[invalid-argument-type]: Argument to bound method `run` is incorrect
-  --> DeepResearch/src/agents/search_agent.py:67:57
+error[invalid-argument-type]: Argument to bound method `get` is incorrect
+  --> DeepResearch/src/agents/search_agent.py:76:51
    |
-66 |             # Run the agent
-67 |             result = await self.agent.run(user_message, deps=deps)
-   |                                                         ^^^^^^^^^ Expected `None`, found `SearchAgentDependencies`
-68 |
-69 |             # Extract processing time if available
+74 |             # Check if the result contains processing information
+75 |             if hasattr(result, "data") and isinstance(result.data, dict):
+76 |                 processing_time = result.data.get("processing_time")
+   |                                                   ^^^^^^^^^^^^^^^^^ Expected `Never`, found `Literal["processing_time"]`
+77 |                 analytics_recorded = result.data.get("analytics_recorded", False)
    |
 info: Matching overload defined here
-   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
-    |
-125 |     @overload
-126 |     async def run(
-    |               ^^^
-127 |         self,
-128 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
-    |
-   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:134:9
-    |
-132 |         deferred_tool_results: DeferredToolResults | None = None,
-133 |         model: models.Model | models.KnownModelName | str | None = None,
-134 |         deps: AgentDepsT = None,
-    |         ----------------------- Parameter declared here
-135 |         model_settings: ModelSettings | None = None,
-136 |         usage_limits: _usage.UsageLimits | None = None,
-    |
-info: Non-matching overloads for bound method `run`:
-info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
-info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+    --> stdlib/builtins.pyi:2986:9
+     |
+2984 |     # Positional-only in dict, but not in MutableMapping
+2985 |     @overload  # type: ignore[override]
+2986 |     def get(self, key: _KT, default: None = None, /) -> _VT | None:
+     |         ^^^       -------- Parameter declared here
+2987 |         """Return the value for key if key is in the dictionary, else default."""
+     |
+info: Non-matching overloads for bound method `get`:
+info:   (self, key: _KT@dict, default: _VT@dict, /) -> _VT@dict
+info:   (self, key: _KT@dict, default: _T@get, /) -> _VT@dict | _T@get
+info: rule `invalid-argument-type` is enabled by default
+
+error[no-matching-overload]: No overload of bound method `get` matches arguments
+  --> DeepResearch/src/agents/search_agent.py:77:38
+   |
+75 |             if hasattr(result, "data") and isinstance(result.data, dict):
+76 |                 processing_time = result.data.get("processing_time")
+77 |                 analytics_recorded = result.data.get("analytics_recorded", False)
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+78 |
+79 |             return SearchResult(
+   |
+info: First overload defined here
+    --> stdlib/builtins.pyi:2986:9
+     |
+2984 |     # Positional-only in dict, but not in MutableMapping
+2985 |     @overload  # type: ignore[override]
+2986 |     def get(self, key: _KT, default: None = None, /) -> _VT | None:
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2987 |         """Return the value for key if key is in the dictionary, else default."""
+     |
+info: Possible overloads for bound method `get`:
+info:   (self, key: _KT@dict, default: None = None, /) -> _VT@dict | None
+info:   (self, key: _KT@dict, default: _VT@dict, /) -> _VT@dict
+info:   (self, key: _KT@dict, default: _T@get, /) -> _VT@dict | _T@get
+info: rule `no-matching-overload` is enabled by default
+
+error[invalid-argument-type]: Argument is incorrect
+  --> DeepResearch/src/agents/search_agent.py:81:17
+   |
+79 |             return SearchResult(
+80 |                 query=query.query,
+81 |                 content=result.data if hasattr(result, "data") else str(result),
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Expected `str`, found `object`
+82 |                 success=True,
+83 |                 processing_time=processing_time,
+   |
 info: rule `invalid-argument-type` is enabled by default
 
 error[invalid-argument-type]: Argument to bound method `run` is incorrect
-  --> DeepResearch/src/agents/search_agent.py:96:57
+  --> DeepResearch/src/agents/search_agent.py:97:57
    |
-94 |             deps = {"days": days}
-95 |             user_message = SearchAgentPrompts.get_analytics_request_prompt(days)
-96 |             result = await self.agent.run(user_message, deps=deps)
-   |                                                         ^^^^^^^^^ Expected `None`, found `dict[Unknown | str, Unknown | int]`
-97 |             return result.data if hasattr(result, "data") else {}
-98 |         except Exception as e:
+95 |             deps = {"days": days}
+96 |             user_message = SearchAgentPrompts.get_analytics_request_prompt(days)
+97 |             result = await self.agent.run(user_message, deps=deps)
+   |                                                         ^^^^^^^^^ Expected `SearchAgentDependencies`, found `dict[Unknown | str, Unknown | int]`
+98 |             return result.data if hasattr(result, "data") else {}
+99 |         except Exception as e:
    |
 info: Matching overload defined here
    --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
@@ -929,8 +882,8 @@ info: Matching overload defined here
     |
 info: Non-matching overloads for bound method `run`:
 info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
-info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
+info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: SearchAgentDependencies = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[SearchAgentDependencies]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: SearchAgentDependencies = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[SearchAgentDependencies]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
+info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: SearchAgentDependencies = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[SearchAgentDependencies]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: SearchAgentDependencies = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[SearchAgentDependencies]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
 info: rule `invalid-argument-type` is enabled by default
 
 warning[possibly-missing-attribute]: Attribute `health` may be missing on object of type `Unknown | VLLMClient`
@@ -988,39 +941,6 @@ warning[possibly-missing-attribute]: Attribute `chat_completions_stream` may be 
 110 |         return full_response
     |
 info: rule `possibly-missing-attribute` is enabled by default
-
-error[invalid-argument-type]: Argument to bound method `run` is incorrect
-   --> DeepResearch/src/agents/workflow_orchestrator.py:264:59
-    |
-263 |         # Execute primary agent
-264 |         result = await self.primary_agent.run(user_input, deps=deps)
-    |                                                           ^^^^^^^^^ Expected `None`, found `OrchestratorDependencies`
-265 |
-266 |         # Update state
-    |
-info: Matching overload defined here
-   --> .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:126:15
-    |
-125 |     @overload
-126 |     async def run(
-    |               ^^^
-127 |         self,
-128 |         user_prompt: str | Sequence[_messages.UserContent] | None = None,
-    |
-   ::: .venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py:134:9
-    |
-132 |         deferred_tool_results: DeferredToolResults | None = None,
-133 |         model: models.Model | models.KnownModelName | str | None = None,
-134 |         deps: AgentDepsT = None,
-    |         ----------------------- Parameter declared here
-135 |         model_settings: ModelSettings | None = None,
-136 |         usage_limits: _usage.UsageLimits | None = None,
-    |
-info: Non-matching overloads for bound method `run`:
-info:   (self, user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | KnownModelName | str | None = None, deps: AgentDepsT@AbstractAgent = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[AgentDepsT@AbstractAgent]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]
-info: Union variant `Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]]` is incompatible with this call site
-info: Attempted to call union type `Unknown | (Overload[(user_prompt: str | Sequence[@Todo] | None = None, *, output_type: None = None, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[str]], (user_prompt: str | Sequence[@Todo] | None = None, *, output_type: @Todo, message_history: Sequence[@Todo] | None = None, deferred_tool_results: DeferredToolResults | None = None, model: Model | str | None = None, deps: None = None, model_settings: ModelSettings | None = None, usage_limits: UsageLimits | None = None, usage: RunUsage | None = None, infer_name: bool = Literal[True], toolsets: Sequence[AbstractToolset[None]] | None = None, builtin_tools: Sequence[AbstractBuiltinTool] | None = None, event_stream_handler: @Todo | None = None) -> CoroutineType[Any, Any, AgentRunResult[RunOutputDataT@run]]])`
-info: rule `invalid-argument-type` is enabled by default
 
 error[invalid-argument-type]: Argument to function `run_collaborative_pattern_workflow` is incorrect
   --> DeepResearch/src/agents/workflow_pattern_agents.py:81:21
@@ -1132,17 +1052,6 @@ info: Method defined here
 369 |     ) -> InteractionPattern:
     |
 info: rule `invalid-argument-type` is enabled by default
-
-warning[deprecated]: The function `copy` is deprecated
-   --> DeepResearch/src/datatypes/agent_framework_options.py:110:25
-    |
-109 |         # Start with a copy of self
-110 |         combined = self.copy()
-    |                         ^^^^ The `copy` method is deprecated; use `model_copy` instead. See the docstring of `BaseModel.copy` for details about how to handle `include` and `exclude`.
-111 |
-112 |         # Apply updates from other
-    |
-info: rule `deprecated` is enabled by default
 
 warning[possibly-missing-attribute]: Attribute `get_auth_header` may be missing on object of type `AuthConfig | None`
    --> DeepResearch/src/datatypes/postgres_dataclass.py:665:23
@@ -1439,18 +1348,6 @@ info: Method defined here
 74 |         timeout: int = 60,
    |
 info: rule `invalid-argument-type` is enabled by default
-
-warning[redundant-cast]: Value is already of type `int`
-   --> DeepResearch/src/utils/execution_history.py:217:31
-    |
-215 |         if summary["duration"]:
-216 |             avg_duration = cast("float", self.metrics["average_duration"])
-217 |             total_execs_now = cast("int", self.metrics["total_executions"])
-    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-218 |             total_duration = avg_duration * (total_execs_now - 1)
-219 |             self.metrics["average_duration"] = (
-    |
-info: rule `redundant-cast` is enabled by default
 
 error[invalid-argument-type]: Argument to bound method `_execute_code_simple` is incorrect
    --> DeepResearch/src/utils/jupyter/jupyter_code_executor.py:129:52
@@ -1860,30 +1757,6 @@ warning[possibly-missing-attribute]: Attribute `get` may be missing on object of
     |
 info: rule `possibly-missing-attribute` is enabled by default
 
-error[unresolved-attribute]: Object of type `VLLMContainer | VLLMContainer` has no attribute `with_cpu_limit`
-   --> scripts/prompt_testing/testcontainers_vllm.py:302:13
-    |
-300 |         resources = container_config.get("resources", {})
-301 |         if resources.get("cpu_limit"):
-302 |             self.container.with_cpu_limit(resources["cpu_limit"])
-    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-303 |         if resources.get("memory_limit"):
-304 |             self.container.with_memory_limit(resources["memory_limit"])
-    |
-info: rule `unresolved-attribute` is enabled by default
-
-error[unresolved-attribute]: Object of type `VLLMContainer | VLLMContainer` has no attribute `with_memory_limit`
-   --> scripts/prompt_testing/testcontainers_vllm.py:304:13
-    |
-302 |             self.container.with_cpu_limit(resources["cpu_limit"])
-303 |         if resources.get("memory_limit"):
-304 |             self.container.with_memory_limit(resources["memory_limit"])
-    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-305 |
-306 |         # Start the container
-    |
-info: rule `unresolved-attribute` is enabled by default
-
 warning[possibly-missing-attribute]: Attribute `start` may be missing on object of type `VLLMContainer | VLLMContainer`
    --> scripts/prompt_testing/testcontainers_vllm.py:308:9
     |
@@ -2256,4 +2129,4 @@ info: Method defined here
     |
 info: rule `invalid-argument-type` is enabled by default
 
-Found 142 diagnostics
+Found 137 diagnostics

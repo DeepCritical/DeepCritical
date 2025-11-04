@@ -483,7 +483,7 @@ class VLLMPromptTester:
         if reasoning_data["has_reasoning"]:
             # Remove reasoning sections from final answer
             final_answer = response
-            for step in reasoning_data["reasoning_steps"]:  # type: ignore
+            for step in reasoning_data["reasoning_steps"]:
                 final_answer = final_answer.replace(step, "").strip()
 
             # Clean up extra whitespace

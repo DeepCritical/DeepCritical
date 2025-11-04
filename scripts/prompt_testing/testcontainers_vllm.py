@@ -61,6 +61,36 @@ try:
                 # Return a mock URL if container is not actually running
                 return f"http://localhost:{self.container_port}"
 
+        def with_cpu_limit(self, cpu_limit: str | float) -> "VLLMContainer":
+            """Set CPU limit for the container.
+
+            Args:
+                cpu_limit: CPU limit (e.g., "1.5" or 1.5 for 1.5 CPUs)
+
+            Returns:
+                Self for method chaining
+            """
+            # Call parent method - it exists at runtime even if type stubs don't know
+            parent_method = getattr(DockerContainer, "with_cpu_limit", None)
+            if parent_method:
+                parent_method(self, cpu_limit)
+            return self
+
+        def with_memory_limit(self, memory_limit: str) -> "VLLMContainer":
+            """Set memory limit for the container.
+
+            Args:
+                memory_limit: Memory limit (e.g., "1g", "512m")
+
+            Returns:
+                Self for method chaining
+            """
+            # Call parent method - it exists at runtime even if type stubs don't know
+            parent_method = getattr(DockerContainer, "with_memory_limit", None)
+            if parent_method:
+                parent_method(self, memory_limit)
+            return self
+
     VLLM_AVAILABLE = True
 
 except ImportError:
@@ -299,9 +329,9 @@ class VLLMPromptTester:
         # Set resource limits if configured
         resources = container_config.get("resources", {})
         if resources.get("cpu_limit"):
-            self.container.with_cpu_limit(resources["cpu_limit"])  # type: ignore[unresolved-attribute]
+            self.container.with_cpu_limit(resources["cpu_limit"])
         if resources.get("memory_limit"):
-            self.container.with_memory_limit(resources["memory_limit"])  # type: ignore[unresolved-attribute]
+            self.container.with_memory_limit(resources["memory_limit"])
 
         # Start the container
         logger.info("Starting container with timeout: %ds", self.container_timeout)
@@ -651,7 +681,7 @@ class VLLMPromptTester:
         if reasoning_data["has_reasoning"]:
             # Remove reasoning sections from final answer
             final_answer = response
-            for step in reasoning_data["reasoning_steps"]:  # type: ignore
+            for step in reasoning_data["reasoning_steps"]:
                 final_answer = final_answer.replace(step, "").strip()
 
             # Clean up extra whitespace
