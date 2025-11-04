@@ -53,7 +53,7 @@ class DataFusionAgent:
             BioinformaticsAgentPrompts.DATA_FUSION_SYSTEM,
         )
 
-        return Agent(
+        return Agent[BioinformaticsAgentDeps, DataFusionResult](
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=DataFusionResult,
@@ -88,7 +88,7 @@ class GOAnnotationAgent:
         """Create the GO annotation agent."""
         model = AnthropicModel(self.model_name)
 
-        return Agent(
+        return Agent[BioinformaticsAgentDeps, list[GOAnnotation]](
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=list[GOAnnotation],
@@ -125,7 +125,7 @@ class ReasoningAgent:
         """Create the reasoning agent."""
         model = AnthropicModel(self.model_name)
 
-        return Agent(
+        return Agent[BioinformaticsAgentDeps, ReasoningResult](
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=ReasoningResult,
@@ -167,7 +167,7 @@ class DataQualityAgent:
         """Create the data quality agent."""
         model = AnthropicModel(self.model_name)
 
-        return Agent(
+        return Agent[BioinformaticsAgentDeps, dict[str, float]](
             model=model,
             deps_type=BioinformaticsAgentDeps,
             output_type=dict[str, float],
