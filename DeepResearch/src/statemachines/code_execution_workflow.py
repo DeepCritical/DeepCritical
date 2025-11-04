@@ -23,6 +23,10 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+        async def run(self, state: Any) -> Any:
+            """Stub method for when pydantic_graph is not available."""
+            pass
+
     class BaseNode(Generic[T]):
         def __init__(self, *args, **kwargs):
             pass
