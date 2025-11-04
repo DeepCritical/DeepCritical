@@ -35,9 +35,9 @@ class DataFusionAgent:
     ):
         self.model_name = model_name
         self.config = config or {}
-        self.agent = self._create_agent()
+        self.agent: Agent[BioinformaticsAgentDeps, DataFusionResult] = self._create_agent()
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, DataFusionResult]:
         """Create the data fusion agent."""
         # Get model from config or use default
         bioinformatics_config = self.config.get("bioinformatics", {})
@@ -82,9 +82,9 @@ class GOAnnotationAgent:
 
     def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
         self.model_name = model_name
-        self.agent = self._create_agent()
+        self.agent: Agent[BioinformaticsAgentDeps, list[GOAnnotation]] = self._create_agent()
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, list[GOAnnotation]]:
         """Create the GO annotation agent."""
         model = AnthropicModel(self.model_name)
 
@@ -119,9 +119,9 @@ class ReasoningAgent:
 
     def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
         self.model_name = model_name
-        self.agent = self._create_agent()
+        self.agent: Agent[BioinformaticsAgentDeps, ReasoningResult] = self._create_agent()
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, ReasoningResult]:
         """Create the reasoning agent."""
         model = AnthropicModel(self.model_name)
 
@@ -161,9 +161,9 @@ class DataQualityAgent:
 
     def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
         self.model_name = model_name
-        self.agent = self._create_agent()
+        self.agent: Agent[BioinformaticsAgentDeps, dict[str, float]] = self._create_agent()
 
-    def _create_agent(self) -> Agent:
+    def _create_agent(self) -> Agent[BioinformaticsAgentDeps, dict[str, float]]:
         """Create the data quality agent."""
         model = AnthropicModel(self.model_name)
 

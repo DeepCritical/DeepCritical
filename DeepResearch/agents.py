@@ -87,7 +87,7 @@ class BaseAgent(ABC):
         self.dependencies = dependencies or AgentDependencies()
         self.status = AgentStatus.IDLE
         self.history = ExecutionHistory()
-        self._agent: Agent | None = None
+        self._agent: Agent[AgentDependencies, str] | None = None
 
         # Initialize Pydantic AI agent
         self._initialize_agent(system_prompt, instructions)
