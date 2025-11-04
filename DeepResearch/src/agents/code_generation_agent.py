@@ -189,6 +189,8 @@ class CodeGenerationAgent:
         result = await self.bash_agent.run(
             f"Generate a bash command for: {description}"
         )
+        if not hasattr(result, "data"):
+            return ""
         return str(result.data).strip()
 
     async def generate_python_code(self, description: str) -> str:
@@ -201,6 +203,8 @@ class CodeGenerationAgent:
             Generated Python code as string
         """
         result = await self.python_agent.run(f"Generate Python code for: {description}")
+        if not hasattr(result, "data"):
+            return ""
         return str(result.data).strip()
 
     async def generate_code(
@@ -225,6 +229,8 @@ class CodeGenerationAgent:
         result = await self.universal_agent.run(
             f"Analyze and generate code for: {description}"
         )
+        if not hasattr(result, "data"):
+            return "unknown", ""
         response = str(result.data).strip()
 
         # Parse response format: TYPE: [BASH|PYTHON]\nCODE: [code]
