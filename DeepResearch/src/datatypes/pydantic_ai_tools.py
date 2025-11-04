@@ -24,7 +24,6 @@ from DeepResearch.src.utils.pydantic_ai_utils import run_agent_sync as _run_sync
 # from ..tools.base import registry  # Commented out to avoid circular imports
 
 
-@dataclass
 class WebSearchBuiltinRunner:
     """Pydantic AI builtin web search wrapper."""
 
@@ -32,15 +31,22 @@ class WebSearchBuiltinRunner:
         # Import base classes locally to avoid circular imports
         from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
-        ToolRunner.__init__(
-            self,
-            ToolSpec(
-                name="web_search",
-                description="Pydantic AI builtin web search wrapper.",
-                inputs={"query": "TEXT"},
-                outputs={"results": "TEXT", "sources": "TEXT"},
-            ),
+        # Initialize spec for validation
+        self.spec = ToolSpec(
+            name="web_search",
+            description="Pydantic AI builtin web search wrapper.",
+            inputs={"query": "TEXT"},
+            outputs={"results": "TEXT", "sources": "TEXT"},
         )
+
+    def validate(self, params: dict[str, Any]) -> tuple[bool, str | None]:
+        """Validate parameters."""
+        for k, t in self.spec.inputs.items():
+            if k not in params:
+                return False, f"Missing required param: {k}"
+            if t == "TEXT" and not isinstance(params[k], str):
+                return False, f"Invalid type for {k}: expected str"
+        return True, None
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)
@@ -92,7 +98,6 @@ class WebSearchBuiltinRunner:
         return {"success": True, "data": {"results": text, "sources": sources}}
 
 
-@dataclass
 class CodeExecBuiltinRunner:
     """Pydantic AI builtin code execution wrapper."""
 
@@ -100,15 +105,22 @@ class CodeExecBuiltinRunner:
         # Import base classes locally to avoid circular imports
         from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
-        ToolRunner.__init__(
-            self,
-            ToolSpec(
-                name="pyd_code_exec",
-                description="Pydantic AI builtin code execution wrapper.",
-                inputs={"code": "TEXT"},
-                outputs={"output": "TEXT"},
-            ),
+        # Initialize spec for validation
+        self.spec = ToolSpec(
+            name="pyd_code_exec",
+            description="Pydantic AI builtin code execution wrapper.",
+            inputs={"code": "TEXT"},
+            outputs={"output": "TEXT"},
         )
+
+    def validate(self, params: dict[str, Any]) -> tuple[bool, str | None]:
+        """Validate parameters."""
+        for k, t in self.spec.inputs.items():
+            if k not in params:
+                return False, f"Missing required param: {k}"
+            if t == "TEXT" and not isinstance(params[k], str):
+                return False, f"Invalid type for {k}: expected str"
+        return True, None
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)
@@ -162,7 +174,6 @@ class CodeExecBuiltinRunner:
         return {"success": True, "data": {"output": getattr(result, "output", "")}}
 
 
-@dataclass
 class UrlContextBuiltinRunner:
     """Pydantic AI builtin URL context wrapper."""
 
@@ -170,15 +181,22 @@ class UrlContextBuiltinRunner:
         # Import base classes locally to avoid circular imports
         from DeepResearch.src.tools.base import ToolRunner, ToolSpec
 
-        ToolRunner.__init__(
-            self,
-            ToolSpec(
-                name="pyd_url_context",
-                description="Pydantic AI builtin URL context wrapper.",
-                inputs={"url": "TEXT"},
-                outputs={"content": "TEXT"},
-            ),
+        # Initialize spec for validation
+        self.spec = ToolSpec(
+            name="pyd_url_context",
+            description="Pydantic AI builtin URL context wrapper.",
+            inputs={"url": "TEXT"},
+            outputs={"content": "TEXT"},
         )
+
+    def validate(self, params: dict[str, Any]) -> tuple[bool, str | None]:
+        """Validate parameters."""
+        for k, t in self.spec.inputs.items():
+            if k not in params:
+                return False, f"Missing required param: {k}"
+            if t == "TEXT" and not isinstance(params[k], str):
+                return False, f"Invalid type for {k}: expected str"
+        return True, None
 
     def run(self, params: dict[str, Any]) -> dict[str, Any]:
         ok, err = self.validate(params)

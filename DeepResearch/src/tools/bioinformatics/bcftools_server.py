@@ -419,7 +419,7 @@ class BCFtoolsServer(MCPServerBase):
 
         return [bcftools_annotate_tool, bcftools_view_tool]
 
-    def get_pydantic_ai_agent(self) -> Agent:
+    def get_pydantic_ai_agent(self) -> Agent[None, str]:
         """Get or create a Pydantic AI agent with bcftools tools."""
         if self._pydantic_ai_agent is None:
             self._pydantic_ai_agent = Agent(
@@ -437,7 +437,7 @@ class BCFtoolsServer(MCPServerBase):
         """Run a query using Pydantic AI agent with bcftools tools."""
         agent = self.get_pydantic_ai_agent()
         result = await agent.run(query)
-        return result.data
+        return str(getattr(result, "data", ""))
 
     @mcp_tool()
     def bcftools_annotate(
