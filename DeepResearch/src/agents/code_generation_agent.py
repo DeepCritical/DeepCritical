@@ -48,7 +48,7 @@ class CodeGenerationAgent:
         self.python_agent = self._create_python_agent()
         self.universal_agent = self._create_universal_agent()
 
-    def _create_bash_agent(self) -> Agent:
+    def _create_bash_agent(self) -> Agent[None, str]:
         """Create agent specialized for bash command generation."""
         system_prompt = """
         You are an expert bash/shell scripting agent. Your task is to generate safe, efficient bash commands
@@ -72,12 +72,12 @@ class CodeGenerationAgent:
           Response: cp config.json config.json.backup && echo "Backup created: config.json.backup"
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )
 
-    def _create_python_agent(self) -> Agent:
+    def _create_python_agent(self) -> Agent[None, str]:
         """Create agent specialized for Python code generation."""
         system_prompt = """
         You are an expert Python programmer. Your task is to generate Python code that accomplishes
@@ -138,12 +138,12 @@ class CodeGenerationAgent:
               return averages
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )
 
-    def _create_universal_agent(self) -> Agent:
+    def _create_universal_agent(self) -> Agent[None, str]:
         """Create universal agent that determines code type and generates appropriately."""
         system_prompt = """
         You are an expert code generation agent. Analyze the user's request and determine whether
@@ -172,7 +172,7 @@ class CodeGenerationAgent:
         CODE: [your generated code here]
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )

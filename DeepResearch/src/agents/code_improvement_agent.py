@@ -43,7 +43,7 @@ class CodeImprovementAgent:
         self.analysis_agent = self._create_analysis_agent()
         self.optimization_agent = self._create_optimization_agent()
 
-    def _create_improvement_agent(self) -> Agent:
+    def _create_improvement_agent(self) -> Agent[None, str]:
         """Create agent specialized for fixing code errors."""
         system_prompt = """
         You are an expert code improvement agent. Your task is to analyze code execution errors
@@ -71,12 +71,12 @@ class CodeImprovementAgent:
         EXPLANATION: [what was fixed and why]
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )
 
-    def _create_analysis_agent(self) -> Agent:
+    def _create_analysis_agent(self) -> Agent[None, str]:
         """Create agent specialized for error analysis."""
         system_prompt = """
         You are an expert error analysis agent. Your task is to analyze execution errors
@@ -104,12 +104,12 @@ class CodeImprovementAgent:
         PREVENTION: [how to avoid similar errors in future]
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )
 
-    def _create_optimization_agent(self) -> Agent:
+    def _create_optimization_agent(self) -> Agent[None, str]:
         """Create agent specialized for code optimization."""
         system_prompt = """
         You are an expert code optimization agent. Your task is to improve code
@@ -138,7 +138,7 @@ class CodeImprovementAgent:
         ROBUSTNESS_IMPROVEMENTS: [error handling and validation additions]
         """
 
-        return Agent(
+        return Agent[None, str](
             model=self.model_name,
             system_prompt=system_prompt,
         )
