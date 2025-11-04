@@ -549,7 +549,7 @@ class CodeExecutionWorkflow:
         )
 
         # Execute workflow
-        final_state = await self.graph.run(initial_state)
+        final_state = await self.graph.run(cast(Any, initial_state))
 
         return cast("CodeExecutionWorkflowState", final_state)
 
