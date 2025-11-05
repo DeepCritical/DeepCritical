@@ -119,8 +119,8 @@ class TestGunzipServer(BaseBioinformaticsToolTest):
 
         assert isinstance(tools, list)
         assert len(tools) > 0
-        # At least one tool should be available
-        assert any(t.name for t in tools)
+        # Should include core operations
+        assert "decompress" in tools
 
     # ============================================================================
     # Decompress Operation Tests (behavior: file decompression)
@@ -372,7 +372,8 @@ class TestGunzipServer(BaseBioinformaticsToolTest):
         assert result["success"] is False
         assert "error" in result
         error_msg = result["error"].lower()
-        assert "missing" in error_msg and "operation" in error_msg
+        assert "missing" in error_msg
+        assert "operation" in error_msg
 
     @pytest.mark.optional
     def test_detects_corrupted_gzip_file(self, tool_instance, tmp_path):
