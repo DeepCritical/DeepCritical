@@ -466,7 +466,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
 
         try:
             # Create app configuration from Hydra config
-            app_config = self._create_app_configuration(cfg, app_mode)
+            app_config = self._create_app_configuration(cfg, app_mode)  # type: ignore[arg-type]
             ctx.state.app_configuration = app_config
 
             # Create agent orchestrator
@@ -748,22 +748,6 @@ class Synthesize(BaseNode[ResearchState]):
         return End(answer)
 
 
-# --- Graph ---
-# Note: The actual graph is created in run_graph() with all nodes instantiated
-# This creates a minimal graph for reference, but the full graph with all nodes is in run_graph()
-research_graph = Graph(
-    nodes=(
-        Plan,
-        Search,
-        Analyze,
-        Synthesize,
-        PrimaryREACTWorkflow,
-        EnhancedREACTWorkflow,
-    ),
-    state_type=ResearchState,
-)
-
-
 # --- Challenge-specific nodes ---
 @dataclass
 class PrepareChallenge(BaseNode[ResearchState]):
@@ -941,7 +925,7 @@ class PrimeEvaluate(BaseNode[ResearchState]):
         if results["success"]:
             # Extract key results from data bag
             data_bag = results.get("data_bag", {})
-            summary = self._extract_summary(data_bag, problem)
+            summary = self._extract_summary(data_bag, problem)  # type: ignore[arg-type]
             answer = f"PRIME Analysis Complete\n\nQ: {ctx.state.question}\n\n{summary}"
         else:
             # Handle failure case
