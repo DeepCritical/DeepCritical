@@ -32,6 +32,7 @@ dependencies = [
   "neo4j>=6.0.2",
   "sentence-transformers>=5.1.1",
   "numpy>=2.2.6",
+  "faiss-cpu>=1.7.4",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,7 @@ dev = [
   "pytest-cov>=4.0.0",
   "requests-mock>=1.12.1",
   "pytest-mock>=3.15.1",
+  "mypy>=1.6.1",
 ]
 
 [project.scripts]
