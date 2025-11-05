@@ -6,7 +6,6 @@ without actual container deployment.
 """
 
 import pytest
-from pydantic import ValidationError
 
 from DeepResearch.src.datatypes.mcp import (
     MCPServerConfig,
@@ -62,34 +61,21 @@ class TestMCPServerManager:
 
     @pytest.mark.asyncio
     async def test_deploy_server_fails_for_nonexistent_server(self, mcp_manager):
-        """
-        deploy_server() returns FAILED deployment for invalid server.
-
-        NOTE: Current implementation has a bug at mcp_server_tools.py:165-169.
-        It returns MCPServerDeployment without the required 'configuration' field,
-        causing Pydantic ValidationError. This test expects ValidationError until
-        the bug is fixed.
-        """
+        """deploy_server() returns FAILED deployment for invalid server."""
         config = MCPServerConfig(server_name="fake_server")
 
-        # Expect ValidationError due to bug (missing configuration field)
-        with pytest.raises(ValidationError) as exc_info:
-            await mcp_manager.deploy_server("fake_server", config)
+        deployment = await mcp_manager.deploy_server("fake_server", config)
 
-        # Verify it's the configuration field that's missing
-        error_msg = str(exc_info.value)
-        assert "configuration" in error_msg or "Field required" in error_msg
+        assert deployment.status == MCPServerStatus.FAILED
+        assert deployment.error_message is not None
+        assert "fake_server" in deployment.error_message
+        assert "not found" in deployment.error_message
+        assert deployment.configuration == config
+        assert deployment.server_type == config.server_type
 
     @pytest.mark.asyncio
     async def test_deploy_server_catches_exceptions(self, mcp_manager, monkeypatch):
-        """
-        deploy_server() returns FAILED deployment on exception.
-
-        NOTE: Current implementation has a bug at mcp_server_tools.py:178-182.
-        It returns MCPServerDeployment without the required 'configuration' field,
-        causing Pydantic ValidationError. This test expects ValidationError until
-        the bug is fixed.
-        """
+        """deploy_server() returns FAILED deployment on exception."""
 
         # Mock server class to raise exception during __init__
         class FaultyServer:
@@ -100,10 +86,10 @@ class TestMCPServerManager:
         monkeypatch.setitem(mcp_manager.servers, "test_server", FaultyServer)
         config = MCPServerConfig(server_name="test_server")
 
-        # Expect ValidationError due to bug (missing configuration field)
-        with pytest.raises(ValidationError) as exc_info:
-            await mcp_manager.deploy_server("test_server", config)
+        deployment = await mcp_manager.deploy_server("test_server", config)
 
-        # Verify it's the configuration field that's missing
-        error_msg = str(exc_info.value)
-        assert "configuration" in error_msg or "Field required" in error_msg
+        assert deployment.status == MCPServerStatus.FAILED
+        assert deployment.error_message is not None
+        assert "Deployment error" in deployment.error_message
+        assert deployment.configuration == config
+        assert deployment.server_type == config.server_type
