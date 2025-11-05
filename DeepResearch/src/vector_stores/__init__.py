@@ -1,16 +1,25 @@
 from __future__ import annotations
 
-from ..datatypes.neo4j_types import (
-    Neo4jVectorStoreConfig,
-    VectorIndexMetric,
-    VectorSearchDefaults,
-)
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
-from .neo4j_vector_store import Neo4jVectorStore
+from .faiss_config import FaissVectorStoreConfig
+from .faiss_vector_store import FaissVectorStore
+
+try:  # pragma: no cover - optional dependency guard
+    from ..datatypes.neo4j_types import (
+        Neo4jVectorStoreConfig,
+        VectorIndexMetric,
+        VectorSearchDefaults,
+    )
+    from .neo4j_vector_store import Neo4jVectorStore
+except Exception:  # pragma: no cover - neo4j not installed in minimal envs
+    Neo4jVectorStore = None  # type: ignore[assignment]
+    Neo4jVectorStoreConfig = None  # type: ignore[assignment]
 
 __all__ = [
     "Neo4jVectorStore",
     "Neo4jVectorStoreConfig",
+    "FaissVectorStore",
+    "FaissVectorStoreConfig",
     "create_vector_store",
 ]
 
@@ -31,6 +40,9 @@ def create_vector_store(
         ValueError: If store type is not supported
     """
     if config.store_type == VectorStoreType.NEO4J:
+        if Neo4jVectorStore is None or Neo4jVectorStoreConfig is None:
+            msg = "Neo4j support requires the neo4j Python driver"
+            raise ValueError(msg)
         if isinstance(config, Neo4jVectorStoreConfig):
             return Neo4jVectorStore(config, embeddings)
         # Try to create Neo4jVectorStoreConfig from base config
@@ -77,5 +89,12 @@ def create_vector_store(
         return Neo4jVectorStore(
             vector_store_config, embeddings, neo4j_config=connection
         )
+
+    if config.store_type == VectorStoreType.FAISS:
+        if isinstance(config, FaissVectorStoreConfig):
+            faiss_config = config
+        else:
+            faiss_config = FaissVectorStoreConfig.model_validate(config.model_dump())
+        return FaissVectorStore(faiss_config, embeddings)
 
     raise ValueError(f"Unsupported vector store type: {config.store_type}")

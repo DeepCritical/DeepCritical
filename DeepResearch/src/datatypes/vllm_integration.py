@@ -20,8 +20,13 @@ from .rag import (
     EmbeddingsConfig,
     LLMModelType,
     LLMProvider,
+    RAGConfig,
+    VectorStore,
+    VectorStoreConfig,
+    VectorStoreType,
     VLLMConfig,
 )
+from DeepResearch.src.vector_stores import create_vector_store
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -396,11 +401,19 @@ class VLLMDeployment(BaseModel):
 class VLLMRAGSystem(BaseModel):
     """VLLM-based RAG system implementation."""
 
-    deployment: VLLMDeployment = Field(..., description="VLLM deployment configuration")
-    embeddings: VLLMEmbeddings | None = Field(
-        None, description="VLLM embeddings provider"
+    deployment: VLLMDeployment = Field(
+        ..., description="VLLM deployment configuration"
+    )
+    rag_config: RAGConfig | None = Field(
+        None, description="Resolved RAG configuration for the current workflow"
+    )
+    embeddings: Embeddings | None = Field(
+        None, description="Embeddings provider used for vector operations"
     )
     llm: VLLMLLMProvider | None = Field(None, description="VLLM LLM provider")
+    vector_store: VectorStore | None = Field(
+        None, description="Backing vector store instance"
+    )
 
     async def initialize(self) -> None:
         """Initialize the VLLM RAG system."""
@@ -408,7 +421,7 @@ class VLLMRAGSystem(BaseModel):
         await self.deployment.wait_for_servers()
 
         # Initialize embeddings if embedding server is configured
-        if self.deployment.embedding_config:
+        if self.embeddings is None and self.deployment.embedding_config:
             embedding_config = EmbeddingsConfig(
                 model_type=EmbeddingModelType.CUSTOM,
                 model_name=self.deployment.embedding_config.model_name,
@@ -416,6 +429,9 @@ class VLLMRAGSystem(BaseModel):
                 num_dimensions=384,  # Default for sentence-transformers models
             )
             self.embeddings = VLLMEmbeddings(embedding_config)
+
+        if self.embeddings is None and self.rag_config:
+            self.embeddings = DeterministicEmbeddings(self.rag_config.embeddings)
 
         # Initialize LLM provider
         llm_config = VLLMConfig(
@@ -426,4 +442,61 @@ class VLLMRAGSystem(BaseModel):
         )
         self.llm = VLLMLLMProvider(llm_config)
 
+        if self.rag_config and self.vector_store is None:
+            if self.embeddings is None:
+                msg = "Embeddings provider must be initialized before vector store creation"
+                raise RuntimeError(msg)
+
+            self.vector_store = create_vector_store(
+                self._ensure_vector_store_config(self.rag_config.vector_store),
+                self.embeddings,
+            )
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @staticmethod
+    def _ensure_vector_store_config(
+        config: VectorStoreConfig,
+    ) -> VectorStoreConfig:
+        """Ensure FAISS configs have persistence paths when missing."""
+
+        if config.store_type is VectorStoreType.FAISS:
+            updates: dict[str, str] = {}
+            if getattr(config, "index_path", None) is None:
+                updates["index_path"] = ":memory:"
+            if getattr(config, "metadata_path", None) is None:
+                updates["metadata_path"] = ":memory:"
+            if updates:
+                return config.model_copy(update=updates)
+        return config
+
+
+class DeterministicEmbeddings(Embeddings):
+    """Deterministic embedding provider used for local workflows and tests."""
+
+    def __init__(self, config: EmbeddingsConfig):
+        super().__init__(config)
+
+    def _encode(self, text: str) -> list[float]:
+        dimension = max(self.config.num_dimensions, 8)
+        vector = [0.0] * dimension
+        for index, character in enumerate(text[: dimension - 1]):
+            vector[index] = ((ord(character) % 256) + 1) / 255.0
+        vector[-1] = min(len(text) / 100.0, 1.0)
+        return vector
+
+    async def vectorize_documents(
+        self, document_chunks: list[str]
+    ) -> list[list[float]]:
+        return [self._encode(text) for text in document_chunks]
+
+    async def vectorize_query(self, text: str) -> list[float]:
+        return self._encode(text)
+
+    def vectorize_documents_sync(
+        self, document_chunks: list[str]
+    ) -> list[list[float]]:
+        return [self._encode(text) for text in document_chunks]
+
+    def vectorize_query_sync(self, text: str) -> list[float]:
+        return self._encode(text)

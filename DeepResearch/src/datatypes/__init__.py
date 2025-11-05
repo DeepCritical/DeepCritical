@@ -82,6 +82,7 @@ from .coding_base import (
     CommandLineCodeResult,
     IPythonCodeResult,
 )
+from .chunking import ChunkingConfig
 from .deep_agent_tools import (
     EditFileRequest,
     EditFileResponse,
@@ -289,6 +290,7 @@ __all__ = [
     "ChatResponse",
     "ChatResponseUpdate",
     "CitationAnnotation",
+    "ChunkingConfig",
     "CodeBlock",
     "CodeExecBuiltinRunner",
     "CodeExecutionConfig",

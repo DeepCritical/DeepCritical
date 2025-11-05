@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 # Import existing dataclasses for alignment
 from .chunk_dataclass import Chunk, generate_id
+from .chunking import ChunkingConfig
 from .document_dataclass import Document as ChonkieDocument
 
 if TYPE_CHECKING:
@@ -456,8 +457,10 @@ class RAGConfig(BaseModel):
     vector_store: VectorStoreConfig = Field(
         ..., description="Vector store configuration"
     )
-    chunk_size: int = Field(1000, description="Document chunk size for processing")
-    chunk_overlap: int = Field(200, description="Overlap between chunks")
+    chunking: ChunkingConfig = Field(
+        default_factory=ChunkingConfig,
+        description="Chunking configuration for document processing",
+    )
     max_context_length: int = Field(4000, description="Maximum context length for LLM")
     enable_reranking: bool = Field(False, description="Enable document reranking")
     reranker_model: str | None = Field(None, description="Reranker model name")
@@ -465,7 +468,8 @@ class RAGConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_config(cls, values):
-        """Validate RAG configuration."""
+        """Validate RAG configuration and normalize chunking settings."""
+
         embeddings = values.get("embeddings")
         vector_store = values.get("vector_store")
 
@@ -478,7 +482,34 @@ class RAGConfig(BaseModel):
                 )
                 raise ValueError(msg)
 
+        # Allow legacy chunk_size/chunk_overlap inputs while moving to ChunkingConfig
+        chunking_values = values.get("chunking")
+        if isinstance(chunking_values, ChunkingConfig):
+            chunking: dict[str, Any] = chunking_values.model_dump()
+        elif isinstance(chunking_values, dict):
+            chunking = dict(chunking_values)
+        else:
+            chunking = {}
+
+        if "chunk_size" in values and "chunk_size" not in chunking:
+            chunking["chunk_size"] = values["chunk_size"]
+        if "chunk_overlap" in values and "chunk_overlap" not in chunking:
+            chunking["chunk_overlap"] = values["chunk_overlap"]
+        values["chunking"] = chunking
+
         return values
+
+    @property
+    def chunk_size(self) -> int:
+        """Backwards-compatible access to chunk size."""
+
+        return self.chunking.chunk_size
+
+    @property
+    def chunk_overlap(self) -> int:
+        """Backwards-compatible access to chunk overlap."""
+
+        return self.chunking.chunk_overlap
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -495,8 +526,7 @@ class RAGConfig(BaseModel):
                     "port": 8000,
                 },
                 "vector_store": {"store_type": "chroma", "embedding_dimension": 1536},
-                "chunk_size": 1000,
-                "chunk_overlap": 200,
+                "chunking": {"chunk_size": 1000, "chunk_overlap": 200},
             }
         }
     )

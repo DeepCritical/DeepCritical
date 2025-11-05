@@ -109,6 +109,8 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             VectorStoreType,
             VLLMConfig,
         )
+        from DeepResearch.src.datatypes.chunking import ChunkingConfig
+        from DeepResearch.src.vector_stores.faiss_config import FaissVectorStoreConfig
 
         # Create embeddings config
         embeddings_cfg = rag_cfg.get("embeddings", {})
@@ -135,22 +137,48 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
         # Create vector store config
         vs_cfg = rag_cfg.get("vector_store", {})
-        vector_store_config = VectorStoreConfig(
-            store_type=VectorStoreType(vs_cfg.get("store_type", "chroma")),
-            connection_string=vs_cfg.get("connection_string"),
-            host=vs_cfg.get("host", "localhost"),
-            port=vs_cfg.get("port", 8000),
-            database=vs_cfg.get("database"),
-            collection_name=vs_cfg.get("collection_name", "research_docs"),
-            embedding_dimension=embeddings_config.num_dimensions,
+        store_type = VectorStoreType(vs_cfg.get("store_type", "chroma"))
+        if store_type is VectorStoreType.FAISS:
+            vector_store_config = FaissVectorStoreConfig(
+                store_type=store_type,
+                connection_string=vs_cfg.get("connection_string"),
+                host=vs_cfg.get("host"),
+                port=vs_cfg.get("port"),
+                database=vs_cfg.get("database"),
+                collection_name=vs_cfg.get("collection_name", "research_docs"),
+                embedding_dimension=embeddings_config.num_dimensions,
+                distance_metric=vs_cfg.get("distance_metric", "cosine"),
+                index_path=vs_cfg.get("index_path"),
+                metadata_path=vs_cfg.get("metadata_path"),
+                normalize_vectors=vs_cfg.get("normalize_vectors"),
+            )
+        else:
+            vector_store_config = VectorStoreConfig(
+                store_type=store_type,
+                connection_string=vs_cfg.get("connection_string"),
+                host=vs_cfg.get("host", "localhost"),
+                port=vs_cfg.get("port", 8000),
+                database=vs_cfg.get("database"),
+                collection_name=vs_cfg.get("collection_name", "research_docs"),
+                embedding_dimension=embeddings_config.num_dimensions,
+                distance_metric=vs_cfg.get("distance_metric", "cosine"),
+                index_type=vs_cfg.get("index_type"),
+            )
+
+        chunking_config = ChunkingConfig(
+            chunk_size=rag_cfg.get(
+                "chunk_size", rag_cfg.get("chunking", {}).get("chunk_size", 1000)
+            ),
+            chunk_overlap=rag_cfg.get(
+                "chunk_overlap", rag_cfg.get("chunking", {}).get("chunk_overlap", 200)
+            ),
         )
 
         return RAGConfig(
             embeddings=embeddings_config,
             llm=llm_config,
             vector_store=vector_store_config,
-            chunk_size=rag_cfg.get("chunk_size", 1000),
-            chunk_overlap=rag_cfg.get("chunk_overlap", 200),
+            chunking=chunking_config,
         )
 
 
@@ -235,7 +263,9 @@ class ProcessDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             # Chunk documents based on configuration
             rag_config = ctx.state.rag_config
             chunked_documents = await self._chunk_documents(
-                ctx.state.documents, rag_config.chunk_size, rag_config.chunk_overlap
+                ctx.state.documents,
+                rag_config.chunking.chunk_size,
+                rag_config.chunking.chunk_overlap,
             )
             ctx.state.documents = chunked_documents
 
@@ -302,9 +332,12 @@ class ProcessDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
                     },
                 )
                 chunked_docs.append(chunk_doc)
-
-                start = end - chunk_overlap
                 chunk_id += 1
+
+                if end >= len(content):
+                    break
+
+                start = end if chunk_overlap <= 0 else max(end - chunk_overlap, 0)
 
         return chunked_docs
 
@@ -319,21 +352,21 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             # Initialize VLLM RAG system
             rag_config = ctx.state.rag_config
             deployment = self._create_vllm_deployment(rag_config)
-            rag_system = VLLMRAGSystem(deployment=deployment)
+            rag_system = VLLMRAGSystem(
+                deployment=deployment, rag_config=rag_config
+            )
 
             await rag_system.initialize()
 
-            # Store documents
-            # TODO: Implement vector store integration
-            # if hasattr(rag_system, 'vector_store') and rag_system.vector_store:
-            #     document_ids = await rag_system.vector_store.add_documents(
-            #         ctx.state.documents
-            #     )
-            #     ctx.state.processing_steps.append(
-            #         f"stored_{len(document_ids)}_documents"
-            #     )
-            # else:
-            ctx.state.processing_steps.append("vector_store_not_available")
+            if rag_system.vector_store is None:
+                raise RuntimeError("Vector store was not initialized")
+
+            document_ids = await rag_system.vector_store.add_documents(
+                ctx.state.documents
+            )
+            ctx.state.processing_steps.append(
+                f"stored_{len(document_ids)}_documents"
+            )
 
             # Store RAG system in context for querying
             ctx.set("rag_system", rag_system)
@@ -360,19 +393,10 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             port=rag_config.llm.port,
         )
 
-        # Create embedding server config
-        embedding_server_config = VLLMEmbeddingServerConfig(
-            model_name=rag_config.embeddings.model_name,
-            host=(
-                str(rag_config.embeddings.base_url)
-                if rag_config.embeddings.base_url
-                else "localhost"
-            ),
-            port=8001,  # Default embedding port
-        )
-
         return VLLMDeployment(
-            llm_config=llm_server_config, embedding_config=embedding_server_config
+            llm_config=llm_server_config,
+            embedding_config=None,
+            auto_start=False,
         )
 
 
@@ -384,44 +408,37 @@ class QueryRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         """Execute RAG query using RAGAgent."""
         try:
             # Import here to avoid circular import
-            from DeepResearch.src.agents import RAGAgent
+            from DeepResearch.src.agents.rag_agent import RAGAgent
 
-            # Create RAGAgent
-            rag_agent = RAGAgent()
-            # await rag_agent.initialize()  # Method doesn't exist
+            rag_system = ctx.get("rag_system")
+            if not rag_system or not rag_system.vector_store or not rag_system.embeddings:
+                msg = "RAG system not initialized with vector store and embeddings"
+                raise RuntimeError(msg)
 
-            # Create RAG query
-            rag_query = RAGQuery(
-                text=ctx.state.question, search_type=SearchType.SIMILARITY, top_k=5
+            rag_agent = RAGAgent(
+                embeddings=rag_system.embeddings,
+                vector_store=rag_system.vector_store,
             )
 
-            # Execute query using agent
+            rag_query = RAGQuery(
+                text=ctx.state.question,
+                search_type=SearchType.SIMILARITY,
+                top_k=5,
+            )
+
             start_time = time.time()
-            rag_response = rag_agent.execute_rag_query(rag_query)
+            rag_response = await rag_agent.execute_rag_query(rag_query)
             processing_time = time.time() - start_time
 
-            if rag_response:
-                ctx.state.rag_result = (
-                    rag_response.model_dump()
-                    if hasattr(rag_response, "model_dump")
-                    else rag_response.__dict__
-                )
-                ctx.state.rag_response = rag_response
-                ctx.state.processing_steps.append(
-                    f"query_completed_in_{processing_time:.2f}s"
-                )
-            else:
-                # Fallback to direct system query
-                rag_system = ctx.get("rag_system")
-                if rag_system:
-                    rag_response = await rag_system.query(rag_query)
-                    ctx.state.rag_response = rag_response
-                    ctx.state.processing_steps.append(
-                        f"fallback_query_completed_in_{processing_time:.2f}s"
-                    )
-                else:
-                    msg = "RAG system not initialized and agent failed"
-                    raise RuntimeError(msg)
+            ctx.state.rag_result = (
+                rag_response.model_dump()
+                if hasattr(rag_response, "model_dump")
+                else rag_response.__dict__
+            )
+            ctx.state.rag_response = rag_response
+            ctx.state.processing_steps.append(
+                f"query_completed_in_{processing_time:.2f}s"
+            )
 
             return GenerateResponse()
 
