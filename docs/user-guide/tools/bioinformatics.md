@@ -1,8 +1,415 @@
 # Bioinformatics Tools
 
-DeepCritical provides comprehensive bioinformatics tools for multi-source data fusion, gene ontology analysis, protein structure analysis, and integrative biological reasoning.
+DeepCritical provides comprehensive bioinformatics tools including 30 MCP (Model Context Protocol) servers that wrap CLI bioinformatics tools in containerized, type-safe, AI-callable interfaces. These servers enable seamless integration of genomics pipelines with AI agents.
 
 ## Overview
+
+The bioinformatics tools ecosystem consists of two layers:
+
+1. **MCP Bioinformatics Servers** (30 servers): Containerized CLI tool wrappers for sequence alignment, quality control, variant calling, quantification, and data processing
+2. **High-Level Analysis Tools**: Multi-source data fusion, gene ontology analysis, protein structure analysis, and integrative biological reasoning
+
+## MCP Bioinformatics Servers
+
+### What are MCP Servers?
+
+MCP (Model Context Protocol) servers wrap command-line bioinformatics tools in:
+- **Type-safe interfaces**: Pydantic validation for all inputs/outputs
+- **Docker containers**: Reproducible, isolated execution environments
+- **AI-callable tools**: Direct integration with Pydantic AI agents
+- **Mock mode**: CI-compatible testing without installing tools
+
+### Server Architecture
+
+All 30 MCP servers follow a consistent pattern:
+```python
+from DeepResearch.src.tools.bioinformatics.gunzip_server import GunzipServer
+
+# Deploy server with testcontainers
+server = GunzipServer(docker_enabled=True)
+await server.deploy_with_testcontainers()
+
+# Execute operations
+result = await server.decompress(
+    input_file="sample.fastq.gz",
+    output_file="sample.fastq",
+    keep_original=True
+)
+```
+
+### Available MCP Servers (30 Total)
+
+#### Data Processing & Compression
+- **gunzip** - Compress/decompress gzip files (FASTQ.gz, genome archives)
+  - Primary operations: decompress, compress, test, list
+  - Use case: 99% of genomics data is distributed as .gz
+  - Container: python:3.11-slim with gzip v1.10
+
+#### Sequence Alignment
+- **bwa** - Burrows-Wheeler Aligner for short reads
+- **bowtie2** - Fast aligner for gapped, local, and paired-end alignment
+- **hisat2** - Graph-based alignment for RNA-seq
+- **star** - Ultrafast RNA-seq aligner
+- **minimap2** - Long-read alignment and assembly
+
+#### Quality Control
+- **fastqc** - Quality assessment for high-throughput sequence data
+- **multiqc** - Aggregate reports from multiple bioinformatics tools
+- **qualimap** - Quality control of alignment sequencing data
+- **trimgalore** - Adapter and quality trimming
+- **fastp** - All-in-one FASTQ preprocessor
+
+#### Variant Calling
+- **freebayes** - Bayesian genetic variant detector
+- **bcftools** - VCF/BCF manipulation and variant calling
+- **gatk** - Genome Analysis Toolkit for variant discovery
+- **varscan** - Variant detection in massively parallel sequencing
+
+#### Quantification
+- **salmon** - Fast transcript-level quantification
+- **kallisto** - Near-optimal RNA-seq quantification
+- **featurecounts** - Read assignment to genomic features
+- **htseq** - Framework for high-throughput sequencing data
+
+#### Assembly & Annotation
+- **stringtie** - Transcript assembly and quantification
+- **cufflinks** - Transcriptome assembly from RNA-seq
+- **augustus** - Gene prediction in eukaryotes
+- **prokka** - Rapid prokaryotic genome annotation
+
+#### Utilities
+- **samtools** - SAM/BAM/CRAM manipulation
+- **bedtools** - Genome arithmetic operations
+- **blast** - Basic Local Alignment Search Tool
+- **vcftools** - VCF file manipulation
+- **picard** - Java tools for high-throughput sequencing
+
+#### Specialized
+- **mafft** - Multiple sequence alignment
+- **muscle** - Multiple sequence alignment by log-expectation
+- **hmmer** - Protein homology detection via HMMs
+
+### Using MCP Servers
+
+#### Basic Usage Pattern
+
+```python
+from DeepResearch.src.tools.bioinformatics.gunzip_server import GunzipServer
+from pathlib import Path
+
+async def process_genomics_data():
+    # Initialize server
+    gunzip = GunzipServer(
+        docker_enabled=True,
+        mock_mode=False  # Set to True for testing without Docker
+    )
+
+    # Deploy container
+    await gunzip.deploy_with_testcontainers()
+
+    try:
+        # Decompress FASTQ.gz file
+        result = await gunzip.decompress(
+            input_file="/data/sample.fastq.gz",
+            output_file="/data/sample.fastq",
+            keep_original=True,  # Keep .gz file
+            force=False,  # Don't overwrite existing files
+            to_stdout=False  # Write to file, not stdout
+        )
+
+        if result["success"]:
+            print(f"Decompressed: {result['output_file']}")
+            print(f"Original size: {result['compressed_size']}")
+            print(f"Decompressed size: {result['decompressed_size']}")
+            print(f"Compression ratio: {result['compression_ratio']}")
+        else:
+            print(f"Error: {result['error']}")
+
+    finally:
+        # Cleanup container
+        await gunzip.cleanup()
+```
+
+#### Mock Mode (CI/Testing)
+
+```python
+# Mock mode returns synthetic success responses without requiring Docker
+gunzip = GunzipServer(mock_mode=True)
+
+result = await gunzip.decompress(
+    input_file="sample.fastq.gz",
+    output_file="sample.fastq"
+)
+# Returns: {"success": True, "mock": True, ...}
+```
+
+#### Integration with Pydantic AI Agents
+
+All MCP servers are automatically callable from Pydantic AI agents:
+
+```python
+from pydantic_ai import Agent
+from DeepResearch.src.tools.mcp_server_tools import MCPServerManager
+
+# Agent with access to all 30 bioinformatics tools
+agent = Agent(
+    model="anthropic:claude-sonnet-4-0",
+    tools=[MCPServerManager().get_all_tools()]
+)
+
+# Agent can now call tools directly
+result = await agent.run(
+    "Decompress sample.fastq.gz and run quality control with FastQC"
+)
+```
+
+### Detailed Example: GunzipServer
+
+The gunzip server provides comprehensive gzip compression/decompression capabilities essential for genomics workflows.
+
+#### Operations
+
+**1. Decompress (.gz → file)**
+```python
+result = await gunzip.decompress(
+    input_file="sample.fastq.gz",
+    output_file="sample.fastq",  # Optional: inferred if not provided
+    keep_original=True,  # Keep .gz file after decompression
+    force=False,  # Don't overwrite existing output
+    to_stdout=False  # Write to file, not stdout
+)
+
+# Returns:
+{
+    "success": True,
+    "operation": "decompress",
+    "input_file": "sample.fastq.gz",
+    "output_file": "sample.fastq",
+    "compressed_size": 1234567,
+    "decompressed_size": 4567890,
+    "compression_ratio": 27.0,
+    "duration_seconds": 2.3
+}
+```
+
+**2. Compress (file → .gz)**
+```python
+result = await gunzip.compress(
+    input_file="sample.fastq",
+    output_file="sample.fastq.gz",  # Optional: inferred if not provided
+    compression_level=6,  # 1 (fast) to 9 (best compression)
+    keep_original=True,  # Keep original file
+    force=False
+)
+
+# Returns:
+{
+    "success": True,
+    "operation": "compress",
+    "input_file": "sample.fastq",
+    "output_file": "sample.fastq.gz",
+    "original_size": 4567890,
+    "compressed_size": 1234567,
+    "compression_ratio": 27.0,
+    "compression_level": 6,
+    "duration_seconds": 3.1
+}
+```
+
+**3. Test Integrity**
+```python
+result = await gunzip.test(input_file="sample.fastq.gz")
+
+# Returns:
+{
+    "success": True,
+    "operation": "test",
+    "input_file": "sample.fastq.gz",
+    "is_valid": True,
+    "file_size": 1234567
+}
+```
+
+**4. List Compression Info**
+```python
+result = await gunzip.list(input_file="sample.fastq.gz")
+
+# Returns:
+{
+    "success": True,
+    "operation": "list",
+    "input_file": "sample.fastq.gz",
+    "compressed_size": 1234567,
+    "decompressed_size": 4567890,
+    "compression_ratio": 27.0,
+    "compression_method": "deflate"
+}
+```
+
+#### Error Handling
+
+All operations return error information without raising exceptions:
+
+```python
+result = await gunzip.decompress(input_file="missing.gz")
+
+# Returns:
+{
+    "success": False,
+    "error": "File not found: missing.gz",
+    "operation": "decompress",
+    "input_file": "missing.gz"
+}
+```
+
+#### Configuration
+
+```python
+from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerConfig
+
+config = MCPServerConfig(
+    name="gunzip",
+    description="Compress/decompress gzip files for genomics workflows",
+    version="1.10",
+    image="python:3.11-slim",  # Includes gzip v1.10
+    tag="latest",
+    registry="docker.io",
+    volumes={"/tmp": "/tmp"},  # Map host /tmp to container /tmp
+    environment={},
+    docker_enabled=True,
+    mock_mode=False
+)
+
+gunzip = GunzipServer(config=config)
+```
+
+### Best Practices
+
+#### 1. Always Use Testcontainers for Isolation
+```python
+async with gunzip.deploy_with_testcontainers():
+    # Container is automatically cleaned up after this block
+    result = await gunzip.decompress(...)
+```
+
+#### 2. Enable Mock Mode for CI/Testing
+```python
+@pytest.mark.optional  # Skip if Docker not available
+async def test_gunzip_decompress():
+    gunzip = GunzipServer(mock_mode=not docker_available())
+    result = await gunzip.decompress(...)
+    assert result["success"]
+```
+
+#### 3. Validate Inputs with Pydantic
+All MCP servers use Pydantic validation:
+```python
+# This will raise ValidationError before execution
+result = await gunzip.compress(
+    input_file="",  # Invalid: empty string
+    compression_level=10  # Invalid: must be 1-9
+)
+```
+
+#### 4. Handle Large Files Efficiently
+```python
+# Stream to stdout for large files
+result = await gunzip.decompress(
+    input_file="large.fastq.gz",
+    to_stdout=True,  # Stream instead of writing file
+    keep_original=True
+)
+```
+
+#### 5. Check Operation Success
+```python
+result = await gunzip.decompress(input_file="sample.gz")
+
+if not result["success"]:
+    logger.error(f"Decompression failed: {result['error']}")
+    return
+
+# Proceed with success case
+process_decompressed_file(result["output_file"])
+```
+
+### Testing MCP Servers
+
+All MCP servers inherit comprehensive test suites:
+
+```python
+import pytest
+from DeepResearch.src.tools.bioinformatics.gunzip_server import GunzipServer
+from tests.test_bioinformatics_tools.base.test_base_tool import BaseBioinformaticsToolTest
+
+class TestGunzipServer(BaseBioinformaticsToolTest):
+    """Test suite for gunzip server.
+
+    Inherits 5 standard tests:
+    - test_tool_initialization
+    - test_server_config_valid
+    - test_mock_mode_enabled
+    - test_docker_disabled_mode
+    - test_deploy_with_testcontainers (optional)
+    """
+
+    @pytest.fixture
+    def tool_class(self):
+        return GunzipServer
+
+    @pytest.mark.optional
+    async def test_decompress_success(self, tool_instance):
+        """Test successful decompression."""
+        result = await tool_instance.decompress(
+            input_file="sample.fastq.gz",
+            keep_original=True
+        )
+        assert result["success"]
+        assert result["operation"] == "decompress"
+        assert "decompressed_size" in result
+```
+
+### Configuration Reference
+
+#### Environment Variables
+```bash
+# Docker configuration
+DOCKER_ENABLED=true
+DOCKER_TIMEOUT=300
+
+# Resource limits
+MCP_SERVER_MEMORY_LIMIT="2g"
+MCP_SERVER_CPU_LIMIT="2.0"
+
+# Volumes
+MCP_SERVER_DATA_DIR="/tmp/mcp_data"
+```
+
+#### YAML Configuration
+```yaml
+# configs/bioinformatics/mcp_servers.yaml
+mcp_servers:
+  gunzip:
+    enabled: true
+    docker_enabled: true
+    image: "python:3.11-slim"
+    tag: "latest"
+    volumes:
+      /tmp: /tmp
+    timeout: 300
+
+  fastqc:
+    enabled: true
+    docker_enabled: true
+    image: "quay.io/biocontainers/fastqc"
+    tag: "0.12.1"
+
+  # ... 28 more servers
+```
+
+---
+
+## High-Level Analysis Tools
 
 The bioinformatics tools integrate multiple biological databases and provide sophisticated analysis capabilities for gene function prediction, protein analysis, and biological data integration.
 
