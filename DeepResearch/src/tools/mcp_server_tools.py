@@ -164,8 +164,11 @@ class MCPServerManager:
         if not server_class:
             return MCPServerDeployment(
                 server_name=server_name,
+                server_type=config.server_type,
+                configuration=config,
                 status=MCPServerStatus.FAILED,
                 error_message=f"Server {server_name} not found",
+                tools_available=[],
             )
 
         try:
@@ -177,8 +180,11 @@ class MCPServerManager:
         except Exception as e:
             return MCPServerDeployment(
                 server_name=server_name,
+                server_type=config.server_type,
+                configuration=config,
                 status=MCPServerStatus.FAILED,
                 error_message=str(e),
+                tools_available=[],
             )
 
     def stop_server(self, server_name: str) -> bool:
