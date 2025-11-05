@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import faiss  # type: ignore
 import numpy as np
@@ -32,21 +32,19 @@ class FAISSVectorStore(VectorStore):
         """
         super().__init__(config, embeddings)
         if not isinstance(config, FAISSVectorStoreConfig):
-            raise TypeError(
-                "config must be an instance of FAISSVectorStoreConfig"
-            )
+            raise TypeError("config must be an instance of FAISSVectorStoreConfig")
 
         self.index_path = config.index_path
         self.data_path = config.data_path
 
-        self.index: Optional[faiss.IndexIDMap] = None
-        self.documents: Dict[str, Document] = {}
+        self.index: faiss.IndexIDMap | None = None
+        self.documents: dict[str, Document] = {}
         self._load()
 
     def _load(self):
         """Loads the index and document data from disk if they exist."""
         if os.path.exists(self.index_path):
-            self.index = faiss.read_index(self.index_path)
+            self.index = faiss.read_index(self.index_path)  # type: ignore
         if os.path.exists(self.data_path):
             with open(self.data_path, "rb") as f:
                 self.documents = pickle.load(f)
@@ -54,13 +52,13 @@ class FAISSVectorStore(VectorStore):
     def _save(self):
         """Saves the index and document data to disk."""
         if self.index:
-            faiss.write_index(self.index, self.index_path)
+            faiss.write_index(self.index, self.index_path)  # type: ignore
         with open(self.data_path, "wb") as f:
             pickle.dump(self.documents, f)
 
     async def add_documents(
-        self, documents: List[Document], **kwargs: Any
-    ) -> List[str]:
+        self, documents: list[Document], **kwargs: Any
+    ) -> list[str]:
         """
         Adds documents to the vector store.
         """
@@ -80,10 +78,10 @@ class FAISSVectorStore(VectorStore):
         new_vectors = np.array(embeddings, dtype=np.float32)
         if self.index is None:
             dimension = new_vectors.shape[1]
-            base_index = faiss.IndexFlatL2(dimension)
-            self.index = faiss.IndexIDMap(base_index)
+            base_index = faiss.IndexFlatL2(dimension)  # type: ignore
+            self.index = faiss.IndexIDMap(base_index)  # type: ignore
 
-        self.index.add_with_ids(new_vectors, doc_id_vectors)
+        self.index.add_with_ids(new_vectors, doc_id_vectors)  # type: ignore
 
         self._save()
         return doc_ids
@@ -107,8 +105,10 @@ class FAISSVectorStore(VectorStore):
         if not document_ids or self.index is None:
             return False
 
-        ids_to_remove = np.array([hash(doc_id) for doc_id in document_ids], dtype=np.int64)
-        self.index.remove_ids(ids_to_remove)
+        ids_to_remove = np.array(
+            [hash(doc_id) for doc_id in document_ids], dtype=np.int64
+        )
+        self.index.remove_ids(ids_to_remove)  # type: ignore
 
         for doc_id in document_ids:
             if doc_id in self.documents:
@@ -140,9 +140,9 @@ class FAISSVectorStore(VectorStore):
         self,
         query: str,
         search_type: SearchType,
-        retrieval_query: Optional[str] = None,
+        retrieval_query: str | None = None,
         **kwargs: Any,
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """
         Searches the vector store for a given query.
         """
@@ -167,7 +167,7 @@ class FAISSVectorStore(VectorStore):
         top_k = kwargs.get("top_k", 10)
         query_vector = np.array([query_embedding], dtype=np.float32)
 
-        distances, indices = self.index.search(query_vector, top_k)
+        distances, indices = self.index.search(query_vector, top_k)  # type: ignore
 
         # Since we are using IndexIDMap, the indices are the hashed document IDs.
         # We need to find the original document IDs.

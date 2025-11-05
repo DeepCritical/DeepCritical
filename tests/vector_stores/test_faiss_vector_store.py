@@ -1,11 +1,11 @@
 import os
 from unittest.mock import MagicMock
 
+import faiss  # type: ignore
 import numpy as np
 import pytest
-import faiss
 
-from DeepResearch.src.datatypes.rag import Document, SearchType
+from DeepResearch.src.datatypes.rag import Document, SearchType, VectorStoreType
 from DeepResearch.src.vector_stores.faiss_config import FAISSVectorStoreConfig
 from DeepResearch.src.vector_stores.faiss_vector_store import FAISSVectorStore
 
@@ -34,7 +34,11 @@ def faiss_store(tmp_path, mock_embeddings):
     """Fixture for a FAISSVectorStore instance using a temporary path."""
     index_path = str(tmp_path / "test.index")
     data_path = str(tmp_path / "test.data")
-    config = FAISSVectorStoreConfig(index_path=index_path, data_path=data_path)
+    config = FAISSVectorStoreConfig(
+        store_type=VectorStoreType.FAISS,
+        index_path=index_path,
+        data_path=data_path,
+    )
     return FAISSVectorStore(config, mock_embeddings)
 
 
@@ -71,6 +75,7 @@ async def test_search(faiss_store):
     # The document with id="doc2" will have embedding [1.0, 1.0] and thus a distance of 0.
     assert results[0].document.id == "doc2"
 
+
 @pytest.mark.asyncio
 async def test_delete_documents(faiss_store):
     """Tests deleting documents from the store."""
@@ -88,6 +93,7 @@ async def test_delete_documents(faiss_store):
     assert "doc1" not in faiss_store.documents
     assert "doc2" in faiss_store.documents
 
+
 @pytest.mark.asyncio
 async def test_get_document(faiss_store):
     """Tests retrieving a document by its ID."""
@@ -100,6 +106,7 @@ async def test_get_document(faiss_store):
 
     non_existent_doc = await faiss_store.get_document("doc_not_exist")
     assert non_existent_doc is None
+
 
 @pytest.mark.asyncio
 async def test_update_document(faiss_store):
@@ -115,12 +122,17 @@ async def test_update_document(faiss_store):
     assert retrieved_doc is not None
     assert retrieved_doc.content == "updated content"
 
+
 @pytest.mark.asyncio
 async def test_save_and_load(tmp_path, mock_embeddings):
     """Tests that data is correctly saved to and loaded from disk."""
     index_path = str(tmp_path / "test.index")
     data_path = str(tmp_path / "test.data")
-    config = FAISSVectorStoreConfig(index_path=index_path, data_path=data_path)
+    config = FAISSVectorStoreConfig(
+        store_type=VectorStoreType.FAISS,
+        index_path=index_path,
+        data_path=data_path,
+    )
 
     # Create a store and add documents to it. This will trigger a save.
     store1 = FAISSVectorStore(config, mock_embeddings)
