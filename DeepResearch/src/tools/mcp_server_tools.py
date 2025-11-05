@@ -30,6 +30,7 @@ from DeepResearch.src.tools.bioinformatics.featurecounts_server import (
 )
 from DeepResearch.src.tools.bioinformatics.flye_server import FlyeServer
 from DeepResearch.src.tools.bioinformatics.freebayes_server import FreeBayesServer
+from DeepResearch.src.tools.bioinformatics.gunzip_server import GunzipServer
 from DeepResearch.src.tools.bioinformatics.hisat2_server import HISAT2Server
 from DeepResearch.src.tools.bioinformatics.kallisto_server import KallistoServer
 from DeepResearch.src.tools.bioinformatics.macs3_server import MACS3Server
@@ -146,6 +147,8 @@ class MCPServerManager:
             # Variant Analysis
             "bcftools": BCFtoolsServer,
             "freebayes": FreeBayesServer,
+            # Compression & Utilities
+            "gunzip": GunzipServer,
         }
 
     def get_server(self, server_name: str):
