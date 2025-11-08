@@ -46,7 +46,7 @@ conda activate genomics-demo
 
 Installs via bioconda:
 - GATK 4.6.1.0
-- SAMtools 1.17
+- SAMtools 1.22
 - FastQC 0.11.9
 
 ### 3. Run Pipeline
