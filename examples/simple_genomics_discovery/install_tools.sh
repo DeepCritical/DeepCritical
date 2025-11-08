@@ -31,9 +31,9 @@ conda activate genomics-demo
 
 # Install bioinformatics tools from bioconda
 echo "📥 Installing tools from bioconda channel..."
-conda install -c bioconda -y \
+conda install -c conda-forge -c bioconda -y \
     gatk4=4.6.1.0 \
-    samtools=1.17 \
+    samtools=1.22 \
     fastqc=0.11.9
 
 echo ""
