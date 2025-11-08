@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-
 CACHE_DIR = Path(__file__).parent / "cache"
 
 
