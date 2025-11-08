@@ -12,7 +12,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-from genomics_agent import run_genomics_analysis
+from examples.simple_genomics_discovery.genomics_agent import run_genomics_analysis
 
 
 async def main():
@@ -53,7 +53,7 @@ async def main():
             prompt=prompt,
             data_dir=data_dir,
             output_dir=output_dir,
-            reference_genome=reference
+            reference_genome=reference,
         )
     except Exception as e:
         print(f"ERROR: Agent execution failed: {e}")

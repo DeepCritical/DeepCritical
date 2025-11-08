@@ -9,6 +9,7 @@ Reference: burner_docs/haplotype_agent/02_implementation_plan.md
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,12 @@ from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import (
 )
 from DeepResearch.src.tools.bioinformatics.samtools_server import SamtoolsServer
 from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
+
+# For testing without API key
+try:
+    from pydantic_ai.models.test import TestModel
+except ImportError:
+    TestModel = None  # type: ignore[assignment,misc]
 
 # Instantiate MCP servers (Phase 2: MCP Integration)
 fastqc_server = FastQCServer()
@@ -42,8 +49,15 @@ class GenomicsAnalysisResult(BaseModel):
 
 
 # Create Pydantic AI agent (Phase 3: Agent Creation)
+# Use TestModel for testing/CI (no API key needed), real model otherwise
+_model = (
+    TestModel()
+    if (not os.getenv("ANTHROPIC_API_KEY") and TestModel is not None)
+    else "anthropic:claude-sonnet-4-0"
+)
+
 genomics_agent = Agent[GenomicsAgentDeps, GenomicsAnalysisResult](
-    model="anthropic:claude-sonnet-4-0",
+    model=_model,
     deps_type=GenomicsAgentDeps,
     output_type=GenomicsAnalysisResult,  # CORRECT API per 03_code_patterns.md
     system_prompt="""
@@ -77,7 +91,7 @@ Return structured results with:
 - output_files: Paths to all output files
 - summary: Human-readable summary
 - variants_found: Number of variants (if applicable)
-"""
+""",
 )
 
 
@@ -86,9 +100,7 @@ Return structured results with:
 
 @genomics_agent.tool
 async def run_fastqc(
-    ctx: RunContext[GenomicsAgentDeps],
-    bam_file: str,
-    output_dir: str | None = None
+    ctx: RunContext[GenomicsAgentDeps], bam_file: str, output_dir: str | None = None
 ) -> dict[str, Any]:
     """
     Run FastQC quality control on a BAM file.
@@ -113,7 +125,7 @@ async def run_fastqc(
         return {
             "success": False,
             "error": f"BAM file not found: {bam_file}",
-            "tool": "fastqc"
+            "tool": "fastqc",
         }
 
     # Call MCP server (don't duplicate subprocess logic)
@@ -122,21 +134,16 @@ async def run_fastqc(
             input_files=[str(bam_path)],
             output_dir=str(out_dir),
             extract=False,
-            threads=4
+            threads=4,
         )
         return result
     except Exception as e:
-        return {
-            "success": False,
-            "error": f"FastQC failed: {e}",
-            "tool": "fastqc"
-        }
+        return {"success": False, "error": f"FastQC failed: {e}", "tool": "fastqc"}
 
 
 @genomics_agent.tool
 async def run_samtools_flagstat(
-    ctx: RunContext[GenomicsAgentDeps],
-    bam_file: str
+    ctx: RunContext[GenomicsAgentDeps], bam_file: str
 ) -> dict[str, Any]:
     """
     Run samtools flagstat to get BAM file statistics.
@@ -159,7 +166,7 @@ async def run_samtools_flagstat(
         return {
             "success": False,
             "error": f"BAM file not found: {bam_file}",
-            "tool": "samtools_flagstat"
+            "tool": "samtools_flagstat",
         }
 
     # Call MCP server (ACTUAL method name and parameter)
@@ -172,7 +179,7 @@ async def run_samtools_flagstat(
         return {
             "success": False,
             "error": f"Samtools flagstat failed: {e}",
-            "tool": "samtools_flagstat"
+            "tool": "samtools_flagstat",
         }
 
 
@@ -182,7 +189,7 @@ async def run_haplotypecaller(
     bam_file: str,
     reference: str | None = None,
     output_vcf: str = "variants.vcf",
-    region: str | None = None
+    region: str | None = None,
 ) -> dict[str, Any]:
     """
     Run GATK HaplotypeCaller for variant calling.
@@ -210,39 +217,38 @@ async def run_haplotypecaller(
         return {
             "success": False,
             "error": f"BAM file not found: {bam_file}",
-            "tool": "haplotypecaller"
+            "tool": "haplotypecaller",
         }
 
     if not ref_path.exists():
         return {
             "success": False,
             "error": f"Reference genome not found: {ref_path}",
-            "tool": "haplotypecaller"
+            "tool": "haplotypecaller",
         }
 
     # Call MCP server (ACTUAL method name is call_variants)
     try:
         result = haplotypecaller_server.call_variants(
             input_bam=str(bam_path),
-            reference_fasta=str(ref_path),  # FIXED: parameter is reference_fasta not reference
+            reference_fasta=str(
+                ref_path
+            ),  # FIXED: parameter is reference_fasta not reference
             output_vcf=str(vcf_path),
-            intervals=region  # FIXED: intervals is str not list[str]
+            intervals=region,  # FIXED: intervals is str not list[str]
         )
         return result
     except Exception as e:
         return {
             "success": False,
             "error": f"GATK HaplotypeCaller failed: {e}",
-            "tool": "haplotypecaller"
+            "tool": "haplotypecaller",
         }
 
 
 # Main entry point (Phase 5: Entry Point)
 async def run_genomics_analysis(
-    prompt: str,
-    data_dir: Path,
-    output_dir: Path,
-    reference_genome: Path
+    prompt: str, data_dir: Path, output_dir: Path, reference_genome: Path
 ) -> GenomicsAnalysisResult:
     """
     Run genomics analysis based on natural language prompt.
@@ -257,9 +263,7 @@ async def run_genomics_analysis(
         Structured analysis results (GenomicsAnalysisResult)
     """
     deps = GenomicsAgentDeps(
-        data_dir=data_dir,
-        output_dir=output_dir,
-        reference_genome=reference_genome
+        data_dir=data_dir, output_dir=output_dir, reference_genome=reference_genome
     )
 
     result = await genomics_agent.run(prompt, deps=deps)

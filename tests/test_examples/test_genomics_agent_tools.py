@@ -28,21 +28,27 @@ class TestAgentToolsRegistered:
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
         # Check tool is in registered functions
-        tool_names = [tool.name for tool in genomics_agent._function_toolset.tools.values()]
+        tool_names = [
+            tool.name for tool in genomics_agent._function_toolset.tools.values()
+        ]
         assert "run_fastqc" in tool_names
 
     def test_run_samtools_flagstat_tool_registered(self):
         """Test that run_samtools_flagstat tool is registered."""
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
-        tool_names = [tool.name for tool in genomics_agent._function_toolset.tools.values()]
+        tool_names = [
+            tool.name for tool in genomics_agent._function_toolset.tools.values()
+        ]
         assert "run_samtools_flagstat" in tool_names
 
     def test_run_haplotypecaller_tool_registered(self):
         """Test that run_haplotypecaller tool is registered."""
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
-        tool_names = [tool.name for tool in genomics_agent._function_toolset.tools.values()]
+        tool_names = [
+            tool.name for tool in genomics_agent._function_toolset.tools.values()
+        ]
         assert "run_haplotypecaller" in tool_names
 
 
@@ -64,7 +70,7 @@ class TestRunFastQCTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         # Create dummy BAM file
@@ -74,7 +80,10 @@ class TestRunFastQCTool:
         # Mock the MCP server method
         with patch.object(fastqc_server, "run_fastqc", return_value={"success": True}):
             # Get the tool function
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_fastqc_tool = tools["run_fastqc"]
 
             # Create mock context
@@ -100,7 +109,7 @@ class TestRunFastQCTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
@@ -110,7 +119,10 @@ class TestRunFastQCTool:
         assert len(deps.tools_called) == 0
 
         with patch.object(fastqc_server, "run_fastqc", return_value={"success": True}):
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_fastqc_tool = tools["run_fastqc"]
 
             mock_ctx = MagicMock()
@@ -130,13 +142,15 @@ class TestRunFastQCTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
         # DON'T create the BAM file - it's missing
 
-        tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        tools = {
+            tool.name: tool for tool in genomics_agent._function_toolset.tools.values()
+        }
         run_fastqc_tool = tools["run_fastqc"]
 
         mock_ctx = MagicMock()
@@ -165,14 +179,19 @@ class TestRunSamtoolsFlagstatTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
         (deps.data_dir / "test.bam").touch()
 
-        with patch.object(samtools_server, "samtools_flagstat", return_value={"success": True}):
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        with patch.object(
+            samtools_server, "samtools_flagstat", return_value={"success": True}
+        ):
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_flagstat_tool = tools["run_samtools_flagstat"]
 
             mock_ctx = MagicMock()
@@ -196,14 +215,19 @@ class TestRunSamtoolsFlagstatTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
         (deps.data_dir / "test.bam").touch()
 
-        with patch.object(samtools_server, "samtools_flagstat", return_value={"success": True}):
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        with patch.object(
+            samtools_server, "samtools_flagstat", return_value={"success": True}
+        ):
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_flagstat_tool = tools["run_samtools_flagstat"]
 
             mock_ctx = MagicMock()
@@ -229,7 +253,7 @@ class TestRunHaplotypeCallerTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
@@ -237,8 +261,13 @@ class TestRunHaplotypeCallerTool:
         (deps.data_dir / "test.bam").touch()
         deps.reference_genome.touch()
 
-        with patch.object(haplotypecaller_server, "call_variants", return_value={"success": True}):
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        with patch.object(
+            haplotypecaller_server, "call_variants", return_value={"success": True}
+        ) as mock_call_variants:
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_hc_tool = tools["run_haplotypecaller"]
 
             mock_ctx = MagicMock()
@@ -247,7 +276,7 @@ class TestRunHaplotypeCallerTool:
             result = await run_hc_tool.function(mock_ctx, "test.bam")
 
             # Verify MCP server was called (not GATK CLI directly)
-            haplotypecaller_server.call_variants.assert_called_once()
+            mock_call_variants.assert_called_once()
             assert result["success"] is True
 
     @pytest.mark.asyncio
@@ -262,7 +291,7 @@ class TestRunHaplotypeCallerTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "ref.fasta"
+            reference_genome=tmp_path / "ref.fasta",
         )
 
         deps.data_dir.mkdir()
@@ -270,8 +299,13 @@ class TestRunHaplotypeCallerTool:
         (deps.data_dir / "test.bam").touch()
         deps.reference_genome.touch()
 
-        with patch.object(haplotypecaller_server, "call_variants", return_value={"success": True}):
-            tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        with patch.object(
+            haplotypecaller_server, "call_variants", return_value={"success": True}
+        ):
+            tools = {
+                tool.name: tool
+                for tool in genomics_agent._function_toolset.tools.values()
+            }
             run_hc_tool = tools["run_haplotypecaller"]
 
             mock_ctx = MagicMock()
@@ -290,7 +324,7 @@ class TestRunHaplotypeCallerTool:
         deps = GenomicsAgentDeps(
             data_dir=tmp_path / "data",
             output_dir=tmp_path / "output",
-            reference_genome=tmp_path / "missing_ref.fasta"
+            reference_genome=tmp_path / "missing_ref.fasta",
         )
 
         deps.data_dir.mkdir()
@@ -298,7 +332,9 @@ class TestRunHaplotypeCallerTool:
         (deps.data_dir / "test.bam").touch()
         # DON'T create reference genome
 
-        tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
+        tools = {
+            tool.name: tool for tool in genomics_agent._function_toolset.tools.values()
+        }
         run_hc_tool = tools["run_haplotypecaller"]
 
         mock_ctx = MagicMock()

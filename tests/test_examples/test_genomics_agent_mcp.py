@@ -17,6 +17,7 @@ class TestMCPServerIntegration:
         """Test that genomics_agent module can be imported."""
         # This will fail until we create genomics_agent.py
         from examples.simple_genomics_discovery import genomics_agent
+
         assert genomics_agent is not None
 
     def test_fastqc_server_exists(self):

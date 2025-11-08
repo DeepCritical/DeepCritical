@@ -38,7 +38,12 @@ class TestDemoScriptStructure:
         if demo_script.exists():
             with open(demo_script) as f:
                 content = f.read()
-                assert "from genomics_agent import" in content or "import genomics_agent" in content
+                assert (
+                    "from genomics_agent import" in content
+                    or "import genomics_agent" in content
+                    or "from examples.simple_genomics_discovery.genomics_agent import"
+                    in content
+                )
 
     def test_demo_script_imports_run_genomics_analysis(self):
         """Test that demo script imports run_genomics_analysis function."""
@@ -122,4 +127,8 @@ class TestDemoScriptStructure:
                 # Should have usage message
                 assert "Usage:" in content or "usage:" in content
                 # Should show example
-                assert "Example:" in content or "example:" in content or "uv run" in content
+                assert (
+                    "Example:" in content
+                    or "example:" in content
+                    or "uv run" in content
+                )

@@ -18,6 +18,7 @@ class TestGenomicsAgentDeps:
         """Test that GenomicsAgentDeps can be imported."""
         # This will fail until we create genomics_deps.py
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
+
         assert GenomicsAgentDeps is not None
 
     def test_create_deps_with_required_fields(self):
@@ -27,7 +28,7 @@ class TestGenomicsAgentDeps:
         deps = GenomicsAgentDeps(
             data_dir=Path("/data"),
             output_dir=Path("/output"),
-            reference_genome=Path("/ref.fasta")
+            reference_genome=Path("/ref.fasta"),
         )
 
         assert deps.data_dir == Path("/data")
@@ -41,7 +42,7 @@ class TestGenomicsAgentDeps:
         deps = GenomicsAgentDeps(
             data_dir=Path("/data"),
             output_dir=Path("/output"),
-            reference_genome=Path("/ref.fasta")
+            reference_genome=Path("/ref.fasta"),
         )
 
         # Default values from 02_implementation_plan.md
@@ -59,7 +60,7 @@ class TestGenomicsAgentDeps:
             data_dir=Path("/data"),
             output_dir=Path("/output"),
             reference_genome=Path("/ref.fasta"),
-            config=config
+            config=config,
         )
 
         assert deps.config == config
@@ -72,7 +73,7 @@ class TestGenomicsAgentDeps:
         deps = GenomicsAgentDeps(
             data_dir=Path("/data"),
             output_dir=Path("/output"),
-            reference_genome=Path("/ref.fasta")
+            reference_genome=Path("/ref.fasta"),
         )
 
         # Simulate tool tracking
@@ -90,7 +91,7 @@ class TestGenomicsAgentDeps:
         deps = GenomicsAgentDeps(
             data_dir=Path("/data"),
             output_dir=Path("/output"),
-            reference_genome=Path("/ref.fasta")
+            reference_genome=Path("/ref.fasta"),
         )
 
         assert isinstance(deps.data_dir, Path)
@@ -114,6 +115,7 @@ class TestGenomicsAnalysisResult:
         from examples.simple_genomics_discovery.genomics_agent import (
             GenomicsAnalysisResult,
         )
+
         assert GenomicsAnalysisResult is not None
 
     def test_analysis_result_is_pydantic_model(self):
@@ -121,6 +123,7 @@ class TestGenomicsAnalysisResult:
         from examples.simple_genomics_discovery.genomics_agent import (
             GenomicsAnalysisResult,
         )
+
         assert issubclass(GenomicsAnalysisResult, BaseModel)
 
     def test_analysis_result_required_fields(self):
@@ -135,7 +138,7 @@ class TestGenomicsAnalysisResult:
             success=True,
             tools_used=["fastqc"],
             output_files={"qc_report": "/path/to/report.html"},
-            summary="Quality control completed successfully"
+            summary="Quality control completed successfully",
         )
 
         assert result.analysis_type == "qc_only"
@@ -155,7 +158,7 @@ class TestGenomicsAnalysisResult:
             success=True,
             tools_used=["fastqc"],
             output_files={},
-            summary="Test"
+            summary="Test",
         )
 
         assert result.error is None
@@ -173,7 +176,7 @@ class TestGenomicsAnalysisResult:
             tools_used=[],
             output_files={},
             summary="Failed",
-            error="File not found: sample.bam"
+            error="File not found: sample.bam",
         )
 
         assert result.error == "File not found: sample.bam"
@@ -191,7 +194,7 @@ class TestGenomicsAnalysisResult:
             tools_used=["fastqc", "samtools", "haplotypecaller"],
             output_files={"vcf": "/output/variants.vcf"},
             summary="Found 41 variants",
-            variants_found=41
+            variants_found=41,
         )
 
         assert result.variants_found == 41
@@ -203,6 +206,7 @@ class TestGenomicsAgentCreation:
     def test_can_import_genomics_agent(self):
         """Test that genomics_agent can be imported."""
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
+
         assert genomics_agent is not None
 
     def test_agent_is_pydantic_ai_agent(self):
@@ -215,13 +219,19 @@ class TestGenomicsAgentCreation:
         assert isinstance(genomics_agent, Agent)
 
     def test_agent_model_is_claude_sonnet(self):
-        """Test that agent uses claude-sonnet-4-0 model."""
+        """Test that agent uses claude-sonnet-4-0 model (or TestModel in CI)."""
+        import os
+
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
         # Access agent's model configuration
         model_name = str(genomics_agent.model)
-        # AnthropicModel() confirms it's using Anthropic
-        assert "Anthropic" in model_name
+        # In CI (no API key): uses TestModel
+        # With API key: uses AnthropicModel
+        if os.getenv("ANTHROPIC_API_KEY"):
+            assert "Anthropic" in model_name
+        else:
+            assert "TestModel" in model_name or "Anthropic" in model_name
 
     def test_agent_has_system_prompt(self):
         """Test that agent has a system prompt."""
@@ -244,9 +254,10 @@ class TestGenomicsAgentCreation:
         system_prompt = str(genomics_agent._system_prompts[0]).lower()
 
         # Should mention the MCP server backing
-        assert any(keyword in system_prompt for keyword in [
-            "fastqc", "samtools", "haplotypecaller", "gatk"
-        ])
+        assert any(
+            keyword in system_prompt
+            for keyword in ["fastqc", "samtools", "haplotypecaller", "gatk"]
+        )
 
 
 class TestRunGenomicsAnalysis:
@@ -257,6 +268,7 @@ class TestRunGenomicsAnalysis:
         from examples.simple_genomics_discovery.genomics_agent import (
             run_genomics_analysis,
         )
+
         assert run_genomics_analysis is not None
         assert callable(run_genomics_analysis)
 
@@ -305,7 +317,7 @@ class TestRunGenomicsAnalysis:
             success=True,
             tools_used=[],
             output_files={},
-            summary="Test"
+            summary="Test",
         )
 
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
@@ -315,7 +327,7 @@ class TestRunGenomicsAnalysis:
                 prompt="Test prompt",
                 data_dir=data_dir,
                 output_dir=output_dir,
-                reference_genome=ref_genome
+                reference_genome=ref_genome,
             )
 
             # Should return GenomicsAnalysisResult (using result.output not result.data)
@@ -346,7 +358,7 @@ class TestRunGenomicsAnalysis:
             success=True,
             tools_used=[],
             output_files={},
-            summary="Test"
+            summary="Test",
         )
 
         with patch.object(genomics_agent, "run", return_value=mock_result) as mock_run:
@@ -354,7 +366,7 @@ class TestRunGenomicsAnalysis:
                 prompt="Test",
                 data_dir=data_dir,
                 output_dir=output_dir,
-                reference_genome=ref_genome
+                reference_genome=ref_genome,
             )
 
             # Verify agent.run was called
