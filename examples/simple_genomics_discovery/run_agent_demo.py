@@ -41,7 +41,7 @@ async def main():
 
     output_dir.mkdir(exist_ok=True)
 
-    print(f"Running genomics analysis...")
+    print("Running genomics analysis...")
     print(f"Prompt: {prompt}")
     print(f"Data: {data_dir}")
     print(f"Output: {output_dir}")
@@ -66,14 +66,14 @@ async def main():
     print(f"Analysis Type: {result.analysis_type}")
     print(f"Success: {result.success}")
     print(f"Tools Used: {', '.join(result.tools_used)}")
-    print(f"\nOutput Files:")
+    print("\nOutput Files:")
     for name, path in result.output_files.items():
         print(f"  - {name}: {path}")
 
     if result.variants_found is not None:
         print(f"\nVariants Found: {result.variants_found}")
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  {result.summary}")
 
     if result.error:

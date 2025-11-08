@@ -4,9 +4,10 @@ Tests for genomics agent with MCP server integration.
 Following TDD approach with Red → Green → Refactor cycles.
 """
 
-import pytest
 from pathlib import Path
 from typing import Any
+
+import pytest
 from pydantic import BaseModel
 
 
@@ -98,8 +99,9 @@ class TestGenomicsAgentDeps:
 
     def test_deps_is_dataclass(self):
         """Test that GenomicsAgentDeps is a dataclass."""
-        from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
         from dataclasses import is_dataclass
+
+        from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         assert is_dataclass(GenomicsAgentDeps)
 
@@ -109,17 +111,23 @@ class TestGenomicsAnalysisResult:
 
     def test_can_import_analysis_result(self):
         """Test that GenomicsAnalysisResult can be imported."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
         assert GenomicsAnalysisResult is not None
 
     def test_analysis_result_is_pydantic_model(self):
         """Test that GenomicsAnalysisResult is a Pydantic BaseModel."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
         assert issubclass(GenomicsAnalysisResult, BaseModel)
 
     def test_analysis_result_required_fields(self):
         """Test GenomicsAnalysisResult has all required fields."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
 
         # Create with all required fields
         result = GenomicsAnalysisResult(
@@ -138,7 +146,9 @@ class TestGenomicsAnalysisResult:
 
     def test_analysis_result_optional_fields(self):
         """Test GenomicsAnalysisResult optional fields have None defaults."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
 
         result = GenomicsAnalysisResult(
             analysis_type="qc_only",
@@ -153,7 +163,9 @@ class TestGenomicsAnalysisResult:
 
     def test_analysis_result_with_error(self):
         """Test GenomicsAnalysisResult with error field."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
 
         result = GenomicsAnalysisResult(
             analysis_type="variant_calling",
@@ -169,7 +181,9 @@ class TestGenomicsAnalysisResult:
 
     def test_analysis_result_with_variants(self):
         """Test GenomicsAnalysisResult with variants_found field."""
-        from examples.simple_genomics_discovery.genomics_agent import GenomicsAnalysisResult
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+        )
 
         result = GenomicsAnalysisResult(
             analysis_type="variant_calling",
@@ -193,8 +207,9 @@ class TestGenomicsAgentCreation:
 
     def test_agent_is_pydantic_ai_agent(self):
         """Test that genomics_agent is a Pydantic AI Agent."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent
         from pydantic_ai import Agent
+
+        from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
         # Check it's an Agent instance
         assert isinstance(genomics_agent, Agent)
@@ -239,15 +254,20 @@ class TestRunGenomicsAnalysis:
 
     def test_can_import_run_genomics_analysis(self):
         """Test that run_genomics_analysis function can be imported."""
-        from examples.simple_genomics_discovery.genomics_agent import run_genomics_analysis
+        from examples.simple_genomics_discovery.genomics_agent import (
+            run_genomics_analysis,
+        )
         assert run_genomics_analysis is not None
         assert callable(run_genomics_analysis)
 
     @pytest.mark.asyncio
     async def test_run_genomics_analysis_signature(self, tmp_path):
         """Test run_genomics_analysis has correct signature."""
-        from examples.simple_genomics_discovery.genomics_agent import run_genomics_analysis
         import inspect
+
+        from examples.simple_genomics_discovery.genomics_agent import (
+            run_genomics_analysis,
+        )
 
         sig = inspect.signature(run_genomics_analysis)
         params = list(sig.parameters.keys())
@@ -261,12 +281,13 @@ class TestRunGenomicsAnalysis:
     @pytest.mark.asyncio
     async def test_run_genomics_analysis_returns_result_model(self, tmp_path):
         """Test that run_genomics_analysis returns GenomicsAnalysisResult."""
-        from examples.simple_genomics_discovery.genomics_agent import (
-            run_genomics_analysis,
-            GenomicsAnalysisResult
-        )
         from pathlib import Path
-        from unittest.mock import patch, AsyncMock
+        from unittest.mock import AsyncMock, patch
+
+        from examples.simple_genomics_discovery.genomics_agent import (
+            GenomicsAnalysisResult,
+            run_genomics_analysis,
+        )
 
         # Setup test paths
         data_dir = tmp_path / "data"
@@ -289,7 +310,7 @@ class TestRunGenomicsAnalysis:
 
         from examples.simple_genomics_discovery.genomics_agent import genomics_agent
 
-        with patch.object(genomics_agent, 'run', return_value=mock_result):
+        with patch.object(genomics_agent, "run", return_value=mock_result):
             result = await run_genomics_analysis(
                 prompt="Test prompt",
                 data_dir=data_dir,
@@ -303,12 +324,13 @@ class TestRunGenomicsAnalysis:
     @pytest.mark.asyncio
     async def test_run_genomics_analysis_creates_deps(self, tmp_path):
         """Test that run_genomics_analysis creates GenomicsAgentDeps correctly."""
+        from unittest.mock import AsyncMock, patch
+
         from examples.simple_genomics_discovery.genomics_agent import (
-            run_genomics_analysis,
+            GenomicsAnalysisResult,
             genomics_agent,
-            GenomicsAnalysisResult
+            run_genomics_analysis,
         )
-        from unittest.mock import patch, AsyncMock
 
         data_dir = tmp_path / "data"
         output_dir = tmp_path / "output"
@@ -327,7 +349,7 @@ class TestRunGenomicsAnalysis:
             summary="Test"
         )
 
-        with patch.object(genomics_agent, 'run', return_value=mock_result) as mock_run:
+        with patch.object(genomics_agent, "run", return_value=mock_result) as mock_run:
             await run_genomics_analysis(
                 prompt="Test",
                 data_dir=data_dir,
@@ -341,7 +363,7 @@ class TestRunGenomicsAnalysis:
             # Verify deps were created with correct paths
             call_args = mock_run.call_args
             assert call_args[0][0] == "Test"  # prompt
-            deps = call_args[1]['deps']
+            deps = call_args[1]["deps"]
             assert deps.data_dir == data_dir
             assert deps.output_dir == output_dir
             assert deps.reference_genome == ref_genome

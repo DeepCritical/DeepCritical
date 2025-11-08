@@ -7,8 +7,9 @@ happens in Phase 7 manual testing.
 Reference: burner_docs/haplotype_agent/02_implementation_plan.md Phase 6
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestDemoScriptStructure:

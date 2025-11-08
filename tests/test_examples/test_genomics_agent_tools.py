@@ -7,9 +7,10 @@ MCP server methods (not CLI directly).
 Reference: burner_docs/haplotype_agent/02_implementation_plan.md Phase 4
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestAgentToolsRegistered:
@@ -51,9 +52,13 @@ class TestRunFastQCTool:
     @pytest.mark.asyncio
     async def test_run_fastqc_calls_mcp_server(self, tmp_path):
         """Test that run_fastqc calls FastQCServer.run_fastqc method."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, fastqc_server
-        from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
         from unittest.mock import AsyncMock
+
+        from examples.simple_genomics_discovery.genomics_agent import (
+            fastqc_server,
+            genomics_agent,
+        )
+        from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         # Create test deps
         deps = GenomicsAgentDeps(
@@ -67,7 +72,7 @@ class TestRunFastQCTool:
         (deps.data_dir / "test.bam").touch()
 
         # Mock the MCP server method
-        with patch.object(fastqc_server, 'run_fastqc', return_value={"success": True}):
+        with patch.object(fastqc_server, "run_fastqc", return_value={"success": True}):
             # Get the tool function
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_fastqc_tool = tools["run_fastqc"]
@@ -86,7 +91,10 @@ class TestRunFastQCTool:
     @pytest.mark.asyncio
     async def test_run_fastqc_tracks_tool_usage(self, tmp_path):
         """Test that run_fastqc appends to tools_called list."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, fastqc_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            fastqc_server,
+            genomics_agent,
+        )
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         deps = GenomicsAgentDeps(
@@ -101,7 +109,7 @@ class TestRunFastQCTool:
         # Initial state
         assert len(deps.tools_called) == 0
 
-        with patch.object(fastqc_server, 'run_fastqc', return_value={"success": True}):
+        with patch.object(fastqc_server, "run_fastqc", return_value={"success": True}):
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_fastqc_tool = tools["run_fastqc"]
 
@@ -148,7 +156,10 @@ class TestRunSamtoolsFlagstatTool:
     @pytest.mark.asyncio
     async def test_run_samtools_flagstat_calls_mcp_server(self, tmp_path):
         """Test that run_samtools_flagstat calls SamtoolsServer.samtools_flagstat method."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, samtools_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            genomics_agent,
+            samtools_server,
+        )
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         deps = GenomicsAgentDeps(
@@ -160,7 +171,7 @@ class TestRunSamtoolsFlagstatTool:
         deps.data_dir.mkdir()
         (deps.data_dir / "test.bam").touch()
 
-        with patch.object(samtools_server, 'samtools_flagstat', return_value={"success": True}):
+        with patch.object(samtools_server, "samtools_flagstat", return_value={"success": True}):
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_flagstat_tool = tools["run_samtools_flagstat"]
 
@@ -176,7 +187,10 @@ class TestRunSamtoolsFlagstatTool:
     @pytest.mark.asyncio
     async def test_run_samtools_flagstat_tracks_usage(self, tmp_path):
         """Test that run_samtools_flagstat tracks tool usage."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, samtools_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            genomics_agent,
+            samtools_server,
+        )
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         deps = GenomicsAgentDeps(
@@ -188,7 +202,7 @@ class TestRunSamtoolsFlagstatTool:
         deps.data_dir.mkdir()
         (deps.data_dir / "test.bam").touch()
 
-        with patch.object(samtools_server, 'samtools_flagstat', return_value={"success": True}):
+        with patch.object(samtools_server, "samtools_flagstat", return_value={"success": True}):
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_flagstat_tool = tools["run_samtools_flagstat"]
 
@@ -206,7 +220,10 @@ class TestRunHaplotypeCallerTool:
     @pytest.mark.asyncio
     async def test_run_haplotypecaller_calls_mcp_server(self, tmp_path):
         """Test that run_haplotypecaller calls HaplotypeCallerServer.call_variants method."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, haplotypecaller_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            genomics_agent,
+            haplotypecaller_server,
+        )
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         deps = GenomicsAgentDeps(
@@ -220,7 +237,7 @@ class TestRunHaplotypeCallerTool:
         (deps.data_dir / "test.bam").touch()
         deps.reference_genome.touch()
 
-        with patch.object(haplotypecaller_server, 'call_variants', return_value={"success": True}):
+        with patch.object(haplotypecaller_server, "call_variants", return_value={"success": True}):
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_hc_tool = tools["run_haplotypecaller"]
 
@@ -236,7 +253,10 @@ class TestRunHaplotypeCallerTool:
     @pytest.mark.asyncio
     async def test_run_haplotypecaller_tracks_usage(self, tmp_path):
         """Test that run_haplotypecaller tracks tool usage."""
-        from examples.simple_genomics_discovery.genomics_agent import genomics_agent, haplotypecaller_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            genomics_agent,
+            haplotypecaller_server,
+        )
         from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
         deps = GenomicsAgentDeps(
@@ -250,7 +270,7 @@ class TestRunHaplotypeCallerTool:
         (deps.data_dir / "test.bam").touch()
         deps.reference_genome.touch()
 
-        with patch.object(haplotypecaller_server, 'call_variants', return_value={"success": True}):
+        with patch.object(haplotypecaller_server, "call_variants", return_value={"success": True}):
             tools = {tool.name: tool for tool in genomics_agent._function_toolset.tools.values()}
             run_hc_tool = tools["run_haplotypecaller"]
 

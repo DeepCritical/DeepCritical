@@ -29,8 +29,8 @@ class TestMCPServerIntegration:
         """Verify FastQCServer has run_fastqc method."""
         from examples.simple_genomics_discovery.genomics_agent import fastqc_server
 
-        assert hasattr(fastqc_server, 'run_fastqc')
-        assert callable(getattr(fastqc_server, 'run_fastqc'))
+        assert hasattr(fastqc_server, "run_fastqc")
+        assert callable(fastqc_server.run_fastqc)
 
     def test_samtools_server_exists(self):
         """Verify SamtoolsServer is instantiated in genomics_agent."""
@@ -42,31 +42,36 @@ class TestMCPServerIntegration:
         """Verify SamtoolsServer has samtools_flagstat method."""
         from examples.simple_genomics_discovery.genomics_agent import samtools_server
 
-        assert hasattr(samtools_server, 'samtools_flagstat')
-        assert callable(getattr(samtools_server, 'samtools_flagstat'))
+        assert hasattr(samtools_server, "samtools_flagstat")
+        assert callable(samtools_server.samtools_flagstat)
 
     def test_haplotypecaller_server_exists(self):
         """Verify HaplotypeCallerServer is instantiated in genomics_agent."""
-        from examples.simple_genomics_discovery.genomics_agent import haplotypecaller_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            haplotypecaller_server,
+        )
 
         assert haplotypecaller_server is not None
 
     def test_haplotypecaller_server_has_call_variants_method(self):
         """Verify HaplotypeCallerServer has call_variants method."""
-        from examples.simple_genomics_discovery.genomics_agent import haplotypecaller_server
+        from examples.simple_genomics_discovery.genomics_agent import (
+            haplotypecaller_server,
+        )
 
-        assert hasattr(haplotypecaller_server, 'call_variants')
-        assert callable(getattr(haplotypecaller_server, 'call_variants'))
+        assert hasattr(haplotypecaller_server, "call_variants")
+        assert callable(haplotypecaller_server.call_variants)
 
     def test_all_mcp_servers_imported_from_deepresearch(self):
         """Verify MCP servers are imported from DeepResearch package."""
         # Import the module to trigger server instantiation
-        from examples.simple_genomics_discovery import genomics_agent
-
         # Verify server types match expected MCP server classes
         from DeepResearch.src.tools.bioinformatics.fastqc_server import FastQCServer
+        from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import (
+            HaplotypeCallerServer,
+        )
         from DeepResearch.src.tools.bioinformatics.samtools_server import SamtoolsServer
-        from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import HaplotypeCallerServer
+        from examples.simple_genomics_discovery import genomics_agent
 
         assert isinstance(genomics_agent.fastqc_server, FastQCServer)
         assert isinstance(genomics_agent.samtools_server, SamtoolsServer)

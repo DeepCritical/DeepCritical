@@ -9,17 +9,19 @@ Reference: burner_docs/haplotype_agent/02_implementation_plan.md
 
 from __future__ import annotations
 
-from pydantic import BaseModel
-from pydantic_ai import Agent
+from pathlib import Path
+from typing import Any
 
-from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
+from pydantic import BaseModel
+from pydantic_ai import Agent, RunContext
 
 # Import existing MCP servers
 from DeepResearch.src.tools.bioinformatics.fastqc_server import FastQCServer
-from DeepResearch.src.tools.bioinformatics.samtools_server import SamtoolsServer
 from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import (
     HaplotypeCallerServer,
 )
+from DeepResearch.src.tools.bioinformatics.samtools_server import SamtoolsServer
+from examples.simple_genomics_discovery.genomics_deps import GenomicsAgentDeps
 
 # Instantiate MCP servers (Phase 2: MCP Integration)
 fastqc_server = FastQCServer()
@@ -80,9 +82,6 @@ Return structured results with:
 
 
 # Register MCP server methods as agent tools (Phase 4: Tool Registration)
-from pathlib import Path
-from typing import Any
-from pydantic_ai import RunContext
 
 
 @genomics_agent.tool
