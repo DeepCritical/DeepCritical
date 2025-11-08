@@ -83,7 +83,7 @@ def main():
             capture_output=True,
             text=True,
         )
-        print(f"✅ FastQC complete")
+        print("✅ FastQC complete")
         print(f"   Report: {fastqc_out}/sample_fastqc.html")
     except subprocess.CalledProcessError as e:
         print(f"❌ FastQC failed: {e.stderr}")
@@ -141,8 +141,8 @@ def main():
         print()
         print("✅ Variant calling complete!")
         print(f"   Output: {output_vcf}")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ HaplotypeCaller failed")
+    except subprocess.CalledProcessError:
+        print("❌ HaplotypeCaller failed")
         sys.exit(1)
 
     print()
@@ -155,7 +155,7 @@ def main():
 
         with open(output_vcf) as f:
             lines = f.readlines()
-            header_lines = [line for line in lines if line.startswith("#")]
+            [line for line in lines if line.startswith("#")]
             variant_lines = [line for line in lines if not line.startswith("#")]
 
         print(f"Total variants: {len(variant_lines)}")

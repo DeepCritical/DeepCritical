@@ -23,6 +23,7 @@ def test_simple_genomics_discovery_demo():
     # Step 1: Download data
     result = subprocess.run(
         ["bash", "download_data.sh"],
+        check=False,
         cwd=demo_dir,
         capture_output=True,
         text=True,
@@ -37,6 +38,7 @@ def test_simple_genomics_discovery_demo():
     # Step 2: Run demo (assumes conda environment already set up in CI)
     result = subprocess.run(
         ["python", "agent_demo.py"],
+        check=False,
         cwd=demo_dir,
         capture_output=True,
         text=True,
