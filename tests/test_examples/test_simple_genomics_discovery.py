@@ -9,7 +9,9 @@ import pytest
 @pytest.mark.integration
 @pytest.mark.slow
 @pytest.mark.requires_network
-@pytest.mark.skip(reason="Requires manual conda environment setup (see examples/simple_genomics_discovery/README.md)")
+@pytest.mark.skip(
+    reason="Requires manual conda environment setup (see examples/simple_genomics_discovery/README.md)"
+)
 def test_simple_genomics_discovery_demo():
     """Test the full genomics demo end-to-end.
 
