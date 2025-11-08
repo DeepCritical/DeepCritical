@@ -9,6 +9,7 @@ import pytest
 @pytest.mark.integration
 @pytest.mark.slow
 @pytest.mark.requires_network
+@pytest.mark.skip(reason="Requires manual conda environment setup (see examples/simple_genomics_discovery/README.md)")
 def test_simple_genomics_discovery_demo():
     """Test the full genomics demo end-to-end.
 
@@ -17,6 +18,19 @@ def test_simple_genomics_discovery_demo():
     - AWS CLI installed
     - Conda installed with genomics-demo environment
     - ~5-10 minutes runtime
+
+    This test is skipped in CI because it requires:
+    1. Conda/Miniconda installation
+    2. Manual environment setup (./install_tools.sh)
+    3. Large data downloads (117 MB from S3)
+    4. GATK, samtools, FastQC binaries
+
+    To run locally:
+    cd examples/simple_genomics_discovery
+    ./download_data.sh
+    ./install_tools.sh
+    conda activate genomics-demo
+    pytest tests/test_examples/test_simple_genomics_discovery.py::test_simple_genomics_discovery_demo -v -s
     """
     demo_dir = Path("examples/simple_genomics_discovery")
 
