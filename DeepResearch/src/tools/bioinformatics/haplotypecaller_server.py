@@ -187,6 +187,14 @@ class HaplotypeCallerServer(MCPServerBase):
                 "output_file": output_file,
             }
 
+        except FileNotFoundError as e:
+            return {
+                "success": False,
+                "command": command,
+                "error": f"GATK not found: {e}. Install GATK or run in container.",
+                "exit_code": -1,
+                "output_file": output_file,
+            }
         except subprocess.CalledProcessError as e:
             return {
                 "success": False,
