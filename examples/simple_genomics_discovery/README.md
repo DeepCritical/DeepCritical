@@ -65,6 +65,55 @@ head -100 output/variants.vcf
 open output/sample_fastqc.html  # macOS
 ```
 
+## Agentic Workflow (NEW)
+
+The genomics agent uses Pydantic AI + MCP servers to dynamically choose tools based on your natural language prompt.
+
+### Setup
+
+```bash
+# Install Python dependencies (uses uv)
+uv sync --dev
+
+# Set API key
+export ANTHROPIC_API_KEY="your-key"
+```
+
+### Run Agent
+
+```bash
+# Using uv (recommended)
+uv run python run_agent_demo.py "Find variants in sample.bam on chr20"
+
+# The agent will:
+# 1. Analyze your prompt
+# 2. Decide which MCP server tools to call
+# 3. Execute the workflow (FastQC → SAMtools → GATK)
+# 4. Return structured results
+```
+
+### Example Prompts
+
+- `"Run quality control on sample.bam"`
+- `"Validate sample.bam with samtools"`
+- `"Find variants in sample.bam on chromosome 20"`
+- `"Complete genomics analysis: QC, validation, and variant calling"`
+
+### Architecture
+
+The agent registers methods from existing MCP servers as tools:
+
+- `FastQCServer.run_fastqc()` → `run_fastqc` tool
+- `SamtoolsServer.samtools_flagstat()` → `run_samtools_flagstat` tool
+- `HaplotypeCallerServer.call_variants()` → `run_haplotypecaller` tool
+
+**No code duplication** - all tool logic is in the MCP servers.
+
+**Key files:**
+- `genomics_agent.py` - Agent with MCP server integration
+- `genomics_deps.py` - Agent dependencies
+- `run_agent_demo.py` - Demo CLI script
+
 ## Output Files
 
 - `output/sample_fastqc.html` - Quality control report
