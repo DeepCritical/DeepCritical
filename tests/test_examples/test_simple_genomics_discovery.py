@@ -52,10 +52,10 @@ def test_simple_genomics_discovery_demo():
     with open(vcf_file) as f:
         variant_lines = [line for line in f if not line.startswith("#")]
         assert len(variant_lines) > 0, "No variants found in VCF"
-        # NA12878 chr20 typically has ~1000-2000 variants
-        assert (
-            500 < len(variant_lines) < 5000
-        ), f"Unexpected variant count: {len(variant_lines)}"
+        # NA12878_20k subset contains ~40 variants on chr20
+        assert 10 <= len(variant_lines) <= 100, (
+            f"Unexpected variant count: {len(variant_lines)}"
+        )
 
 
 @pytest.mark.unit

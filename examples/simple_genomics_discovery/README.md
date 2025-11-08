@@ -71,7 +71,7 @@ open output/sample_fastqc.html  # macOS
 - `output/variants.vcf` - Genetic variants (standard VCF format)
 
 **Expected results:**
-- ~1000-2000 variants on chromosome 20
+- ~40 variants from the NA12878 chr20 subset
 - VCF ready for annotation/analysis
 
 ## Data Provenance
