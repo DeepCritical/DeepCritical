@@ -252,7 +252,7 @@ Enhanced base class for MCP server implementations with Pydantic AI integration.
 
 ### Available MCP Servers
 
-DeepCritical includes 29 vendored MCP (Model Context Protocol) servers for common bioinformatics tools, deployed using testcontainers for isolated execution environments. The servers are built using Pydantic AI patterns and provide strongly-typed interfaces.
+DeepCritical includes 31 vendored MCP (Model Context Protocol) servers for common bioinformatics tools, deployed using testcontainers for isolated execution environments. The servers are built using Pydantic AI patterns and provide strongly-typed interfaces.
 
 #### Quality Control & Preprocessing (7 servers)
 
@@ -700,6 +700,35 @@ FreeBayes is a Bayesian genetic variant detector designed to find small polymorp
 **Available Tools:**
 - `freebayes_call`: Call variants from BAM files using FreeBayes
 
+##### HaplotypeCaller Server
+
+    ::: DeepResearch.src.tools.bioinformatics.haplotypecaller_server.HaplotypeCallerServer
+        handler: python
+        options:
+          docstring_style: google
+          show_category_heading: true
+
+```python
+from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import HaplotypeCallerServer
+```
+
+GATK HaplotypeCaller is the gold-standard germline variant caller from the Genome Analysis Toolkit, used by major genomics initiatives including the 1000 Genomes Project and UK Biobank. This MCP server provides strongly-typed access to HaplotypeCaller with comprehensive pre-flight validation and error handling.
+
+**Server Type:** HAPLOTYPECALLER | **Capabilities:** Germline variant calling, GVCF generation, SNP/indel detection, Pydantic AI reasoning
+**Pydantic AI Integration:** Embedded agent for automated variant calling workflows and quality assessment
+
+**Available Tools:**
+- `call_variants`: Call variants in VCF mode for single-sample analysis
+- `call_gvcf`: Generate GVCF files for joint calling workflows
+- `get_version`: Check GATK version
+
+**Pre-flight Validation:**
+- Reference genome files: `.fa`, `.fa.fai`, `.dict` (all required)
+- Alignment file indexing: `.bai` (BAM) or `.crai` (CRAM)
+- Ploidy validation: 1-100 range with helpful error messages
+
+**Container:** `quay.io/biocontainers/gatk4:4.6.1.0--hdfd78af_0`
+
 ##### Flye Server
 
     ::: DeepResearch.src.tools.bioinformatics.flye_server.FlyeServer
@@ -816,7 +845,7 @@ deployment = await server.deploy_with_testcontainers()
 - BUSCO
 
 **Variant Analysis:**
-- BCFtools, FreeBayes
+- BCFtools, FreeBayes, HaplotypeCaller
 
 ### Enhanced MCP Server Management Tools
 
@@ -826,7 +855,7 @@ DeepCritical provides comprehensive tools for managing MCP server deployments us
 Lists all available vendored MCP servers.
 
 **Features:**
-- Lists all 29 MCP servers with descriptions and capabilities
+- Lists all 31 MCP servers with descriptions and capabilities
 - Shows deployment status and available tools
 - Supports filtering and detailed information
 
@@ -834,7 +863,7 @@ Lists all available vendored MCP servers.
 Deploys vendored MCP servers using testcontainers.
 
 **Features:**
-- Deploys any of the 29 MCP servers in isolated containers
+- Deploys any of the 31 MCP servers in isolated containers
 - Supports custom configurations and resource limits
 - Provides detailed deployment information
 
