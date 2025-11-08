@@ -78,11 +78,64 @@ def gatk_test_bam_index():
 
 @pytest.fixture(scope="session")
 def gatk_test_reference():
-    """Download chr20 reference subset.
+    """Download chr20+21 b37 reference subset (108 MB) from public S3.
 
-    NOTE: Reference genome is ~700 MB - too large for initial implementation.
-    This fixture is skipped until we decide to implement full integration tests.
+    Downloads human_g1k_v37.20.21.fasta which contains chromosomes 20 and 21
+    from the b37 reference build. Matches the b37 BAM files in our test fixtures.
 
-    See REMAINING_WORK.md Option C for full implementation.
+    Downloads once per session and caches in tests/fixtures/gatk/cache/.
+    No authentication required (--no-sign-request).
+
+    Returns:
+        tuple[Path, Path, Path]: Paths to (fasta, fai, dict) files
     """
-    pytest.skip("Reference download not implemented (700 MB) - see Option C")
+    fasta_file = CACHE_DIR / "human_g1k_v37.20.21.fasta"
+    fai_file = CACHE_DIR / "human_g1k_v37.20.21.fasta.fai"
+    dict_file = CACHE_DIR / "human_g1k_v37.20.21.dict"
+
+    if not fasta_file.exists():
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Download FASTA
+        subprocess.run(
+            [
+                "aws",
+                "s3",
+                "cp",
+                "s3://gatk-test-data/mutect2/human_g1k_v37.20.21.fasta",
+                str(fasta_file),
+                "--no-sign-request",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        # Download FASTA index
+        subprocess.run(
+            [
+                "aws",
+                "s3",
+                "cp",
+                "s3://gatk-test-data/mutect2/human_g1k_v37.20.21.fasta.fai",
+                str(fai_file),
+                "--no-sign-request",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        # Download sequence dictionary
+        subprocess.run(
+            [
+                "aws",
+                "s3",
+                "cp",
+                "s3://gatk-test-data/mutect2/human_g1k_v37.20.21.dict",
+                str(dict_file),
+                "--no-sign-request",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+    return fasta_file, fai_file, dict_file
