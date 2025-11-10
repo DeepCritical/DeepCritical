@@ -1,0 +1,12 @@
+REMARK   1 A SIMPLIFIED PDB FILE FOR TESTING
+ATOM      1  N   ALA A   1      -1.229   0.790  -0.380  1.00  0.00           N
+ATOM      2  CA  ALA A   1      -0.019   0.140  -0.490  1.00  0.00           C
+ATOM      3  C   ALA A   1       0.999   0.852  -1.242  1.00  0.00           C
+ATOM      4  O   ALA A   1       1.036   1.968  -1.129  1.00  0.00           O
+ATOM      5  CB  ALA A   1       0.046  -0.830   0.672  1.00  0.00           C
+ATOM      6  H   ALA A   1      -1.920   0.150  -0.120  1.00  0.00           H
+ATOM      7  HA  ALA A   1      -0.019   0.500  -1.420  1.00  0.00           H
+ATOM      8  HB1 ALA A   1       0.810  -1.500   0.322  1.00  0.00           H
+ATOM      9  HB2 ALA A   1      -0.800  -1.400   0.822  1.00  0.00           H
+ATOM     10  HB3 ALA A   1       0.306  -0.330   1.602  1.00  0.00           H
+END

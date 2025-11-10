@@ -1,0 +1,12 @@
+openmm:
+  platform: "CUDA"         # or "CPU"
+  precision: "mixed"
+  timestep_fs: 2.0
+  temperature_K: 300.0
+  friction_ps: 1.0
+  nsteps: 250000           # 0.5 ns @ 2 fs
+  report_interval: 1000
+  solvent: "GBSA-OBC1"     # fast; switch to explicit TIP3P for fidelity
+  forcefield:
+    protein: "amber14-all.xml"
+    water:   "amber14/tip3pfb.xml"

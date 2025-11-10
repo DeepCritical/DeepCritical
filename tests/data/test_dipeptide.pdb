@@ -1,0 +1,21 @@
+REMARK   1 A CAPPED DIPEPTIDE FOR TESTING
+ATOM      1  CH3 ACE A   0      -2.529  -0.090  -0.580  1.00  0.00           C
+ATOM      2  C   ACE A   0      -1.229   0.790  -0.380  1.00  0.00           C
+ATOM      3  O   ACE A   0      -1.536   1.968  -0.129  1.00  0.00           O
+ATOM      4  N   ALA A   1      -0.019   0.140  -0.490  1.00  0.00           N
+ATOM      5  CA  ALA A   1       0.999   0.852  -1.242  1.00  0.00           C
+ATOM      6  C   ALA A   1       1.036   1.968  -0.129  1.00  0.00           C
+ATOM      7  O   ALA A   1       1.859   2.852  -0.342  1.00  0.00           O
+ATOM      8  CB  ALA A   1       2.356   0.222  -1.892  1.00  0.00           C
+ATOM      9  N   ALA A   2       0.179   2.134  -0.844  1.00  0.00           N
+ATOM     10  CA  ALA A   2      -0.829   3.022  -0.294  1.00  0.00           C
+ATOM     11  C   ALA A   2      -0.414  -1.108  -1.032  1.00  0.00           C
+ATOM     12  O   ALA A   2      -1.234   4.804  -1.202  1.00  0.00           O
+ATOM     13  CB  ALA A   2      -2.234  -0.800   0.322  1.00  0.00           C
+ATOM     14  N   NME A   3       0.800   4.400   0.822  1.00  0.00           N
+ATOM     15  CH3 NME A   3       1.306  -0.330   1.602  1.00  0.00           C
+CONECT    2    4
+CONECT    6    9
+CONECT   11   14
+TER
+END
