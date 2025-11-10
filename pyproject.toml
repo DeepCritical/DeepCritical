@@ -34,7 +34,7 @@ dependencies = [
   "numpy<2",
   "faiss-cpu>=1.7.4",
   "openmm",
-  "black-pdbfixer",
+  "pdbfixer @ git+https://github.com/openmm/pdbfixer.git",
   "mdtraj",
 ]
 
@@ -58,6 +58,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["DeepResearch"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.uv.sources]
 testcontainers = { git = "https://github.com/josephrp/testcontainers-python.git", rev = "vllm" }

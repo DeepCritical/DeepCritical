@@ -1,6 +1,10 @@
 import os
+from pathlib import Path
+
 import pytest
-from DeepResearch.src.tools.openmm_tool import OpenMMTool, OpenMMResult
+
+from DeepResearch.src.tools.openmm_tool import OpenMMResult, OpenMMTool
+
 
 @pytest.fixture
 def openmm_tool():
@@ -18,22 +22,22 @@ def test_prep(openmm_tool, test_pdb_path):
     assert result.status == "ok"
     assert "pdb" in result.artifacts
     assert os.path.exists(result.artifacts["pdb"])
-    os.remove(result.artifacts["pdb"])  # Clean up the created file
+    Path(result.artifacts["pdb"]).unlink()  # Clean up the created file
 
 def test_minimize(openmm_tool, test_pdb_path):
     """Test the minimize function of the OpenMMTool."""
-    result = openmm_tool.minimize(test_pdb_path)
+    result = openmm_tool.minimize(test_pdb_path, ignore_external_bonds=True)
     assert result.status == "ok"
     assert "pdb" in result.artifacts
     assert os.path.exists(result.artifacts["pdb"])
     assert "initial_energy_kj_mol" in result.metrics
     assert "final_energy_kj_mol" in result.metrics
     assert result.metrics["final_energy_kj_mol"] < result.metrics["initial_energy_kj_mol"]
-    os.remove(result.artifacts["pdb"])  # Clean up the created file
+    Path(result.artifacts["pdb"]).unlink()  # Clean up the created file
 
 def test_md_sample(openmm_tool, test_pdb_path):
     """Test the md_sample function of the OpenMMTool."""
-    result = openmm_tool.md_sample(test_pdb_path, nsteps=100, report_interval=1) # Using a small number of steps for testing
+    result = openmm_tool.md_sample(test_pdb_path, nsteps=100, report_interval=1, ignore_external_bonds=True) # Using a small number of steps for testing
     assert result.status == "ok"
     assert "traj" in result.artifacts
     assert "state" in result.artifacts
@@ -41,5 +45,5 @@ def test_md_sample(openmm_tool, test_pdb_path):
     assert os.path.exists(result.artifacts["state"])
     assert "rmsd_mean" in result.metrics
     assert "rg_mean" in result.metrics
-    os.remove(result.artifacts["traj"])  # Clean up the created files
-    os.remove(result.artifacts["state"])
+    Path(result.artifacts["traj"]).unlink()  # Clean up the created files
+    Path(result.artifacts["state"]).unlink()
