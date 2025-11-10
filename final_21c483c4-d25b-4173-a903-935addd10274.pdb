@@ -1,0 +1,13 @@
+REMARK   1 CREATED WITH OPENMM 8.4, 2025-11-10
+ATOM      1  N   ALA A   1      -1.468   1.076   0.069  1.00  0.00           N
+ATOM      2  CA  ALA A   1      -0.318   0.473  -0.546  1.00  0.00           C
+ATOM      3  C   ALA A   1       0.845   1.427  -0.690  1.00  0.00           C
+ATOM      4  O   ALA A   1       1.960   1.049  -1.085  1.00  0.00           O
+ATOM      5  CB  ALA A   1       0.050  -0.810   0.217  1.00  0.00           C
+ATOM      6  H   ALA A   1      -2.292   0.500   0.256  1.00  0.00           H
+ATOM      7  HA  ALA A   1      -0.581   0.207  -1.558  1.00  0.00           H
+ATOM      8  HB1 ALA A   1       0.837  -1.338  -0.303  1.00  0.00           H
+ATOM      9  HB2 ALA A   1      -0.833  -1.443   0.267  1.00  0.00           H
+ATOM     10  HB3 ALA A   1       0.376  -0.599   1.238  1.00  0.00           H
+TER      11      ALA A   1
+END

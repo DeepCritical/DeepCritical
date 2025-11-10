@@ -79,17 +79,25 @@ class OpenMMTool(ToolRunner):
     def _create_simulation(self, pdb_path: str, ignore_external_bonds: bool = False):
         """Helper function to create a simulation object."""
         pdb = PDBFile(pdb_path)
-        ff = ForceField("amber14-all.xml", "amber14/tip3pfb.xml")
+        forcefield_files = [self.cfg.get("forcefield", {}).get("protein", "amber14-all.xml"), self.cfg.get("forcefield", {}).get("water", "amber14/tip3pfb.xml")]
+        ff = ForceField(*forcefield_files)
         modeller = Modeller(pdb.topology, pdb.positions)
-        modeller.addHydrogens(ff)
+        if not ignore_external_bonds:
+            modeller.addHydrogens(ff)
+
+        nonbonded_method = getattr(app, self.cfg.get("nonbondedMethod", "NoCutoff"))
         system = ff.createSystem(
             modeller.topology,
-            nonbondedMethod=app.NoCutoff,
+            nonbondedMethod=nonbonded_method,
             ignoreExternalBonds=ignore_external_bonds,
         )
+
+        temperature = self.cfg.get("temperature_K", 300) * unit.kelvin
+        timestep = self.cfg.get("timestep_fs", 2.0) * unit.femtoseconds
+        friction = self.cfg.get("friction_ps", 1.0) / unit.picoseconds
         integrator = LangevinMiddleIntegrator(
-            300 * unit.kelvin, 1 / unit.picosecond, 0.002 * unit.picosecond
-        )  # type: ignore
+            temperature, friction, timestep
+        )
         platform = Platform.getPlatformByName(self.cfg.get("platform", "CPU"))
         simulation = Simulation(modeller.topology, system, integrator, platform)
         simulation.context.setPositions(modeller.positions)
@@ -159,9 +167,9 @@ class OpenMMTool(ToolRunner):
         sim.minimizeEnergy()
 
         run_uuid = uuid.uuid4()
-        traj_path = f"traj_{run_uuid}.pdb"
+        traj_path = f"traj_{run_uuid}.xtc"
         state_path = f"state_{run_uuid}.csv"
-        sim.reporters.append(PDBReporter(traj_path, report_interval))
+        sim.reporters.append(app.XTCReporter(traj_path, report_interval))
         sim.reporters.append(
             StateDataReporter(
                 state_path, 1000, step=True, potentialEnergy=True, temperature=True
@@ -169,8 +177,15 @@ class OpenMMTool(ToolRunner):
         )
         sim.step(nsteps)
 
+        # Save the final structure to a PDB file to provide topology information
+        final_pdb_path = f"final_{run_uuid}.pdb"
+        with open(final_pdb_path, "w") as f:
+            PDBFile.writeFile(
+                sim.topology, sim.context.getState(getPositions=True).getPositions(), f
+            )
+
         # quick analysis with MDTraj
-        t = md.load(traj_path)
+        t = md.load(traj_path, top=final_pdb_path)
         rmsd_val = md.rmsd(t, t, 0).mean()
         rg_val = md.compute_rg(t).mean()
 
