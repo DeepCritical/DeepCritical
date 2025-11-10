@@ -88,7 +88,7 @@ class OpenMMTool(ToolRunner):
             ignoreExternalBonds=ignore_external_bonds,
         )
         integrator = LangevinMiddleIntegrator(
-            300 * unit.kelvin, 1 / unit.picoseconds, 0.002 * unit.picoseconds
+            300 * unit.kelvin, 1 / unit.picosecond, 0.002 * unit.picosecond
         )  # type: ignore
         platform = Platform.getPlatformByName(self.cfg.get("platform", "CPU"))
         simulation = Simulation(modeller.topology, system, integrator, platform)
