@@ -79,7 +79,10 @@ class OpenMMTool(ToolRunner):
     def _create_simulation(self, pdb_path: str, ignore_external_bonds: bool = False):
         """Helper function to create a simulation object."""
         pdb = PDBFile(pdb_path)
-        forcefield_files = [self.cfg.get("forcefield", {}).get("protein", "amber14-all.xml"), self.cfg.get("forcefield", {}).get("water", "amber14/tip3pfb.xml")]
+        forcefield_files = [
+            self.cfg.get("forcefield", {}).get("protein", "amber14-all.xml"),
+            self.cfg.get("forcefield", {}).get("water", "amber14/tip3pfb.xml"),
+        ]
         ff = ForceField(*forcefield_files)
         modeller = Modeller(pdb.topology, pdb.positions)
         if not ignore_external_bonds:
@@ -93,11 +96,9 @@ class OpenMMTool(ToolRunner):
         )
 
         temperature = self.cfg.get("temperature_K", 300) * unit.kelvin
-        timestep = self.cfg.get("timestep_fs", 2.0) * unit.femtoseconds
-        friction = self.cfg.get("friction_ps", 1.0) / unit.picoseconds
-        integrator = LangevinMiddleIntegrator(
-            temperature, friction, timestep
-        )
+        timestep = self.cfg.get("timestep_fs", 2.0) * unit.femtosecond
+        friction = self.cfg.get("friction_ps", 1.0) / unit.picosecond
+        integrator = LangevinMiddleIntegrator(temperature, friction, timestep)
         platform = Platform.getPlatformByName(self.cfg.get("platform", "CPU"))
         simulation = Simulation(modeller.topology, system, integrator, platform)
         simulation.context.setPositions(modeller.positions)

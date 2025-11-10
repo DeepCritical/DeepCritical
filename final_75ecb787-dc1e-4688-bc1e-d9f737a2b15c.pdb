@@ -1,0 +1,49 @@
+REMARK   1 CREATED WITH OPENMM 8.4, 2025-11-10
+HETATM    1  CH3 ACE A   1      -1.535  -0.250  -3.042  1.00  0.00           C
+HETATM    2  H1  ACE A   1      -0.654  -0.451  -3.700  1.00  0.00           H
+HETATM    3  H2  ACE A   1      -2.430  -0.633  -3.541  1.00  0.00           H
+HETATM    4  H3  ACE A   1      -1.622   0.821  -2.892  1.00  0.00           H
+HETATM    5  C   ACE A   1      -1.419  -1.037  -1.743  1.00  0.00           C
+HETATM    6  O   ACE A   1      -2.159  -1.972  -1.535  1.00  0.00           O
+ATOM      7  N   ALA A   2      -0.407  -0.827  -0.886  1.00  0.00           N
+ATOM      8  H   ALA A   2      -0.461  -1.412  -0.055  1.00  0.00           H
+ATOM      9  CA  ALA A   2       0.748   0.067  -0.953  1.00  0.00           C
+ATOM     10  HA  ALA A   2       1.201   0.011   0.011  1.00  0.00           H
+ATOM     11  C   ALA A   2       0.390   1.571  -1.195  1.00  0.00           C
+ATOM     12  O   ALA A   2       0.810   2.142  -2.171  1.00  0.00           O
+ATOM     13  CB  ALA A   2       1.790  -0.534  -1.909  1.00  0.00           C
+ATOM     14  HB1 ALA A   2       1.475  -0.404  -2.946  1.00  0.00           H
+ATOM     15  HB2 ALA A   2       1.962  -1.577  -1.737  1.00  0.00           H
+ATOM     16  HB3 ALA A   2       2.722   0.002  -1.760  1.00  0.00           H
+ATOM     17  N   ALA A   3      -0.352   2.287  -0.337  1.00  0.00           N
+ATOM     18  H   ALA A   3      -0.498   3.216  -0.655  1.00  0.00           H
+ATOM     19  CA  ALA A   3      -0.960   1.970   0.952  1.00  0.00           C
+ATOM     20  HA  ALA A   3      -1.051   2.912   1.508  1.00  0.00           H
+ATOM     21  C   ALA A   3      -0.041   1.118   1.864  1.00  0.00           C
+ATOM     22  O   ALA A   3      -0.370  -0.023   2.144  1.00  0.00           O
+ATOM     23  CB  ALA A   3      -2.387   1.432   0.768  1.00  0.00           C
+ATOM     24  HB1 ALA A   3      -2.415   0.390   0.489  1.00  0.00           H
+ATOM     25  HB2 ALA A   3      -2.882   1.490   1.745  1.00  0.00           H
+ATOM     26  HB3 ALA A   3      -2.956   2.025   0.063  1.00  0.00           H
+HETATM   27  N   NME A   4       1.133   1.565   2.305  1.00  0.00           N
+HETATM   28  H   NME A   4       1.599   0.913   2.924  1.00  0.00           H
+HETATM   29  C   NME A   4       1.758   2.868   2.118  1.00  0.00           C
+HETATM   30  H1  NME A   4       2.761   2.834   2.537  1.00  0.00           H
+HETATM   31  H2  NME A   4       1.816   3.048   1.061  1.00  0.00           H
+HETATM   32  H3  NME A   4       1.219   3.669   2.598  1.00  0.00           H
+TER      33      NME A   4
+CONECT    1    2    3    4    5
+CONECT    2    1
+CONECT    3    1
+CONECT    4    1
+CONECT    5    1    6    7
+CONECT    6    5
+CONECT    7    5
+CONECT   21   27
+CONECT   27   28   21   29
+CONECT   28   27
+CONECT   29   30   31   32   27
+CONECT   30   29
+CONECT   31   29
+CONECT   32   29
+END
