@@ -95,10 +95,10 @@ class OpenMMTool(ToolRunner):
             ignoreExternalBonds=ignore_external_bonds,
         )
 
-        temperature = self.cfg.get("temperature_K", 300)
-        timestep = self.cfg.get("timestep_fs", 0.002)
-        friction = self.cfg.get("friction_ps", 1.0)
-        integrator = LangevinMiddleIntegrator(temperature, friction, timestep)
+        temperature = self.cfg.get("temperature_K", 300) * unit.kelvin
+        timestep = self.cfg.get("timestep_fs", 2.0) * unit.femtoseconds
+        friction = self.cfg.get("friction_ps", 1.0) / unit.picoseconds
+        integrator = LangevinMiddleIntegrator(temperature, friction, timestep)  # type: ignore
         platform = Platform.getPlatformByName(self.cfg.get("platform", "CPU"))
         simulation = Simulation(modeller.topology, system, integrator, platform)
         simulation.context.setPositions(modeller.positions)
