@@ -216,12 +216,13 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             # Process results
             if result["success"]:
                 # Extract spawned workflows
-                ctx.state.spawned_workflows = list(
-                    orchestrator.state.active_executions
-                ) + [
+                spawned_workflows = [
+                    exec.execution_id for exec in orchestrator.state.active_executions
+                ] + [
                     exec.execution_id
                     for exec in orchestrator.state.completed_executions
                 ]
+                ctx.state.spawned_workflows = spawned_workflows
 
                 # Extract multi-agent results
                 ctx.state.multi_agent_results = result.get("result", {})

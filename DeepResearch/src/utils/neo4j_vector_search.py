@@ -318,12 +318,13 @@ class Neo4jVectorSearch:
                 stats["index_info"] = {"error": str(e)}
 
             # Get data statistics
-            result = session.run(f"""
+            query = f"""
                 MATCH (n:{self.config.index.node_label})
                 WHERE n.{self.config.index.vector_property} IS NOT NULL
                 RETURN count(n) AS nodes_with_vectors,
                        avg(size(n.{self.config.index.vector_property})) AS avg_vector_size
-            """)
+            """
+            result = session.run(query)  # type: ignore[arg-type]
 
             record = result.single()
             if record:

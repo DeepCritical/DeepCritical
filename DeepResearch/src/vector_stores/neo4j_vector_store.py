@@ -415,7 +415,7 @@ class Neo4jVectorStore(VectorStore):
                     filter_conditions.append(f"d.metadata.{key} = $filter_{key}")
                     params[f"filter_{key}"] = value
 
-            filter_str = " AND ".join(filter_conditions)
+            filter_str = " AND ".join(filter_conditions) if filter_conditions else "1=1"
 
             cypher_query = f"""
                 MATCH (d:Document)
@@ -425,7 +425,7 @@ class Neo4jVectorStore(VectorStore):
                 LIMIT $limit
             """
 
-            result = await session.run(cypher_query, params)
+            result = await session.run(cypher_query, params)  # type: ignore[arg-type]
 
             documents = []
             async for record in result:

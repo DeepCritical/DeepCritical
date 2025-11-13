@@ -299,14 +299,14 @@ More text.
         assert result == "Hello world"
 
         # Test with text content parts
-        text_parts = [{"type": "text", "text": "Hello world"}]
+        text_parts = [UserMessageTextContentPart(type="text", text="Hello world")]
         result = content_str(text_parts)
         assert result == "Hello world"
 
         # Test with mixed content (AG2 joins with newlines)
         mixed_parts = [
-            {"type": "text", "text": "Hello"},
-            {"type": "text", "text": " world"},
+            UserMessageTextContentPart(type="text", text="Hello"),
+            UserMessageTextContentPart(type="text", text=" world"),
         ]
         result = content_str(mixed_parts)
         assert result == "Hello\n world"

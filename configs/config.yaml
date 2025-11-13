@@ -115,3 +115,11 @@ vllm_tests:
 # Neo4j Configuration (inherited from neo4j/orchestrator.yaml)
 neo4j:
   operation: "test_connection"
+
+# Molecular Dynamics Configuration
+md:
+  enabled: true
+  backend: "openmm"
+  max_steps_default: 50000
+  max_steps_hard_limit: 500000
+  allowed_platforms: ["CPU", "CUDA", "OpenCL"]

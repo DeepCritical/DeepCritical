@@ -274,22 +274,26 @@ class Neo4jEmbeddingsManager:
                 return 0
 
             # Build query
-            query = f"""
-                MATCH (n:{node_type})
-                WHERE n.{text_field} IS NOT NULL
-                AND n.{text_field} <> ""
-            """
+            # Build query
+            query_parts = [
+                f"MATCH (n:{node_type})",
+                f"WHERE n.{text_field} IS NOT NULL AND n.{text_field} <> ''",
+            ]
+            params = {}
 
             if not force:
-                query += f" AND n.{embedding_field} IS NULL"
+                query_parts.append(f"AND n.{embedding_field} IS NULL")
 
             if node_ids:
-                query += f" AND n.{id_field} IN $node_ids"
+                query_parts.append(f"AND n.{id_field} IN $node_ids")
+                params["node_ids"] = node_ids
 
-            query += f" RETURN n.{id_field} AS id, n.{text_field} AS text"
-            query += " LIMIT 100"
+            query_parts.append(f"RETURN n.{id_field} AS id, n.{text_field} AS text")
+            query_parts.append("LIMIT 100")
 
-            result = session.run(query, node_ids=node_ids if node_ids else [])
+            query = " ".join(query_parts)
+
+            result = session.run(query, **params)  # type: ignore[arg-type]
 
             nodes = []
             for record in result:
@@ -313,12 +317,13 @@ class Neo4jEmbeddingsManager:
 
             # Update Neo4j with new embeddings
             for node, embedding in zip(nodes, embeddings_list, strict=False):
-                session.run(
-                    f"""
+                query = f"""
                     MATCH (n:{node_type} {{{id_field}: $id}})
                     SET n.{embedding_field} = $embedding,
                         n.embedding_generated_at = datetime()
-                """,
+                """
+                session.run(
+                    query,  # type: ignore[arg-type]
                     id=node["id"],
                     embedding=embedding,
                 )
@@ -346,10 +351,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["publications"] = {
-                "total": record["total_publications"],
-                "with_embeddings": record["publications_with_embeddings"],
-            }
+            if record:
+                stats["publications"] = {
+                    "total": record["total_publications"],
+                    "with_embeddings": record["publications_with_embeddings"],
+                }
+            else:
+                stats["publications"] = {"total": 0, "with_embeddings": 0}
 
             # Document embedding stats
             result = session.run("""
@@ -359,10 +367,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["documents"] = {
-                "total": record["total_documents"],
-                "with_embeddings": record["documents_with_embeddings"],
-            }
+            if record:
+                stats["documents"] = {
+                    "total": record["total_documents"],
+                    "with_embeddings": record["documents_with_embeddings"],
+                }
+            else:
+                stats["documents"] = {"total": 0, "with_embeddings": 0}
 
             # Chunk embedding stats
             result = session.run("""
@@ -372,10 +383,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["chunks"] = {
-                "total": record["total_chunks"],
-                "with_embeddings": record["chunks_with_embeddings"],
-            }
+            if record:
+                stats["chunks"] = {
+                    "total": record["total_chunks"],
+                    "with_embeddings": record["chunks_with_embeddings"],
+                }
+            else:
+                stats["chunks"] = {"total": 0, "with_embeddings": 0}
 
         # Print statistics
         print("Embedding Statistics:")

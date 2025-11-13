@@ -37,7 +37,7 @@ class FAISSVectorStore(VectorStore):
         self.index_path = config.index_path
         self.data_path = config.data_path
 
-        self.index: faiss.IndexIDMap | None = None
+        self.index: faiss.IndexIDMap | None = None  # type: ignore[attr-defined]
         self.documents: dict[str, Document] = {}
         self._load()
 

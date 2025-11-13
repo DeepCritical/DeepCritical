@@ -124,6 +124,26 @@ class PlanGenerator:
                 output_schema={"poses": "list", "confidence": "float"},
                 success_criteria={"min_confidence": 0.5},
             ),
+            "openmm_md": ToolSpec(
+                name="openmm_md",
+                category=ToolCategory.MOLECULAR_SIMULATION,
+                input_schema={
+                    "structure": "pdb",
+                    "ligand": "sdf",
+                    "simulation_config": "dict",
+                },
+                output_schema={
+                    "summary": "dict",
+                    "trajectory_path": "string",
+                    "checkpoint_path": "string",
+                },
+                success_criteria={"min_steps": 1000},
+                parameters={
+                    "temperature_K": 300.0,
+                    "n_steps": 50_000,
+                    "platform": "CPU",
+                },
+            ),
             # De Novo Design Tools
             "rfdiffusion": ToolSpec(
                 name="rfdiffusion",
@@ -163,6 +183,7 @@ class PlanGenerator:
                 "uniprot_query",
                 "alphafold2",
                 "rfdiffusion",
+                "openmm_md",
                 "evolla",
             ],
             ScientificIntent.BINDING_ANALYSIS: [
@@ -170,6 +191,7 @@ class PlanGenerator:
                 "alphafold2",
                 "autodock_vina",
                 "diffdock",
+                "openmm_md",
             ],
             ScientificIntent.STRUCTURE_PREDICTION: [
                 "uniprot_query",
@@ -201,6 +223,7 @@ class PlanGenerator:
                 "alphafold2",
                 "autodock_vina",
                 "diffdock",
+                "openmm_md",
             ],
         }
 

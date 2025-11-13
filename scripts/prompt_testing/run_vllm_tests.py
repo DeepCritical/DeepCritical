@@ -224,8 +224,7 @@ def run_vllm_tests(
         return 1
 
     # Add test files to command
-    for test_file in test_files:
-        cmd.append(str(test_file))
+    cmd.extend(map(str, test_files))
 
     logger.info(f"Running VLLM tests for {len(test_files)} modules: {' '.join(cmd)}")
 
@@ -236,7 +235,9 @@ def run_vllm_tests(
         # Generate test report using configuration
         if result.returncode == 0:
             logger.info("✅ All VLLM tests passed!")
-            _generate_summary_report(test_files, config, artifacts_dir)
+            _generate_summary_report(
+                [Path(f) for f in test_files], config, artifacts_dir
+            )
         else:
             logger.error("❌ Some VLLM tests failed")
             logger.info("Check test artifacts for detailed results")
@@ -252,7 +253,7 @@ def run_vllm_tests(
 
 
 def _generate_summary_report(
-    test_files: list[Path],
+    test_files: list[Path | str],
     config: DictConfig | None = None,
     artifacts_dir: Path | None = None,
 ):

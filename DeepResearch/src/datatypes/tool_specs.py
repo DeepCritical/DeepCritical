@@ -16,6 +16,7 @@ class ToolCategory(Enum):
     SEQUENCE_ANALYSIS = "sequence_analysis"
     STRUCTURE_PREDICTION = "structure_prediction"
     MOLECULAR_DOCKING = "molecular_docking"
+    MOLECULAR_SIMULATION = "molecular_simulation"
     DE_NOVO_DESIGN = "de_novo_design"
     FUNCTION_PREDICTION = "function_prediction"
 

@@ -676,6 +676,10 @@ def create_virtual_env(dir_path: str, **env_args) -> SimpleNamespace:
             "upgrade_deps",
         ]
     }
-    env_builder = venv.EnvBuilder(**valid_args)
+    if "prompt" in valid_args and not isinstance(
+        valid_args["prompt"], (str, type(None))
+    ):
+        del valid_args["prompt"]
+    env_builder = venv.EnvBuilder(**valid_args)  # type: ignore[arg-type]
     env_builder.create(dir_path)
     return env_builder.ensure_directories(dir_path)

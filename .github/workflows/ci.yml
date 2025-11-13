@@ -162,6 +162,30 @@ jobs:
         python scripts/run_vllm_tests.py --no-hydra
       continue-on-error: true  # VLLM tests are allowed to fail in CI
 
+  md-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Conda Environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: '3.11'
+        channels: conda-forge
+        channel-priority: strict
+
+    - name: Install OpenMM and project dependencies
+      shell: bash -l {0}
+      run: |
+        mamba install --yes -c conda-forge openmm openmmforcefields
+        pip install -e ".[dev,md]"
+
+    - name: Run MD (optional) tests
+      shell: bash -l {0}
+      run: |
+        pytest tests/ -m "optional"
+
   lint:
     runs-on: ubuntu-latest
 
