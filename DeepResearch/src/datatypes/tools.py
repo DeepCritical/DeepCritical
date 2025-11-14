@@ -73,7 +73,9 @@ class ToolRunner(ABC):
             "bool": bool,
         }
 
-        expected_python_type = type_mapping.get(expected_type, Any)
+        # For unrecognized types (like "pdb", "sdf"), default to checking for str.
+        # This prevents a TypeError from isinstance(value, typing.Any).
+        expected_python_type = type_mapping.get(expected_type, str)
         return isinstance(value, expected_python_type)
 
 

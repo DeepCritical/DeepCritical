@@ -82,15 +82,15 @@ def run_openmm_simulation(cfg: MDSimulationConfig) -> MDSimulationResult:
         modeller = app.Modeller(pdb.topology, pdb.positions)
 
         # 3. Forcefield and System Generation
-        forcefield_kwargs = {
-            "constraints": app.HBonds,
-            "rigidWater": True,
+        periodic_forcefield_kwargs = {
             "nonbondedMethod": app.PME,
             "nonbondedCutoff": 1.0 * unit.nanometers,
+            "constraints": app.HBonds,
+            "rigidWater": True,
         }
         system_generator = SystemGenerator(
             forcefields=[cfg.forcefield, cfg.solvent_model],
-            forcefield_kwargs=forcefield_kwargs,
+            periodic_forcefield_kwargs=periodic_forcefield_kwargs,
         )
 
         modeller.addHydrogens(system_generator.forcefield)

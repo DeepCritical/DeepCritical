@@ -45,10 +45,6 @@ dev = [
   "pytest-mock>=3.15.1",
   "mypy>=1.6.1",
 ]
-md = [
-  "openmm>=8.4.0",
-  "openmmforcefields>=0.14"
-]
 
 [project.scripts]
 deepresearch = "DeepResearch.app:main"

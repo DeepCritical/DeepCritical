@@ -179,7 +179,7 @@ jobs:
       shell: bash -l {0}
       run: |
         conda install --yes -c conda-forge openmm openmmforcefields
-        pip install -e ".[dev,md]"
+        pip install -e ".[dev]"
 
     - name: Run MD (optional) tests
       shell: bash -l {0}
@@ -205,7 +205,7 @@ jobs:
     - name: Run linting (Ruff)
       run: |
         ruff --version
-        ruff check DeepResearch/ tests/ --extend-ignore=EXE001,PLR0913,PLR0912,PLR0915,PLR0911,N815 --output-format=github
+        ruff check DeepResearch/ tests/ --extend-ignore=EXE001,PLR0913,PLR0912,PLR0915,PLR0911,N815,N815 --output-format=github
 
     - name: Check formatting (Ruff)
       run: |
