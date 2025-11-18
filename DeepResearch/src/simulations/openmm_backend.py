@@ -96,7 +96,7 @@ def run_openmm_simulation(cfg: MDSimulationConfig) -> MDSimulationResult:
         modeller.addHydrogens(system_generator.forcefield)
         modeller.addSolvent(system_generator.forcefield, padding=1.0 * unit.nanometers)
 
-        system = system_generator.createSystem(modeller.topology)
+        system = system_generator.create_system(modeller.topology)
         system.addForce(
             mm.MonteCarloBarostat(
                 cfg.pressure_atm * unit.atmosphere, cfg.temperature_K * unit.kelvin

@@ -57,7 +57,7 @@ class VLLMContainer(DockerContainer):
     """Specialized container for VLLM testing."""
 
     def __init__(self, model: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0", **kwargs):
-        super().__init__("vllm/vllm-openai:v0.10.2", **kwargs)
+        super().__init__("vllm/vllm-openai:latest", **kwargs)
         self.model = model
         self._configure_vllm()
 
