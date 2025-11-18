@@ -4,9 +4,9 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from openmm import app, LangevinIntegrator, Platform # type: ignore
-from openmm.unit import kelvin, nanometer, picosecond, femtosecond # type: ignore
-from pdbfixer import PDBFixer # type: ignore
+from openmm import LangevinIntegrator, Platform, app  # type: ignore
+from openmm.unit import femtosecond, kelvin, nanometer, picosecond  # type: ignore
+from pdbfixer import PDBFixer  # type: ignore
 
 from DeepResearch.src.tools.base import ExecutionResult, ToolRunner, ToolSpec
 
