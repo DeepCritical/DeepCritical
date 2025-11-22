@@ -9,7 +9,7 @@ embedding providers.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from neo4j import GraphDatabase
 

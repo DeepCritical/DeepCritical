@@ -678,6 +678,6 @@ def create_virtual_env(dir_path: str, **env_args) -> SimpleNamespace:
     }
     # EnvBuilder expects specific types, but valid_args values are inferred loosely
     # Cast to Any to satisfy type checker
-    env_builder = venv.EnvBuilder(**cast(Any, valid_args))
+    env_builder = venv.EnvBuilder(**cast("Any", valid_args))
     env_builder.create(dir_path)
     return env_builder.ensure_directories(dir_path)

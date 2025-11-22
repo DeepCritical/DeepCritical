@@ -300,7 +300,7 @@ More text.
 
         # Test with text content parts
         text_parts = [{"type": "text", "text": "Hello world"}]
-        result = content_str(cast(Any, text_parts))
+        result = content_str(cast("Any", text_parts))
         assert result == "Hello world"
 
         # Test with mixed content (AG2 joins with newlines)
@@ -308,7 +308,7 @@ More text.
             {"type": "text", "text": "Hello"},
             {"type": "text", "text": " world"},
         ]
-        result = content_str(cast(Any, mixed_parts))
+        result = content_str(cast("Any", mixed_parts))
         assert result == "Hello\n world"
 
         # Test with None

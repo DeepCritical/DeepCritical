@@ -11,7 +11,7 @@ import asyncio
 import os
 import subprocess
 from datetime import datetime
-from typing import Any, cast, Coroutine
+from typing import Any, Coroutine, cast
 
 # from pydantic_ai import RunContext
 # from pydantic_ai.tools import defer
@@ -124,7 +124,7 @@ class FastpServer(MCPServerBase):
             result = method(**method_params)
             # Await if it's a coroutine (run in sync context)
             if asyncio.iscoroutine(result):
-                return asyncio.run(cast(Coroutine[Any, Any, dict[str, Any]], result))
+                return asyncio.run(cast("Coroutine[Any, Any, dict[str, Any]]", result))
             return result
         except Exception as e:
             return {

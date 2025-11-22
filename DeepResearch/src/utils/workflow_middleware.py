@@ -517,21 +517,21 @@ def _determine_middleware_type(middleware: Any) -> MiddlewareType:
 def agent_middleware(func: AgentMiddlewareCallable) -> AgentMiddlewareCallable:
     """Decorator to mark a function as agent middleware."""
     # Add marker attribute to identify this as agent middleware
-    setattr(func, "_middleware_type", MiddlewareType.AGENT)
+    func._middleware_type = MiddlewareType.AGENT
     return func
 
 
 def function_middleware(func: FunctionMiddlewareCallable) -> FunctionMiddlewareCallable:
     """Decorator to mark a function as function middleware."""
     # Add marker attribute to identify this as function middleware
-    setattr(func, "_middleware_type", MiddlewareType.FUNCTION)
+    func._middleware_type = MiddlewareType.FUNCTION
     return func
 
 
 def chat_middleware(func: ChatMiddlewareCallable) -> ChatMiddlewareCallable:
     """Decorator to mark a function as chat middleware."""
     # Add marker attribute to identify this as chat middleware
-    setattr(func, "_middleware_type", MiddlewareType.CHAT)
+    func._middleware_type = MiddlewareType.CHAT
     return func
 
 
