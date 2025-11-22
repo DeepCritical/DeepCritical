@@ -1,0 +1,5 @@
+model_type: sentence_transformers
+model_name: all-MiniLM-L6-v2
+num_dimensions: 384
+batch_size: 32
+device: cpu

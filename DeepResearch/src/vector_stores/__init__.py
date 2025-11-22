@@ -78,4 +78,32 @@ def create_vector_store(
             vector_store_config, embeddings, neo4j_config=connection
         )
 
+    if config.store_type == VectorStoreType.FAISS:
+        from .faiss_config import FAISSVectorStoreConfig
+        from .faiss_vector_store import FAISSVectorStore
+
+        if isinstance(config, FAISSVectorStoreConfig):
+            return FAISSVectorStore(config, embeddings)
+
+        # Create FAISS config from generic config
+        # Default paths relative to execution dir
+        index_path = getattr(config, "index_path", "./data/faiss.index")
+        data_path = getattr(config, "data_path", "./data/faiss_docs.pkl")
+
+        faiss_config = FAISSVectorStoreConfig(
+            store_type=VectorStoreType.FAISS,
+            embedding_dimension=config.embedding_dimension,
+            index_path=index_path,
+            data_path=data_path,
+            connection_string=None,
+            host=None,
+            port=None,
+            database=None,
+            collection_name=None,
+            api_key=None,
+            distance_metric=config.distance_metric,
+            index_type=config.index_type,
+        )
+        return FAISSVectorStore(faiss_config, embeddings)
+
     raise ValueError(f"Unsupported vector store type: {config.store_type}")

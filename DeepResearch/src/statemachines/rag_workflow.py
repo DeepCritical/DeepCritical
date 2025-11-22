@@ -113,12 +113,16 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
         # Create embeddings config
         embeddings_cfg = rag_cfg.get("embeddings", {})
         embeddings_config = EmbeddingsConfig(
-            model_type=EmbeddingModelType(embeddings_cfg.get("model_type", "openai")),
-            model_name=embeddings_cfg.get("model_name", "text-embedding-3-small"),
+            model_type=EmbeddingModelType(
+                embeddings_cfg.get("model_type", "sentence_transformers")
+            ),
+            model_name=embeddings_cfg.get("model_name", "all-MiniLM-L6-v2"),
             api_key=embeddings_cfg.get("api_key"),
             base_url=embeddings_cfg.get("base_url"),
-            num_dimensions=embeddings_cfg.get("num_dimensions", 1536),
+            num_dimensions=embeddings_cfg.get("num_dimensions", 384),
             batch_size=embeddings_cfg.get("batch_size", 32),
+            query_instruction=embeddings_cfg.get("query_instruction"),
+            device=embeddings_cfg.get("device"),
         )
 
         # Create LLM config
@@ -316,23 +320,31 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
     async def run(self, ctx: GraphRunContext[RAGState]) -> QueryRAG:
         """Store documents in vector store."""
         try:
-            # Initialize VLLM RAG system
             rag_config = ctx.state.rag_config
-            deployment = self._create_vllm_deployment(rag_config)
-            rag_system = VLLMRAGSystem(deployment=deployment)
+
+            # Initialize Embeddings via Factory
+            from DeepResearch.src.datatypes.embeddings_factory import create_embeddings
+
+            embeddings = create_embeddings(rag_config.embeddings)
+
+            # Initialize LLM Provider (VLLM)
+            from DeepResearch.src.datatypes.vllm_integration import VLLMLLMProvider
+
+            llm_provider = VLLMLLMProvider(rag_config.llm)
+
+            # Initialize RAG System
+            from DeepResearch.src.datatypes.rag import RAGSystem
+
+            rag_system = RAGSystem(
+                config=rag_config,
+                embeddings=embeddings,
+                llm=llm_provider,
+                vector_store=None,  # Vector store integration coming in Phase 4B
+            )
 
             await rag_system.initialize()
 
-            # Store documents
-            # TODO: Implement vector store integration
-            # if hasattr(rag_system, 'vector_store') and rag_system.vector_store:
-            #     document_ids = await rag_system.vector_store.add_documents(
-            #         ctx.state.documents
-            #     )
-            #     ctx.state.processing_steps.append(
-            #         f"stored_{len(document_ids)}_documents"
-            #     )
-            # else:
+            ctx.state.processing_steps.append("embeddings_initialized")
             ctx.state.processing_steps.append("vector_store_not_available")
 
             # Store RAG system in context for querying

@@ -48,6 +48,8 @@ class EmbeddingModelType(str, Enum):
     OPENAI = "openai"
     HUGGINGFACE = "huggingface"
     SENTENCE_TRANSFORMERS = "sentence_transformers"
+    MIXEDBREAD = "mixedbread"
+    VLLM = "vllm"
     CUSTOM = "custom"
 
 
@@ -263,6 +265,10 @@ class EmbeddingsConfig(BaseModel):
     batch_size: int = Field(32, description="Batch size for embedding generation")
     max_retries: int = Field(3, description="Maximum retry attempts")
     timeout: float = Field(30.0, description="Request timeout in seconds")
+    query_instruction: str | None = Field(
+        None, description="Instruction to prepend to queries"
+    )
+    device: str | None = Field(None, description="Device to run model on (cpu/cuda)")
 
     model_config = ConfigDict(
         json_schema_extra={

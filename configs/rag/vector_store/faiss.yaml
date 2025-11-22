@@ -1,0 +1,4 @@
+store_type: faiss
+index_path: ./data/faiss.index
+data_path: ./data/faiss_docs.pkl
+embedding_dimension: ${rag.embeddings.num_dimensions}

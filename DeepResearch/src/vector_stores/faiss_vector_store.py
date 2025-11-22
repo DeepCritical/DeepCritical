@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import pickle
 from typing import Any
@@ -17,6 +18,17 @@ from ..datatypes.rag import (
     VectorStoreConfig,
 )
 from .faiss_config import FAISSVectorStoreConfig
+
+
+def _stable_hash(doc_id: str) -> int:
+    """Generate a stable 64-bit signed integer hash for a document ID."""
+    # SHA-256 -> hex -> int
+    hex_hash = hashlib.sha256(doc_id.encode("utf-8")).hexdigest()
+    # Take first 16 hex chars (64 bits)
+    int_hash = int(hex_hash[:16], 16)
+    # Mask to 63 bits to ensure it fits in signed 64-bit integer (positive)
+    # FAISS IDMap expects int64.
+    return int_hash & 0x7FFFFFFFFFFFFFFF
 
 
 class FAISSVectorStore(VectorStore):
@@ -39,6 +51,8 @@ class FAISSVectorStore(VectorStore):
 
         self.index: faiss.IndexIDMap | None = None
         self.documents: dict[str, Document] = {}
+        # Map from stable_hash -> doc_id
+        self.id_map: dict[int, str] = {}
         self._load()
 
     def _load(self):
@@ -48,6 +62,10 @@ class FAISSVectorStore(VectorStore):
         if os.path.exists(self.data_path):
             with open(self.data_path, "rb") as f:
                 self.documents = pickle.load(f)
+                # Rebuild id_map
+                self.id_map = {
+                    _stable_hash(doc_id): doc_id for doc_id in self.documents
+                }
 
     def _save(self):
         """Saves the index and document data to disk."""
@@ -69,11 +87,15 @@ class FAISSVectorStore(VectorStore):
         embeddings = await self.embeddings.vectorize_documents(texts)
 
         doc_ids = [doc.id for doc in documents]
-        doc_id_vectors = np.array([hash(doc_id) for doc_id in doc_ids], dtype=np.int64)
+        # Use stable hash
+        doc_id_vectors = np.array(
+            [_stable_hash(doc_id) for doc_id in doc_ids], dtype=np.int64
+        )
 
         for i, doc in enumerate(documents):
             doc.embedding = embeddings[i]
             self.documents[doc.id] = doc
+            self.id_map[_stable_hash(doc.id)] = doc.id
 
         new_vectors = np.array(embeddings, dtype=np.float32)
         if self.index is None:
@@ -106,13 +128,16 @@ class FAISSVectorStore(VectorStore):
             return False
 
         ids_to_remove = np.array(
-            [hash(doc_id) for doc_id in document_ids], dtype=np.int64
+            [_stable_hash(doc_id) for doc_id in document_ids], dtype=np.int64
         )
         self.index.remove_ids(ids_to_remove)  # type: ignore
 
         for doc_id in document_ids:
             if doc_id in self.documents:
                 del self.documents[doc_id]
+            hashed_id = _stable_hash(doc_id)
+            if hashed_id in self.id_map:
+                del self.id_map[hashed_id]
 
         self._save()
         return True
@@ -169,21 +194,15 @@ class FAISSVectorStore(VectorStore):
 
         distances, indices = self.index.search(query_vector, top_k)  # type: ignore
 
-        # Since we are using IndexIDMap, the indices are the hashed document IDs.
-        # We need to find the original document IDs.
-        # This is a limitation of this simple implementation.
-        # A more robust solution would store a mapping from hash to original ID.
-        # For now, we will iterate through the documents to find the matching ones.
-
         results = []
         for i in range(len(indices[0])):
-            found_doc_id = None
-            for doc_id, doc in self.documents.items():
-                if hash(doc_id) == indices[0][i]:
-                    found_doc_id = doc_id
-                    break
+            hashed_id = indices[0][i]
+            if hashed_id == -1:  # FAISS returns -1 for no match
+                continue
 
-            if found_doc_id:
+            found_doc_id = self.id_map.get(hashed_id)
+
+            if found_doc_id and found_doc_id in self.documents:
                 document = self.documents[found_doc_id]
                 results.append(
                     SearchResult(

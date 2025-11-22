@@ -3,7 +3,7 @@
 
 defaults:
   - _self_
-  - embeddings: openai
+  - embeddings: sentence_transformers
   - llm: vllm_local
   - vector_store: chroma
 
