@@ -135,11 +135,11 @@ class MCPServerBase(ABC):
                 tool = self._convert_to_pydantic_ai_tool(method)
                 if tool:
                     # Store both the method and tool spec for later retrieval
-                    self.tools[name] = {
+                    self.tools[name] = cast("RegisteredTool", {
                         "method": method,
                         "tool": tool,
                         "spec": method._mcp_tool_spec,
-                    }
+                    })
                     self.pydantic_ai_tools.append(tool)
 
     def _convert_to_pydantic_ai_tool(self, method: Callable) -> Tool | None:
@@ -559,7 +559,7 @@ def mcp_tool(spec: ToolSpec | MCPToolSpec | None = None):
 
         # Mark function as MCP tool for later Pydantic AI integration
         func._is_mcp_tool = True  # type: ignore
-        return cast("MCPToolFunc", func)
+        return func
 
     return decorator
 

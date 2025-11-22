@@ -197,7 +197,7 @@ def run_vllm_tests(
                 return 0
 
         test_files = [
-            f"test_prompts_vllm/test_prompts_{module}_vllm.py"
+            Path(f"test_prompts_vllm/test_prompts_{module}_vllm.py")
             for module in modules
             if (test_dir / f"test_prompts_vllm/test_prompts_{module}_vllm.py").exists()
         ]

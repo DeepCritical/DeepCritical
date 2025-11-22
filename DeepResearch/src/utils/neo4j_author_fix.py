@@ -560,7 +560,8 @@ def fix_author_data(
         final_stats = validate_author_data_integrity(driver, neo4j_config.database)
         results["final_stats"] = final_stats
 
-        total_fixes = sum(results["fixes_applied"].values())
+        from typing import cast
+        total_fixes = sum(cast("list[int]", results["fixes_applied"].values()))
         print("\n✅ Author data fixing completed successfully!")
         print(f"Total fixes applied: {total_fixes}")
 

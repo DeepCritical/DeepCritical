@@ -9,9 +9,13 @@ embedding providers.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast, TYPE_CHECKING
 
 from neo4j import GraphDatabase
+
+if TYPE_CHECKING:
+    # Use Any to avoid LiteralString import issues
+    LiteralString = Any
 
 from ..datatypes.neo4j_types import Neo4jConnectionConfig, Neo4jVectorStoreConfig
 from ..datatypes.rag import Embeddings as EmbeddingsInterface
@@ -289,7 +293,7 @@ class Neo4jEmbeddingsManager:
             query += f" RETURN n.{id_field} AS id, n.{text_field} AS text"
             query += " LIMIT 100"
 
-            result = session.run(query, node_ids=node_ids if node_ids else [])
+            result = session.run(cast("LiteralString", query), node_ids=node_ids if node_ids else [])
 
             nodes = []
             for record in result:
@@ -314,11 +318,11 @@ class Neo4jEmbeddingsManager:
             # Update Neo4j with new embeddings
             for node, embedding in zip(nodes, embeddings_list, strict=False):
                 session.run(
-                    f"""
+                    cast("LiteralString", f"""
                     MATCH (n:{node_type} {{{id_field}: $id}})
                     SET n.{embedding_field} = $embedding,
                         n.embedding_generated_at = datetime()
-                """,
+                """),
                     id=node["id"],
                     embedding=embedding,
                 )
@@ -346,10 +350,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["publications"] = {
-                "total": record["total_publications"],
-                "with_embeddings": record["publications_with_embeddings"],
-            }
+            if record:
+                stats["publications"] = {
+                    "total": record["total_publications"],
+                    "with_embeddings": record["publications_with_embeddings"],
+                }
+            else:
+                stats["publications"] = {"total": 0, "with_embeddings": 0}
 
             # Document embedding stats
             result = session.run("""
@@ -359,10 +366,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["documents"] = {
-                "total": record["total_documents"],
-                "with_embeddings": record["documents_with_embeddings"],
-            }
+            if record:
+                stats["documents"] = {
+                    "total": record["total_documents"],
+                    "with_embeddings": record["documents_with_embeddings"],
+                }
+            else:
+                stats["documents"] = {"total": 0, "with_embeddings": 0}
 
             # Chunk embedding stats
             result = session.run("""
@@ -372,10 +382,13 @@ class Neo4jEmbeddingsManager:
             """)
 
             record = result.single()
-            stats["chunks"] = {
-                "total": record["total_chunks"],
-                "with_embeddings": record["chunks_with_embeddings"],
-            }
+            if record:
+                stats["chunks"] = {
+                    "total": record["total_chunks"],
+                    "with_embeddings": record["chunks_with_embeddings"],
+                }
+            else:
+                stats["chunks"] = {"total": 0, "with_embeddings": 0}
 
         # Print statistics
         print("Embedding Statistics:")

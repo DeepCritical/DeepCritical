@@ -12,7 +12,7 @@ import asyncio
 import os
 import subprocess
 from datetime import datetime
-from typing import Any
+from typing import Any, cast, Coroutine
 
 from DeepResearch.src.datatypes.bioinformatics_mcp import MCPServerBase, mcp_tool
 from DeepResearch.src.datatypes.mcp import (
@@ -99,7 +99,7 @@ class FeatureCountsServer(MCPServerBase):
             result = method(**method_params)
             # Await if it's a coroutine
             if asyncio.iscoroutine(result):
-                return asyncio.run(result)
+                return asyncio.run(cast(Coroutine[Any, Any, dict[str, Any]], result))
             return result
         except Exception as e:
             return {

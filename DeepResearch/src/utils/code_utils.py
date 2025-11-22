@@ -22,7 +22,7 @@ from concurrent.futures import TimeoutError as FuturesTimeoutError
 from hashlib import md5
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import docker
 from DeepResearch.src.datatypes.ag_types import (
@@ -676,6 +676,8 @@ def create_virtual_env(dir_path: str, **env_args) -> SimpleNamespace:
             "upgrade_deps",
         ]
     }
-    env_builder = venv.EnvBuilder(**valid_args)
+    # EnvBuilder expects specific types, but valid_args values are inferred loosely
+    # Cast to Any to satisfy type checker
+    env_builder = venv.EnvBuilder(**cast(Any, valid_args))
     env_builder.create(dir_path)
     return env_builder.ensure_directories(dir_path)
