@@ -37,7 +37,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "ruff>=0.6.0",
+  "ruff>=0.14.0",
   "pytest>=7.0.0",
   "pytest-asyncio>=0.21.0",
   "pytest-cov>=4.0.0",
@@ -214,7 +214,7 @@ docstring-code-line-length = "dynamic"
 
 [dependency-groups]
 dev = [
-  "ruff>=0.6.0",
+  "ruff>=0.14.0",
   "pytest>=7.0.0",
   "pytest-asyncio>=0.21.0",
   "pytest-cov>=4.0.0",
