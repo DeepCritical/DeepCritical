@@ -561,6 +561,7 @@ def fix_author_data(
         results["final_stats"] = final_stats
 
         from typing import cast
+
         total_fixes = sum(cast("list[int]", results["fixes_applied"].values()))
         print("\n✅ Author data fixing completed successfully!")
         print(f"Total fixes applied: {total_fixes}")

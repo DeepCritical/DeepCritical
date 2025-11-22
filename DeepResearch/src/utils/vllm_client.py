@@ -179,7 +179,9 @@ class VLLMAgent:
         self, request: ChatCompletionRequest
     ) -> ChatCompletionResponse:
         """Create chat completion (OpenAI-compatible)."""
-        messages = [{"role": msg["role"], "content": msg["content"]} for msg in request.messages]
+        messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in request.messages
+        ]
         response_text = await self.chat(messages)
         return ChatCompletionResponse(
             id=f"chatcmpl-{asyncio.get_event_loop().time()}",

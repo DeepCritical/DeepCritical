@@ -293,7 +293,9 @@ class Neo4jEmbeddingsManager:
             query += f" RETURN n.{id_field} AS id, n.{text_field} AS text"
             query += " LIMIT 100"
 
-            result = session.run(cast("LiteralString", query), node_ids=node_ids if node_ids else [])
+            result = session.run(
+                cast("LiteralString", query), node_ids=node_ids if node_ids else []
+            )
 
             nodes = []
             for record in result:
@@ -318,11 +320,14 @@ class Neo4jEmbeddingsManager:
             # Update Neo4j with new embeddings
             for node, embedding in zip(nodes, embeddings_list, strict=False):
                 session.run(
-                    cast("LiteralString", f"""
+                    cast(
+                        "LiteralString",
+                        f"""
                     MATCH (n:{node_type} {{{id_field}: $id}})
                     SET n.{embedding_field} = $embedding,
                         n.embedding_generated_at = datetime()
-                """),
+                """,
+                    ),
                     id=node["id"],
                     embedding=embedding,
                 )

@@ -26,6 +26,7 @@ class BioinformaticsConfigLoader:
             self.config.get("bioinformatics", {}), resolve=True
         )
         from typing import cast
+
         return cast("dict[str, Any]", result) if isinstance(result, dict) else {}
 
     def get_model_config(self) -> dict[str, Any]:
