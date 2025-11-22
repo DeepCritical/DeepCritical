@@ -1,0 +1,6 @@
+model_type: mixedbread
+model_name: mixedbread-ai/mxbai-embed-large-v1
+num_dimensions: 1024
+batch_size: 32
+device: cpu
+query_instruction: "Represent this sentence for searching relevant passages: "
