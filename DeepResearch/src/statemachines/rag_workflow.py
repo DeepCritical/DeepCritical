@@ -332,6 +332,11 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
 
             llm_provider = VLLMLLMProvider(rag_config.llm)
 
+            # Initialize Vector Store via Factory
+            from DeepResearch.src.vector_stores import create_vector_store
+
+            vector_store = create_vector_store(rag_config.vector_store, embeddings)
+
             # Initialize RAG System
             from DeepResearch.src.datatypes.rag import RAGSystem
 
@@ -339,13 +344,19 @@ class StoreDocuments(BaseNode[RAGState]):  # type: ignore[unsupported-base]
                 config=rag_config,
                 embeddings=embeddings,
                 llm=llm_provider,
-                vector_store=None,  # Vector store integration coming in Phase 4B
+                vector_store=vector_store,
             )
 
             await rag_system.initialize()
 
+            # Store documents
+            if ctx.state.documents and vector_store:
+                document_ids = await vector_store.add_documents(ctx.state.documents)
+                ctx.state.processing_steps.append(
+                    f"stored_{len(document_ids)}_documents"
+                )
+
             ctx.state.processing_steps.append("embeddings_initialized")
-            ctx.state.processing_steps.append("vector_store_not_available")
 
             # Store RAG system in context for querying
             ctx.set("rag_system", rag_system)
