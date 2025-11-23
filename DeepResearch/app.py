@@ -38,6 +38,10 @@ from .src.datatypes.workflow_orchestration import (
 )
 from .src.utils.execution_history import ExecutionHistory as PrimeExecutionHistory
 from .src.utils.tool_registry import ToolRegistry
+from .src.utils.config_loader import ModelConfigLoader
+
+# Module-level model config loader
+_model_config_loader = ModelConfigLoader()
 
 # from .src.tools import bioinformatics_tools
 
@@ -317,8 +321,8 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
                     agent_id=agent_data.get("agent_id", "unnamed_agent"),
                     role=AgentRole(agent_data.get("role", "executor")),
                     model_name=agent_data.get(
-                        "model_name", "anthropic:claude-sonnet-4-0"
-                    ),
+                        "model_name"
+                    ) or _model_config_loader.get_default_llm_model(),
                     system_prompt=agent_data.get("system_prompt"),
                     tools=agent_data.get("tools", []),
                     max_iterations=agent_data.get("max_iterations", 10),
@@ -349,7 +353,7 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             judge_config = JudgeConfig(
                 judge_id=judge_data.get("judge_id", "unnamed_judge"),
                 name=judge_data.get("name", "Unnamed Judge"),
-                model_name=judge_data.get("model_name", "anthropic:claude-sonnet-4-0"),
+                model_name=judge_data.get("model_name") or _model_config_loader.get_default_llm_model(),
                 evaluation_criteria=judge_data.get(
                     "evaluation_criteria", ["quality", "accuracy"]
                 ),
@@ -516,7 +520,7 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         primary_orchestrator = AgentOrchestratorConfig(
             orchestrator_id="primary_orchestrator",
             agent_role=AgentRole.ORCHESTRATOR_AGENT,
-            model_name=cfg.get("model_name", "anthropic:claude-sonnet-4-0"),
+            model_name=cfg.get("model_name") or _model_config_loader.get_default_llm_model(),
             max_nested_loops=cfg.get("max_nested_loops", 5),
             coordination_strategy=cfg.get("coordination_strategy", "collaborative"),
             can_spawn_subgraphs=cfg.get("can_spawn_subgraphs", True),

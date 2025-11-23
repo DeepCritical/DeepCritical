@@ -49,11 +49,14 @@ class GenomicsAnalysisResult(BaseModel):
 
 
 # Create Pydantic AI agent (Phase 3: Agent Creation)
-# Use TestModel for testing/CI (no API key needed), real model otherwise
+# Use TestModel for testing/CI (no API key needed), real model from config otherwise
+from DeepResearch.src.utils.config_loader import ModelConfigLoader
+
+_model_config = ModelConfigLoader()
 _model = (
     TestModel()
     if (not os.getenv("ANTHROPIC_API_KEY") and TestModel is not None)
-    else "anthropic:claude-sonnet-4-0"
+    else _model_config.get_default_llm_model()
 )
 
 genomics_agent = Agent[GenomicsAgentDeps, GenomicsAnalysisResult](

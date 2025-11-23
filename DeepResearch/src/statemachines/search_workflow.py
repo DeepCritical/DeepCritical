@@ -112,8 +112,11 @@ class PerformWebSearch(BaseNode[SearchWorkflowState]):  # type: ignore[unsupport
             from DeepResearch.src.datatypes.search_agent import SearchAgentConfig
 
             # Create SearchAgent with config
+            from DeepResearch.src.utils.config_loader import ModelConfigLoader
+            _config_loader = ModelConfigLoader()
+
             search_config = SearchAgentConfig(
-                model="anthropic:claude-sonnet-4-0",
+                model=_config_loader.get_default_llm_model(),
                 default_num_results=state.num_results,
             )
             search_agent = SearchAgent(search_config)

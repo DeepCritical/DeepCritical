@@ -30,7 +30,7 @@ class WorkflowPatternAgent(BaseAgent):
     def __init__(
         self,
         pattern: InteractionPattern,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -152,7 +152,7 @@ class CollaborativePatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -212,7 +212,7 @@ class SequentialPatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -271,7 +271,7 @@ class HierarchicalPatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -337,7 +337,7 @@ class PatternOrchestratorAgent(BaseAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -506,7 +506,7 @@ class AdaptivePatternAgent(BaseAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ):
         super().__init__(
@@ -616,7 +616,7 @@ class AdaptivePatternAgent(BaseAgent):
 
 # Factory functions for creating pattern agents
 def create_collaborative_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     dependencies: AgentDependencies | None = None,
 ) -> CollaborativePatternAgent:
     """Create a collaborative pattern agent."""
@@ -624,7 +624,7 @@ def create_collaborative_agent(
 
 
 def create_sequential_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     dependencies: AgentDependencies | None = None,
 ) -> SequentialPatternAgent:
     """Create a sequential pattern agent."""
@@ -632,7 +632,7 @@ def create_sequential_agent(
 
 
 def create_hierarchical_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     dependencies: AgentDependencies | None = None,
 ) -> HierarchicalPatternAgent:
     """Create a hierarchical pattern agent."""
@@ -640,7 +640,7 @@ def create_hierarchical_agent(
 
 
 def create_pattern_orchestrator(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     dependencies: AgentDependencies | None = None,
 ) -> PatternOrchestratorAgent:
     """Create a pattern orchestrator agent."""
@@ -648,7 +648,7 @@ def create_pattern_orchestrator(
 
 
 def create_adaptive_pattern_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     dependencies: AgentDependencies | None = None,
 ) -> AdaptivePatternAgent:
     """Create an adaptive pattern agent."""

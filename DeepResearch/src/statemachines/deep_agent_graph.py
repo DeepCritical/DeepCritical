@@ -38,7 +38,7 @@ from DeepResearch.src.tools.deep_agent_tools import (
 class AgentBuilderConfig(BaseModel):
     """Configuration for agent builder."""
 
-    model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
+    model_name: str = Field(None  # Uses config default, description="Model name")
     instructions: str = Field("", description="Additional instructions")
     tools: list[str] = Field(default_factory=list, description="Tool names to include")
     subagents: list[SubAgent | CustomSubAgent] = Field(
@@ -497,7 +497,7 @@ class AgentBuilder:
 
 # Factory functions
 def create_agent_builder(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     instructions: str = "",
     tools: list[str] | None = None,
     subagents: list[SubAgent | CustomSubAgent] | None = None,
@@ -515,7 +515,7 @@ def create_agent_builder(
 
 
 def create_simple_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     instructions: str = "",
     tools: list[str] | None = None,
 ) -> Agent:
@@ -528,7 +528,7 @@ def create_deep_agent(
     tools: list[str] | None = None,
     instructions: str = "",
     subagents: list[SubAgent | CustomSubAgent] | None = None,
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     **kwargs,
 ) -> Agent:
     """Create a deep agent with full capabilities."""
@@ -556,7 +556,7 @@ def create_async_deep_agent(
     tools: list[str] | None = None,
     instructions: str = "",
     subagents: list[SubAgent | CustomSubAgent] | None = None,
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: str | None = None,
     **kwargs,
 ) -> Agent:
     """Create an async deep agent with full capabilities."""

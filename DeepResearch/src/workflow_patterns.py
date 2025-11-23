@@ -143,7 +143,7 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_collaborative_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ) -> CollaborativePatternAgent:
         """Create a collaborative pattern agent."""
@@ -151,7 +151,7 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_sequential_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ) -> SequentialPatternAgent:
         """Create a sequential pattern agent."""
@@ -159,7 +159,7 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_hierarchical_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ) -> HierarchicalPatternAgent:
         """Create a hierarchical pattern agent."""
@@ -167,7 +167,7 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_pattern_orchestrator(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ) -> PatternOrchestratorAgent:
         """Create a pattern orchestrator agent."""
@@ -175,7 +175,7 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_adaptive_pattern_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         dependencies: AgentDependencies | None = None,
     ) -> AdaptivePatternAgent:
         """Create an adaptive pattern agent."""

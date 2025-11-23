@@ -5,6 +5,7 @@ defaults:
   - workflow_orchestration: default
   - db: neo4j
   - neo4j: orchestrator
+  - models: default
   - _self_
   - override hydra/job_logging: default
   - override hydra/hydra_logging: default

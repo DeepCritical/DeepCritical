@@ -1,0 +1,58 @@
+# Default Model Configuration
+# Centralized configuration for all LLM and embedding models
+
+# LLM Models Configuration
+llm:
+  # Default production model
+  default: "anthropic:claude-sonnet-4-0"
+
+  # Fallback model for rate limits or errors
+  fallback: "anthropic:claude-sonnet-3-5"
+
+  # Fast model for simple tasks
+  fast: "anthropic:claude-haiku-3-5"
+
+  # High-capability model for complex reasoning
+  advanced: "anthropic:claude-opus-4"
+
+  # Agent-specific model overrides (optional)
+  agents:
+    bioinformatics: "anthropic:claude-sonnet-4-0"
+    code_generation: "anthropic:claude-sonnet-4-0"
+    research: "anthropic:claude-sonnet-4-0"
+    workflow_orchestrator: "anthropic:claude-sonnet-4-0"
+    code_execution: "anthropic:claude-sonnet-4-0"
+    code_improvement: "anthropic:claude-sonnet-4-0"
+    deep_agent: "anthropic:claude-sonnet-4-0"
+    workflow_pattern: "anthropic:claude-sonnet-4-0"
+
+# Embedding Models Configuration
+embeddings:
+  # Default embedding model
+  default: "sentence-transformers/all-MiniLM-L6-v2"
+
+  # Alternative embedding models
+  alternatives:
+    openai: "text-embedding-ada-002"
+    mixedbread: "mixedbread-ai/mxbai-embed-large-v1"
+
+  # Model parameters
+  default_params:
+    num_dimensions: 384
+    batch_size: 32
+    device: "cpu"
+    max_seq_length: 512
+
+# Testing Configuration
+# Override models for testing environments to use faster/cheaper options
+testing:
+  llm:
+    default: "anthropic:claude-haiku-3-5"  # Faster for tests
+    fast: "anthropic:claude-haiku-3-5"
+  embeddings:
+    default: "sentence-transformers/all-MiniLM-L6-v2"
+
+# Environment Variable Overrides
+# Priority: ENV_VAR > Agent-specific > Default
+# Set DEFAULT_LLM_MODEL to override default LLM
+# Set DEFAULT_EMBEDDING_MODEL to override default embedding model

@@ -270,7 +270,7 @@ class MCPServerBase(ABC):
         try:
             # Create agent with tools
             self.pydantic_ai_agent = Agent(
-                model="anthropic:claude-sonnet-4-0",
+                model=ModelConfigLoader().get_default_llm_model(),
                 tools=self.pydantic_ai_tools,
                 system_prompt=self._load_system_prompt(),
             )
@@ -279,7 +279,7 @@ class MCPServerBase(ABC):
             self.session = MCPAgentSession(
                 session_id=str(uuid.uuid4()),
                 agent_config=MCPAgentIntegration(
-                    agent_model="anthropic:claude-sonnet-4-0",
+                    agent_model=ModelConfigLoader().get_default_llm_model(),
                     system_prompt=self._load_system_prompt(),
                     execution_timeout=300,
                 ),

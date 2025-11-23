@@ -28,7 +28,7 @@ class CodeGenerationAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         max_retries: int = 3,
         timeout: float = 60.0,
     ):
@@ -298,7 +298,7 @@ class CodeExecutionAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         use_docker: bool = True,
         use_jupyter: bool = False,
         jupyter_config: dict[str, Any] | None = None,

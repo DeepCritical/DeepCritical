@@ -23,7 +23,7 @@ class CodeImprovementAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         max_improvement_attempts: int = 3,
         timeout: float = 60.0,
     ):

@@ -7,9 +7,106 @@ configurations from Hydra config files.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
+
+
+class ModelConfigLoader:
+    """
+    Centralized loader for LLM and embedding model configurations.
+
+    Supports environment variable overrides with the following priority:
+    1. Environment variables (DEFAULT_LLM_MODEL, DEFAULT_EMBEDDING_MODEL)
+    2. Agent-specific config (models.llm.agents.<agent_type>)
+    3. Default config (models.llm.default, models.embeddings.default)
+    """
+
+    def __init__(self, config: DictConfig | None = None):
+        """Initialize model config loader."""
+        self.config = config or {}
+        self.models_config = self._extract_models_config()
+
+    def _extract_models_config(self) -> dict[str, Any]:
+        """Extract models configuration from main config."""
+        result = OmegaConf.to_container(self.config.get("models", {}), resolve=True)
+        from typing import cast
+
+        return cast("dict[str, Any]", result) if isinstance(result, dict) else {}
+
+    def get_llm_config(self) -> dict[str, Any]:
+        """Get LLM configuration."""
+        return self.models_config.get("llm", {})
+
+    def get_embeddings_config(self) -> dict[str, Any]:
+        """Get embeddings configuration."""
+        return self.models_config.get("embeddings", {})
+
+    def get_default_llm_model(self) -> str:
+        """
+        Get default LLM model name.
+
+        Priority: ENV_VAR > Config > Hardcoded Fallback
+        """
+        # Check environment variable first
+        env_model = os.getenv("DEFAULT_LLM_MODEL")
+        if env_model:
+            return env_model
+
+        # Check config
+        llm_config = self.get_llm_config()
+        return llm_config.get("default", "anthropic:claude-sonnet-4-0")
+
+    def get_fast_llm_model(self) -> str:
+        """Get fast LLM model for simple tasks."""
+        llm_config = self.get_llm_config()
+        return llm_config.get("fast", "anthropic:claude-haiku-3-5")
+
+    def get_advanced_llm_model(self) -> str:
+        """Get advanced LLM model for complex reasoning."""
+        llm_config = self.get_llm_config()
+        return llm_config.get("advanced", "anthropic:claude-opus-4")
+
+    def get_fallback_llm_model(self) -> str:
+        """Get fallback LLM model for rate limits or errors."""
+        llm_config = self.get_llm_config()
+        return llm_config.get("fallback", "anthropic:claude-sonnet-3-5")
+
+    def get_agent_llm_model(self, agent_type: str) -> str:
+        """
+        Get LLM model for specific agent type.
+
+        Falls back to default model if agent-specific config not found.
+        """
+        llm_config = self.get_llm_config()
+        agents_config = llm_config.get("agents", {})
+        return agents_config.get(agent_type, self.get_default_llm_model())
+
+    def get_default_embedding_model(self) -> str:
+        """
+        Get default embedding model name.
+
+        Priority: ENV_VAR > Config > Hardcoded Fallback
+        """
+        # Check environment variable first
+        env_model = os.getenv("DEFAULT_EMBEDDING_MODEL")
+        if env_model:
+            return env_model
+
+        # Check config
+        embeddings_config = self.get_embeddings_config()
+        return embeddings_config.get("default", "sentence-transformers/all-MiniLM-L6-v2")
+
+    def get_embedding_params(self) -> dict[str, Any]:
+        """Get default embedding model parameters."""
+        embeddings_config = self.get_embeddings_config()
+        return embeddings_config.get("default_params", {})
+
+    def get_embedding_dimension(self) -> int:
+        """Get default embedding dimension."""
+        params = self.get_embedding_params()
+        return params.get("num_dimensions", 384)
 
 
 class BioinformaticsConfigLoader:
@@ -19,6 +116,7 @@ class BioinformaticsConfigLoader:
         """Initialize config loader."""
         self.config = config or {}
         self.bioinformatics_config = self._extract_bioinformatics_config()
+        self.model_loader = ModelConfigLoader(config)
 
     def _extract_bioinformatics_config(self) -> dict[str, Any]:
         """Extract bioinformatics configuration from main config."""
@@ -88,9 +186,12 @@ class BioinformaticsConfigLoader:
         return self.bioinformatics_config.get("error_handling", {})
 
     def get_default_model(self) -> str:
-        """Get default model name."""
-        model_config = self.get_model_config()
-        return model_config.get("default", "anthropic:claude-sonnet-4-0")
+        """
+        Get default model name.
+
+        Uses centralized ModelConfigLoader to eliminate hardcoded strings.
+        """
+        return self.model_loader.get_default_llm_model()
 
     def get_default_quality_threshold(self) -> float:
         """Get default quality threshold."""
@@ -128,9 +229,12 @@ class BioinformaticsConfigLoader:
         return agents_config.get(agent_type, {})
 
     def get_agent_model(self, agent_type: str) -> str:
-        """Get model for specific agent type."""
-        agent_config = self.get_agent_config(agent_type)
-        return agent_config.get("model", self.get_default_model())
+        """
+        Get model for specific agent type.
+
+        Uses centralized ModelConfigLoader with agent-specific overrides.
+        """
+        return self.model_loader.get_agent_llm_model(agent_type)
 
     def get_agent_system_prompt(self, agent_type: str) -> str:
         """Get system prompt for specific agent type."""
@@ -206,3 +310,8 @@ def load_bioinformatics_config(
 ) -> BioinformaticsConfigLoader:
     """Load bioinformatics configuration from Hydra config."""
     return BioinformaticsConfigLoader(config)
+
+
+def load_model_config(config: DictConfig | None = None) -> ModelConfigLoader:
+    """Load model configuration from Hydra config."""
+    return ModelConfigLoader(config)
