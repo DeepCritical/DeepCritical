@@ -7,11 +7,53 @@ configurations from Hydra config files.
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
+
+# Configure module logger
+logger = logging.getLogger(__name__)
+
+# Constants (Uncle Bob: No magic numbers!)
+DEFAULT_EMBEDDING_DIMENSION = 384  # MiniLM-L6-v2 embedding dimension
+CONFIG_FILE_NAME = "default.yaml"
+CONFIGS_DIR_NAME = "configs"
+MODELS_SUBDIR = "models"
+
+
+def _find_project_root(start_path: Path) -> Path:
+    """
+    Find project root by looking for configs/ directory.
+
+    This is more robust than hardcoded .parent.parent chains.
+    Uncle Bob: "Make code resilient to change"
+
+    Args:
+        start_path: Starting path (usually __file__)
+
+    Returns:
+        Project root path
+
+    Raises:
+        FileNotFoundError: If configs/ directory not found in any parent
+    """
+    current = start_path
+    max_levels = 10  # Safety limit
+
+    for _ in range(max_levels):
+        if (current / CONFIGS_DIR_NAME).is_dir():
+            return current
+        if current.parent == current:  # Reached filesystem root
+            break
+        current = current.parent
+
+    raise FileNotFoundError(
+        f"Could not find '{CONFIGS_DIR_NAME}' directory in any parent of {start_path}. "
+        "Ensure config_loader.py is within project structure."
+    )
 
 
 class ModelConfigLoader:
@@ -45,26 +87,53 @@ class ModelConfigLoader:
         """
         Load default models config from YAML file.
 
-        Returns DictConfig with models config loaded from configs/models/default.yaml.
-        Falls back to empty config if file not found.
+        Uncle Bob: "Fail fast and fail explicitly" - No silent exceptions!
+
+        Returns:
+            DictConfig with models config loaded from configs/models/default.yaml
+
+        Raises:
+            FileNotFoundError: If config file cannot be found
+            ValueError: If config file is malformed
         """
         try:
-            # Find project root (where configs/ directory is)
+            # Find project root using robust search (not brittle .parent chains)
             current_file = Path(__file__)
-            # Navigate from DeepResearch/src/utils/config_loader.py to project root
-            project_root = current_file.parent.parent.parent.parent
-            config_path = project_root / "configs" / "models" / "default.yaml"
+            project_root = _find_project_root(current_file.parent)
+            config_path = project_root / CONFIGS_DIR_NAME / MODELS_SUBDIR / CONFIG_FILE_NAME
 
-            if config_path.exists():
-                models_cfg = OmegaConf.load(config_path)
-                # Wrap in parent structure to match Hydra format
-                return OmegaConf.create({"models": models_cfg})
-            else:
-                # Fallback to empty config
+            logger.debug(f"Loading model config from: {config_path}")
+
+            if not config_path.exists():
+                logger.warning(
+                    f"Model config file not found: {config_path}. "
+                    f"Using hardcoded defaults. Create this file to customize models."
+                )
                 return OmegaConf.create({})
-        except Exception:
-            # Graceful fallback on any error
+
+            # Load and validate config
+            models_cfg = OmegaConf.load(config_path)
+            logger.info(f"Successfully loaded model config from {config_path}")
+
+            # Wrap in parent structure to match Hydra format
+            return OmegaConf.create({"models": models_cfg})
+
+        except FileNotFoundError as e:
+            # Project structure issue - log and re-raise
+            logger.error(f"Project structure error: {e}")
+            logger.warning("Falling back to hardcoded model defaults")
             return OmegaConf.create({})
+
+        except Exception as e:
+            # Config file parse error or other issue - FAIL EXPLICITLY
+            logger.error(
+                f"Failed to load model config from {config_path}: {e}",
+                exc_info=True
+            )
+            # Uncle Bob: Make failures visible!
+            raise ValueError(
+                f"Model configuration file is malformed or unreadable: {config_path}"
+            ) from e
 
     def _extract_models_config(self) -> dict[str, Any]:
         """Extract models configuration from main config."""
@@ -81,35 +150,75 @@ class ModelConfigLoader:
         """Get embeddings configuration."""
         return self.models_config.get("embeddings", {})
 
+    def _get_llm_model(
+        self,
+        config_key: str,
+        hardcoded_fallback: str,
+        env_var_name: str | None = None
+    ) -> str:
+        """
+        DRY helper to get LLM model configuration.
+
+        Uncle Bob: "Don't Repeat Yourself" - consolidate duplicate logic!
+
+        Args:
+            config_key: Key in llm config (e.g., "default", "fast", "advanced")
+            hardcoded_fallback: Ultimate fallback value
+            env_var_name: Optional environment variable name for override
+
+        Returns:
+            Model name from env var > config > fallback
+        """
+        # Check environment variable first (if provided)
+        if env_var_name:
+            env_model = os.getenv(env_var_name)
+            if env_model:
+                logger.debug(f"Using model from {env_var_name}: {env_model}")
+                return env_model
+
+        # Check config
+        llm_config = self.get_llm_config()
+        model = llm_config.get(config_key, hardcoded_fallback)
+
+        if model == hardcoded_fallback:
+            logger.debug(
+                f"No config for llm.{config_key}, using hardcoded fallback: {hardcoded_fallback}"
+            )
+
+        return model
+
     def get_default_llm_model(self) -> str:
         """
         Get default LLM model name.
 
         Priority: ENV_VAR > Config > Hardcoded Fallback
         """
-        # Check environment variable first
-        env_model = os.getenv("DEFAULT_LLM_MODEL")
-        if env_model:
-            return env_model
-
-        # Check config
-        llm_config = self.get_llm_config()
-        return llm_config.get("default", "anthropic:claude-sonnet-4-0")
+        return self._get_llm_model(
+            config_key="default",
+            hardcoded_fallback="anthropic:claude-sonnet-4-0",
+            env_var_name="DEFAULT_LLM_MODEL"
+        )
 
     def get_fast_llm_model(self) -> str:
         """Get fast LLM model for simple tasks."""
-        llm_config = self.get_llm_config()
-        return llm_config.get("fast", "anthropic:claude-haiku-3-5")
+        return self._get_llm_model(
+            config_key="fast",
+            hardcoded_fallback="anthropic:claude-haiku-3-5"
+        )
 
     def get_advanced_llm_model(self) -> str:
         """Get advanced LLM model for complex reasoning."""
-        llm_config = self.get_llm_config()
-        return llm_config.get("advanced", "anthropic:claude-opus-4")
+        return self._get_llm_model(
+            config_key="advanced",
+            hardcoded_fallback="anthropic:claude-opus-4"
+        )
 
     def get_fallback_llm_model(self) -> str:
         """Get fallback LLM model for rate limits or errors."""
-        llm_config = self.get_llm_config()
-        return llm_config.get("fallback", "anthropic:claude-sonnet-3-5")
+        return self._get_llm_model(
+            config_key="fallback",
+            hardcoded_fallback="anthropic:claude-sonnet-3-5"
+        )
 
     def get_agent_llm_model(self, agent_type: str) -> str:
         """
@@ -130,11 +239,17 @@ class ModelConfigLoader:
         # Check environment variable first
         env_model = os.getenv("DEFAULT_EMBEDDING_MODEL")
         if env_model:
+            logger.debug(f"Using embedding model from DEFAULT_EMBEDDING_MODEL: {env_model}")
             return env_model
 
         # Check config
         embeddings_config = self.get_embeddings_config()
-        return embeddings_config.get("default", "sentence-transformers/all-MiniLM-L6-v2")
+        model = embeddings_config.get("default", "sentence-transformers/all-MiniLM-L6-v2")
+
+        if model == "sentence-transformers/all-MiniLM-L6-v2":
+            logger.debug("No embedding config found, using hardcoded default")
+
+        return model
 
     def get_embedding_params(self) -> dict[str, Any]:
         """Get default embedding model parameters."""
@@ -142,9 +257,13 @@ class ModelConfigLoader:
         return embeddings_config.get("default_params", {})
 
     def get_embedding_dimension(self) -> int:
-        """Get default embedding dimension."""
+        """
+        Get default embedding dimension.
+
+        Uncle Bob: "No magic numbers!" - Use named constants.
+        """
         params = self.get_embedding_params()
-        return params.get("num_dimensions", 384)
+        return params.get("num_dimensions", DEFAULT_EMBEDDING_DIMENSION)
 
 
 class BioinformaticsConfigLoader:
