@@ -90,7 +90,8 @@ async def run_mgrep_analysis(prompt: str) -> str:
 
     # Run agent
     deps = MgrepDeps()
-    result = await mgrep_agent.run(prompt, deps=deps)
+    agent = get_mgrep_agent()
+    result = await agent.run(prompt, deps=deps)
 
     server.stop()
     return result.output  # Correct API: use .output not .data
