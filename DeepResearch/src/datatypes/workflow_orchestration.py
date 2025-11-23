@@ -107,7 +107,9 @@ class AgentConfig(BaseModel):
 
     agent_id: str = Field(..., description="Unique agent identifier")
     role: AgentRole = Field(..., description="Agent role")
-    model_name: str = Field(None  # Uses config default, description="Model to use")
+    model_name: str | None = Field(
+        None, description="Model to use (uses ModelConfigLoader default if None)"
+    )
     system_prompt: str | None = Field(None, description="Custom system prompt")
     tools: list[str] = Field(default_factory=list, description="Available tools")
     max_iterations: int = Field(10, description="Maximum iterations")
@@ -194,7 +196,9 @@ class JudgeConfig(BaseModel):
 
     judge_id: str = Field(..., description="Judge identifier")
     name: str = Field(..., description="Judge name")
-    model_name: str = Field(None  # Uses config default, description="Model to use")
+    model_name: str | None = Field(
+        None, description="Model to use (uses ModelConfigLoader default if None)"
+    )
     evaluation_criteria: list[str] = Field(..., description="Evaluation criteria")
     scoring_scale: str = Field("1-10", description="Scoring scale")
     enabled: bool = Field(True, description="Whether judge is enabled")
@@ -531,7 +535,7 @@ class AgentOrchestratorConfig(BaseModel):
         AgentRole.ORCHESTRATOR_AGENT, description="Role of the orchestrator agent"
     )
     model_name: str = Field(
-        "anthropic:claude-sonnet-4-0", description="Model for the orchestrator"
+        None, description="Model for the orchestrator (uses ModelConfigLoader default if None)"
     )
     break_conditions: list[BreakCondition] = Field(
         default_factory=list, description="Break conditions"

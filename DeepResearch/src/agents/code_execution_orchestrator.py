@@ -27,7 +27,7 @@ class CodeExecutionConfig(BaseModel):
 
     # Agent configuration
     generation_model: str = Field(
-        "anthropic:claude-sonnet-4-0", description="Model for code generation"
+        None, description="Model for code generation (uses ModelConfigLoader default if None)"
     )
 
     # Execution configuration
@@ -457,7 +457,7 @@ async def execute_auto_code(description: str, **kwargs) -> AgentResult:
 
 # Factory function for creating configured orchestrators
 def create_code_execution_orchestrator(
-    generation_model: str = "anthropic:claude-sonnet-4-0",
+    generation_model: str | None = None,
     use_docker: bool = True,
     use_jupyter: bool = False,
     max_retries: int = 3,

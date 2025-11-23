@@ -35,10 +35,17 @@ from DeepResearch.src.tools.deep_agent_tools import (
 
 
 class AgentConfig(BaseModel):
-    """Configuration for agent instances."""
+    """
+    Configuration for agent instances.
+
+    Note: model_name should be provided from centralized config using ModelConfigLoader.
+    """
 
     name: str = Field(..., description="Agent name")
-    model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
+    model_name: str = Field(
+        ...,
+        description="Model name - should be provided from ModelConfigLoader.get_default_llm_model()",
+    )
     system_prompt: str = Field("", description="System prompt")
     tools: list[str] = Field(default_factory=list, description="Tool names")
     capabilities: list[AgentCapability] = Field(

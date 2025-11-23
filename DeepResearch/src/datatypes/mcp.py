@@ -579,7 +579,7 @@ class MCPAgentIntegration(BaseModel):
     """Configuration for Pydantic AI agents integrated with MCP servers."""
 
     agent_model: str = Field(
-        "anthropic:claude-sonnet-4-0", description="Model to use for the agent"
+        None, description="Model to use for the agent (uses ModelConfigLoader default if None)"
     )
     system_prompt: str = Field(..., description="System prompt for the agent")
     mcp_servers: list[MCPClientConfig] = Field(
@@ -594,7 +594,7 @@ class MCPAgentIntegration(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "agent_model": "anthropic:claude-sonnet-4-0",
+                "agent_model": None,  # Uses ModelConfigLoader default
                 "system_prompt": "You are a bioinformatics analysis assistant with access to various tools.",
                 "mcp_servers": [],
                 "execution_timeout": 300,

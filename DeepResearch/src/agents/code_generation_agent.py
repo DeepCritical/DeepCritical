@@ -443,7 +443,7 @@ class CodeExecutionAgentSystem:
 
     def __init__(
         self,
-        generation_model: str = "anthropic:claude-sonnet-4-0",
+        generation_model: str | None = None,
         execution_config: dict[str, Any] | None = None,
     ):
         """Initialize the complete code execution agent system.

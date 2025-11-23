@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic_ai import Agent, RunContext
 
+from DeepResearch.src.utils.config_loader import load_model_config
 from DeepResearch.src.datatypes.workflow_orchestration import (
     HypothesisDataset,
     HypothesisTestingEnvironment,
@@ -106,8 +107,8 @@ class PrimaryWorkflowOrchestrator:
 
         self.primary_agent = Agent[OrchestratorDependencies, str](
             model=self.config.primary_workflow.parameters.get(
-                "model_name", "anthropic:claude-sonnet-4-0"
-            ),
+                "model_name"
+            ) or load_model_config().get_default_llm_model(),
             deps_type=OrchestratorDependencies,
             system_prompt=prompts.get_system_prompt(),
             instructions=prompts.get_instructions(),

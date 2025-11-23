@@ -10,6 +10,8 @@ from __future__ import annotations
 import contextlib
 from typing import Any
 
+from .config_loader import load_model_config
+
 
 def get_pydantic_ai_config() -> dict[str, Any]:
     """Get configuration from Hydra or environment."""
@@ -117,7 +119,7 @@ def build_agent(
         return None, None
 
     pyd_cfg = (cfg or {}).get("pyd_ai", {})
-    model_name = pyd_cfg.get("model", "anthropic:claude-sonnet-4-0")
+    model_name = pyd_cfg.get("model") or load_model_config().get_default_llm_model()
 
     settings = None
     # OpenAI Responses specific settings (include web search sources)

@@ -30,7 +30,7 @@ class DataFusionAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
         config: dict[str, Any] | None = None,
     ):
         self.model_name = model_name
@@ -83,7 +83,7 @@ class DataFusionAgent:
 class GOAnnotationAgent:
     """Agent for processing GO annotations with PubMed context."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self.agent = self._create_agent()
 
@@ -123,7 +123,7 @@ class GOAnnotationAgent:
 class ReasoningAgent:
     """Agent for performing reasoning tasks on fused bioinformatics data."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self.agent = self._create_agent()
 
@@ -168,7 +168,7 @@ class ReasoningAgent:
 class DataQualityAgent:
     """Agent for assessing data quality and consistency."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self.agent = self._create_agent()
 
@@ -211,7 +211,7 @@ class DataQualityAgent:
 class BioinformaticsAgent:
     """Main bioinformatics agent that coordinates all bioinformatics operations."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self.orchestrator = AgentOrchestrator(model_name)
 
@@ -245,7 +245,7 @@ class BioinformaticsAgent:
 class AgentOrchestrator:
     """Orchestrator for coordinating multiple bioinformatics agents."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self.fusion_agent = DataFusionAgent(model_name)
         self.go_agent = GOAnnotationAgent(model_name)

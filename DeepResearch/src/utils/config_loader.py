@@ -8,6 +8,7 @@ configurations from Hydra config files.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
@@ -21,12 +22,49 @@ class ModelConfigLoader:
     1. Environment variables (DEFAULT_LLM_MODEL, DEFAULT_EMBEDDING_MODEL)
     2. Agent-specific config (models.llm.agents.<agent_type>)
     3. Default config (models.llm.default, models.embeddings.default)
+
+    When instantiated without a config argument, automatically loads from
+    configs/models/default.yaml using OmegaConf.
     """
 
     def __init__(self, config: DictConfig | None = None):
-        """Initialize model config loader."""
-        self.config = config or {}
+        """
+        Initialize model config loader.
+
+        Args:
+            config: Optional Hydra DictConfig. If None, loads from configs/models/default.yaml
+        """
+        if config is None:
+            # Load from file when no config passed (SSOT approach)
+            self.config = self._load_default_config()
+        else:
+            self.config = config
         self.models_config = self._extract_models_config()
+
+    def _load_default_config(self) -> DictConfig:
+        """
+        Load default models config from YAML file.
+
+        Returns DictConfig with models config loaded from configs/models/default.yaml.
+        Falls back to empty config if file not found.
+        """
+        try:
+            # Find project root (where configs/ directory is)
+            current_file = Path(__file__)
+            # Navigate from DeepResearch/src/utils/config_loader.py to project root
+            project_root = current_file.parent.parent.parent.parent
+            config_path = project_root / "configs" / "models" / "default.yaml"
+
+            if config_path.exists():
+                models_cfg = OmegaConf.load(config_path)
+                # Wrap in parent structure to match Hydra format
+                return OmegaConf.create({"models": models_cfg})
+            else:
+                # Fallback to empty config
+                return OmegaConf.create({})
+        except Exception:
+            # Graceful fallback on any error
+            return OmegaConf.create({})
 
     def _extract_models_config(self) -> dict[str, Any]:
         """Extract models configuration from main config."""

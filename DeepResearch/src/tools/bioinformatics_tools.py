@@ -23,6 +23,8 @@ from limits.strategies import MovingWindowRateLimiter
 from pydantic import BaseModel, Field
 from requests.exceptions import RequestException
 
+from DeepResearch.src.utils.config_loader import load_model_config
+
 from DeepResearch.src.agents.bioinformatics_agents import (
     DataFusionResult,
     ReasoningResult,
@@ -55,7 +57,7 @@ class BioinformaticsToolDeps(BaseModel):
 
     config: dict[str, Any] = Field(default_factory=dict)
     model_name: str = Field(
-        "anthropic:claude-sonnet-4-0", description="Model to use for AI agents"
+        None, description="Model to use for AI agents (uses ModelConfigLoader default if None)"
     )
     quality_threshold: float = Field(
         0.8, ge=0.0, le=1.0, description="Quality threshold for data fusion"
@@ -70,7 +72,7 @@ class BioinformaticsToolDeps(BaseModel):
 
         return cls(
             config=config,
-            model_name=model_config.get("default", "anthropic:claude-sonnet-4-0"),
+            model_name=model_config.get("default") or load_model_config().get_default_llm_model(),
             quality_threshold=quality_config.get("default_threshold", 0.8),
             **kwargs,
         )
