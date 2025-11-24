@@ -12,13 +12,20 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import Any, cast
 
-from openmm import LangevinIntegrator, NonbondedForce, System, unit as openmm_unit
+from openmm import (
+    LangevinIntegrator,
+    NonbondedForce,
+    System,
+)
+from openmm import (
+    unit as openmm_unit,
+)
 from openmm.app import PDBFile, Simulation
 from openmm.openmm import CustomExternalForce, HarmonicBondForce
 
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
-unit = cast(Any, openmm_unit)
+unit = cast("Any", openmm_unit)
 
 _LJ_PARAMS = {
     "H": (0.106 * unit.nanometer, 0.0157 * unit.kilojoule_per_mole),
