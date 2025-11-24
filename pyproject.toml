@@ -33,6 +33,7 @@ dependencies = [
   "sentence-transformers>=5.1.1",
   "numpy>=2.2.6",
   "faiss-cpu>=1.7.4",
+  "openmm>=8.2.0",
 ]
 
 [project.optional-dependencies]
