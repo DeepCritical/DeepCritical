@@ -23,7 +23,6 @@ def run_research(
     question,
     openai_key,
     anthropic_key,
-    tavily_key,
     flow_selection
 ):
     """
@@ -34,8 +33,6 @@ def run_research(
         os.environ["OPENAI_API_KEY"] = openai_key
     if anthropic_key:
         os.environ["ANTHROPIC_API_KEY"] = anthropic_key
-    if tavily_key:
-        os.environ["TAVILY_API_KEY"] = tavily_key
 
     # Initialize Hydra and compose config
     # We need to point to the 'configs' directory relative to where this script is run
@@ -92,7 +89,6 @@ with gr.Blocks(title="DeepCritical Research Agent") as demo:
         with gr.Column():
             openai_key = gr.Textbox(label="OpenAI API Key", type="password", placeholder="sk-...")
             anthropic_key = gr.Textbox(label="Anthropic API Key", type="password", placeholder="sk-ant-...")
-            tavily_key = gr.Textbox(label="Tavily API Key", type="password", placeholder="tvly-...")
 
     with gr.Row():
         question = gr.Textbox(label="Research Question", placeholder="e.g. What are the core contributions of the PRIME paper?", lines=3)
@@ -110,7 +106,7 @@ with gr.Blocks(title="DeepCritical Research Agent") as demo:
 
     submit_btn.click(
         fn=run_research,
-        inputs=[question, openai_key, anthropic_key, tavily_key, flow_selection],
+        inputs=[question, openai_key, anthropic_key, flow_selection],
         outputs=output
     )
 
