@@ -1,0 +1,20 @@
+# MAFFT Docker container for multiple sequence alignment
+FROM python:3.11-slim
+
+# Install system dependencies and MAFFT
+RUN apt-get update && apt-get install -y \
+    mafft \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create working directory
+WORKDIR /workspace
+
+# Set environment variables
+ENV MAFFT_VERSION=7.526
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD mafft --version || exit 1
+
+# Default command
+CMD ["mafft", "--help"]

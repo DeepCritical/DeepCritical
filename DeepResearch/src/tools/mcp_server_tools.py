@@ -37,6 +37,7 @@ from DeepResearch.src.tools.bioinformatics.haplotypecaller_server import (
 from DeepResearch.src.tools.bioinformatics.hisat2_server import HISAT2Server
 from DeepResearch.src.tools.bioinformatics.kallisto_server import KallistoServer
 from DeepResearch.src.tools.bioinformatics.macs3_server import MACS3Server
+from DeepResearch.src.tools.bioinformatics.mafft_server import MAFFTServer
 from DeepResearch.src.tools.bioinformatics.meme_server import MEMEServer
 from DeepResearch.src.tools.bioinformatics.minimap2_server import Minimap2Server
 from DeepResearch.src.tools.bioinformatics.multiqc_server import MultiQCServer
@@ -153,6 +154,8 @@ class MCPServerManager:
             "haplotypecaller": HaplotypeCallerServer,
             # Compression & Utilities
             "gunzip": GunzipServer,
+            # Multiple Sequence Alignment
+            "mafft": MAFFTServer,
         }
 
     def get_server(self, server_name: str):
