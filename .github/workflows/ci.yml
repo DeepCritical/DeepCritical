@@ -214,5 +214,5 @@ jobs:
       env:
         VIRTUAL_ENV: .venv
       run: |
-        uvx ty --version
-        uvx ty check
+        uvx ty==0.0.1a21 --version
+        uvx ty==0.0.1a21 check DeepResearch

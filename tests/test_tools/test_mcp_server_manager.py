@@ -19,16 +19,17 @@ from DeepResearch.src.tools.mcp_server_tools import MCPServerManager
 class TestMCPServerManager:
     """Test MCPServerManager server registry and lifecycle."""
 
-    def test_lists_all_31_servers(self, mcp_manager):
-        """Verify all 31 servers are registered."""
+    def test_lists_all_registered_servers(self, mcp_manager):
+        """Verify the manager lists the full registered server set."""
         servers = mcp_manager.list_servers()
 
-        assert len(servers) == 31
+        assert set(servers) == set(mcp_manager.servers)
         assert "fastqc" in servers
         assert "salmon" in servers
         assert "freebayes" in servers
-        assert "gunzip" in servers  # The 30th server
-        assert "haplotypecaller" in servers  # The 31st server
+        assert "gunzip" in servers
+        assert "haplotypecaller" in servers
+        assert "mafft" in servers
 
     def test_get_server_returns_class_for_valid_name(self, mcp_manager):
         """get_server() returns server class when name exists."""

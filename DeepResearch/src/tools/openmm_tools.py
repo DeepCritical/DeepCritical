@@ -91,10 +91,13 @@ class OpenMMMinimizationTool(ToolRunner):
             mass = atom.element.mass if atom.element else 12.0 * unit.amu
             system.addParticle(mass)
 
-            sigma, epsilon = _LJ_PARAMS.get(
-                atom.element.symbol if atom.element else None,
-                (_DEFAULT_SIGMA, _DEFAULT_EPSILON),
-            )
+            if atom.element:
+                sigma, epsilon = _LJ_PARAMS.get(
+                    atom.element.symbol,
+                    (_DEFAULT_SIGMA, _DEFAULT_EPSILON),
+                )
+            else:
+                sigma, epsilon = _DEFAULT_SIGMA, _DEFAULT_EPSILON
             nonbonded_force.addParticle(0.0, sigma, epsilon)
 
             pos = positions[idx].value_in_unit(unit.nanometer)
