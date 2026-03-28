@@ -13,6 +13,8 @@ from io import StringIO
 from typing import Any, cast
 
 from openmm import (
+    CustomExternalForce,
+    HarmonicBondForce,
     LangevinIntegrator,
     NonbondedForce,
     System,
@@ -21,7 +23,6 @@ from openmm import (
     unit as openmm_unit,
 )
 from openmm.app import PDBFile, Simulation
-from openmm.openmm import CustomExternalForce, HarmonicBondForce
 
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
@@ -49,7 +50,13 @@ class OpenMMMinimizationTool(ToolRunner):
                     "Minimize a PDB structure with OpenMM and optionally run "
                     "a few simulation steps to estimate stability."
                 ),
-                inputs={"pdb_contents": "TEXT"},
+                inputs={
+                    "pdb_contents": "TEXT",
+                    "simulation_steps": "int (optional, default 5)",
+                    "temperature_kelvin": "float (optional, default 300.0)",
+                    "friction_coeff_ps": "float (optional, default 1.0)",
+                    "timestep_fs": "float (optional, default 1.0)",
+                },
                 outputs={
                     "initial_potential_energy_kj_mol": "float",
                     "minimized_potential_energy_kj_mol": "float",

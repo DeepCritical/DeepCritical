@@ -29,14 +29,28 @@ class ToolRunner:
     def __init__(self, spec: ToolSpec):
         self.spec = spec
 
+    @staticmethod
+    def _normalize_input_spec(spec_type: str) -> tuple[str, bool]:
+        normalized = spec_type.split("(", 1)[0].strip()
+        return normalized, "(optional" in spec_type.lower()
+
     def validate(self, params: dict[str, Any]) -> tuple[bool, str | None]:
         for k, t in self.spec.inputs.items():
+            normalized_type, is_optional = self._normalize_input_spec(t)
             if k not in params:
+                if is_optional:
+                    continue
                 return False, f"Missing required param: {k}"
             # basic type gate (string types only for placeholder)
-            if t.endswith(("PATH", "ID")) or t in {"TEXT", "AA SEQUENCE"}:
+            if normalized_type.endswith(("PATH", "ID")) or normalized_type in {
+                "TEXT",
+                "AA SEQUENCE",
+            }:
                 if not isinstance(params[k], str):
-                    return False, f"Invalid type for {k}: expected str for {t}"
+                    return (
+                        False,
+                        f"Invalid type for {k}: expected str for {normalized_type}",
+                    )
         return True, None
 
     def run(self, params: dict[str, Any]) -> ExecutionResult:
