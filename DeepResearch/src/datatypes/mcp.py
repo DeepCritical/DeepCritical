@@ -36,6 +36,7 @@ class MCPServerType(str, Enum):
     MACS3 = "macs3"
     HOMER = "homer"
     CUSTOM = "custom"
+    MGREP = "mgrep"
     BIOINFOMCP_CONVERTED = "bioinfomcp_converted"
 
 

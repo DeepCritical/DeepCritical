@@ -2,9 +2,9 @@ import os
 from unittest.mock import MagicMock
 
 import faiss  # type: ignore
-import numpy as np
 import pytest
 
+from DeepResearch.src.datatypes.chunk_dataclass import Chunk
 from DeepResearch.src.datatypes.rag import Document, SearchType, VectorStoreType
 from DeepResearch.src.vector_stores.faiss_config import FAISSVectorStoreConfig
 from DeepResearch.src.vector_stores.faiss_vector_store import FAISSVectorStore
@@ -14,15 +14,20 @@ from DeepResearch.src.vector_stores.faiss_vector_store import FAISSVectorStore
 def mock_embeddings():
     """Fixture for a mock embeddings provider that returns predictable vectors."""
     mock = MagicMock()
+    vectors = {
+        "doc 1": [1.0, 0.0],
+        "doc 2": [0.0, 1.0],
+        "doc 3": [1.0, 1.0],
+        "query": [0.0, 1.0],
+        "chunk 1": [1.0, 0.0],
+        "chunk 2": [0.0, 1.0],
+    }
 
     async def vectorize_documents(texts: list[str]) -> list[list[float]]:
-        # Simple embedding: index as value, e.g., [[0.0, 0.0], [1.0, 1.0], ...]
-        return [[float(i), float(i)] for i, _ in enumerate(texts)]
+        return [vectors.get(text, [0.5, 0.5]) for text in texts]
 
     async def vectorize_query(text: str) -> list[float]:
-        # Fixed query embedding to get predictable search results.
-        # This will be most similar to the document at index 1.
-        return [1.0, 1.0]
+        return vectors.get(text, [0.5, 0.5])
 
     mock.vectorize_documents = vectorize_documents
     mock.vectorize_query = vectorize_query
@@ -70,10 +75,8 @@ async def test_search(faiss_store):
     results = await faiss_store.search("query", SearchType.SIMILARITY, top_k=2)
 
     assert len(results) == 2
-    # The mock query vector is [1.0, 1.0].
-    # The document vectors are [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]].
-    # The document with id="doc2" will have embedding [1.0, 1.0] and thus a distance of 0.
     assert results[0].document.id == "doc2"
+    assert results[0].score >= results[1].score
 
 
 @pytest.mark.asyncio
@@ -149,3 +152,27 @@ async def test_save_and_load(tmp_path, mock_embeddings):
     assert store2.index.ntotal == 1
     assert len(store2.documents) == 1
     assert store2.documents["doc1"].id == "doc1"
+
+
+@pytest.mark.asyncio
+async def test_add_document_chunks(faiss_store):
+    """Tests adding chunk dataclasses by converting them to documents."""
+    chunks = [
+        Chunk(id="chunk-1", text="chunk 1", start_index=0, end_index=7, token_count=2),
+        Chunk(id="chunk-2", text="chunk 2", start_index=8, end_index=15, token_count=2),
+    ]
+
+    added_ids = await faiss_store.add_document_chunks(chunks)
+
+    assert added_ids == ["chunk-1", "chunk-2"]
+    assert await faiss_store.get_document("chunk-1") is not None
+
+
+@pytest.mark.asyncio
+async def test_add_document_text_chunks(faiss_store):
+    """Tests adding raw text chunks."""
+    added_ids = await faiss_store.add_document_text_chunks(["chunk 1", "chunk 2"])
+
+    assert len(added_ids) == 2
+    assert faiss_store.index is not None
+    assert faiss_store.index.ntotal == 2

@@ -1,0 +1,21 @@
+# Default configuration for repo-local mgrep-style semantic search
+
+store_dir: ".deepcritical/mgrep"
+supported_extensions:
+  - ".py"
+  - ".md"
+  - ".txt"
+  - ".json"
+  - ".yaml"
+  - ".yml"
+  - ".toml"
+max_file_size_bytes: 512000
+search_fetch_multiplier: 5
+distance_metric: "cosine"
+chunking_strategy_version: "mgrep-v1"
+embeddings:
+  model_type: "sentence_transformers"
+  model_name: "all-MiniLM-L6-v2"
+  num_dimensions: 384
+  batch_size: 32
+  device: "cpu"

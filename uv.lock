@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -886,6 +886,7 @@ dependencies = [
     { name = "numpy" },
     { name = "omegaconf" },
     { name = "openmm" },
+    { name = "pathspec" },
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
@@ -947,6 +948,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "openmm", specifier = ">=8.2.0" },
+    { name = "pathspec", specifier = ">=0.12.1" },
     { name = "psutil", specifier = ">=5.9.0" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-ai", specifier = ">=0.0.16" },

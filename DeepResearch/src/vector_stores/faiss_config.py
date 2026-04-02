@@ -8,6 +8,6 @@ from ..datatypes.rag import VectorStoreConfig, VectorStoreType
 class FAISSVectorStoreConfig(VectorStoreConfig):
     """Configuration for the FAISS vector store."""
 
-    store_type: VectorStoreType = Field(default=VectorStoreType.FAISS, Literal=True)
+    store_type: VectorStoreType = Field(default=VectorStoreType.FAISS)
     index_path: str = Field(description="File path to save or load the FAISS index.")
     data_path: str = Field(description="File path to save or load the document data.")

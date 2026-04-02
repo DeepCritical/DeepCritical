@@ -49,11 +49,31 @@ class FAISSVectorStore(VectorStore):
         self.index_path = config.index_path
         self.data_path = config.data_path
 
-        self.index: faiss.IndexIDMap | None = None  # type: ignore
+        self.index: faiss.IndexIDMap2 | None = None  # type: ignore
         self.documents: dict[str, Document] = {}
         # Map from stable_hash -> doc_id
         self.id_map: dict[int, str] = {}
         self._load()
+
+    def _uses_cosine_metric(self) -> bool:
+        return getattr(self.config, "distance_metric", "cosine").lower() == "cosine"
+
+    def _normalize_vectors(self, vectors: np.ndarray) -> np.ndarray:
+        vectors = np.ascontiguousarray(vectors, dtype=np.float32)
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True).astype(np.float32)
+        norms = np.where(norms == 0, 1.0, norms)
+        normalized = vectors / norms
+        return np.ascontiguousarray(normalized, dtype=np.float32)
+
+    def _build_base_index(self, dimension: int) -> faiss.Index:
+        if self._uses_cosine_metric():
+            return faiss.IndexFlatIP(dimension)  # type: ignore
+        return faiss.IndexFlatL2(dimension)  # type: ignore
+
+    def _to_user_score(self, raw_score: float) -> float:
+        if self._uses_cosine_metric():
+            return raw_score
+        return 1.0 / (1.0 + raw_score)
 
     def _load(self):
         """Loads the index and document data from disk if they exist."""
@@ -69,6 +89,12 @@ class FAISSVectorStore(VectorStore):
 
     def _save(self):
         """Saves the index and document data to disk."""
+        index_dir = os.path.dirname(self.index_path)
+        data_dir = os.path.dirname(self.data_path)
+        if index_dir:
+            os.makedirs(index_dir, exist_ok=True)
+        if data_dir:
+            os.makedirs(data_dir, exist_ok=True)
         if self.index:
             faiss.write_index(self.index, self.index_path)  # type: ignore
         with open(self.data_path, "wb") as f:
@@ -97,11 +123,13 @@ class FAISSVectorStore(VectorStore):
             self.documents[doc.id] = doc
             self.id_map[_stable_hash(doc.id)] = doc.id
 
-        new_vectors = np.array(embeddings, dtype=np.float32)
+        new_vectors = np.ascontiguousarray(np.array(embeddings, dtype=np.float32))
+        if self._uses_cosine_metric():
+            new_vectors = self._normalize_vectors(new_vectors)
         if self.index is None:
             dimension = new_vectors.shape[1]
-            base_index = faiss.IndexFlatL2(dimension)  # type: ignore
-            self.index = faiss.IndexIDMap(base_index)  # type: ignore
+            base_index = self._build_base_index(dimension)
+            self.index = faiss.IndexIDMap2(base_index)  # type: ignore
 
         self.index.add_with_ids(new_vectors, doc_id_vectors)  # type: ignore
 
@@ -111,14 +139,28 @@ class FAISSVectorStore(VectorStore):
     async def add_document_chunks(
         self, chunks: list[Chunk], **kwargs: Any
     ) -> list[str]:
-        """Not yet implemented."""
-        raise NotImplementedError
+        """Adds chunk dataclasses by converting them to vector-store documents."""
+        documents = [
+            Document(
+                id=chunk.id,
+                content=chunk.text,
+                metadata={
+                    "start_index": chunk.start_index,
+                    "end_index": chunk.end_index,
+                    "token_count": chunk.token_count,
+                    "context": chunk.context,
+                },
+            )
+            for chunk in chunks
+        ]
+        return await self.add_documents(documents, **kwargs)
 
     async def add_document_text_chunks(
         self, document_texts: list[str], **kwargs: Any
     ) -> list[str]:
-        """Not yet implemented."""
-        raise NotImplementedError
+        """Adds raw text chunks by wrapping them in documents."""
+        documents = [Document(content=text) for text in document_texts]
+        return await self.add_documents(documents, **kwargs)
 
     async def delete_documents(self, document_ids: list[str]) -> bool:
         """
@@ -190,7 +232,14 @@ class FAISSVectorStore(VectorStore):
             return []
 
         top_k = kwargs.get("top_k", 10)
-        query_vector = np.array([query_embedding], dtype=np.float32)
+        top_k = min(int(top_k), int(self.index.ntotal))
+        if top_k <= 0:
+            return []
+        query_vector = np.ascontiguousarray(
+            np.array([query_embedding], dtype=np.float32)
+        )
+        if self._uses_cosine_metric():
+            query_vector = self._normalize_vectors(query_vector)
 
         distances, indices = self.index.search(query_vector, top_k)  # type: ignore
 
@@ -207,7 +256,7 @@ class FAISSVectorStore(VectorStore):
                 results.append(
                     SearchResult(
                         document=document,
-                        score=float(distances[0][i]),
+                        score=float(self._to_user_score(float(distances[0][i]))),
                         rank=i + 1,
                     )
                 )
