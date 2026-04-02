@@ -102,6 +102,44 @@ class HypothesisWorkflowState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, json_schema_extra={})
 
 
+def _mark_failure(
+    state: HypothesisWorkflowState,
+    message: str,
+    *,
+    stage: str,
+) -> None:
+    """Record a structured workflow failure."""
+
+    state.errors.append(message)
+    state.metadata["failure_stage"] = stage
+    state.metadata["error_summary"] = message
+    state.status = ExecutionStatus.FAILED
+
+
+def _build_failure_payload(state: HypothesisWorkflowState) -> dict[str, Any]:
+    """Build a consistent failure payload for hypothesis workflow callers."""
+
+    error_summary = state.errors[-1] if state.errors else "Unknown error"
+    metadata = dict(state.metadata)
+    metadata.setdefault("failure_stage", "unknown")
+    metadata["error_summary"] = error_summary
+    metadata["status"] = state.status.value
+
+    return {
+        "question": state.question,
+        "mode": state.mode,
+        "evidence": [],
+        "ranked_hypotheses": [],
+        "test_plans": [],
+        "markdown_report": f"Hypothesis workflow failed: {error_summary}",
+        "metadata": metadata,
+        "status": state.status.value,
+        "errors": state.errors,
+        "dataset": None,
+        "testing_environments": [],
+    }
+
+
 class ParseHypothesisRequest(BaseNode[HypothesisWorkflowState]):  # type: ignore[unsupported-base]
     """Validate and normalize workflow inputs."""
 
@@ -111,9 +149,12 @@ class ParseHypothesisRequest(BaseNode[HypothesisWorkflowState]):  # type: ignore
         state = ctx.state
         question = state.question.strip()
         if not question:
-            state.errors.append("Question cannot be empty")
-            state.status = ExecutionStatus.FAILED
-            return End({"error": "Question cannot be empty", "status": "failed"})
+            _mark_failure(
+                state,
+                "Question cannot be empty",
+                stage="request_parsing",
+            )
+            return End(_build_failure_payload(state))
 
         state.question = question
         state.max_hypotheses = max(1, int(state.max_hypotheses))
@@ -141,8 +182,11 @@ class GatherEvidence(BaseNode[HypothesisWorkflowState]):  # type: ignore[unsuppo
             }
         )
         if not result.success:
-            state.errors.append(result.error or "Evidence gathering failed")
-            state.status = ExecutionStatus.FAILED
+            _mark_failure(
+                state,
+                result.error or "Evidence gathering failed",
+                stage="evidence_gathering",
+            )
             return HypothesisError()
 
         state.evidence = [
@@ -170,8 +214,11 @@ class GenerateHypotheses(BaseNode[HypothesisWorkflowState]):  # type: ignore[uns
                 max_hypotheses=state.max_hypotheses,
             )
         except Exception as exc:
-            state.errors.append(f"Hypothesis generation failed: {exc!s}")
-            state.status = ExecutionStatus.FAILED
+            _mark_failure(
+                state,
+                f"Hypothesis generation failed: {exc!s}",
+                stage="hypothesis_generation",
+            )
             return HypothesisError()
         return ScoreAndRankHypotheses()
 
@@ -191,8 +238,11 @@ class ScoreAndRankHypotheses(BaseNode[HypothesisWorkflowState]):  # type: ignore
                 score_weights=state.score_weights,
             )
         except Exception as exc:
-            state.errors.append(f"Hypothesis ranking failed: {exc!s}")
-            state.status = ExecutionStatus.FAILED
+            _mark_failure(
+                state,
+                f"Hypothesis ranking failed: {exc!s}",
+                stage="hypothesis_ranking",
+            )
             return HypothesisError()
 
         if state.generate_testing_plans:
@@ -211,8 +261,11 @@ class CreateTestingPlans(BaseNode[HypothesisWorkflowState]):  # type: ignore[uns
             planner = HypothesisPlannerAgent()
             state.test_plans = planner.create_test_plans(state.ranked_candidates)
         except Exception as exc:
-            state.errors.append(f"Hypothesis test planning failed: {exc!s}")
-            state.status = ExecutionStatus.FAILED
+            _mark_failure(
+                state,
+                f"Hypothesis test planning failed: {exc!s}",
+                stage="test_plan_creation",
+            )
             return HypothesisError()
         return SynthesizeHypothesisReport()
 
@@ -222,7 +275,7 @@ class SynthesizeHypothesisReport(BaseNode[HypothesisWorkflowState]):  # type: ig
 
     async def run(
         self, ctx: GraphRunContext[HypothesisWorkflowState]
-    ) -> End[dict[str, Any]]:
+    ) -> End[dict[str, Any]] | HypothesisError:
         state = ctx.state
         try:
             planner = HypothesisPlannerAgent()
@@ -261,8 +314,11 @@ class SynthesizeHypothesisReport(BaseNode[HypothesisWorkflowState]):  # type: ig
             payload["errors"] = state.errors
             return End(payload)
         except Exception as exc:
-            state.errors.append(f"Hypothesis report synthesis failed: {exc!s}")
-            state.status = ExecutionStatus.FAILED
+            _mark_failure(
+                state,
+                f"Hypothesis report synthesis failed: {exc!s}",
+                stage="report_synthesis",
+            )
             return HypothesisError()
 
 
@@ -272,23 +328,7 @@ class HypothesisError(BaseNode[HypothesisWorkflowState]):  # type: ignore[unsupp
     async def run(
         self, ctx: GraphRunContext[HypothesisWorkflowState]
     ) -> End[dict[str, Any]]:
-        state = ctx.state
-        error_summary = "; ".join(state.errors) if state.errors else "Unknown error"
-        return End(
-            {
-                "question": state.question,
-                "mode": state.mode,
-                "evidence": [],
-                "ranked_hypotheses": [],
-                "test_plans": [],
-                "markdown_report": f"Hypothesis workflow failed: {error_summary}",
-                "metadata": state.metadata,
-                "status": state.status.value,
-                "errors": state.errors,
-                "dataset": None,
-                "testing_environments": [],
-            }
-        )
+        return End(_build_failure_payload(ctx.state))
 
 
 def _build_dataset(state: HypothesisWorkflowState) -> HypothesisDataset:

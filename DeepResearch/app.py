@@ -883,11 +883,29 @@ class HypothesisRun(BaseNode[ResearchState]):
                     HypothesisTestingEnvironment.model_validate(testing_environment)
                 )
 
-            final_answer = (
-                result.get("markdown_report") or "Hypothesis analysis completed."
+            status = result.get("status")
+            error_items = [
+                str(item)
+                for item in (result.get("errors") or [])
+                if isinstance(item, str) and item.strip()
+            ]
+            error_summary = "; ".join(error_items) or str(
+                result.get("error") or "Unknown error"
             )
+            final_answer = result.get("markdown_report")
+            if not final_answer:
+                if status == "success":
+                    final_answer = "Hypothesis analysis completed."
+                else:
+                    final_answer = f"Hypothesis workflow failed: {error_summary}"
+
             ctx.state.answers.append(final_answer)
-            ctx.state.notes.append("Hypothesis workflow completed successfully")
+            if status == "success":
+                ctx.state.notes.append("Hypothesis workflow completed successfully")
+            else:
+                ctx.state.notes.append(
+                    f"Hypothesis workflow completed with failure status: {error_summary}"
+                )
             return End(final_answer)
         except Exception as e:
             error_msg = f"Hypothesis workflow failed: {e!s}"

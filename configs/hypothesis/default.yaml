@@ -1,6 +1,5 @@
 # Hypothesis engine configuration
 
-enabled: true
 mode: generate
 max_hypotheses: 4
 top_k: 3
