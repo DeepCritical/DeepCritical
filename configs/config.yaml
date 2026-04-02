@@ -3,6 +3,7 @@
 defaults:
   - challenge: default
   - workflow_orchestration: default
+  - hypothesis: default
   - db: neo4j
   - neo4j: orchestrator
   - _self_
@@ -43,6 +44,10 @@ workflow_orchestration:
 
 # Legacy flow configurations (for backward compatibility)
 flows:
+  hypothesis_generation:
+    enabled: false
+  hypothesis_testing:
+    enabled: false
   prime:
     enabled: false
   bioinformatics:

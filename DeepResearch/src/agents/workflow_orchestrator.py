@@ -460,15 +460,77 @@ class PrimaryWorkflowOrchestrator:
         self, input_data: dict[str, Any], parameters: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute hypothesis generation workflow."""
-        # This would implement actual hypothesis generation
-        return {"hypotheses": [{"hypothesis": "placeholder", "confidence": 0.8}]}
+        from omegaconf import DictConfig
+
+        from DeepResearch.src.statemachines.hypothesis_workflow import (
+            run_hypothesis_workflow,
+        )
+
+        question = (
+            input_data.get("question")
+            or input_data.get("user_input")
+            or input_data.get("query")
+            or input_data.get("research_question")
+            or ""
+        )
+        cfg = DictConfig(
+            {
+                "workflow_orchestration": {"enabled": False},
+                "flows": {
+                    "hypothesis_generation": {"enabled": True},
+                    "hypothesis_testing": {"enabled": False},
+                },
+                "hypothesis": {
+                    "mode": "generate",
+                    "max_hypotheses": parameters.get("max_hypotheses", 3),
+                    "top_k": parameters.get("top_k", 3),
+                    "evidence_mode": parameters.get("evidence_mode", "search_only"),
+                    "generate_testing_plans": parameters.get(
+                        "generate_testing_plans", False
+                    ),
+                    "score_weights": parameters.get("score_weights", {}),
+                },
+            }
+        )
+        return await run_hypothesis_workflow(question, cfg, mode="generate")
 
     async def _execute_hypothesis_testing_workflow(
         self, input_data: dict[str, Any], parameters: dict[str, Any]
     ) -> dict[str, Any]:
         """Execute hypothesis testing workflow."""
-        # This would implement actual hypothesis testing
-        return {"test_results": "placeholder", "success": True}
+        from omegaconf import DictConfig
+
+        from DeepResearch.src.statemachines.hypothesis_workflow import (
+            run_hypothesis_workflow,
+        )
+
+        question = (
+            input_data.get("question")
+            or input_data.get("user_input")
+            or input_data.get("query")
+            or input_data.get("research_question")
+            or ""
+        )
+        cfg = DictConfig(
+            {
+                "workflow_orchestration": {"enabled": False},
+                "flows": {
+                    "hypothesis_generation": {"enabled": False},
+                    "hypothesis_testing": {"enabled": True},
+                },
+                "hypothesis": {
+                    "mode": "generate_and_plan_tests",
+                    "max_hypotheses": parameters.get("max_hypotheses", 3),
+                    "top_k": parameters.get("top_k", 3),
+                    "evidence_mode": parameters.get("evidence_mode", "search_only"),
+                    "generate_testing_plans": True,
+                    "score_weights": parameters.get("score_weights", {}),
+                },
+            }
+        )
+        return await run_hypothesis_workflow(
+            question, cfg, mode="generate_and_plan_tests"
+        )
 
     async def _execute_reasoning_workflow(
         self, input_data: dict[str, Any], parameters: dict[str, Any]

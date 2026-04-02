@@ -140,6 +140,9 @@ deepresearch flows.hypothesis_generation.enabled=true question="machine learning
 # Add hypothesis testing
 deepresearch flows.hypothesis_testing.enabled=true question="test ML hypothesis"
 
+# Use the dedicated thin hypothesis entrypoint
+deepresearch-hypothesis question="What mechanisms explain why spaced repetition improves recall?"
+
 # Enable full research pipeline
 deepresearch flows="{hypothesis_generation,testing,validation,simulation,reporting}"
 ```

@@ -1,0 +1,24 @@
+# Biomedical-leaning hypothesis example
+
+defaults:
+  - hypothesis/default
+  - _self_
+
+question: "Which mechanisms could explain how TP53 dysregulation alters cancer treatment response?"
+
+workflow_orchestration:
+  enabled: false
+
+flows:
+  hypothesis_generation:
+    enabled: false
+  hypothesis_testing:
+    enabled: true
+
+hypothesis:
+  mode: generate_and_plan_tests
+  max_hypotheses: 4
+  top_k: 3
+  evidence_mode: search_plus_rag
+  live_evidence_enabled: false
+  generate_testing_plans: true

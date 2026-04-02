@@ -133,6 +133,23 @@ class TestDatatypesModuleImports:
         assert hasattr(SearchType, "SEMANTIC")
         assert hasattr(VectorStoreType, "CHROMA")
 
+    def test_hypothesis_imports(self):
+        """Test all imports from hypothesis module."""
+
+        from DeepResearch.src.datatypes.hypothesis import (
+            HypothesisCandidate,
+            HypothesisEvidence,
+            HypothesisScore,
+            HypothesisTestPlan,
+            HypothesisWorkflowResult,
+        )
+
+        assert HypothesisEvidence is not None
+        assert HypothesisCandidate is not None
+        assert HypothesisScore is not None
+        assert HypothesisTestPlan is not None
+        assert HypothesisWorkflowResult is not None
+
     def test_vllm_integration_imports(self):
         """Test all imports from vllm_integration module."""
 

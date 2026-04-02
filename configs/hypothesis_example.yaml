@@ -1,0 +1,24 @@
+# Example configuration for the hypothesis engine
+
+defaults:
+  - hypothesis/default
+  - _self_
+
+question: "What mechanisms most plausibly explain why targeted feedback improves learning outcomes?"
+
+workflow_orchestration:
+  enabled: false
+
+flows:
+  hypothesis_generation:
+    enabled: true
+  hypothesis_testing:
+    enabled: false
+
+hypothesis:
+  mode: generate
+  max_hypotheses: 4
+  top_k: 3
+  evidence_mode: search_only
+  live_evidence_enabled: false
+  generate_testing_plans: false

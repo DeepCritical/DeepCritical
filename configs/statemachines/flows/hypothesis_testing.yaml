@@ -1,3 +1,7 @@
-enabled: true
-params:
-  max_trials: 3
+# Hypothesis testing flow compatibility shim
+
+enabled: false
+mode: generate_and_plan_tests
+generate_testing_plans: true
+engine_config_group: hypothesis/default
+description: "Compatibility flow config for hypothesis generation with validation planning."

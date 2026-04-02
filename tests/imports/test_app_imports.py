@@ -64,6 +64,7 @@ class TestAppModuleImport:
         from DeepResearch.app import (
             Analyze,
             EvaluateChallenge,
+            HypothesisRun,
             Plan,
             PrepareChallenge,
             RunChallenge,
@@ -78,3 +79,4 @@ class TestAppModuleImport:
         assert PrepareChallenge is not None
         assert RunChallenge is not None
         assert EvaluateChallenge is not None
+        assert HypothesisRun is not None

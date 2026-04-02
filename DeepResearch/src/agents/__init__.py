@@ -22,6 +22,11 @@ from .code_generation_agent import (
     CodeGenerationAgent,
 )
 from .code_improvement_agent import CodeImprovementAgent
+from .hypothesis_agents import (
+    HypothesisEvaluatorAgent,
+    HypothesisGeneratorAgent,
+    HypothesisPlannerAgent,
+)
 from .prime_executor import ToolExecutor, execute_workflow
 from .prime_parser import (
     DataType,
@@ -59,6 +64,9 @@ __all__ = [
     "CodeImprovementAgent",
     "DataType",
     "ExecutionContext",
+    "HypothesisEvaluatorAgent",
+    "HypothesisGeneratorAgent",
+    "HypothesisPlannerAgent",
     "Orchestrator",
     "PlanGenerator",
     "Planner",

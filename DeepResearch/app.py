@@ -85,6 +85,7 @@ class ResearchState:
     )
     reasoning_results: list[ReasoningResult] = field(default_factory=list)
     judge_evaluations: dict[str, Any] = field(default_factory=dict)
+    hypothesis_results: dict[str, Any] = field(default_factory=dict)
     # Enhanced REACT architecture state
     app_configuration: AppConfiguration | None = None
     agent_orchestrator: AgentOrchestrator | None = None
@@ -110,6 +111,7 @@ class Plan(BaseNode[ResearchState]):
         self, ctx: GraphRunContext[ResearchState]
     ) -> (
         Search
+        | HypothesisRun
         | PrimaryREACTWorkflow
         | EnhancedREACTWorkflow
         | PrepareChallenge
@@ -127,6 +129,18 @@ class Plan(BaseNode[ResearchState]):
             ctx.state.notes.append(f"Enhanced REACT architecture mode: {app_mode_cfg}")
             return EnhancedREACTWorkflow()
 
+        flows_cfg = getattr(cfg, "flows", {})
+        hypothesis_generation_cfg = getattr(flows_cfg, "hypothesis_generation", None)
+        hypothesis_testing_cfg = getattr(flows_cfg, "hypothesis_testing", None)
+        if any(
+            [
+                getattr(hypothesis_generation_cfg or {}, "enabled", False),
+                getattr(hypothesis_testing_cfg or {}, "enabled", False),
+            ]
+        ):
+            ctx.state.notes.append("Hypothesis engine flow enabled")
+            return HypothesisRun()
+
         # Check if primary REACT workflow orchestration is enabled
         orchestration_cfg = getattr(cfg, "workflow_orchestration", None)
         if getattr(orchestration_cfg or {}, "enabled", False):
@@ -143,27 +157,27 @@ class Plan(BaseNode[ResearchState]):
             return PrepareChallenge()
 
         # Route to PRIME flow if enabled
-        prime_cfg = getattr(getattr(cfg, "flows", {}), "prime", None)
+        prime_cfg = getattr(flows_cfg, "prime", None)
         if getattr(prime_cfg or {}, "enabled", False):
             ctx.state.notes.append("PRIME flow enabled")
             return PrimeParse()
 
         # Route to Bioinformatics flow if enabled
-        bioinformatics_cfg = getattr(getattr(cfg, "flows", {}), "bioinformatics", None)
+        bioinformatics_cfg = getattr(flows_cfg, "bioinformatics", None)
         if getattr(bioinformatics_cfg or {}, "enabled", False):
             ctx.state.notes.append("Bioinformatics flow enabled")
             return BioinformaticsParse()
 
         # Route to RAG flow if enabled
-        rag_cfg = getattr(getattr(cfg, "flows", {}), "rag", None)
+        rag_cfg = getattr(flows_cfg, "rag", None)
         if getattr(rag_cfg or {}, "enabled", False):
             ctx.state.notes.append("RAG flow enabled")
             return RAGParse()
 
         # Route to DeepSearch flow if enabled
-        deepsearch_cfg = getattr(getattr(cfg, "flows", {}), "deepsearch", None)
-        node_example_cfg = getattr(getattr(cfg, "flows", {}), "node_example", None)
-        jina_ai_cfg = getattr(getattr(cfg, "flows", {}), "jina_ai", None)
+        deepsearch_cfg = getattr(flows_cfg, "deepsearch", None)
+        node_example_cfg = getattr(flows_cfg, "node_example", None)
+        jina_ai_cfg = getattr(flows_cfg, "jina_ai", None)
         if any(
             [
                 getattr(deepsearch_cfg or {}, "enabled", False),
@@ -840,6 +854,48 @@ class DSSynthesize(BaseNode[ResearchState]):
         return End(answer)
 
 
+# --- Hypothesis flow nodes ---
+@dataclass
+class HypothesisRun(BaseNode[ResearchState]):
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Annotated[End[str], Edge(label="done")]:
+        from .src.statemachines.hypothesis_workflow import run_hypothesis_workflow
+
+        question = ctx.state.question
+        cfg = ctx.state.config
+
+        ctx.state.notes.append("Starting hypothesis workflow")
+
+        try:
+            result = await run_hypothesis_workflow(question, cfg)
+            ctx.state.hypothesis_results = result
+            ctx.state.execution_results["hypothesis"] = result
+
+            dataset = result.get("dataset")
+            if dataset is not None:
+                ctx.state.hypothesis_datasets.append(
+                    HypothesisDataset.model_validate(dataset)
+                )
+
+            for testing_environment in result.get("testing_environments", []):
+                ctx.state.testing_environments.append(
+                    HypothesisTestingEnvironment.model_validate(testing_environment)
+                )
+
+            final_answer = (
+                result.get("markdown_report") or "Hypothesis analysis completed."
+            )
+            ctx.state.answers.append(final_answer)
+            ctx.state.notes.append("Hypothesis workflow completed successfully")
+            return End(final_answer)
+        except Exception as e:
+            error_msg = f"Hypothesis workflow failed: {e!s}"
+            ctx.state.notes.append(error_msg)
+            ctx.state.answers.append(f"Error: {error_msg}")
+            return End(f"Error: {error_msg}")
+
+
 # --- PRIME flow nodes ---
 @dataclass
 class PrimeParse(BaseNode[ResearchState]):
@@ -1092,6 +1148,7 @@ def run_graph(question: str, cfg: DictConfig) -> str:
         PrimeEvaluate(),
         BioinformaticsParse(),
         BioinformaticsFuse(),
+        HypothesisRun(),
         RAGParse(),
         RAGExecute(),
         PrimaryREACTWorkflow(),

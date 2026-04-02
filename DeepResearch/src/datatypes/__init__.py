@@ -124,6 +124,13 @@ from .execution import (
     WorkflowDAG,
     WorkflowStep,
 )
+from .hypothesis import (
+    HypothesisCandidate,
+    HypothesisEvidence,
+    HypothesisScore,
+    HypothesisTestPlan,
+    HypothesisWorkflowResult,
+)
 from .llm_models import (
     GenerationConfig,
     LLMConnectionConfig,
@@ -344,6 +351,11 @@ __all__ = [
     "GenerationConfig",
     "HostedFileContent",
     "HostedVectorStoreContent",
+    "HypothesisCandidate",
+    "HypothesisEvidence",
+    "HypothesisScore",
+    "HypothesisTestPlan",
+    "HypothesisWorkflowResult",
     "IPythonCodeResult",
     "IntegratedSearchRequest",
     "IntegratedSearchResponse",

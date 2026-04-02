@@ -41,6 +41,22 @@ from .code_execution_workflow import (
     execute_code_workflow,
     generate_and_execute_code,
 )
+from .hypothesis_workflow import (
+    CreateTestingPlans,
+    HypothesisError,
+    HypothesisWorkflowState,
+    ParseHypothesisRequest,
+    ScoreAndRankHypotheses,
+    SynthesizeHypothesisReport,
+    create_hypothesis_workflow,
+    run_hypothesis_workflow,
+)
+from .hypothesis_workflow import (
+    GatherEvidence as GatherHypothesisEvidence,
+)
+from .hypothesis_workflow import (
+    GenerateHypotheses as GenerateHypothesesNode,
+)
 from .rag_workflow import (
     GenerateResponse,
     InitializeRAG,
@@ -70,6 +86,7 @@ __all__ = [
     "CodeExecutionWorkflowState",
     "CompleteDeepSearch",
     "CreateReasoningTask",
+    "CreateTestingPlans",
     "DeepSearchError",
     "DeepSearchState",
     "DeepSearchSynthesizeResults",
@@ -78,9 +95,13 @@ __all__ = [
     "ExecuteSearchStep",
     "FormatResponse",
     "FuseDataSources",
+    "GatherHypothesisEvidence",
     "GenerateCode",
     "GenerateFinalResponse",
+    "GenerateHypothesesNode",
     "GenerateResponse",
+    "HypothesisError",
+    "HypothesisWorkflowState",
     "ImproveCode",
     "InitializeCodeExecution",
     "InitializeDeepSearch",
@@ -88,6 +109,7 @@ __all__ = [
     "InitializeSearch",
     "LoadDocuments",
     "ParseBioinformaticsQuery",
+    "ParseHypothesisRequest",
     "PerformReasoning",
     "PerformWebSearch",
     "PlanSearchStrategy",
@@ -96,9 +118,13 @@ __all__ = [
     "QueryRAG",
     "RAGError",
     "RAGState",
+    "ScoreAndRankHypotheses",
     "SearchWorkflowError",
     "SearchWorkflowState",
     "StoreDocuments",
+    "SynthesizeHypothesisReport",
+    "create_hypothesis_workflow",
     "execute_code_workflow",
     "generate_and_execute_code",
+    "run_hypothesis_workflow",
 ]

@@ -1,3 +1,7 @@
-enabled: true
-params:
-  clarification_required: true
+# Hypothesis generation flow compatibility shim
+
+enabled: false
+mode: generate
+generate_testing_plans: false
+engine_config_group: hypothesis/default
+description: "Compatibility flow config for the main hypothesis engine."

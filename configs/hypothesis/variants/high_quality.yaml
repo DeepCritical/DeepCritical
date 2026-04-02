@@ -1,0 +1,14 @@
+# High-quality hypothesis-engine variant
+
+max_hypotheses: 5
+top_k: 3
+evidence_mode: search_plus_rag
+live_evidence_enabled: false
+generate_testing_plans: true
+
+score_weights:
+  novelty: 0.18
+  evidence_support: 0.34
+  testability: 0.2
+  falsifiability: 0.14
+  specificity: 0.14
