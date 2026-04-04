@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
-import threading
 from pathlib import Path
 from typing import Any
 
-from DeepResearch.src.datatypes.mgrep import MgrepConfig
 from DeepResearch.src.tools.base import ExecutionResult, ToolRunner, ToolSpec, registry
 
+from .runtime import get_mgrep_service, run_async
 from .service import MgrepService
 
 
@@ -19,31 +17,10 @@ def _repo_root_from_params(params: dict[str, Any]) -> str:
 
 
 def _build_service(params: dict[str, Any]) -> MgrepService:
-    return MgrepService(repo_root=_repo_root_from_params(params), config=MgrepConfig())
-
-
-def _run_async(coro: Any) -> Any:
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-
-    result: dict[str, Any] = {}
-    error: dict[str, BaseException] = {}
-
-    def _runner() -> None:
-        try:
-            result["value"] = asyncio.run(coro)
-        except BaseException as exc:  # pragma: no cover - exercised in async callers
-            error["value"] = exc
-
-    thread = threading.Thread(target=_runner, daemon=True)
-    thread.start()
-    thread.join()
-
-    if "value" in error:
-        raise error["value"]
-    return result.get("value")
+    return get_mgrep_service(
+        repo_root=_repo_root_from_params(params),
+        config_path=params.get("config_path"),
+    )
 
 
 class MgrepIndexTool(ToolRunner):
@@ -54,7 +31,10 @@ class MgrepIndexTool(ToolRunner):
             ToolSpec(
                 name="mgrep_index",
                 description="Build or rebuild a repo-local semantic search index",
-                inputs={"repo_root": "TEXT (optional)"},
+                inputs={
+                    "repo_root": "TEXT (optional)",
+                    "config_path": "TEXT (optional)",
+                },
                 outputs={
                     "repo_root": "TEXT",
                     "indexed_file_count": "INTEGER",
@@ -66,7 +46,7 @@ class MgrepIndexTool(ToolRunner):
     def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             service = _build_service(params)
-            stats = _run_async(service.index())
+            stats = run_async(service.index())
         except Exception as exc:
             return ExecutionResult(success=False, error=f"mgrep index failed: {exc!s}")
         return ExecutionResult(success=True, data=stats.model_dump())
@@ -80,7 +60,10 @@ class MgrepSyncTool(ToolRunner):
             ToolSpec(
                 name="mgrep_sync",
                 description="Incrementally sync a repo-local semantic search index",
-                inputs={"repo_root": "TEXT (optional)"},
+                inputs={
+                    "repo_root": "TEXT (optional)",
+                    "config_path": "TEXT (optional)",
+                },
                 outputs={
                     "repo_root": "TEXT",
                     "indexed_file_count": "INTEGER",
@@ -92,7 +75,7 @@ class MgrepSyncTool(ToolRunner):
     def run(self, params: dict[str, Any]) -> ExecutionResult:
         try:
             service = _build_service(params)
-            stats = _run_async(service.sync())
+            stats = run_async(service.sync())
         except Exception as exc:
             return ExecutionResult(success=False, error=f"mgrep sync failed: {exc!s}")
         return ExecutionResult(success=True, data=stats.model_dump())
@@ -109,6 +92,7 @@ class MgrepSearchTool(ToolRunner):
                 inputs={
                     "query": "TEXT",
                     "repo_root": "TEXT (optional)",
+                    "config_path": "TEXT (optional)",
                     "path": "TEXT (optional)",
                     "top_k": "INTEGER (optional)",
                     "smart": "BOOLEAN (optional)",
@@ -128,7 +112,7 @@ class MgrepSearchTool(ToolRunner):
 
         try:
             service = _build_service(params)
-            response = _run_async(
+            response = run_async(
                 service.smart_search(query, top_k=top_k, path=path)
                 if smart
                 else service.search(query, top_k=top_k, path=path)
@@ -146,7 +130,10 @@ class MgrepStatsTool(ToolRunner):
             ToolSpec(
                 name="mgrep_stats",
                 description="Read stats for a repo-local semantic search index",
-                inputs={"repo_root": "TEXT (optional)"},
+                inputs={
+                    "repo_root": "TEXT (optional)",
+                    "config_path": "TEXT (optional)",
+                },
                 outputs={
                     "indexed_file_count": "INTEGER",
                     "indexed_chunk_count": "INTEGER",

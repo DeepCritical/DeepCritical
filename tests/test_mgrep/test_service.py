@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from DeepResearch.src.datatypes.mgrep import MgrepManifest
 from DeepResearch.src.datatypes.rag import Document, SearchResult
 from DeepResearch.src.tools.mgrep.service import MgrepService
 
@@ -154,3 +155,74 @@ async def test_sync_preserves_previous_index_when_updated_file_cannot_be_rechunk
     previous_response = await service.search("semantic parser", top_k=5)
     assert previous_response.total_results >= 1
     assert previous_response.results[0].relative_path == "parser.py"
+
+
+def test_get_stats_does_not_create_store_dir(
+    tmp_path, mgrep_config, keyword_embeddings, in_memory_vector_store_factory
+):
+    service = MgrepService(
+        repo_root=tmp_path,
+        config=mgrep_config,
+        embeddings=keyword_embeddings,
+        vector_store_factory=in_memory_vector_store_factory,
+    )
+
+    stats = service.get_stats()
+
+    assert stats.indexed_file_count == 0
+    assert not (tmp_path / ".deepcritical" / "mgrep").exists()
+
+
+def test_manifest_compatibility_ignores_supported_extension_order(
+    tmp_path, mgrep_config
+):
+    repo_root = tmp_path.resolve()
+    config = mgrep_config.model_copy(
+        update={"supported_extensions": [".md", ".py", ".md"]}
+    )
+    manifest = MgrepManifest(
+        repo_root=str(repo_root),
+        store_dir=str((repo_root / config.store_dir).resolve()),
+        embedding_model_name=config.embeddings.model_name,
+        embedding_dimensions=config.embeddings.num_dimensions,
+        distance_metric=config.distance_metric,
+        chunking_strategy_version=config.chunking_strategy_version,
+        supported_extensions=[".py", ".md"],
+    )
+
+    reordered_config = config.model_copy(
+        update={"supported_extensions": [".py", ".md"]}
+    )
+
+    assert manifest.is_compatible(
+        reordered_config,
+        repo_root,
+        (repo_root / reordered_config.store_dir).resolve(),
+    )
+
+
+def test_reset_storage_uses_vector_store_clear_when_reusing_same_instance(
+    tmp_path, mgrep_config
+):
+    class ResettableStore:
+        def __init__(self):
+            self.clear_calls = 0
+            self.documents = {"stale": object()}
+
+        def clear(self) -> None:
+            self.clear_calls += 1
+            self.documents = {}
+
+    vector_store = ResettableStore()
+    service = MgrepService(
+        repo_root=tmp_path,
+        config=mgrep_config,
+        embeddings=object(),
+        vector_store=vector_store,
+    )
+
+    service._reset_storage()
+
+    assert service.vector_store is vector_store
+    assert vector_store.clear_calls == 1
+    assert vector_store.documents == {}

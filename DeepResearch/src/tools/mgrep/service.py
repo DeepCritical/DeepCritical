@@ -17,6 +17,7 @@ from DeepResearch.src.datatypes.mgrep import (
     MgrepSearchHit,
     MgrepSearchResponse,
     MgrepStats,
+    normalize_supported_extensions,
 )
 from DeepResearch.src.datatypes.rag import SearchResult, SearchType
 from DeepResearch.src.vector_stores import create_vector_store
@@ -41,7 +42,6 @@ class MgrepService:
         self.repo_root = Path(repo_root).resolve()
         self.config = config or MgrepConfig()
         self.store_dir = (self.repo_root / self.config.store_dir).resolve()
-        self.store_dir.mkdir(parents=True, exist_ok=True)
         self.manifest_path = self.store_dir / "manifest.json"
         self.index_path = self.store_dir / "index.faiss"
         self.data_path = self.store_dir / "documents.pkl"
@@ -78,9 +78,9 @@ class MgrepService:
             embedding_dimensions=self.config.embeddings.num_dimensions,
             distance_metric=self.config.distance_metric,
             chunking_strategy_version=self.config.chunking_strategy_version,
-            supported_extensions=[
-                ext.lower() for ext in self.config.supported_extensions
-            ],
+            supported_extensions=normalize_supported_extensions(
+                self.config.supported_extensions
+            ),
         )
 
     def _load_manifest(self) -> MgrepManifest:
@@ -93,7 +93,11 @@ class MgrepService:
                 return self._new_manifest()
         return self._new_manifest()
 
+    def _ensure_store_dir(self) -> None:
+        self.store_dir.mkdir(parents=True, exist_ok=True)
+
     def _save_manifest(self) -> None:
+        self._ensure_store_dir()
         self.manifest.updated_at = datetime.now()
         self.manifest_path.write_text(
             self.manifest.model_dump_json(indent=2), encoding="utf-8"
@@ -108,12 +112,14 @@ class MgrepService:
                 path.unlink()
         new_vector_store = self._vector_store_factory()
         if new_vector_store is self.vector_store:
-            if hasattr(new_vector_store, "documents"):
-                new_vector_store.documents = {}
-            if hasattr(new_vector_store, "id_map"):
-                new_vector_store.id_map = {}
-            if hasattr(new_vector_store, "index"):
-                new_vector_store.index = None
+            clear = getattr(new_vector_store, "clear", None)
+            if not callable(clear):
+                msg = (
+                    "Vector store factory returned the existing instance without "
+                    "providing a clear() method"
+                )
+                raise RuntimeError(msg)
+            clear()
         self.vector_store = new_vector_store
         self.manifest = self._new_manifest()
 

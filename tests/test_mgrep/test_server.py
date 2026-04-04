@@ -32,7 +32,7 @@ async def test_mgrep_server_executes_registered_tools(
         vector_store_factory=in_memory_vector_store_factory,
     )
 
-    def _build_service(self, repo_root: str = "."):
+    def _build_service(self, repo_root: str = ".", config_path: str | None = None):
         return service
 
     monkeypatch.setattr(MgrepServer, "_build_service", _build_service)

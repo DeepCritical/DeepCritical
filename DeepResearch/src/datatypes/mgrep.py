@@ -24,6 +24,11 @@ DEFAULT_SUPPORTED_EXTENSIONS = [
 ]
 
 
+def normalize_supported_extensions(supported_extensions: list[str]) -> list[str]:
+    """Normalize extensions for stable manifest comparisons."""
+    return sorted({extension.lower() for extension in supported_extensions})
+
+
 def build_chunk_id(
     *,
     relative_path: str,
@@ -121,8 +126,8 @@ class MgrepManifest(BaseModel):
             and self.embedding_dimensions == config.embeddings.num_dimensions
             and self.distance_metric == config.distance_metric
             and self.chunking_strategy_version == config.chunking_strategy_version
-            and self.supported_extensions
-            == [ext.lower() for ext in config.supported_extensions]
+            and normalize_supported_extensions(self.supported_extensions)
+            == normalize_supported_extensions(config.supported_extensions)
         )
 
 

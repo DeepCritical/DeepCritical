@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import pickle
+from pathlib import Path
 from typing import Any
 
 import faiss  # type: ignore
@@ -99,6 +100,15 @@ class FAISSVectorStore(VectorStore):
             faiss.write_index(self.index, self.index_path)  # type: ignore
         with open(self.data_path, "wb") as f:
             pickle.dump(self.documents, f)
+
+    def clear(self) -> None:
+        """Reset in-memory state and remove any persisted FAISS artifacts."""
+        self.index = None
+        self.documents = {}
+        self.id_map = {}
+        for path in (self.index_path, self.data_path):
+            if path and os.path.exists(path):
+                Path(path).unlink()
 
     async def add_documents(
         self, documents: list[Document], **kwargs: Any
