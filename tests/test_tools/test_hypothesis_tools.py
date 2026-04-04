@@ -2,6 +2,7 @@ from DeepResearch.src.datatypes.hypothesis import HypothesisCandidate
 from DeepResearch.src.tools.hypothesis_tools import (
     CreateHypothesisTestPlansTool,
     GatherEvidenceTool,
+    GenerateHypothesesTool,
     ScoreHypothesesTool,
     extract_keywords,
 )
@@ -13,7 +14,15 @@ class TestHypothesisTools:
             "Why does targeted feedback improve long-term learning outcomes?"
         )
 
-        assert keywords[:3] == ["targeted", "feedback", "improve"]
+        assert keywords[:2] == ["targeted feedback", "long-term learning outcomes"]
+
+    def test_extract_keywords_preserves_driver_and_outcome_phrases(self):
+        keywords = extract_keywords(
+            "What mechanisms could explain how sleep quality affects memory performance?"
+        )
+
+        assert keywords[:2] == ["sleep quality", "memory performance"]
+        assert "affects" not in keywords[:2]
 
     def test_gather_evidence_returns_question_driven_fallbacks(self, monkeypatch):
         monkeypatch.setattr(
@@ -72,6 +81,21 @@ class TestHypothesisTools:
         assert (
             ranked[0]["score"]["overall_score"] >= ranked[1]["score"]["overall_score"]
         )
+
+    def test_generate_hypotheses_anchors_driver_and_outcome_terms(self):
+        result = GenerateHypothesesTool().run(
+            {
+                "question": "Why does spaced repetition improve recall?",
+                "max_hypotheses": 3,
+            }
+        )
+
+        assert result.success is True
+        hypotheses = result.data["hypotheses"]
+        assert hypotheses[0]["keywords"][:2] == ["spaced repetition", "recall"]
+        assert "spaced repetition" in hypotheses[0]["statement"].lower()
+        assert "recall" in hypotheses[0]["statement"].lower()
+        assert "improve" not in hypotheses[0]["keywords"][:2]
 
     def test_create_test_plans_returns_required_fields(self):
         candidate = HypothesisCandidate(

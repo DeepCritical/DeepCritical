@@ -5,9 +5,7 @@ max_hypotheses: 4
 top_k: 3
 evidence_mode: search_only
 live_evidence_enabled: false
-require_reasoning: true
 generate_testing_plans: false
-output_format: markdown
 
 score_weights:
   novelty: 0.2

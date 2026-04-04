@@ -1,3 +1,18 @@
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
+_TOOL_EXPORTS = {
+    "ChunkedSearchTool",
+    "DeepSearchTool",
+    "GOAnnotationTool",
+    "PubMedRetrievalTool",
+    "RAGSearchTool",
+    "WebSearchTool",
+    "registry",
+}
+
 __all__ = [
     "ChunkedSearchTool",
     "DeepSearchTool",
@@ -10,27 +25,17 @@ __all__ = [
     "tools",
 ]
 
-# Direct import for tools to make them available for documentation
-from contextlib import suppress
 
-with suppress(ImportError):
-    from .src.tools import (
-        ChunkedSearchTool,
-        DeepSearchTool,
-        GOAnnotationTool,
-        PubMedRetrievalTool,
-        RAGSearchTool,
-        WebSearchTool,
-        registry,
-    )
-
-
-# Lazy import for tools to avoid circular imports
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     if name == "tools":
-        from .src import tools
+        return import_module(f"{__name__}.src.tools")
 
-        return tools
+    if name == "app":
+        return import_module(f"{__name__}.app")
 
-    msg = f"module '{__name__}' has no attribute '{name}'"
+    if name in _TOOL_EXPORTS:
+        tools_module = import_module(f"{__name__}.src.tools")
+        return getattr(tools_module, name)
+
+    msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)

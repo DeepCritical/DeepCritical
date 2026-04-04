@@ -6,17 +6,10 @@ for various DeepCritical operations including bioinformatics, RAG,
 search, and code execution workflows.
 """
 
-from .bioinformatics_workflow import (
-    AssessDataQuality,
-    BioinformaticsState,
-    CreateReasoningTask,
-    FuseDataSources,
-    ParseBioinformaticsQuery,
-    PerformReasoning,
-)
-from .bioinformatics_workflow import (
-    SynthesizeResults as BioSynthesizeResults,
-)
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
 
 # from .deepsearch_workflow import (
 #     DeepSearchState,
@@ -75,6 +68,27 @@ from .search_workflow import (
     SearchWorkflowError,
     SearchWorkflowState,
 )
+
+_BIOINFORMATICS_EXPORTS = {
+    "AssessDataQuality": "AssessDataQuality",
+    "BioinformaticsState": "BioinformaticsState",
+    "BioSynthesizeResults": "SynthesizeResults",
+    "CreateReasoningTask": "CreateReasoningTask",
+    "FuseDataSources": "FuseDataSources",
+    "ParseBioinformaticsQuery": "ParseBioinformaticsQuery",
+    "PerformReasoning": "PerformReasoning",
+    "bioinformatics_workflow": "bioinformatics_workflow",
+}
+
+
+def __getattr__(name: str) -> Any:
+    if name in _BIOINFORMATICS_EXPORTS:
+        module = import_module(f"{__name__}.bioinformatics_workflow")
+        return getattr(module, _BIOINFORMATICS_EXPORTS[name])
+
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+
 
 __all__ = [
     "AnalyzeError",

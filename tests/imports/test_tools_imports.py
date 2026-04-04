@@ -5,6 +5,10 @@ This module tests that all imports from the tools subdirectory work correctly,
 including all individual tool modules and their dependencies.
 """
 
+import importlib
+import subprocess
+import sys
+
 import pytest
 
 # Import ToolCategory with fallback
@@ -41,6 +45,35 @@ class TestToolsModuleImports:
         from DeepResearch.src.tools import registry
 
         assert registry is not None
+
+    def test_tools_package_import_does_not_eagerly_import_bioinformatics_tools(self):
+        """Importing the tools package should stay clear of bioinformatics startup side effects."""
+
+        command = [
+            sys.executable,
+            "-c",
+            (
+                "import sys\n"
+                "import DeepResearch.src.tools as tools\n"
+                "print(tools is not None)\n"
+                "print('DeepResearch.src.tools.bioinformatics_tools' in sys.modules)\n"
+            ),
+        ]
+        completed = subprocess.run(command, check=True, capture_output=True, text=True)
+
+        assert completed.stdout.strip().splitlines() == [
+            "True",
+            "False",
+        ]
+
+    def test_tools_registry_keeps_bioinformatics_tools_registered(self):
+        """The package-level registry export should preserve the full default tool set."""
+
+        from DeepResearch.src.tools import registry
+
+        assert registry is not None
+        assert "go_annotation_processor" in registry.list()
+        assert "pubmed_retriever" in registry.list()
 
     def test_tools_datatypes_imports(self):
         """Test all imports from tools datatypes module."""

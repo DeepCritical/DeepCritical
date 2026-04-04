@@ -18,7 +18,6 @@ from DeepResearch.src.datatypes.hypothesis import (
 from DeepResearch.src.prompts.hypothesis import build_prompt_bundle
 
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
-from .integrated_search_tools import IntegratedSearchTool, RAGSearchTool
 
 STOPWORDS = {
     "a",
@@ -69,6 +68,59 @@ STOPWORDS = {
     "with",
 }
 
+ACTION_WORDS = {
+    "affect",
+    "affects",
+    "affected",
+    "alter",
+    "alters",
+    "altered",
+    "change",
+    "changes",
+    "changed",
+    "drive",
+    "drives",
+    "driven",
+    "impact",
+    "impacts",
+    "improve",
+    "improves",
+    "improved",
+    "increase",
+    "increases",
+    "increased",
+    "influence",
+    "influences",
+    "influenced",
+    "mediate",
+    "mediates",
+    "mediated",
+    "modulate",
+    "modulates",
+    "modulated",
+    "optimize",
+    "optimizes",
+    "optimized",
+    "predict",
+    "predicts",
+    "predicted",
+    "produce",
+    "produces",
+    "produced",
+    "regulate",
+    "regulates",
+    "regulated",
+    "shape",
+    "shapes",
+    "shaped",
+}
+
+DEFAULT_FOCUS_TERMS = [
+    "baseline conditions",
+    "time scale",
+    "measurement context",
+]
+
 DEFAULT_SCORE_WEIGHTS = {
     "novelty": 0.2,
     "evidence_support": 0.3,
@@ -82,27 +134,57 @@ def _clamp(value: float, floor: float = 0.0, ceiling: float = 1.0) -> float:
     return max(floor, min(ceiling, value))
 
 
+def _dedupe_phrases(items: list[str]) -> list[str]:
+    phrases: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        phrase = " ".join(item.split()).strip()
+        if not phrase or phrase in seen:
+            continue
+        seen.add(phrase)
+        phrases.append(phrase)
+    return phrases
+
+
+def _flush_phrase_chunk(
+    chunk: list[str], phrases: list[str], *, max_words: int
+) -> None:
+    if not chunk:
+        return
+    phrases.append(" ".join(chunk[:max_words]))
+    chunk.clear()
+
+
 def extract_keywords(question: str, limit: int = 6) -> list[str]:
-    """Extract a deterministic set of focus terms from the question."""
+    """Extract deterministic focus phrases from the question."""
 
     words = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", question.lower())
-    ordered_keywords: OrderedDict[str, None] = OrderedDict()
+    phrase_chunks: list[str] = []
+    current_chunk: list[str] = []
+
     for word in words:
-        if word in STOPWORDS or len(word) < 3:
+        if word in ACTION_WORDS or word in STOPWORDS or len(word) < 3:
+            _flush_phrase_chunk(current_chunk, phrase_chunks, max_words=3)
             continue
-        ordered_keywords.setdefault(word, None)
+        current_chunk.append(word)
+    _flush_phrase_chunk(current_chunk, phrase_chunks, max_words=3)
+
+    deduped_phrases = _dedupe_phrases(phrase_chunks)
+    ordered_keywords: OrderedDict[str, None] = OrderedDict()
+    for phrase in deduped_phrases:
+        ordered_keywords.setdefault(phrase, None)
         if len(ordered_keywords) >= limit:
             break
 
     keywords = list(ordered_keywords.keys())
     if len(keywords) >= 3:
-        return keywords
+        return keywords[:limit]
 
-    fallbacks = ["outcome", "driver", "context"]
+    fallbacks = DEFAULT_FOCUS_TERMS
     for fallback in fallbacks:
         if fallback not in ordered_keywords:
             keywords.append(fallback)
-        if len(keywords) >= 3:
+        if len(keywords) >= limit:
             break
     return keywords
 
@@ -252,6 +334,8 @@ class GatherEvidenceTool(ToolRunner):
     def _collect_external_evidence(
         self, question: str, evidence_mode: str
     ) -> list[HypothesisEvidence]:
+        from .integrated_search_tools import IntegratedSearchTool, RAGSearchTool
+
         evidence: list[HypothesisEvidence] = []
         search_result = IntegratedSearchTool().run(
             {
@@ -359,31 +443,32 @@ class GenerateHypothesesTool(ToolRunner):
         evidence_items: list[HypothesisEvidence],
         index: int,
     ) -> HypothesisCandidate:
-        primary = keywords[index % len(keywords)]
-        secondary = keywords[(index + 1) % len(keywords)]
-        tertiary = keywords[(index + 2) % len(keywords)]
+        primary = keywords[0] if keywords else "the proposed driver"
+        secondary = keywords[1] if len(keywords) > 1 else "the observed outcome"
+        context_terms = keywords[2:] if len(keywords) > 2 else DEFAULT_FOCUS_TERMS
+        tertiary = context_terms[index % len(context_terms)]
         evidence_refs = [
             item.title for item in evidence_items[: max(1, min(3, len(evidence_items)))]
         ]
 
         templates = [
             (
-                f"Variation in {primary} is a primary driver of {secondary} outcomes "
-                f"when {tertiary} remains within an identifiable operating range."
+                f"Variation in {primary} produces measurable changes in {secondary} "
+                f"when researchers explicitly control for {tertiary}."
             ),
             (
                 f"The effect of {primary} on {secondary} is mediated by {tertiary}, "
-                "which explains why the same question may yield different outcomes "
+                "which explains why the same relationship may look different "
                 "across settings."
             ),
             (
-                f"Interventions that optimize {primary} under a well-defined {tertiary} "
-                f"context should improve {secondary} more reliably than broad changes "
-                "that ignore mechanism."
+                f"Improvements in {secondary} are most likely when {primary} reaches "
+                f"an effective threshold within {tertiary}, rather than increasing "
+                "uniformly across all conditions."
             ),
             (
                 f"Observed changes in {secondary} are better explained by interaction "
-                f"effects between {primary} and {tertiary} than by any single-factor model."
+                f"effects between {primary} and {tertiary} than by any single broad factor."
             ),
         ]
         statement = templates[index % len(templates)]
@@ -391,8 +476,9 @@ class GenerateHypothesesTool(ToolRunner):
             "This candidate is grounded in the question framing and the available "
             "evidence, especially "
             + ", ".join(evidence_refs[:2] or ["the question framing"])
-            + f". It treats {primary} as the main lever, uses {tertiary} as a "
-            f"contextual qualifier, and keeps {secondary} as the measurable outcome."
+            + f". It keeps {primary} as the putative driver, treats {secondary} "
+            f"as the measurable outcome, and uses {tertiary} as the main "
+            "contextual qualifier."
         )
 
         return HypothesisCandidate(
@@ -400,19 +486,19 @@ class GenerateHypothesesTool(ToolRunner):
             statement=statement,
             rationale=rationale,
             assumptions=[
-                f"{primary} can be observed or measured consistently.",
-                f"{tertiary} can be controlled, stratified, or compared across cases.",
+                f"{primary} can be observed or manipulated consistently.",
+                f"{tertiary} can be controlled, stratified, or monitored while evaluating {secondary}.",
             ],
             predictions=[
                 f"If the hypothesis is correct, changes in {primary} should precede or co-vary with changes in {secondary}.",
-                f"The {primary}-{secondary} relationship should strengthen when {tertiary} is explicitly modeled.",
+                f"The {primary}-{secondary} relationship should strengthen when researchers explicitly model {tertiary}.",
             ],
             supporting_evidence=[
                 item.source_id
                 for item in evidence_items[: max(1, min(3, len(evidence_items)))]
             ],
             counter_evidence=[
-                f"A strong {secondary} signal without measurable changes in {primary} would weaken this hypothesis.",
+                f"Stable changes in {secondary} without any measurable shift in {primary} would weaken this hypothesis.",
                 f"If {tertiary} has no moderating role, a simpler explanation may be better.",
             ],
             keywords=[primary, secondary, tertiary],

@@ -19,6 +19,8 @@ def test_hypothesis_example_config_composes(config_dir):
     assert cfg.workflow_orchestration.enabled is False
     assert cfg.hypothesis.mode == "generate"
     assert "enabled" not in cfg.hypothesis
+    assert "require_reasoning" not in cfg.hypothesis
+    assert "output_format" not in cfg.hypothesis
 
 
 def test_run_graph_with_hypothesis_example_config(config_dir, monkeypatch):
