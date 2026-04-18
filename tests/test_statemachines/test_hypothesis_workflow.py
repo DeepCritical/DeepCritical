@@ -233,7 +233,9 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
     async def fake_run(question, cfg, mode=None):
         return {
             "status": "failed",
-            "errors": ["Hypothesis report synthesis failed: report formatter unavailable"],
+            "errors": [
+                "Hypothesis report synthesis failed: report formatter unavailable"
+            ],
             "markdown_report": (
                 "Hypothesis workflow failed: report formatter unavailable"
             ),
@@ -256,6 +258,4 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
     assert not any(
         note == "Hypothesis workflow completed successfully" for note in state.notes
     )
-    assert any(
-        "completed with failure status" in note for note in state.notes
-    )
+    assert any("completed with failure status" in note for note in state.notes)

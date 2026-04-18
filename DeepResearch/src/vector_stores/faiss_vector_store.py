@@ -50,8 +50,9 @@ class FAISSVectorStore(VectorStore):
         self.index_path = config.index_path
         self.data_path = config.data_path
 
-        self.index: faiss.IndexIDMap2 | None = None  # type: ignore
+        self.index: Any | None = None
         self.documents: dict[str, Document] = {}
+        self.doc_ids: list[str] = []
         # Map from stable_hash -> doc_id
         self.id_map: dict[int, str] = {}
         self._load()
@@ -66,7 +67,7 @@ class FAISSVectorStore(VectorStore):
         normalized = vectors / norms
         return np.ascontiguousarray(normalized, dtype=np.float32)
 
-    def _build_base_index(self, dimension: int) -> faiss.Index:
+    def _build_base_index(self, dimension: int) -> Any:
         if self._uses_cosine_metric():
             return faiss.IndexFlatIP(dimension)  # type: ignore
         return faiss.IndexFlatL2(dimension)  # type: ignore
@@ -78,15 +79,17 @@ class FAISSVectorStore(VectorStore):
 
     def _load(self):
         """Loads the index and document data from disk if they exist."""
-        if os.path.exists(self.index_path):
-            self.index = faiss.read_index(self.index_path)  # type: ignore
         if os.path.exists(self.data_path):
             with open(self.data_path, "rb") as f:
-                self.documents = pickle.load(f)
-                # Rebuild id_map
-                self.id_map = {
-                    _stable_hash(doc_id): doc_id for doc_id in self.documents
-                }
+                payload = pickle.load(f)
+            if isinstance(payload, dict) and "documents" in payload:
+                self.documents = payload["documents"]
+                self.doc_ids = payload.get("doc_ids", list(self.documents))
+            else:
+                self.documents = payload
+                self.doc_ids = list(self.documents)
+            self.id_map = {_stable_hash(doc_id): doc_id for doc_id in self.doc_ids}
+            self._rebuild_index_from_documents()
 
     def _save(self):
         """Saves the index and document data to disk."""
@@ -99,12 +102,39 @@ class FAISSVectorStore(VectorStore):
         if self.index:
             faiss.write_index(self.index, self.index_path)  # type: ignore
         with open(self.data_path, "wb") as f:
-            pickle.dump(self.documents, f)
+            pickle.dump(
+                {"documents": self.documents, "doc_ids": self.doc_ids},
+                f,
+            )
+
+    def _rebuild_index_from_documents(self) -> None:
+        """Rebuild the FAISS index from the stored document embeddings."""
+        if not self.doc_ids:
+            self.index = None
+            return
+
+        ordered_embeddings = [
+            self.documents[doc_id].embedding
+            for doc_id in self.doc_ids
+            if doc_id in self.documents
+        ]
+        if not ordered_embeddings:
+            self.index = None
+            return
+
+        vectors = np.ascontiguousarray(np.array(ordered_embeddings, dtype=np.float32))
+        if self._uses_cosine_metric():
+            vectors = self._normalize_vectors(vectors)
+
+        dimension = vectors.shape[1]
+        self.index = self._build_base_index(dimension)
+        self.index.add(vectors)  # type: ignore
 
     def clear(self) -> None:
         """Reset in-memory state and remove any persisted FAISS artifacts."""
         self.index = None
         self.documents = {}
+        self.doc_ids = []
         self.id_map = {}
         for path in (self.index_path, self.data_path):
             if path and os.path.exists(path):
@@ -119,29 +149,29 @@ class FAISSVectorStore(VectorStore):
         if not documents:
             return []
 
+        existing_ids = [doc.id for doc in documents if doc.id in self.documents]
+        if existing_ids:
+            await self.delete_documents(existing_ids)
+
         texts = [doc.content for doc in documents]
         embeddings = await self.embeddings.vectorize_documents(texts)
 
         doc_ids = [doc.id for doc in documents]
-        # Use stable hash
-        doc_id_vectors = np.array(
-            [_stable_hash(doc_id) for doc_id in doc_ids], dtype=np.int64
-        )
 
         for i, doc in enumerate(documents):
             doc.embedding = embeddings[i]
             self.documents[doc.id] = doc
             self.id_map[_stable_hash(doc.id)] = doc.id
+            self.doc_ids.append(doc.id)
 
         new_vectors = np.ascontiguousarray(np.array(embeddings, dtype=np.float32))
         if self._uses_cosine_metric():
             new_vectors = self._normalize_vectors(new_vectors)
         if self.index is None:
             dimension = new_vectors.shape[1]
-            base_index = self._build_base_index(dimension)
-            self.index = faiss.IndexIDMap2(base_index)  # type: ignore
+            self.index = self._build_base_index(dimension)
 
-        self.index.add_with_ids(new_vectors, doc_id_vectors)  # type: ignore
+        self.index.add(new_vectors)  # type: ignore
 
         self._save()
         return doc_ids
@@ -176,21 +206,26 @@ class FAISSVectorStore(VectorStore):
         """
         Deletes documents from the vector store.
         """
-        if not document_ids or self.index is None:
+        if not document_ids or not self.documents:
             return False
 
-        ids_to_remove = np.array(
-            [_stable_hash(doc_id) for doc_id in document_ids], dtype=np.int64
-        )
-        self.index.remove_ids(ids_to_remove)  # type: ignore
+        removed_ids = set(document_ids)
+        if not removed_ids.intersection(self.documents):
+            return False
+
+        self.doc_ids = [doc_id for doc_id in self.doc_ids if doc_id not in removed_ids]
+        self.documents = {
+            doc_id: self.documents[doc_id]
+            for doc_id in self.doc_ids
+            if doc_id in self.documents
+        }
 
         for doc_id in document_ids:
-            if doc_id in self.documents:
-                del self.documents[doc_id]
             hashed_id = _stable_hash(doc_id)
             if hashed_id in self.id_map:
                 del self.id_map[hashed_id]
 
+        self._rebuild_index_from_documents()
         self._save()
         return True
 
@@ -255,11 +290,14 @@ class FAISSVectorStore(VectorStore):
 
         results = []
         for i in range(len(indices[0])):
-            hashed_id = indices[0][i]
-            if hashed_id == -1:  # FAISS returns -1 for no match
+            doc_index = int(indices[0][i])
+            if doc_index == -1:  # FAISS returns -1 for no match
                 continue
 
-            found_doc_id = self.id_map.get(hashed_id)
+            if doc_index >= len(self.doc_ids):
+                continue
+
+            found_doc_id = self.doc_ids[doc_index]
 
             if found_doc_id and found_doc_id in self.documents:
                 document = self.documents[found_doc_id]

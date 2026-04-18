@@ -66,6 +66,38 @@ class TestToolsModuleImports:
             "False",
         ]
 
+    def test_mgrep_discovery_import_stays_lazy_and_does_not_break_faiss(self):
+        """Importing mgrep discovery should not eagerly pull service deps or destabilize FAISS."""
+
+        command = [
+            sys.executable,
+            "-c",
+            (
+                "import sys\n"
+                "import DeepResearch.src.tools.mgrep.discovery as discovery\n"
+                "print(discovery is not None)\n"
+                "print('DeepResearch.src.tools.mgrep.service' in sys.modules)\n"
+                "print('DeepResearch.src.datatypes.sentence_transformer_embeddings' in sys.modules)\n"
+                "import faiss\n"
+                "import numpy as np\n"
+                "index = faiss.IndexIDMap2(faiss.IndexFlatIP(2))\n"
+                "vectors = np.ascontiguousarray(np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=np.float32))\n"
+                "ids = np.array([1, 2, 3], dtype=np.int64)\n"
+                "query = np.ascontiguousarray(np.array([[0.0, 1.0]], dtype=np.float32))\n"
+                "index.add_with_ids(vectors, ids)\n"
+                "distances, matches = index.search(query, 2)\n"
+                "print(matches.tolist())\n"
+            ),
+        ]
+        completed = subprocess.run(command, check=True, capture_output=True, text=True)
+
+        assert completed.stdout.strip().splitlines() == [
+            "True",
+            "False",
+            "False",
+            "[[3, 2]]",
+        ]
+
     def test_tools_registry_keeps_bioinformatics_tools_registered(self):
         """The package-level registry export should preserve the full default tool set."""
 

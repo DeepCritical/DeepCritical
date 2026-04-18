@@ -7,13 +7,17 @@ import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from DeepResearch.src.datatypes.mgrep import MgrepConfig
 
+pathspec: Any = None
 try:
-    import pathspec
+    import pathspec as _pathspec
 except ImportError:  # pragma: no cover - exercised through fallback tests
-    pathspec = None
+    pass
+else:
+    pathspec = _pathspec
 
 
 @dataclass

@@ -1,8 +1,6 @@
 """Factory for creating embeddings providers."""
 
 from .rag import EmbeddingModelType, Embeddings, EmbeddingsConfig
-from .sentence_transformer_embeddings import SentenceTransformerEmbeddings
-from .vllm_integration import VLLMEmbeddings
 
 
 def create_embeddings(config: EmbeddingsConfig) -> Embeddings:
@@ -19,13 +17,19 @@ def create_embeddings(config: EmbeddingsConfig) -> Embeddings:
         ValueError: If provider is unknown
     """
     if config.model_type == EmbeddingModelType.SENTENCE_TRANSFORMERS:
+        from .sentence_transformer_embeddings import SentenceTransformerEmbeddings
+
         return SentenceTransformerEmbeddings(config)
 
     if config.model_type == EmbeddingModelType.MIXEDBREAD:
         # Mixedbread uses SentenceTransformer implementation (self-hosted)
+        from .sentence_transformer_embeddings import SentenceTransformerEmbeddings
+
         return SentenceTransformerEmbeddings(config)
 
     if config.model_type == EmbeddingModelType.VLLM:
+        from .vllm_integration import VLLMEmbeddings
+
         return VLLMEmbeddings(config)
 
     if config.model_type == EmbeddingModelType.OPENAI:

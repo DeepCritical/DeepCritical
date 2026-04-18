@@ -19,7 +19,7 @@ from DeepResearch.src.datatypes.mgrep import (
     MgrepStats,
     normalize_supported_extensions,
 )
-from DeepResearch.src.datatypes.rag import SearchResult, SearchType
+from DeepResearch.src.datatypes.rag import SearchResult, SearchType, VectorStoreType
 from DeepResearch.src.vector_stores import create_vector_store
 from DeepResearch.src.vector_stores.faiss_config import FAISSVectorStoreConfig
 
@@ -60,7 +60,7 @@ class MgrepService:
     def _build_vector_store(self) -> Any:
         return create_vector_store(
             FAISSVectorStoreConfig(
-                store_type="faiss",
+                store_type=VectorStoreType.FAISS,
                 embedding_dimension=self.config.embeddings.num_dimensions,
                 distance_metric=self.config.distance_metric,
                 index_path=str(self.index_path),
