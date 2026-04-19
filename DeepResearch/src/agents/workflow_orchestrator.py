@@ -245,8 +245,7 @@ class PrimaryWorkflowOrchestrator:
                 hypothesis=hypothesis,
                 test_configuration=test_configuration,
                 expected_outcomes=expected_outcomes,
-                success_criteria=success_criteria
-                or {"criteria": expected_outcomes},
+                success_criteria=success_criteria or {"criteria": expected_outcomes},
             )
 
     async def execute_primary_workflow(
