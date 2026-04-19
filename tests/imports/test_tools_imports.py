@@ -104,8 +104,17 @@ class TestToolsModuleImports:
         from DeepResearch.src.tools import registry
 
         assert registry is not None
+        assert "generate_hypotheses" in registry.list()
         assert "go_annotation_processor" in registry.list()
         assert "pubmed_retriever" in registry.list()
+
+    def test_hypothesis_tools_module_imports(self):
+        """Test lazy access to the hypothesis tools module."""
+
+        from DeepResearch.src.tools import hypothesis_tools
+
+        assert hypothesis_tools is not None
+        assert hasattr(hypothesis_tools, "GenerateHypothesesTool")
 
     def test_tools_datatypes_imports(self):
         """Test all imports from tools datatypes module."""

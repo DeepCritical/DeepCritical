@@ -62,7 +62,7 @@ async def test_hypothesis_workflow_testing_mode_returns_plans(monkeypatch):
                 "hypothesis_testing": {"enabled": True},
             },
             "hypothesis": {
-                "mode": "generate_and_plan_tests",
+                "mode": "testing",
                 "max_hypotheses": 3,
                 "top_k": 2,
                 "evidence_mode": "search_only",
@@ -79,6 +79,10 @@ async def test_hypothesis_workflow_testing_mode_returns_plans(monkeypatch):
     assert len(result["ranked_hypotheses"]) == 2
     assert len(result["test_plans"]) == 2
     assert len(result["testing_environments"]) == 2
+    assert all(
+        environment["status"] == "pending"
+        for environment in result["testing_environments"]
+    )
 
 
 @pytest.mark.asyncio
@@ -222,8 +226,66 @@ async def test_orchestrator_testing_delegates_to_shared_workflow(monkeypatch):
 
     assert result == {"markdown_report": "ok"}
     assert captured["question"] == "What mechanisms explain sleep and memory?"
-    assert captured["mode"] == "generate_and_plan_tests"
+    assert captured["mode"] == "testing"
     assert captured["generate_testing_plans"] is True
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_can_rank_provided_hypotheses(monkeypatch):
+    monkeypatch.setattr(
+        "DeepResearch.src.tools.hypothesis_tools.GatherEvidenceTool._collect_external_evidence",
+        lambda self, question, evidence_mode: [],
+    )
+
+    cfg = OmegaConf.create(
+        {
+            "workflow_orchestration": {"enabled": False},
+            "flows": {
+                "hypothesis_generation": {"enabled": False},
+                "hypothesis_testing": {"enabled": True},
+            },
+            "hypothesis": {
+                "mode": "testing",
+                "top_k": 2,
+                "generate_testing_plans": True,
+            },
+        }
+    )
+
+    provided_hypotheses = [
+        {
+            "id": "hyp-1",
+            "statement": "Targeted feedback improves retention by reinforcing retrieval cues.",
+            "rationale": "Grounded in retrieval-practice evidence.",
+            "assumptions": ["Feedback timing is measurable."],
+            "predictions": ["Retention improves when feedback is timely."],
+            "supporting_evidence": ["ev-1", "ev-2"],
+            "counter_evidence": ["No retention change would weaken the hypothesis."],
+            "keywords": ["targeted feedback", "retention"],
+        },
+        {
+            "id": "hyp-2",
+            "statement": "Targeted feedback reduces confusion by clarifying misconceptions.",
+            "rationale": "Grounded in misconception-correction evidence.",
+            "assumptions": ["Confusion can be measured."],
+            "predictions": ["Learners make fewer repeated mistakes."],
+            "supporting_evidence": ["ev-3"],
+            "counter_evidence": ["No change in mistakes would weaken the hypothesis."],
+            "keywords": ["targeted feedback", "misconceptions"],
+        },
+    ]
+
+    result = await run_hypothesis_workflow(
+        "",
+        cfg,
+        mode="testing",
+        existing_hypotheses=provided_hypotheses,
+    )
+
+    assert result["status"] == "success"
+    assert result["metadata"]["used_provided_hypotheses"] is True
+    assert len(result["ranked_hypotheses"]) == 2
+    assert len(result["test_plans"]) == 2
 
 
 @pytest.mark.asyncio
@@ -233,9 +295,7 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
     async def fake_run(question, cfg, mode=None):
         return {
             "status": "failed",
-            "errors": [
-                "Hypothesis report synthesis failed: report formatter unavailable"
-            ],
+            "errors": ["Hypothesis report synthesis failed: report formatter unavailable"],
             "markdown_report": (
                 "Hypothesis workflow failed: report formatter unavailable"
             ),
@@ -258,4 +318,6 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
     assert not any(
         note == "Hypothesis workflow completed successfully" for note in state.notes
     )
-    assert any("completed with failure status" in note for note in state.notes)
+    assert any(
+        "completed with failure status" in note for note in state.notes
+    )

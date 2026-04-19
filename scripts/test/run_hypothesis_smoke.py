@@ -19,7 +19,7 @@ def main() -> int:
                 "hypothesis_testing": {"enabled": True},
             },
             "hypothesis": {
-                "mode": "generate_and_plan_tests",
+                "mode": "testing",
                 "max_hypotheses": 3,
                 "top_k": 2,
                 "evidence_mode": "search_only",
@@ -32,7 +32,7 @@ def main() -> int:
         run_hypothesis_workflow(
             "What mechanisms could explain why sleep quality affects memory performance?",
             cfg,
-            mode="generate_and_plan_tests",
+            mode="testing",
         )
     )
     hypotheses = result.get("ranked_hypotheses", [])

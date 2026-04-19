@@ -16,7 +16,7 @@ flows:
     enabled: true
 
 hypothesis:
-  mode: generate_and_plan_tests
+  mode: testing
   max_hypotheses: 4
   top_k: 3
   evidence_mode: search_plus_rag

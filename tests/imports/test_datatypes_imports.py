@@ -150,6 +150,23 @@ class TestDatatypesModuleImports:
         assert HypothesisTestPlan is not None
         assert HypothesisWorkflowResult is not None
 
+    def test_hypothesis_package_exports(self):
+        """Test package-level exports for hypothesis datatypes."""
+
+        from DeepResearch.src.datatypes import (
+            HypothesisCandidate,
+            HypothesisEvidence,
+            HypothesisScore,
+            HypothesisTestPlan,
+            HypothesisWorkflowResult,
+        )
+
+        assert HypothesisEvidence is not None
+        assert HypothesisCandidate is not None
+        assert HypothesisScore is not None
+        assert HypothesisTestPlan is not None
+        assert HypothesisWorkflowResult is not None
+
     def test_vllm_integration_imports(self):
         """Test all imports from vllm_integration module."""
 

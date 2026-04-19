@@ -23,6 +23,15 @@ def test_hypothesis_example_config_composes(config_dir):
     assert "output_format" not in cfg.hypothesis
 
 
+def test_hypothesis_bioinformatics_example_config_composes(config_dir):
+    with initialize_config_dir(version_base=None, config_dir=config_dir):
+        cfg = compose(config_name="hypothesis_bioinformatics_example")
+
+    assert cfg.flows.hypothesis_testing.enabled is True
+    assert cfg.workflow_orchestration.enabled is False
+    assert cfg.hypothesis.mode == "testing"
+
+
 def test_run_graph_with_hypothesis_example_config(config_dir, monkeypatch):
     monkeypatch.setattr(
         "DeepResearch.src.tools.hypothesis_tools.GatherEvidenceTool._collect_external_evidence",
