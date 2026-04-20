@@ -762,3 +762,10 @@ class TestToolsImportErrorHandling:
         assert spec is not None
         assert spec.name == "test_tool"
         assert "param" in spec.inputs
+
+    def test_tools_package_unknown_attribute_raises_attribute_error(self):
+        """Unknown lazy exports should raise AttributeError."""
+        import DeepResearch.src.tools as tools
+
+        with pytest.raises(AttributeError):
+            getattr(tools, "not_a_real_tool_module")

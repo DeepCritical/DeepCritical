@@ -10,7 +10,12 @@ from DeepResearch.src.datatypes.workflow_orchestration import (
     WorkflowOrchestrationConfig,
     WorkflowType,
 )
-from DeepResearch.src.statemachines.hypothesis_workflow import run_hypothesis_workflow
+from DeepResearch.src.statemachines.hypothesis_workflow import (
+    _build_testing_environments,
+    _section_get,
+    run_hypothesis_workflow,
+)
+from DeepResearch.src.tools.base import ExecutionResult
 
 
 @pytest.mark.asyncio
@@ -321,3 +326,198 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
         note == "Hypothesis workflow completed successfully" for note in state.notes
     )
     assert any("completed with failure status" in note for note in state.notes)
+
+
+def test_section_get_supports_none_dict_and_broken_getters():
+    class BrokenGetter:
+        hypothesis_mode = "testing"
+
+        def get(self, key, default=None):
+            raise RuntimeError("getter failed")
+
+    assert _section_get(None, "missing", "fallback") == "fallback"
+    assert _section_get({"mode": "generate"}, "mode", "fallback") == "generate"
+    assert _section_get(BrokenGetter(), "hypothesis_mode", "fallback") == "testing"
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_rejects_blank_question_without_hypotheses():
+    result = await run_hypothesis_workflow("", OmegaConf.create({}))
+
+    assert result["status"] == "failed"
+    assert result["metadata"]["failure_stage"] == "request_parsing"
+    assert "Question cannot be empty" in result["errors"][-1]
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_records_evidence_gathering_failure(monkeypatch):
+    monkeypatch.setattr(
+        "DeepResearch.src.statemachines.hypothesis_workflow.GatherEvidenceTool.run",
+        lambda self, params: ExecutionResult(
+            success=False, error="evidence unavailable"
+        ),
+    )
+
+    result = await run_hypothesis_workflow(
+        "Why does retrieval practice improve memory?", OmegaConf.create({})
+    )
+
+    assert result["status"] == "failed"
+    assert result["metadata"]["failure_stage"] == "evidence_gathering"
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_records_generation_failure(monkeypatch):
+    monkeypatch.setattr(
+        "DeepResearch.src.agents.hypothesis_agents.HypothesisGeneratorAgent.generate",
+        lambda self, question, evidence, max_hypotheses: (_ for _ in ()).throw(
+            RuntimeError("generator unavailable")
+        ),
+    )
+
+    result = await run_hypothesis_workflow(
+        "Why does retrieval practice improve memory?", OmegaConf.create({})
+    )
+
+    assert result["status"] == "failed"
+    assert result["metadata"]["failure_stage"] == "hypothesis_generation"
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_records_ranking_failure(monkeypatch):
+    monkeypatch.setattr(
+        "DeepResearch.src.tools.hypothesis_tools.GatherEvidenceTool._collect_external_evidence",
+        lambda self, question, evidence_mode: [],
+    )
+    monkeypatch.setattr(
+        "DeepResearch.src.agents.hypothesis_agents.HypothesisEvaluatorAgent.rank",
+        lambda self, candidates, top_k, score_weights=None: (_ for _ in ()).throw(
+            RuntimeError("ranking unavailable")
+        ),
+    )
+
+    result = await run_hypothesis_workflow(
+        "Why does retrieval practice improve memory?", OmegaConf.create({})
+    )
+
+    assert result["status"] == "failed"
+    assert result["metadata"]["failure_stage"] == "hypothesis_ranking"
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_workflow_records_test_plan_failure(monkeypatch):
+    monkeypatch.setattr(
+        "DeepResearch.src.tools.hypothesis_tools.GatherEvidenceTool._collect_external_evidence",
+        lambda self, question, evidence_mode: [],
+    )
+    monkeypatch.setattr(
+        "DeepResearch.src.agents.hypothesis_agents.HypothesisPlannerAgent.create_test_plans",
+        lambda self, candidates: (_ for _ in ()).throw(
+            RuntimeError("planner unavailable")
+        ),
+    )
+
+    cfg = OmegaConf.create({"hypothesis": {"mode": "testing"}})
+    result = await run_hypothesis_workflow(
+        "Why does retrieval practice improve memory?", cfg
+    )
+
+    assert result["status"] == "failed"
+    assert result["metadata"]["failure_stage"] == "test_plan_creation"
+
+
+def test_build_testing_environments_skips_unmatched_plans():
+    state = SimpleNamespace(
+        test_plans=[
+            SimpleNamespace(
+                hypothesis_id="missing-hypothesis",
+                test_type="comparative validation study",
+                method="Do the experiment",
+                required_inputs=["input"],
+                success_criteria=["criterion"],
+            )
+        ],
+        ranked_candidates=[],
+    )
+
+    assert _build_testing_environments(state) == []
+
+
+@pytest.mark.asyncio
+async def test_run_hypothesis_workflow_raises_on_non_dict_output(monkeypatch):
+    class FakeGraph:
+        async def run(self, *args, **kwargs):
+            return SimpleNamespace(output="not-a-dict")
+
+    monkeypatch.setattr(
+        "DeepResearch.src.statemachines.hypothesis_workflow.create_hypothesis_workflow",
+        lambda: FakeGraph(),
+    )
+
+    with pytest.raises(RuntimeError, match="structured output"):
+        await run_hypothesis_workflow(
+            "Why does spacing help memory?", OmegaConf.create({})
+        )
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_run_uses_default_messages_and_exception_fallback(
+    monkeypatch,
+):
+    async def no_report_success(question, cfg, mode=None):
+        return {
+            "status": "success",
+            "errors": [],
+            "dataset": None,
+            "testing_environments": [],
+        }
+
+    monkeypatch.setattr(
+        "DeepResearch.src.statemachines.hypothesis_workflow.run_hypothesis_workflow",
+        no_report_success,
+    )
+
+    success_state = ResearchState(question="Test question", config=OmegaConf.create({}))
+    success_ctx = SimpleNamespace(state=success_state)
+    success_final = await HypothesisRun().run(success_ctx)
+
+    assert success_final.data == "Hypothesis analysis completed."
+    assert success_state.answers[-1] == "Hypothesis analysis completed."
+
+    async def no_report_failure(question, cfg, mode=None):
+        return {
+            "status": "failed",
+            "errors": ["ranker offline"],
+            "dataset": None,
+            "testing_environments": [],
+        }
+
+    monkeypatch.setattr(
+        "DeepResearch.src.statemachines.hypothesis_workflow.run_hypothesis_workflow",
+        no_report_failure,
+    )
+
+    failure_state = ResearchState(question="Test question", config=OmegaConf.create({}))
+    failure_ctx = SimpleNamespace(state=failure_state)
+    failure_final = await HypothesisRun().run(failure_ctx)
+
+    assert failure_final.data == "Hypothesis workflow failed: ranker offline"
+    assert any(
+        "completed with failure status: ranker offline" in note
+        for note in failure_state.notes
+    )
+
+    async def raise_error(question, cfg, mode=None):
+        raise RuntimeError("executor blew up")
+
+    monkeypatch.setattr(
+        "DeepResearch.src.statemachines.hypothesis_workflow.run_hypothesis_workflow",
+        raise_error,
+    )
+
+    error_state = ResearchState(question="Test question", config=OmegaConf.create({}))
+    error_ctx = SimpleNamespace(state=error_state)
+    error_final = await HypothesisRun().run(error_ctx)
+
+    assert error_final.data == "Error: Hypothesis workflow failed: executor blew up"
+    assert error_state.answers[-1] == error_final.data
