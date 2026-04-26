@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from ..datatypes.neo4j_types import (
-    Neo4jVectorStoreConfig,
-    VectorIndexMetric,
-    VectorSearchDefaults,
-)
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
-from .neo4j_vector_store import Neo4jVectorStore
+from .chroma_config import ChromaVectorStoreConfig
+from .chroma_vector_store import ChromaVectorStore
 
 __all__ = [
+    "ChromaVectorStore",
+    "ChromaVectorStoreConfig",
     "Neo4jVectorStore",
     "Neo4jVectorStoreConfig",
     "create_vector_store",
@@ -30,16 +28,40 @@ def create_vector_store(
     Raises:
         ValueError: If store type is not supported
     """
+    if config.store_type == VectorStoreType.CHROMA:
+        if isinstance(config, ChromaVectorStoreConfig):
+            return ChromaVectorStore(config, embeddings)
+
+        chroma_config = ChromaVectorStoreConfig(
+            store_type=VectorStoreType.CHROMA,
+            connection_string=getattr(config, "connection_string", None),
+            host=getattr(config, "host", "localhost"),
+            port=getattr(config, "port", 8000),
+            database=getattr(config, "database", None),
+            collection_name=getattr(config, "collection_name", "research_docs"),
+            api_key=getattr(config, "api_key", None),
+            embedding_dimension=getattr(config, "embedding_dimension", 1536),
+            distance_metric=getattr(config, "distance_metric", "cosine"),
+            index_type=getattr(config, "index_type", "hnsw"),
+            persist_directory=getattr(config, "persist_directory", None),
+            tenant=getattr(config, "tenant", None),
+            database_name=getattr(config, "database_name", None),
+        )
+        return ChromaVectorStore(chroma_config, embeddings)
+
     if config.store_type == VectorStoreType.NEO4J:
+        from ..datatypes.neo4j_types import (
+            Neo4jVectorStoreConfig,
+            VectorIndexConfig,
+            VectorIndexMetric,
+            Neo4jConnectionConfig,
+        )
+        from .neo4j_vector_store import Neo4jVectorStore
+
         if isinstance(config, Neo4jVectorStoreConfig):
             return Neo4jVectorStore(config, embeddings)
         # Try to create Neo4jVectorStoreConfig from base config
         # This assumes the config has neo4j-specific attributes
-        from ..datatypes.neo4j_types import (
-            Neo4jConnectionConfig,
-            VectorIndexConfig,
-            VectorSearchDefaults,
-        )
 
         # Extract or create connection config
         connection = getattr(config, "connection", None)

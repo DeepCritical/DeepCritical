@@ -35,6 +35,7 @@ dependencies = [
   "pathspec>=0.12.1",
   "faiss-cpu>=1.7.4",
   "openmm>=8.2.0",
+  "chromadb>=1.5.8",
 ]
 
 [project.optional-dependencies]
