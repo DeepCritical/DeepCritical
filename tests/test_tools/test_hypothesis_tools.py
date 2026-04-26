@@ -1,8 +1,8 @@
 from DeepResearch.src.datatypes.hypothesis import HypothesisCandidate
 from DeepResearch.src.tools.base import ExecutionResult
 from DeepResearch.src.tools.hypothesis_tools import (
-    FormatHypothesisReportTool,
     CreateHypothesisTestPlansTool,
+    FormatHypothesisReportTool,
     GatherEvidenceTool,
     GenerateHypothesesTool,
     ScoreHypothesesTool,

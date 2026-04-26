@@ -502,7 +502,7 @@ class PrimaryWorkflowOrchestrator:
 
     def _build_hypothesis_config(
         self, parameters: dict[str, Any], *, testing_enabled: bool
-    ) -> "DictConfig":
+    ) -> DictConfig:
         """Build a minimal config for delegating hypothesis workflows."""
         from omegaconf import DictConfig
 

@@ -765,7 +765,9 @@ class TestToolsImportErrorHandling:
 
     def test_tools_package_unknown_attribute_raises_attribute_error(self):
         """Unknown lazy exports should raise AttributeError."""
-        import DeepResearch.src.tools as tools
+        from operator import attrgetter
+
+        from DeepResearch.src import tools
 
         with pytest.raises(AttributeError):
-            getattr(tools, "not_a_real_tool_module")
+            attrgetter("not_a_real_tool_module")(tools)

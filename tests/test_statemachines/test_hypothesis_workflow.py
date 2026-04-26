@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from omegaconf import OmegaConf
@@ -150,7 +151,7 @@ async def test_plan_routes_to_hypothesis_before_orchestration():
     state = ResearchState(question="Test question", config=cfg)
     ctx = SimpleNamespace(state=state)
 
-    next_node = await Plan().run(ctx)
+    next_node = await Plan().run(cast(Any, ctx))  # noqa: TC006
 
     assert isinstance(next_node, HypothesisRun)
 
@@ -318,7 +319,7 @@ async def test_hypothesis_run_records_structured_failure_without_success_note(
     state = ResearchState(question="Test question", config=OmegaConf.create({}))
     ctx = SimpleNamespace(state=state)
 
-    final = await HypothesisRun().run(ctx)
+    final = await HypothesisRun().run(cast(Any, ctx))  # noqa: TC006
 
     assert final.data == "Hypothesis workflow failed: report formatter unavailable"
     assert state.answers[-1] == final.data
@@ -440,7 +441,7 @@ def test_build_testing_environments_skips_unmatched_plans():
         ranked_candidates=[],
     )
 
-    assert _build_testing_environments(state) == []
+    assert _build_testing_environments(cast(Any, state)) == []  # noqa: TC006
 
 
 @pytest.mark.asyncio
@@ -479,7 +480,7 @@ async def test_hypothesis_run_uses_default_messages_and_exception_fallback(
 
     success_state = ResearchState(question="Test question", config=OmegaConf.create({}))
     success_ctx = SimpleNamespace(state=success_state)
-    success_final = await HypothesisRun().run(success_ctx)
+    success_final = await HypothesisRun().run(cast(Any, success_ctx))  # noqa: TC006
 
     assert success_final.data == "Hypothesis analysis completed."
     assert success_state.answers[-1] == "Hypothesis analysis completed."
@@ -499,7 +500,7 @@ async def test_hypothesis_run_uses_default_messages_and_exception_fallback(
 
     failure_state = ResearchState(question="Test question", config=OmegaConf.create({}))
     failure_ctx = SimpleNamespace(state=failure_state)
-    failure_final = await HypothesisRun().run(failure_ctx)
+    failure_final = await HypothesisRun().run(cast(Any, failure_ctx))  # noqa: TC006
 
     assert failure_final.data == "Hypothesis workflow failed: ranker offline"
     assert any(
@@ -517,7 +518,7 @@ async def test_hypothesis_run_uses_default_messages_and_exception_fallback(
 
     error_state = ResearchState(question="Test question", config=OmegaConf.create({}))
     error_ctx = SimpleNamespace(state=error_state)
-    error_final = await HypothesisRun().run(error_ctx)
+    error_final = await HypothesisRun().run(cast(Any, error_ctx))  # noqa: TC006
 
     assert error_final.data == "Error: Hypothesis workflow failed: executor blew up"
     assert error_state.answers[-1] == error_final.data
