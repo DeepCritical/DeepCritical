@@ -7,6 +7,7 @@ forward reference errors in type hints.
 """
 
 import pytest
+from omegaconf import OmegaConf
 
 
 class TestAppModuleImport:
@@ -70,6 +71,7 @@ class TestAppModuleImport:
             RunChallenge,
             Search,
             Synthesize,
+            WorkflowPatternRun,
         )
 
         assert Plan is not None
@@ -80,3 +82,74 @@ class TestAppModuleImport:
         assert RunChallenge is not None
         assert EvaluateChallenge is not None
         assert HypothesisRun is not None
+        assert WorkflowPatternRun is not None
+
+    @pytest.mark.asyncio
+    async def test_workflow_pattern_flow_precedes_primary_orchestration(self):
+        from types import SimpleNamespace
+
+        from DeepResearch.app import Plan, WorkflowPatternRun
+
+        cfg = OmegaConf.create(
+            {
+                "flows": {"workflow_patterns": {"enabled": True}},
+                "workflow_orchestration": {"enabled": True},
+            }
+        )
+        ctx = SimpleNamespace(state=SimpleNamespace(config=cfg, notes=[]))
+
+        result = await Plan().run(ctx)
+
+        assert isinstance(result, WorkflowPatternRun)
+
+    @pytest.mark.asyncio
+    async def test_workflow_pattern_run_records_runtime_failure_without_completed_note(
+        self,
+    ):
+        from types import SimpleNamespace
+
+        from DeepResearch.app import WorkflowPatternRun
+        from DeepResearch.src.workflow_patterns import agent_registry
+
+        previous_executors = agent_registry._executors.copy()
+        agent_registry.clear()
+        try:
+            agent_registry.register("yes_executor", lambda messages: {"answer": "yes"})
+            agent_registry.register("no_executor", lambda messages: {"answer": "no"})
+            cfg = OmegaConf.create(
+                {
+                    "flows": {
+                        "workflow_patterns": {
+                            "enabled": True,
+                            "pattern": "collaborative",
+                            "agents": [
+                                {"id": "agent_a", "type": "executor"},
+                                {"id": "agent_b", "type": "executor"},
+                            ],
+                            "agent_executors": {
+                                "agent_a": "yes_executor",
+                                "agent_b": "no_executor",
+                            },
+                        }
+                    }
+                }
+            )
+            ctx = SimpleNamespace(
+                state=SimpleNamespace(
+                    config=cfg,
+                    question="Should we proceed?",
+                    execution_results={},
+                    answers=[],
+                    notes=[],
+                )
+            )
+
+            await WorkflowPatternRun().run(ctx)
+
+            assert ctx.state.execution_results["workflow_patterns"]["success"] is False
+            assert ctx.state.notes == ["Workflow pattern failed: collaborative"]
+            assert "Workflow Pattern Execution Failed" in ctx.state.answers[0]
+        finally:
+            agent_registry.clear()
+            for agent_id, executor in previous_executors.items():
+                agent_registry.register(agent_id, executor)

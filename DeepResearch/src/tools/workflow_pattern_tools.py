@@ -7,14 +7,22 @@ integrating with the existing tool registry and datatypes.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import threading
 from typing import Any
 
+from omegaconf import OmegaConf
+
+from DeepResearch.src.datatypes.agents import AgentType
 from DeepResearch.src.datatypes.workflow_patterns import (
     InteractionMessage,
     InteractionPattern,
     MessageType,
     create_interaction_state,
+)
+from DeepResearch.src.statemachines.workflow_pattern_statemachines import (
+    run_pattern_workflow,
 )
 from DeepResearch.src.utils.workflow_patterns import (
     ConsensusAlgorithm,
@@ -23,6 +31,31 @@ from DeepResearch.src.utils.workflow_patterns import (
 )
 
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
+
+
+def _run_async(coro: Any) -> Any:
+    """Run a coroutine from sync ToolRunner code, including inside event loops."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+
+    result: dict[str, Any] = {}
+    error: dict[str, BaseException] = {}
+
+    def _runner() -> None:
+        try:
+            result["value"] = asyncio.run(coro)
+        except BaseException as exc:  # pragma: no cover - async caller guard
+            error["value"] = exc
+
+    thread = threading.Thread(target=_runner, daemon=True)
+    thread.start()
+    thread.join()
+
+    if "value" in error:
+        raise error["value"]
+    return result.get("value")
 
 
 class WorkflowPatternToolRunner(ToolRunner):
@@ -65,7 +98,7 @@ class WorkflowPatternToolRunner(ToolRunner):
 
             # Parse JSON inputs
             try:
-                agents = json.loads(agents_str)
+                agents_data = json.loads(agents_str)
                 input_data = json.loads(input_data_str)
                 config = json.loads(config_str) if config_str else {}
                 agent_executors = (
@@ -75,31 +108,38 @@ class WorkflowPatternToolRunner(ToolRunner):
                 return ExecutionResult(
                     success=False, error=f"Invalid JSON input: {e!s}"
                 )
+            if not isinstance(input_data, dict):
+                return ExecutionResult(
+                    success=False, error="input_data must be a JSON object"
+                )
+            if not isinstance(config, dict):
+                return ExecutionResult(
+                    success=False, error="config must be a JSON object"
+                )
+            if not isinstance(agent_executors, dict):
+                return ExecutionResult(
+                    success=False, error="agent_executors must be a JSON object"
+                )
 
-            # Create agent executors from string keys to callable functions
-            executor_functions = {}
-            for agent_id, executor_info in agent_executors.items():
-                if isinstance(executor_info, str):
-                    # This would need to be resolved to actual function objects
-                    # For now, create a placeholder
-                    executor_functions[agent_id] = self._create_placeholder_executor(
-                        agent_id
-                    )
-                else:
-                    executor_functions[agent_id] = executor_info
+            agents, agent_types = self._parse_agents(agents_data, config)
+            executor_functions = self._resolve_executors(
+                agents, input_data, config, agent_executors
+            )
+            if isinstance(executor_functions, ExecutionResult):
+                return executor_functions
 
             # Execute pattern based on type
             if self.pattern == InteractionPattern.COLLABORATIVE:
                 result = self._execute_collaborative_pattern(
-                    agents, input_data, config, executor_functions
+                    agents, agent_types, input_data, config, executor_functions
                 )
             elif self.pattern == InteractionPattern.SEQUENTIAL:
                 result = self._execute_sequential_pattern(
-                    agents, input_data, config, executor_functions
+                    agents, agent_types, input_data, config, executor_functions
                 )
             elif self.pattern == InteractionPattern.HIERARCHICAL:
                 result = self._execute_hierarchical_pattern(
-                    agents, input_data, config, executor_functions
+                    agents, agent_types, input_data, config, executor_functions
                 )
             else:
                 return ExecutionResult(
@@ -113,58 +153,114 @@ class WorkflowPatternToolRunner(ToolRunner):
                 success=False, error=f"Pattern execution failed: {e!s}"
             )
 
-    def _create_placeholder_executor(self, agent_id: str):
-        """Create a placeholder executor for testing."""
+    def _parse_agents(
+        self, agents_data: Any, config: dict[str, Any]
+    ) -> tuple[list[str], dict[str, AgentType]]:
+        """Parse agent ids and types from tool JSON input."""
+        if not isinstance(agents_data, list) or not agents_data:
+            msg = "Agents must be a non-empty JSON list"
+            raise ValueError(msg)
 
-        async def placeholder_executor(messages):
+        configured_types = config.get("agent_types", {})
+        agents: list[str] = []
+        agent_types: dict[str, AgentType] = {}
+        for index, item in enumerate(agents_data):
+            if isinstance(item, dict):
+                agent_id = str(item.get("id") or item.get("agent_id") or "")
+                type_value = item.get("type") or item.get("agent_type")
+            else:
+                agent_id = str(item)
+                type_value = configured_types.get(agent_id)
+
+            if not agent_id:
+                msg = f"Agent at index {index} is missing an id"
+                raise ValueError(msg)
+            agents.append(agent_id)
+            if type_value is None and self.pattern == InteractionPattern.HIERARCHICAL:
+                type_value = (
+                    AgentType.ORCHESTRATOR.value
+                    if index == 0
+                    else AgentType.EXECUTOR.value
+                )
+            agent_types[agent_id] = AgentType(type_value or AgentType.EXECUTOR.value)
+        return agents, agent_types
+
+    def _resolve_executors(
+        self,
+        agents: list[str],
+        input_data: dict[str, Any],
+        config: dict[str, Any],
+        agent_executors: dict[str, Any],
+    ) -> dict[str, Any] | ExecutionResult:
+        """Resolve configured executor ids without deserializing callables."""
+        development_mock = bool(config.get("development_mock", False))
+        resolved: dict[str, Any] = {}
+
+        if agent_executors:
+            from DeepResearch.src.workflow_patterns import agent_registry
+
+            for agent_id in agents:
+                executor_id = agent_executors.get(agent_id, agent_id)
+                executor = agent_registry.get(str(executor_id))
+                if executor:
+                    resolved[agent_id] = executor
+                elif development_mock:
+                    resolved[agent_id] = self._create_development_executor(
+                        agent_id, input_data
+                    )
+                else:
+                    return ExecutionResult(
+                        success=False,
+                        error=f"No registered executor found for agent {agent_id}: {executor_id}",
+                    )
+            return resolved
+
+        if not development_mock:
+            return ExecutionResult(
+                success=False,
+                error=(
+                    "No agent executors provided. Set config.development_mock=true "
+                    "for deterministic local executors or pass registered executor ids."
+                ),
+            )
+
+        return {
+            agent_id: self._create_development_executor(agent_id, input_data)
+            for agent_id in agents
+        }
+
+    def _create_development_executor(self, agent_id: str, input_data: dict[str, Any]):
+        """Create a deterministic executor for explicit development/test mode."""
+
+        async def development_executor(messages, _state):
+            question = input_data.get("question") or input_data.get("query") or ""
             return {
-                "agent_id": agent_id,
-                "result": f"Mock result from {agent_id}",
+                "answer": str(question),
+                "result": "Development workflow-pattern result",
                 "confidence": 0.8,
                 "messages_processed": len(messages),
             }
 
-        return placeholder_executor
+        return development_executor
 
     def _execute_collaborative_pattern(
-        self, agents, input_data, config, executor_functions
+        self, agents, agent_types, input_data, config, executor_functions
     ):
         """Execute collaborative pattern."""
-        # Use the utility function
-        # orchestrator = create_collaborative_orchestrator(agents, executor_functions, config)
-
-        # This would need to be async in real implementation
-        # For now, return mock result
-        return ExecutionResult(
-            success=True,
-            data={
-                "result": f"Collaborative pattern executed with {len(agents)} agents",
-                "execution_time": 2.5,
-                "rounds_executed": 3,
-                "consensus_reached": True,
-                "errors": "[]",
-            },
+        return self._execute_pattern(
+            agents, agent_types, input_data, config, executor_functions
         )
 
     def _execute_sequential_pattern(
-        self, agents, input_data, config, executor_functions
+        self, agents, agent_types, input_data, config, executor_functions
     ):
         """Execute sequential pattern."""
-        # orchestrator = create_sequential_orchestrator(agents, executor_functions, config)
-
-        return ExecutionResult(
-            success=True,
-            data={
-                "result": f"Sequential pattern executed with {len(agents)} agents in order",
-                "execution_time": 1.8,
-                "rounds_executed": len(agents),
-                "consensus_reached": False,  # Sequential doesn't use consensus
-                "errors": "[]",
-            },
+        return self._execute_pattern(
+            agents, agent_types, input_data, config, executor_functions
         )
 
     def _execute_hierarchical_pattern(
-        self, agents, input_data, config, executor_functions
+        self, agents, agent_types, input_data, config, executor_functions
     ):
         """Execute hierarchical pattern."""
         if len(agents) < 2:
@@ -172,23 +268,38 @@ class WorkflowPatternToolRunner(ToolRunner):
                 success=False,
                 error="Hierarchical pattern requires at least 2 agents (coordinator + subordinates)",
             )
+        return self._execute_pattern(
+            agents, agent_types, input_data, config, executor_functions
+        )
 
-        coordinator_id = agents[0]
-        subordinate_ids = agents[1:]
+    def _execute_pattern(
+        self, agents, agent_types, input_data, config, executor_functions
+    ) -> ExecutionResult:
+        question = str(input_data.get("question") or input_data.get("query") or "")
+        if not question:
+            question = json.dumps(input_data)
 
-        # orchestrator = create_hierarchical_orchestrator(
-        #     coordinator_id, subordinate_ids, executor_functions, config
-        # )
-
+        workflow_config = OmegaConf.create({**config, "pattern": self.pattern.value})
+        output = _run_async(
+            run_pattern_workflow(
+                question=question,
+                pattern=self.pattern,
+                agents=agents,
+                agent_types=agent_types,
+                agent_executors=executor_functions,
+                config=workflow_config,
+            )
+        )
+        success = not str(output).startswith("Workflow Pattern Execution Failed")
         return ExecutionResult(
-            success=True,
+            success=success,
             data={
-                "result": f"Hierarchical pattern executed with coordinator {coordinator_id} and {len(subordinate_ids)} subordinates",
-                "execution_time": 3.2,
-                "rounds_executed": 2,
-                "consensus_reached": False,  # Hierarchical doesn't use consensus
-                "errors": "[]",
+                "result": output,
+                "pattern": self.pattern.value,
+                "agents": agents,
+                "errors": "[]" if success else json.dumps([output]),
             },
+            error=None if success else output,
         )
 
 
@@ -423,34 +534,40 @@ class WorkflowOrchestrationTool(ToolRunner):
 
     def _orchestrate_workflow(self, workflow_config, input_data, pattern_configs):
         """Orchestrate workflow execution."""
-        # This would implement the full workflow orchestration logic
-        # For now, return mock result
+        pattern = InteractionPattern(
+            workflow_config.get("pattern", InteractionPattern.COLLABORATIVE.value)
+        )
+        agents = workflow_config.get("agents", [])
+        if not agents:
+            return ExecutionResult(
+                success=False,
+                error="workflow_config.agents is required for workflow orchestration",
+            )
+
+        tool = WorkflowPatternToolRunner(pattern)
+        result = tool.run(
+            {
+                "agents": json.dumps(agents),
+                "input_data": json.dumps(input_data),
+                "config": json.dumps(pattern_configs),
+                "agent_executors": json.dumps(
+                    workflow_config.get("agent_executors", {})
+                ),
+            }
+        )
+        if not result.success:
+            return result
         return ExecutionResult(
             success=True,
             data={
-                "final_result": json.dumps(
-                    {
-                        "answer": "Workflow orchestration completed successfully",
-                        "confidence": 0.9,
-                        "steps_executed": len(workflow_config.get("steps", [])),
-                    }
-                ),
+                "final_result": result.data["result"],
                 "execution_summary": json.dumps(
                     {
-                        "total_workflows": 1,
-                        "successful_workflows": 1,
-                        "failed_workflows": 0,
-                        "total_execution_time": 5.2,
+                        "pattern": pattern.value,
+                        "agents": result.data.get("agents", []),
                     }
                 ),
-                "performance_metrics": json.dumps(
-                    {
-                        "average_response_time": 1.2,
-                        "total_messages_processed": 15,
-                        "consensus_reached": True,
-                        "agents_involved": 3,
-                    }
-                ),
+                "performance_metrics": json.dumps({}),
             },
         )
 

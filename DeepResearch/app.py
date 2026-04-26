@@ -112,6 +112,7 @@ class Plan(BaseNode[ResearchState]):
     ) -> (
         Search
         | HypothesisRun
+        | WorkflowPatternRun
         | PrimaryREACTWorkflow
         | EnhancedREACTWorkflow
         | PrepareChallenge
@@ -140,6 +141,11 @@ class Plan(BaseNode[ResearchState]):
         ):
             ctx.state.notes.append("Hypothesis engine flow enabled")
             return HypothesisRun()
+
+        workflow_patterns_cfg = getattr(flows_cfg, "workflow_patterns", None)
+        if getattr(workflow_patterns_cfg or {}, "enabled", False):
+            ctx.state.notes.append("Workflow pattern flow enabled")
+            return WorkflowPatternRun()
 
         # Check if primary REACT workflow orchestration is enabled
         orchestration_cfg = getattr(cfg, "workflow_orchestration", None)
@@ -855,6 +861,127 @@ class DSSynthesize(BaseNode[ResearchState]):
 
 
 # --- Hypothesis flow nodes ---
+@dataclass
+class WorkflowPatternRun(BaseNode[ResearchState]):
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Annotated[End[str], Edge(label="done")]:
+        from omegaconf import OmegaConf
+
+        from .src.datatypes.agents import AgentType
+        from .src.datatypes.workflow_patterns import InteractionPattern
+        from .src.statemachines.workflow_pattern_statemachines import (
+            run_pattern_workflow,
+        )
+        from .src.workflow_patterns import agent_registry
+
+        cfg = ctx.state.config
+        flow_cfg = getattr(getattr(cfg, "flows", {}), "workflow_patterns", {})
+
+        try:
+            pattern = InteractionPattern(
+                getattr(flow_cfg, "pattern", InteractionPattern.COLLABORATIVE.value)
+            )
+            agent_ids, agent_types = self._parse_agents(flow_cfg, AgentType)
+            executors = self._resolve_executors(
+                flow_cfg, agent_ids, agent_registry, ctx.state.question
+            )
+            config_dict = OmegaConf.to_container(flow_cfg, resolve=True)
+            workflow_config = OmegaConf.create(config_dict or {})
+            output = await run_pattern_workflow(
+                question=ctx.state.question,
+                pattern=pattern,
+                agents=agent_ids,
+                agent_types=agent_types,
+                agent_executors=executors,
+                config=workflow_config,
+            )
+            success = not output.startswith("Workflow Pattern Execution Failed")
+            ctx.state.execution_results["workflow_patterns"] = {
+                "pattern": pattern.value,
+                "agents": agent_ids,
+                "success": success,
+                "output": output,
+            }
+            ctx.state.answers.append(output)
+            if success:
+                ctx.state.notes.append(f"Workflow pattern completed: {pattern.value}")
+            else:
+                ctx.state.notes.append(f"Workflow pattern failed: {pattern.value}")
+            return End(output)
+        except Exception as e:
+            error_msg = f"Workflow pattern flow failed: {e!s}"
+            ctx.state.notes.append(error_msg)
+            ctx.state.answers.append(f"Error: {error_msg}")
+            return End(f"Error: {error_msg}")
+
+    def _parse_agents(
+        self, flow_cfg: Any, agent_type_cls: Any
+    ) -> tuple[list[str], dict[str, Any]]:
+        agents_cfg = getattr(flow_cfg, "agents", None) or []
+        if not agents_cfg:
+            msg = "flows.workflow_patterns.agents must contain at least one agent"
+            raise ValueError(msg)
+
+        agent_ids: list[str] = []
+        agent_types: dict[str, Any] = {}
+        for item in agents_cfg:
+            if isinstance(item, dict):
+                agent_id = str(item.get("id") or item.get("agent_id") or "")
+                type_value = item.get("type") or item.get("agent_type")
+            else:
+                agent_id = str(
+                    getattr(item, "id", None) or getattr(item, "agent_id", None) or ""
+                )
+                type_value = getattr(item, "type", None) or getattr(
+                    item, "agent_type", None
+                )
+            if not agent_id:
+                msg = "Each workflow pattern agent must define id"
+                raise ValueError(msg)
+            agent_ids.append(agent_id)
+            agent_types[agent_id] = agent_type_cls(
+                type_value or agent_type_cls.EXECUTOR.value
+            )
+        return agent_ids, agent_types
+
+    def _resolve_executors(
+        self,
+        flow_cfg: Any,
+        agent_ids: list[str],
+        agent_registry: Any,
+        question: str,
+    ) -> dict[str, Any]:
+        development_mock = bool(getattr(flow_cfg, "development_mock", False))
+        configured = getattr(flow_cfg, "agent_executors", {}) or {}
+        executors: dict[str, Any] = {}
+
+        for agent_id in agent_ids:
+            executor_id = configured.get(agent_id, agent_id)
+            executor = agent_registry.get(str(executor_id))
+            if executor:
+                executors[agent_id] = executor
+            elif development_mock:
+                executors[agent_id] = self._development_executor(agent_id, question)
+            else:
+                msg = (
+                    f"No registered executor found for workflow pattern agent "
+                    f"{agent_id}: {executor_id}"
+                )
+                raise ValueError(msg)
+        return executors
+
+    def _development_executor(self, agent_id: str, question: str):
+        async def executor(messages: list[Any], _state: Any) -> dict[str, Any]:
+            return {
+                "answer": question,
+                "result": "Development workflow-pattern result",
+                "messages_processed": len(messages),
+            }
+
+        return executor
+
+
 @dataclass
 class HypothesisRun(BaseNode[ResearchState]):
     async def run(

@@ -1,0 +1,18 @@
+# @package _global_.flows.workflow_patterns
+
+enabled: false
+pattern: collaborative
+agents:
+  - id: parser
+    type: parser
+  - id: planner
+    type: planner
+  - id: executor
+    type: executor
+coordinator_id: null
+max_rounds: 3
+consensus_threshold: 0.8
+consensus_algorithm: simple_agreement
+require_consensus: true
+development_mock: false
+agent_executors: {}

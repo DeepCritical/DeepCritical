@@ -22,6 +22,7 @@ _DEFAULT_REGISTRY_MODULES = (
     "openmm_tools",
     "pyd_ai_tools",
     "websearch_tools",
+    "workflow_pattern_tools",
     "workflow_tools",
 )
 
@@ -39,6 +40,7 @@ _SUBMODULE_EXPORTS = {
     "openmm_tools",
     "pyd_ai_tools",
     "websearch_tools",
+    "workflow_pattern_tools",
     "workflow_tools",
 }
 
@@ -108,5 +110,6 @@ __all__ = [
     "pyd_ai_tools",
     "registry",
     "websearch_tools",
+    "workflow_pattern_tools",
     "workflow_tools",
 ]
