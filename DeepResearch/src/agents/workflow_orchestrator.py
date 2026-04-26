@@ -35,6 +35,7 @@ from DeepResearch.src.datatypes.workflow_orchestration import (
     WorkflowType,
 )
 from DeepResearch.src.prompts.workflow_orchestrator import WorkflowOrchestratorPrompts
+from DeepResearch.src.utils.model_registry import resolve_pydantic_ai_model
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -103,11 +104,16 @@ class PrimaryWorkflowOrchestrator:
         """Create the primary REACT agent."""
         # Get prompts from the prompts module
         prompts = WorkflowOrchestratorPrompts()
+        parameters = self.config.primary_workflow.parameters
+        model = parameters.get("model_name") or parameters.get("model")
+        if not model:
+            model = resolve_pydantic_ai_model(
+                parameters,
+                parameters.get("model_role", "workflow_orchestration"),
+            )
 
         self.primary_agent = Agent[OrchestratorDependencies, str](
-            model=self.config.primary_workflow.parameters.get(
-                "model_name", "anthropic:claude-sonnet-4-0"
-            ),
+            model=model,
             deps_type=OrchestratorDependencies,
             system_prompt=prompts.get_system_prompt(),
             instructions=prompts.get_instructions(),

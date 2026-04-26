@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from neo4j import GraphDatabase
@@ -14,6 +15,8 @@ class Neo4jVectorSearchTool(ToolRunner):
         self,
         conn_cfg: Neo4jConnectionConfig | None = None,
         index_name: str | None = None,
+        model_config: Mapping[str, Any] | None = None,
+        embedding_model_role: str = "neo4j_embedding",
     ):
         super().__init__(
             ToolSpec(
@@ -28,6 +31,8 @@ class Neo4jVectorSearchTool(ToolRunner):
         )
         self._conn = conn_cfg
         self._index = index_name
+        self._model_config = dict(model_config or {})
+        self._embedding_model_role = embedding_model_role
 
     def run(self, params: dict[str, Any]) -> ExecutionResult:
         ok, err = self.validate(params)
@@ -36,18 +41,11 @@ class Neo4jVectorSearchTool(ToolRunner):
         if not self._conn or not self._index:
             return ExecutionResult(success=False, error="connection not configured")
 
-        from ..datatypes.rag import EmbeddingModelType, EmbeddingsConfig
-        from ..datatypes.vllm_integration import (
-            VLLMEmbeddings,
-        )  # reuse existing embedding wrapper if available
+        from ..datatypes.embeddings_factory import create_embeddings
+        from ..utils.model_registry import resolve_embeddings_config
 
-        # For simplicity, use sentence-transformers via VLLMEmbeddings if configured, else fallback to OpenAI
-        emb = VLLMEmbeddings(
-            EmbeddingsConfig(
-                model_type=EmbeddingModelType.SENTENCE_TRANSFORMERS,
-                model_name="sentence-transformers/all-MiniLM-L6-v2",
-                num_dimensions=384,
-            )
+        emb = create_embeddings(
+            resolve_embeddings_config(self._model_config, self._embedding_model_role)
         )
         qvec = emb.vectorize_query_sync(params["query"])  # type: ignore[arg-type]
 

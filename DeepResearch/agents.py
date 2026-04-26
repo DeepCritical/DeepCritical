@@ -42,6 +42,7 @@ from .src.prompts.agents import AgentPrompts
 
 # Import existing tools and schemas
 from .src.tools.base import ExecutionResult, registry
+from .src.utils.model_registry import resolve_pydantic_ai_model
 
 
 class BaseAgent(ABC):
@@ -77,13 +78,17 @@ class BaseAgent(ABC):
     def __init__(
         self,
         agent_type: AgentType,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
         system_prompt: str | None = None,
         instructions: str | None = None,
+        model_role: str = "default",
+        config: dict[str, Any] | None = None,
     ):
         self.agent_type = agent_type
-        self.model_name = model_name
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.model_role = model_role
+        self.config = config or {}
         self.dependencies = dependencies or AgentDependencies()
         self.status = AgentStatus.IDLE
         self.history = ExecutionHistory()
@@ -276,8 +281,13 @@ class BaseAgent(ABC):
 class ParserAgent(BaseAgent):
     """Agent for parsing and understanding research questions."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.PARSER, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "parser",
+        **kwargs: Any,
+    ):
+        super().__init__(AgentType.PARSER, model_name, model_role=model_role, **kwargs)
 
     def _register_tools(self):
         """Register parsing tools."""
@@ -301,8 +311,13 @@ class ParserAgent(BaseAgent):
 class PlannerAgent(BaseAgent):
     """Agent for planning research workflows."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.PLANNER, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "planner",
+        **kwargs: Any,
+    ):
+        super().__init__(AgentType.PLANNER, model_name, model_role=model_role, **kwargs)
 
     def _register_tools(self):
         """Register planning tools."""
@@ -350,12 +365,15 @@ class ExecutorAgent(BaseAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         retries: int = 2,
-        **kwargs,
+        model_role: str = "executor",
+        **kwargs: Any,
     ):
         self.retries = retries
-        super().__init__(AgentType.EXECUTOR, model_name, **kwargs)
+        super().__init__(
+            AgentType.EXECUTOR, model_name, model_role=model_role, **kwargs
+        )
 
     def _register_tools(self):
         """Register execution tools."""
@@ -455,8 +473,13 @@ class ExecutorAgent(BaseAgent):
 class SearchAgent(BaseAgent):
     """Agent for web search operations."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.SEARCH, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "search",
+        **kwargs: Any,
+    ):
+        super().__init__(AgentType.SEARCH, model_name, model_role=model_role, **kwargs)
 
     def _register_tools(self):
         """Register search tools."""
@@ -492,8 +515,13 @@ class SearchAgent(BaseAgent):
 class RAGAgent(BaseAgent):
     """Agent for RAG (Retrieval-Augmented Generation) operations."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.RAG, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "rag",
+        **kwargs: Any,
+    ):
+        super().__init__(AgentType.RAG, model_name, model_role=model_role, **kwargs)
 
     def _register_tools(self):
         """Register RAG tools."""
@@ -534,8 +562,15 @@ class RAGAgent(BaseAgent):
 class BioinformaticsAgent(BaseAgent):
     """Agent for bioinformatics data fusion and reasoning."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.BIOINFORMATICS, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "bioinformatics",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.BIOINFORMATICS, model_name, model_role=model_role, **kwargs
+        )
 
     def _register_tools(self):
         """Register bioinformatics tools."""
@@ -595,8 +630,15 @@ class BioinformaticsAgent(BaseAgent):
 class DeepSearchAgent(BaseAgent):
     """Agent for deep search operations with iterative refinement."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEPSEARCH, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deepsearch",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEPSEARCH, model_name, model_role=model_role, **kwargs
+        )
 
     def _register_tools(self):
         """Register deep search tools."""
@@ -651,8 +693,15 @@ class DeepSearchAgent(BaseAgent):
 class EvaluatorAgent(BaseAgent):
     """Agent for evaluating research results and quality."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.EVALUATOR, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "evaluator",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.EVALUATOR, model_name, model_role=model_role, **kwargs
+        )
 
     def _register_tools(self):
         """Register evaluation tools."""
@@ -685,8 +734,18 @@ class EvaluatorAgent(BaseAgent):
 class DeepAgentPlanningAgent(BaseAgent):
     """DeepAgent planning agent integrated with DeepResearch."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEP_AGENT_PLANNING, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deep_agent",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEP_AGENT_PLANNING,
+            model_name,
+            model_role=model_role,
+            **kwargs,
+        )
         self._deep_agent = None
         self._initialize_deep_agent()
 
@@ -746,8 +805,18 @@ class DeepAgentPlanningAgent(BaseAgent):
 class DeepAgentFilesystemAgent(BaseAgent):
     """DeepAgent filesystem agent integrated with DeepResearch."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEP_AGENT_FILESYSTEM, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deep_agent",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEP_AGENT_FILESYSTEM,
+            model_name,
+            model_role=model_role,
+            **kwargs,
+        )
         self._deep_agent = None
         self._initialize_deep_agent()
 
@@ -814,8 +883,18 @@ class DeepAgentFilesystemAgent(BaseAgent):
 class DeepAgentResearchAgent(BaseAgent):
     """DeepAgent research agent integrated with DeepResearch."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEP_AGENT_RESEARCH, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deep_agent",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEP_AGENT_RESEARCH,
+            model_name,
+            model_role=model_role,
+            **kwargs,
+        )
         self._deep_agent = None
         self._initialize_deep_agent()
 
@@ -880,8 +959,18 @@ class DeepAgentResearchAgent(BaseAgent):
 class DeepAgentOrchestrationAgent(BaseAgent):
     """DeepAgent orchestration agent integrated with DeepResearch."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEP_AGENT_ORCHESTRATION, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deep_agent",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEP_AGENT_ORCHESTRATION,
+            model_name,
+            model_role=model_role,
+            **kwargs,
+        )
         self._deep_agent = None
         self._orchestrator = None
         self._initialize_deep_agent()
@@ -958,8 +1047,18 @@ class DeepAgentOrchestrationAgent(BaseAgent):
 class DeepAgentGeneralAgent(BaseAgent):
     """DeepAgent general-purpose agent integrated with DeepResearch."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0", **kwargs):
-        super().__init__(AgentType.DEEP_AGENT_GENERAL, model_name, **kwargs)
+    def __init__(
+        self,
+        model_name: Any | None = None,
+        model_role: str = "deep_agent",
+        **kwargs: Any,
+    ):
+        super().__init__(
+            AgentType.DEEP_AGENT_GENERAL,
+            model_name,
+            model_role=model_role,
+            **kwargs,
+        )
         self._deep_agent = None
         self._initialize_deep_agent()
 
@@ -1040,34 +1139,39 @@ class MultiAgentOrchestrator:
 
     def _initialize_agents(self):
         """Initialize all available agents."""
-        model_name = self.config.get("model", "anthropic:claude-sonnet-4-0")
+        explicit_model = self.config.get("model")
+
+        def model_for(role: str) -> Any:
+            return explicit_model or resolve_pydantic_ai_model(self.config, role)
 
         # Initialize core agents
-        self.agents[AgentType.PARSER] = ParserAgent(model_name)
-        self.agents[AgentType.PLANNER] = PlannerAgent(model_name)
-        self.agents[AgentType.EXECUTOR] = ExecutorAgent(model_name)
-        self.agents[AgentType.SEARCH] = SearchAgent(model_name)
-        self.agents[AgentType.RAG] = RAGAgent(model_name)
-        self.agents[AgentType.BIOINFORMATICS] = BioinformaticsAgent(model_name)
-        self.agents[AgentType.DEEPSEARCH] = DeepSearchAgent(model_name)
-        self.agents[AgentType.EVALUATOR] = EvaluatorAgent(model_name)
+        self.agents[AgentType.PARSER] = ParserAgent(model_for("parser"))
+        self.agents[AgentType.PLANNER] = PlannerAgent(model_for("planner"))
+        self.agents[AgentType.EXECUTOR] = ExecutorAgent(model_for("executor"))
+        self.agents[AgentType.SEARCH] = SearchAgent(model_for("search"))
+        self.agents[AgentType.RAG] = RAGAgent(model_for("rag"))
+        self.agents[AgentType.BIOINFORMATICS] = BioinformaticsAgent(
+            model_for("bioinformatics")
+        )
+        self.agents[AgentType.DEEPSEARCH] = DeepSearchAgent(model_for("deepsearch"))
+        self.agents[AgentType.EVALUATOR] = EvaluatorAgent(model_for("evaluator"))
 
         # Initialize DeepAgent agents if enabled
         if self.config.get("deep_agent", {}).get("enabled", False):
             self.agents[AgentType.DEEP_AGENT_PLANNING] = DeepAgentPlanningAgent(
-                model_name
+                model_for("deep_agent")
             )
             self.agents[AgentType.DEEP_AGENT_FILESYSTEM] = DeepAgentFilesystemAgent(
-                model_name
+                model_for("deep_agent")
             )
             self.agents[AgentType.DEEP_AGENT_RESEARCH] = DeepAgentResearchAgent(
-                model_name
+                model_for("deep_agent")
             )
             self.agents[AgentType.DEEP_AGENT_ORCHESTRATION] = (
-                DeepAgentOrchestrationAgent(model_name)
+                DeepAgentOrchestrationAgent(model_for("deep_agent"))
             )
             self.agents[AgentType.DEEP_AGENT_GENERAL] = DeepAgentGeneralAgent(
-                model_name
+                model_for("deep_agent")
             )
 
     async def execute_workflow(

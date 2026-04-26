@@ -7,6 +7,7 @@ using the vendored AG2 code execution framework for execution.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 
 from pydantic_ai import Agent
@@ -21,6 +22,7 @@ from DeepResearch.src.datatypes.agents import AgentDependencies, AgentResult, Ag
 from DeepResearch.src.datatypes.coding_base import CodeBlock
 from DeepResearch.src.prompts.code_exec import CodeExecPrompts
 from DeepResearch.src.prompts.code_sandbox import CodeSandboxPrompts
+from DeepResearch.src.utils.model_registry import resolve_pydantic_ai_model
 
 
 class CodeGenerationAgent:
@@ -28,7 +30,9 @@ class CodeGenerationAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
+        model_role: str = "code_generation",
+        config: Mapping[str, Any] | None = None,
         max_retries: int = 3,
         timeout: float = 60.0,
     ):
@@ -39,7 +43,9 @@ class CodeGenerationAgent:
             max_retries: Maximum number of generation retries
             timeout: Timeout for generation
         """
-        self.model_name = model_name
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.model_role = model_role
+        self.config = dict(config or {})
         self.max_retries = max_retries
         self.timeout = timeout
 
@@ -298,7 +304,9 @@ class CodeExecutionAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
+        model_role: str = "code_generation",
+        config: Mapping[str, Any] | None = None,
         use_docker: bool = True,
         use_jupyter: bool = False,
         jupyter_config: dict[str, Any] | None = None,
@@ -315,7 +323,9 @@ class CodeExecutionAgent:
             max_retries: Maximum execution retries
             timeout: Execution timeout
         """
-        self.model_name = model_name
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.model_role = model_role
+        self.config = dict(config or {})
         self.use_docker = use_docker
         self.use_jupyter = use_jupyter
         self.jupyter_config = jupyter_config or {}
@@ -443,7 +453,9 @@ class CodeExecutionAgentSystem:
 
     def __init__(
         self,
-        generation_model: str = "anthropic:claude-sonnet-4-0",
+        generation_model: Any | None = None,
+        generation_model_role: str = "code_generation",
+        config: Mapping[str, Any] | None = None,
         execution_config: dict[str, Any] | None = None,
     ):
         """Initialize the complete code execution agent system.
@@ -452,7 +464,11 @@ class CodeExecutionAgentSystem:
             generation_model: Model for code generation
             execution_config: Configuration for code execution
         """
-        self.generation_model = generation_model
+        self.generation_model = generation_model or resolve_pydantic_ai_model(
+            config, generation_model_role
+        )
+        self.generation_model_role = generation_model_role
+        self.config = dict(config or {})
         self.execution_config = execution_config or {
             "use_docker": True,
             "use_jupyter": False,
@@ -501,13 +517,15 @@ class CodeExecutionAgentSystem:
 
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
-            model_name=generation_model,
+            model_name=self.generation_model,
+            config=self.config,
             max_retries=max_retries,
             timeout=timeout,
         )
 
         self.execution_agent = CodeExecutionAgent(
-            model_name=generation_model,
+            model_name=self.generation_model,
+            config=self.config,
             use_docker=use_docker,
             use_jupyter=use_jupyter,
             jupyter_config=cast(

@@ -8,6 +8,7 @@ integrating with the existing DeepCritical agent system and workflow patterns.
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 from typing import Any
 
 from omegaconf import OmegaConf
@@ -30,13 +31,21 @@ class WorkflowPatternAgent(BaseAgent):
     def __init__(
         self,
         pattern: InteractionPattern,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
+        resolved_config = dict(config or (dependencies.config if dependencies else {}))
+        resolved_dependencies = dependencies or AgentDependencies()
+        if resolved_config:
+            resolved_dependencies.config = resolved_config
         super().__init__(
             agent_type=AgentType.ORCHESTRATOR,
             model_name=model_name,
-            dependencies=dependencies,
+            dependencies=resolved_dependencies,
+            model_role=model_role,
+            config=resolved_config,
         )
         self.pattern = pattern
 
@@ -74,10 +83,9 @@ class WorkflowPatternAgent(BaseAgent):
             start_time = time.time()
 
             # Convert config to OmegaConf DictConfig for workflow functions
+            effective_config = config or self.dependencies.config
             omega_config = (
-                OmegaConf.create(self.dependencies.config)
-                if self.dependencies.config
-                else None
+                OmegaConf.create(effective_config) if effective_config else None
             )
 
             # Use the appropriate workflow execution function
@@ -152,13 +160,17 @@ class CollaborativePatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
         super().__init__(
             pattern=InteractionPattern.COLLABORATIVE,
             model_name=model_name,
             dependencies=dependencies,
+            model_role=model_role,
+            config=config,
         )
 
     def _get_default_system_prompt(self) -> str:
@@ -212,13 +224,17 @@ class SequentialPatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
         super().__init__(
             pattern=InteractionPattern.SEQUENTIAL,
             model_name=model_name,
             dependencies=dependencies,
+            model_role=model_role,
+            config=config,
         )
 
     def _get_default_system_prompt(self) -> str:
@@ -271,13 +287,17 @@ class HierarchicalPatternAgent(WorkflowPatternAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
         super().__init__(
             pattern=InteractionPattern.HIERARCHICAL,
             model_name=model_name,
             dependencies=dependencies,
+            model_role=model_role,
+            config=config,
         )
 
     def _get_default_system_prompt(self) -> str:
@@ -337,19 +357,33 @@ class PatternOrchestratorAgent(BaseAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
+        resolved_config = dict(config or (dependencies.config if dependencies else {}))
+        resolved_dependencies = dependencies or AgentDependencies()
+        if resolved_config:
+            resolved_dependencies.config = resolved_config
         super().__init__(
             agent_type=AgentType.ORCHESTRATOR,
             model_name=model_name,
-            dependencies=dependencies,
+            dependencies=resolved_dependencies,
+            model_role=model_role,
+            config=resolved_config,
         )
 
         # Initialize pattern agents
-        self.collaborative_agent = CollaborativePatternAgent(model_name, dependencies)
-        self.sequential_agent = SequentialPatternAgent(model_name, dependencies)
-        self.hierarchical_agent = HierarchicalPatternAgent(model_name, dependencies)
+        self.collaborative_agent = CollaborativePatternAgent(
+            model_name, dependencies, model_role=model_role, config=resolved_config
+        )
+        self.sequential_agent = SequentialPatternAgent(
+            model_name, dependencies, model_role=model_role, config=resolved_config
+        )
+        self.hierarchical_agent = HierarchicalPatternAgent(
+            model_name, dependencies, model_role=model_role, config=resolved_config
+        )
 
     def _get_default_system_prompt(self) -> str:
         """Get default system prompt for pattern orchestrator."""
@@ -506,17 +540,27 @@ class AdaptivePatternAgent(BaseAgent):
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ):
+        resolved_config = dict(config or (dependencies.config if dependencies else {}))
+        resolved_dependencies = dependencies or AgentDependencies()
+        if resolved_config:
+            resolved_dependencies.config = resolved_config
         super().__init__(
             agent_type=AgentType.ORCHESTRATOR,
             model_name=model_name,
-            dependencies=dependencies,
+            dependencies=resolved_dependencies,
+            model_role=model_role,
+            config=resolved_config,
         )
 
         # Initialize orchestrator
-        self.orchestrator = PatternOrchestratorAgent(model_name, dependencies)
+        self.orchestrator = PatternOrchestratorAgent(
+            model_name, dependencies, model_role=model_role, config=resolved_config
+        )
 
     def _get_default_system_prompt(self) -> str:
         """Get default system prompt for adaptive pattern agent."""
@@ -616,43 +660,53 @@ class AdaptivePatternAgent(BaseAgent):
 
 # Factory functions for creating pattern agents
 def create_collaborative_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any | None = None,
     dependencies: AgentDependencies | None = None,
+    model_role: str = "workflow_pattern",
+    config: Mapping[str, Any] | None = None,
 ) -> CollaborativePatternAgent:
     """Create a collaborative pattern agent."""
-    return CollaborativePatternAgent(model_name, dependencies)
+    return CollaborativePatternAgent(model_name, dependencies, model_role, config)
 
 
 def create_sequential_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any | None = None,
     dependencies: AgentDependencies | None = None,
+    model_role: str = "workflow_pattern",
+    config: Mapping[str, Any] | None = None,
 ) -> SequentialPatternAgent:
     """Create a sequential pattern agent."""
-    return SequentialPatternAgent(model_name, dependencies)
+    return SequentialPatternAgent(model_name, dependencies, model_role, config)
 
 
 def create_hierarchical_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any | None = None,
     dependencies: AgentDependencies | None = None,
+    model_role: str = "workflow_pattern",
+    config: Mapping[str, Any] | None = None,
 ) -> HierarchicalPatternAgent:
     """Create a hierarchical pattern agent."""
-    return HierarchicalPatternAgent(model_name, dependencies)
+    return HierarchicalPatternAgent(model_name, dependencies, model_role, config)
 
 
 def create_pattern_orchestrator(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any | None = None,
     dependencies: AgentDependencies | None = None,
+    model_role: str = "workflow_pattern",
+    config: Mapping[str, Any] | None = None,
 ) -> PatternOrchestratorAgent:
     """Create a pattern orchestrator agent."""
-    return PatternOrchestratorAgent(model_name, dependencies)
+    return PatternOrchestratorAgent(model_name, dependencies, model_role, config)
 
 
 def create_adaptive_pattern_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any | None = None,
     dependencies: AgentDependencies | None = None,
+    model_role: str = "workflow_pattern",
+    config: Mapping[str, Any] | None = None,
 ) -> AdaptivePatternAgent:
     """Create an adaptive pattern agent."""
-    return AdaptivePatternAgent(model_name, dependencies)
+    return AdaptivePatternAgent(model_name, dependencies, model_role, config)
 
 
 # Export all agents

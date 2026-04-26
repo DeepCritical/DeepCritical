@@ -37,6 +37,7 @@ from .src.datatypes.workflow_orchestration import (
     WorkflowType,
 )
 from .src.utils.execution_history import ExecutionHistory as PrimeExecutionHistory
+from .src.utils.model_registry import resolve_model_name
 from .src.utils.tool_registry import ToolRegistry
 
 # from .src.tools import bioinformatics_tools
@@ -211,7 +212,9 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
 
         try:
             # Initialize orchestration configuration
-            orchestration_config = self._create_orchestration_config(orchestration_cfg)
+            orchestration_config = self._create_orchestration_config(
+                orchestration_cfg, cfg
+            )
             ctx.state.orchestration_config = orchestration_config
 
             # Create primary workflow orchestrator
@@ -263,7 +266,7 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             return End(f"Error: {error_msg}")
 
     def _create_orchestration_config(
-        self, orchestration_cfg: dict[str, Any]
+        self, orchestration_cfg: dict[str, Any], root_cfg: Any | None = None
     ) -> WorkflowOrchestrationConfig:
         """Create orchestration configuration from Hydra config."""
         from .src.datatypes.workflow_orchestration import (
@@ -327,12 +330,21 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             for agent_data in system_data.get("agents", []):
                 from .src.datatypes.workflow_orchestration import AgentConfig
 
+                role = AgentRole(agent_data.get("role", "executor"))
+                model_role = agent_data.get("model_role") or {
+                    AgentRole.SEARCH_AGENT: "search",
+                    AgentRole.RAG_AGENT: "rag",
+                    AgentRole.BIOINFORMATICS_AGENT: "bioinformatics_reasoning",
+                    AgentRole.EVALUATOR: "evaluator",
+                    AgentRole.JUDGE: "judge",
+                    AgentRole.CODE_EXECUTOR: "code_generation",
+                    AgentRole.ORCHESTRATOR_AGENT: "deep_agent",
+                }.get(role, role.value)
                 agent_config = AgentConfig(
                     agent_id=agent_data.get("agent_id", "unnamed_agent"),
-                    role=AgentRole(agent_data.get("role", "executor")),
-                    model_name=agent_data.get(
-                        "model_name", "anthropic:claude-sonnet-4-0"
-                    ),
+                    role=role,
+                    model_name=agent_data.get("model_name")
+                    or resolve_model_name(root_cfg, model_role),
                     system_prompt=agent_data.get("system_prompt"),
                     tools=agent_data.get("tools", []),
                     max_iterations=agent_data.get("max_iterations", 10),
@@ -363,7 +375,8 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             judge_config = JudgeConfig(
                 judge_id=judge_data.get("judge_id", "unnamed_judge"),
                 name=judge_data.get("name", "Unnamed Judge"),
-                model_name=judge_data.get("model_name", "anthropic:claude-sonnet-4-0"),
+                model_name=judge_data.get("model_name")
+                or resolve_model_name(root_cfg, judge_data.get("model_role", "judge")),
                 evaluation_criteria=judge_data.get(
                     "evaluation_criteria", ["quality", "accuracy"]
                 ),
@@ -530,7 +543,8 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         primary_orchestrator = AgentOrchestratorConfig(
             orchestrator_id="primary_orchestrator",
             agent_role=AgentRole.ORCHESTRATOR_AGENT,
-            model_name=cfg.get("model_name", "anthropic:claude-sonnet-4-0"),
+            model_name=cfg.get("model_name")
+            or resolve_model_name(cfg, cfg.get("model_role", "deep_agent")),
             max_nested_loops=cfg.get("max_nested_loops", 5),
             coordination_strategy=cfg.get("coordination_strategy", "collaborative"),
             can_spawn_subgraphs=cfg.get("can_spawn_subgraphs", True),

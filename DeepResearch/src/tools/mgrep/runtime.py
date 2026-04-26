@@ -11,6 +11,7 @@ from typing import Any, cast
 from omegaconf import OmegaConf
 
 from DeepResearch.src.datatypes.mgrep import MgrepConfig
+from DeepResearch.src.utils.model_registry import resolve_embeddings_config
 
 from .service import MgrepService
 
@@ -62,6 +63,12 @@ def load_mgrep_config(config_path: str | Path | None = None) -> MgrepConfig:
     if not isinstance(config_data, dict):
         msg = f"Expected mapping config at {resolved_path}, got {type(config_data)}"
         raise TypeError(msg)
+    embedding_model_role = config_data.get("embedding_model_role")
+    if embedding_model_role:
+        config_data["embeddings"] = resolve_embeddings_config(
+            config_data,
+            str(embedding_model_role),
+        ).model_dump(mode="python")
     return MgrepConfig.model_validate(cast("dict[str, Any]", config_data))
 
 

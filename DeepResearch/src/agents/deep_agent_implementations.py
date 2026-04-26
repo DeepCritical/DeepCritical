@@ -32,13 +32,14 @@ from DeepResearch.src.tools.deep_agent_tools import (
     write_file_tool,
     write_todos_tool,
 )
+from DeepResearch.src.utils.model_registry import DEFAULT_PYDANTIC_AI_MODEL
 
 
 class AgentConfig(BaseModel):
     """Configuration for agent instances."""
 
     name: str = Field(..., description="Agent name")
-    model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
+    model_name: Any = Field(DEFAULT_PYDANTIC_AI_MODEL, description="Model name")
     system_prompt: str = Field("", description="System prompt")
     tools: list[str] = Field(default_factory=list, description="Tool names")
     capabilities: list[AgentCapability] = Field(

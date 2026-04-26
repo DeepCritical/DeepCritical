@@ -4,6 +4,7 @@ defaults:
   - challenge: default
   - workflow_orchestration: default
   - hypothesis: default
+  - models: default
   - db: neo4j
   - neo4j: orchestrator
   - _self_

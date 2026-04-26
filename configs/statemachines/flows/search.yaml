@@ -101,6 +101,7 @@ integration:
   # Pydantic AI integration
   pydantic_ai:
     enabled: true
+    model_role: "search"
     model: "gpt-4"
     system_prompt: "You are an intelligent search agent that helps users find information on the web."
 
