@@ -1,0 +1,6 @@
+# Critical literature review flow compatibility shim
+
+enabled: false
+mode: review
+engine_config_group: literature_review/default
+description: "Compatibility flow config for the critical literature review app."

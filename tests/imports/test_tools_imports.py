@@ -338,6 +338,40 @@ class TestToolsModuleImports:
         # Verify they are all accessible and not None
         assert IntegratedSearchTool is not None
 
+    def test_literature_review_tools_imports(self):
+        """Test all imports from literature_review_tools module."""
+
+        from DeepResearch.src.tools.literature_review_tools import (
+            LiteratureEvidenceAppraisalTool,
+            LiteratureRetrievalTool,
+            LiteratureSearchPlanningTool,
+            LiteratureSourceCurationTool,
+            LiteratureSynthesisTool,
+        )
+
+        assert LiteratureSearchPlanningTool is not None
+        assert LiteratureRetrievalTool is not None
+        assert LiteratureSourceCurationTool is not None
+        assert LiteratureEvidenceAppraisalTool is not None
+        assert LiteratureSynthesisTool is not None
+
+    def test_literature_review_tools_package_exports(self):
+        """Test package-level exports for literature review tools."""
+
+        from DeepResearch.src.tools import (
+            LiteratureEvidenceAppraisalTool,
+            LiteratureRetrievalTool,
+            LiteratureSearchPlanningTool,
+            LiteratureSourceCurationTool,
+            LiteratureSynthesisTool,
+        )
+
+        assert LiteratureSearchPlanningTool is not None
+        assert LiteratureRetrievalTool is not None
+        assert LiteratureSourceCurationTool is not None
+        assert LiteratureEvidenceAppraisalTool is not None
+        assert LiteratureSynthesisTool is not None
+
     def test_deep_agent_middleware_imports(self):
         """Test all imports from deep_agent_middleware module."""
 

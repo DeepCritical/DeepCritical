@@ -150,6 +150,33 @@ class TestDatatypesModuleImports:
         assert HypothesisTestPlan is not None
         assert HypothesisWorkflowResult is not None
 
+    def test_literature_review_imports(self):
+        """Test all imports from literature_review module."""
+
+        from DeepResearch.src.datatypes.literature_review import (
+            CriticalAppraisal,
+            EvidenceTableRow,
+            LiteratureGap,
+            LiteratureReviewReport,
+            LiteratureReviewRequest,
+            LiteratureReviewWorkflowResult,
+            LiteratureSearchPlan,
+            LiteratureSource,
+            LiteratureSynthesis,
+            ScreeningDecision,
+        )
+
+        assert LiteratureReviewRequest is not None
+        assert LiteratureSource is not None
+        assert LiteratureSearchPlan is not None
+        assert ScreeningDecision is not None
+        assert EvidenceTableRow is not None
+        assert CriticalAppraisal is not None
+        assert LiteratureGap is not None
+        assert LiteratureSynthesis is not None
+        assert LiteratureReviewReport is not None
+        assert LiteratureReviewWorkflowResult is not None
+
     def test_vllm_integration_imports(self):
         """Test all imports from vllm_integration module."""
 

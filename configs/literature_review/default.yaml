@@ -1,0 +1,25 @@
+# Critical literature review app configuration
+
+mode: review
+source_mode: fixture
+max_sources: 12
+include_preprints: true
+live_retrieval_enabled: false
+min_relevance_score: 0.35
+fixture_path: null
+
+inclusion_criteria:
+  - Directly addresses the review question
+  - Contains interpretable source metadata
+
+exclusion_criteria:
+  - Not relevant to the review question
+  - Insufficient bibliographic metadata
+
+search:
+  max_queries: 3
+  year_min: null
+
+outputs:
+  markdown_path: null
+  json_path: null
