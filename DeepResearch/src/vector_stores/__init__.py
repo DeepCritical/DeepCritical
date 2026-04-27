@@ -5,6 +5,10 @@ from .chroma_config import ChromaVectorStoreConfig
 from .chroma_vector_store import ChromaVectorStore
 from .postgres_config import PostgresVectorStoreConfig
 from .postgres_vector_store import PostgresVectorStore
+from .milvus_config import MilvusVectorStoreConfig
+from .milvus_vector_store import MilvusVectorStore
+from .pinecone_config import PineconeVectorStoreConfig
+from .pinecone_vector_store import PineconeVectorStore
 
 __all__ = [
     "ChromaVectorStore",
@@ -13,6 +17,10 @@ __all__ = [
     "Neo4jVectorStoreConfig",
     "PostgresVectorStore",
     "PostgresVectorStoreConfig",
+    "MilvusVectorStore",
+    "MilvusVectorStoreConfig",
+    "PineconeVectorStore",
+    "PineconeVectorStoreConfig",
     "create_vector_store",
 ]
 
@@ -116,6 +124,33 @@ def create_vector_store(
             distance_metric=getattr(config, "distance_metric", "cosine"),
         )
         return PostgresVectorStore(postgres_config, embeddings)
+
+    if config.store_type == VectorStoreType.MILVUS:
+        if isinstance(config, MilvusVectorStoreConfig):
+            return MilvusVectorStore(config, embeddings)
+            
+        milvus_config = MilvusVectorStoreConfig(
+            store_type=VectorStoreType.MILVUS,
+            collection_name=getattr(config, "collection_name", "research_docs"),
+            uri=getattr(config, "connection_string", "http://localhost:19530"),
+            token=getattr(config, "api_key", None),
+            embedding_dimension=getattr(config, "embedding_dimension", 1536),
+            distance_metric=getattr(config, "distance_metric", "cosine"),
+        )
+        return MilvusVectorStore(milvus_config, embeddings)
+
+    if config.store_type == VectorStoreType.PINECONE:
+        if isinstance(config, PineconeVectorStoreConfig):
+            return PineconeVectorStore(config, embeddings)
+            
+        pinecone_config = PineconeVectorStoreConfig(
+            store_type=VectorStoreType.PINECONE,
+            index_name=getattr(config, "collection_name", "research-docs"),
+            api_key=getattr(config, "api_key", None),
+            embedding_dimension=getattr(config, "embedding_dimension", 1536),
+            distance_metric=getattr(config, "distance_metric", "cosine"),
+        )
+        return PineconeVectorStore(pinecone_config, embeddings)
 
     if config.store_type == VectorStoreType.FAISS:
         from .faiss_config import FAISSVectorStoreConfig

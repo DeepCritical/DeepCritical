@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
+import chromadb  # type: ignore[import-not-found]
+
 from ..datatypes.rag import (
     Chunk,
     Document,
@@ -26,20 +28,7 @@ class ChromaVectorStore(VectorStore):
         self._client = self._create_client(config)
         self._collection = self._get_or_create_collection(config)
 
-    @staticmethod
-    def _import_chromadb():
-        try:
-            import chromadb  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise ImportError(
-                "ChromaDB support requires the 'chromadb' package. "
-                "Install it with: uv add chromadb"
-            ) from exc
-        return chromadb
-
     def _create_client(self, config: ChromaVectorStoreConfig):
-        chromadb = self._import_chromadb()
-
         # Local persistent mode via explicit persist_directory.
         if config.persist_directory:
             os.makedirs(config.persist_directory, exist_ok=True)

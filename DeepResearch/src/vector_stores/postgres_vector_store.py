@@ -1,6 +1,8 @@
 import json
 from typing import Any
 
+import asyncpg  # type: ignore[import-not-found]
+
 from ..datatypes.chunk_dataclass import Chunk
 from ..datatypes.rag import (
     Document,
@@ -24,20 +26,8 @@ class PostgresVectorStore(VectorStore):
         self.config = config
         self._pool = None
 
-    @staticmethod
-    def _import_asyncpg():
-        try:
-            import asyncpg  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise ImportError(
-                "Postgres support requires the 'asyncpg' package. "
-                "Install it with: uv add asyncpg"
-            ) from exc
-        return asyncpg
-
     async def _get_pool(self):
         if self._pool is None:
-            asyncpg = self._import_asyncpg()
             if not self.config.connection_string:
                 raise ValueError("connection_string is required for PostgresVectorStore")
                 
