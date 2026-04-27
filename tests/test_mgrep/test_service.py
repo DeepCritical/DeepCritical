@@ -30,7 +30,7 @@ async def test_service_index_search_sync_and_delete(
     stats = await service.index()
     assert stats.indexed_file_count == 2
     assert stats.indexed_chunk_count >= 2
-    assert stats.store_dir.endswith(".deepcritical/mgrep")
+    assert stats.store_dir.replace("\\", "/").endswith(".deepcritical/mgrep")
 
     search_response = await service.search("semantic parser", top_k=5)
     assert search_response.total_results >= 1

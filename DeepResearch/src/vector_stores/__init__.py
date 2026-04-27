@@ -3,12 +3,16 @@ from __future__ import annotations
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
 from .chroma_config import ChromaVectorStoreConfig
 from .chroma_vector_store import ChromaVectorStore
+from .postgres_config import PostgresVectorStoreConfig
+from .postgres_vector_store import PostgresVectorStore
 
 __all__ = [
     "ChromaVectorStore",
     "ChromaVectorStoreConfig",
     "Neo4jVectorStore",
     "Neo4jVectorStoreConfig",
+    "PostgresVectorStore",
+    "PostgresVectorStoreConfig",
     "create_vector_store",
 ]
 
@@ -99,6 +103,19 @@ def create_vector_store(
         return Neo4jVectorStore(
             vector_store_config, embeddings, neo4j_config=connection
         )
+
+    if config.store_type == VectorStoreType.POSTGRES:
+        if isinstance(config, PostgresVectorStoreConfig):
+            return PostgresVectorStore(config, embeddings)
+            
+        postgres_config = PostgresVectorStoreConfig(
+            store_type=VectorStoreType.POSTGRES,
+            table_name=getattr(config, "collection_name", "documents"),
+            connection_string=getattr(config, "connection_string", None),
+            embedding_dimension=getattr(config, "embedding_dimension", 1536),
+            distance_metric=getattr(config, "distance_metric", "cosine"),
+        )
+        return PostgresVectorStore(postgres_config, embeddings)
 
     if config.store_type == VectorStoreType.FAISS:
         from .faiss_config import FAISSVectorStoreConfig

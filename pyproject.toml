@@ -36,6 +36,7 @@ dependencies = [
   "faiss-cpu>=1.7.4",
   "openmm>=8.2.0",
   "chromadb>=1.5.8",
+  "asyncpg>=0.31.0",
 ]
 
 [project.optional-dependencies]
