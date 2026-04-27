@@ -202,7 +202,9 @@ class ChromaVectorStore(VectorStore):
                 continue
 
             search_results.append(
-                SearchResult(document=doc_obj, score=score, rank=len(search_results) + 1)
+                SearchResult(
+                    document=doc_obj, score=score, rank=len(search_results) + 1
+                )
             )
 
         return search_results

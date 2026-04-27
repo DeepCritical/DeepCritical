@@ -24,11 +24,10 @@ class MilvusVectorStore(VectorStore):
 
         self.config = config
         self._collection_name = config.collection_name or "research_docs"
-        
+
         # Connect to Milvus
         self._client = pymilvus.MilvusClient(
-            uri=self.config.uri, 
-            token=self.config.token or self.config.api_key
+            uri=self.config.uri, token=self.config.token or self.config.api_key
         )
         self._ensure_collection()
 
@@ -54,7 +53,7 @@ class MilvusVectorStore(VectorStore):
         vectors = await self.embeddings.vectorize_documents(contents)
 
         data = []
-        for doc, vector in zip(documents, vectors):
+        for doc, vector in zip(documents, vectors, strict=True):
             record = {"id": doc.id, "content": doc.content, "embedding": vector}
             if doc.metadata:
                 record.update(doc.metadata)

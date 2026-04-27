@@ -24,8 +24,10 @@ class PineconeVectorStore(VectorStore):
 
         self.config = config
         self._pc = pinecone.Pinecone(api_key=self.config.api_key)
-        
-        index_name = self.config.index_name or self.config.collection_name or "research-docs"
+
+        index_name = (
+            self.config.index_name or self.config.collection_name or "research-docs"
+        )
         self._index = self._pc.Index(index_name)
 
     async def add_documents(
@@ -38,7 +40,7 @@ class PineconeVectorStore(VectorStore):
         vectors = await self.embeddings.vectorize_documents(contents)
 
         records = []
-        for doc, vector in zip(documents, vectors):
+        for doc, vector in zip(documents, vectors, strict=True):
             metadata = doc.metadata.copy() if doc.metadata else {}
             metadata["content"] = doc.content
             records.append({"id": doc.id, "values": vector, "metadata": metadata})

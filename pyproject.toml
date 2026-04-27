@@ -38,7 +38,7 @@ dependencies = [
   "chromadb>=1.5.8",
   "asyncpg>=0.31.0",
   "pymilvus>=2.4.0",
-  "pinecone-client>=4.0.0",
+  "pinecone>=5.0.0",
 ]
 
 [project.optional-dependencies]

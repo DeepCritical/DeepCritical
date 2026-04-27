@@ -29,8 +29,10 @@ class PostgresVectorStore(VectorStore):
     async def _get_pool(self):
         if self._pool is None:
             if not self.config.connection_string:
-                raise ValueError("connection_string is required for PostgresVectorStore")
-                
+                raise ValueError(
+                    "connection_string is required for PostgresVectorStore"
+                )
+
             self._pool = await asyncpg.create_pool(dsn=self.config.connection_string)
             await self._initialize_schema()
         return self._pool
@@ -58,10 +60,10 @@ class PostgresVectorStore(VectorStore):
         vectors = await self.embeddings.vectorize_documents(contents)
 
         pool = await self._get_pool()
-        
+
         # We need to format the vectors as strings for pgvector, e.g. '[1,2,3]'
         records = []
-        for doc, vector in zip(documents, vectors):
+        for doc, vector in zip(documents, vectors, strict=True):
             metadata_json = json.dumps(doc.metadata) if doc.metadata else "{}"
             vector_str = "[" + ",".join(str(v) for v in vector) + "]"
             records.append((doc.id, doc.content, metadata_json, vector_str))
@@ -83,7 +85,11 @@ class PostgresVectorStore(VectorStore):
         self, chunks: list[Chunk], **kwargs: Any
     ) -> list[str]:
         docs = [
-            Document(id=chunk.id, content=chunk.text, metadata={"chunk_index": chunk.start_index})
+            Document(
+                id=chunk.id,
+                content=chunk.text,
+                metadata={"chunk_index": chunk.start_index},
+            )
             for chunk in chunks
         ]
         return await self.add_documents(docs, **kwargs)
@@ -92,6 +98,7 @@ class PostgresVectorStore(VectorStore):
         self, document_texts: list[str], **kwargs: Any
     ) -> list[str]:
         from ..datatypes.chunk_dataclass import generate_id
+
         docs = [
             Document(id=generate_id("chunk"), content=text) for text in document_texts
         ]
@@ -100,7 +107,7 @@ class PostgresVectorStore(VectorStore):
     async def delete_documents(self, document_ids: list[str]) -> bool:
         if not document_ids:
             return True
-            
+
         pool = await self._get_pool()
         async with pool.acquire() as conn:
             query = f"DELETE FROM {self.config.table_name} WHERE id = ANY($1)"
@@ -128,30 +135,30 @@ class PostgresVectorStore(VectorStore):
         **kwargs: Any,
     ) -> list[SearchResult]:
         pool = await self._get_pool()
-        
+
         top_k = kwargs.get("top_k", 5)
         filters = kwargs.get("filters", {})
-        
+
         # Format the embedding vector
         vector_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
-        
+
         where_clauses = []
         params = [vector_str, top_k]
         param_idx = 3
-        
+
         # Build JSONB filter queries (exact match)
         for key, value in filters.items():
             where_clauses.append(f"metadata->>'{key}' = ${param_idx}")
             params.append(str(value))
             param_idx += 1
-            
+
         where_sql = ""
         if where_clauses:
             where_sql = "WHERE " + " AND ".join(where_clauses)
-            
+
         # Select using <-> operator for L2 distance, or <=> for cosine distance
         operator = "<=>" if self.config.distance_metric == "cosine" else "<->"
-        
+
         query = f"""
             SELECT id, content, metadata::text as metadata, embedding {operator} $1::vector AS distance
             FROM {self.config.table_name}
@@ -159,18 +166,18 @@ class PostgresVectorStore(VectorStore):
             ORDER BY distance ASC
             LIMIT $2
         """
-        
+
         results = []
         async with pool.acquire() as conn:
             rows = await conn.fetch(query, *params)
-            
+
             for rank, row in enumerate(rows, 1):
                 metadata = json.loads(row["metadata"]) if row["metadata"] else {}
                 # Score is often represented as similarity = 1 - distance
                 score = 1.0 - float(row["distance"])
                 doc = Document(id=row["id"], content=row["content"], metadata=metadata)
                 results.append(SearchResult(document=doc, score=score, rank=rank))
-                
+
         return results
 
     async def get_document(self, document_id: str) -> Document | None:
@@ -180,7 +187,7 @@ class PostgresVectorStore(VectorStore):
             row = await conn.fetchrow(query, document_id)
             if not row:
                 return None
-                
+
             metadata = json.loads(row["metadata"]) if row["metadata"] else {}
             return Document(id=row["id"], content=row["content"], metadata=metadata)
 

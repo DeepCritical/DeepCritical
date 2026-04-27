@@ -6,9 +6,9 @@ import pytest
 
 from DeepResearch.src.datatypes.chunk_dataclass import Chunk
 from DeepResearch.src.datatypes.rag import Document, SearchType, VectorStoreType
+from DeepResearch.src.vector_stores import create_vector_store
 from DeepResearch.src.vector_stores.chroma_config import ChromaVectorStoreConfig
 from DeepResearch.src.vector_stores.chroma_vector_store import ChromaVectorStore
-from DeepResearch.src.vector_stores import create_vector_store
 
 
 class _FakeCollection:

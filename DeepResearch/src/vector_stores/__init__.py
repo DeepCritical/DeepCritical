@@ -3,24 +3,24 @@ from __future__ import annotations
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
 from .chroma_config import ChromaVectorStoreConfig
 from .chroma_vector_store import ChromaVectorStore
-from .postgres_config import PostgresVectorStoreConfig
-from .postgres_vector_store import PostgresVectorStore
 from .milvus_config import MilvusVectorStoreConfig
 from .milvus_vector_store import MilvusVectorStore
 from .pinecone_config import PineconeVectorStoreConfig
 from .pinecone_vector_store import PineconeVectorStore
+from .postgres_config import PostgresVectorStoreConfig
+from .postgres_vector_store import PostgresVectorStore
 
 __all__ = [
     "ChromaVectorStore",
     "ChromaVectorStoreConfig",
-    "Neo4jVectorStore",
-    "Neo4jVectorStoreConfig",
-    "PostgresVectorStore",
-    "PostgresVectorStoreConfig",
     "MilvusVectorStore",
     "MilvusVectorStoreConfig",
+    "Neo4jVectorStore",
+    "Neo4jVectorStoreConfig",
     "PineconeVectorStore",
     "PineconeVectorStoreConfig",
+    "PostgresVectorStore",
+    "PostgresVectorStoreConfig",
     "create_vector_store",
 ]
 
@@ -63,10 +63,10 @@ def create_vector_store(
 
     if config.store_type == VectorStoreType.NEO4J:
         from ..datatypes.neo4j_types import (
+            Neo4jConnectionConfig,
             Neo4jVectorStoreConfig,
             VectorIndexConfig,
             VectorIndexMetric,
-            Neo4jConnectionConfig,
         )
         from .neo4j_vector_store import Neo4jVectorStore
 
@@ -115,7 +115,7 @@ def create_vector_store(
     if config.store_type == VectorStoreType.POSTGRES:
         if isinstance(config, PostgresVectorStoreConfig):
             return PostgresVectorStore(config, embeddings)
-            
+
         postgres_config = PostgresVectorStoreConfig(
             store_type=VectorStoreType.POSTGRES,
             table_name=getattr(config, "collection_name", "documents"),
@@ -128,7 +128,7 @@ def create_vector_store(
     if config.store_type == VectorStoreType.MILVUS:
         if isinstance(config, MilvusVectorStoreConfig):
             return MilvusVectorStore(config, embeddings)
-            
+
         milvus_config = MilvusVectorStoreConfig(
             store_type=VectorStoreType.MILVUS,
             collection_name=getattr(config, "collection_name", "research_docs"),
@@ -142,7 +142,7 @@ def create_vector_store(
     if config.store_type == VectorStoreType.PINECONE:
         if isinstance(config, PineconeVectorStoreConfig):
             return PineconeVectorStore(config, embeddings)
-            
+
         pinecone_config = PineconeVectorStoreConfig(
             store_type=VectorStoreType.PINECONE,
             index_name=getattr(config, "collection_name", "research-docs"),
