@@ -1,7 +1,7 @@
 from __future__ import annotations
-import re
 
 import asyncio
+import re
 from contextlib import asynccontextmanager
 from typing import Any
 
