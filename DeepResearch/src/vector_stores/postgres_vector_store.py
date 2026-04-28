@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Any
 
 import asyncpg  # type: ignore[import-not-found]
@@ -25,6 +26,13 @@ class PostgresVectorStore(VectorStore):
 
         self.config = config
         self._pool = None
+
+    @staticmethod
+    def _score_from_distance(distance: float, metric: str | None) -> float:
+        metric_normalized = (metric or "cosine").lower()
+        if metric_normalized in {"cosine", "ip", "dot"}:
+            return 1.0 - float(distance)
+        return 1.0 / (1.0 + float(distance))
 
     async def _get_pool(self):
         if self._pool is None:
@@ -148,6 +156,8 @@ class PostgresVectorStore(VectorStore):
 
         # Build JSONB filter queries (exact match)
         for key, value in filters.items():
+            if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", key):
+                raise ValueError(f"Invalid filter key: {key}")
             where_clauses.append(f"metadata->>'{key}' = ${param_idx}")
             params.append(str(value))
             param_idx += 1
@@ -173,8 +183,8 @@ class PostgresVectorStore(VectorStore):
 
             for rank, row in enumerate(rows, 1):
                 metadata = json.loads(row["metadata"]) if row["metadata"] else {}
-                # Score is often represented as similarity = 1 - distance
-                score = 1.0 - float(row["distance"])
+                distance = float(row["distance"])
+                score = self._score_from_distance(distance, self.config.distance_metric)
                 doc = Document(id=row["id"], content=row["content"], metadata=metadata)
                 results.append(SearchResult(document=doc, score=score, rank=rank))
 

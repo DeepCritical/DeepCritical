@@ -110,6 +110,7 @@ class PineconeVectorStore(VectorStore):
         results = []
         for rank, match in enumerate(res.get("matches", []), 1):
             metadata = match.get("metadata", {})
+            metadata = dict(match.get("metadata") or {})
             content = metadata.pop("content", "")
             score = match.get("score", 0.0)
             doc = Document(id=match["id"], content=content, metadata=metadata)
@@ -124,7 +125,7 @@ class PineconeVectorStore(VectorStore):
             return None
 
         vector_data = vectors[document_id]
-        metadata = vector_data.get("metadata", {})
+        metadata = dict(vector_data.get("metadata") or {})
         content = metadata.pop("content", "")
         return Document(id=document_id, content=content, metadata=metadata)
 

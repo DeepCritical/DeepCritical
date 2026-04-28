@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 import pymilvus  # type: ignore[import-not-found]
@@ -53,10 +54,16 @@ class MilvusVectorStore(VectorStore):
         vectors = await self.embeddings.vectorize_documents(contents)
 
         data = []
+        reserved_fields = {"id", "content", "embedding"}
         for doc, vector in zip(documents, vectors, strict=True):
             record = {"id": doc.id, "content": doc.content, "embedding": vector}
             if doc.metadata:
-                record.update(doc.metadata)
+                filtered_metadata = {
+                    key: value
+                    for key, value in doc.metadata.items()
+                    if key not in reserved_fields
+                }
+                record.update(filtered_metadata)
             data.append(record)
 
         self._client.insert(collection_name=self._collection_name, data=data)
@@ -118,10 +125,18 @@ class MilvusVectorStore(VectorStore):
         if filters:
             conditions = []
             for k, v in filters.items():
+                if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", k):
+                    raise ValueError(f"Invalid filter key: {k}")
+
                 if isinstance(v, str):
-                    conditions.append(f"{k} == '{v}'")
-                else:
+                    escaped_v = v.replace("'", "\\'")
+                    conditions.append(f"{k} == '{escaped_v}'")
+                elif isinstance(v, bool):
+                    conditions.append(f"{k} == {str(v).lower()}")
+                elif isinstance(v, (int, float)):
                     conditions.append(f"{k} == {v}")
+                else:
+                    raise ValueError(f"Unsupported filter value type: {type(v)}")
             filter_expr = " and ".join(conditions)
 
         res = self._client.search(
@@ -145,9 +160,10 @@ class MilvusVectorStore(VectorStore):
         return results
 
     async def get_document(self, document_id: str) -> Document | None:
+        escaped_id = document_id.replace("'", "\\'")
         res = self._client.query(
             collection_name=self._collection_name,
-            filter=f"id == '{document_id}'",
+            filter=f"id == '{escaped_id}'",
             output_fields=["content", "*"],
         )
         if not res:

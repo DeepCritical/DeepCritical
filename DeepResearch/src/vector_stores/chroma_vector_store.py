@@ -28,27 +28,54 @@ class ChromaVectorStore(VectorStore):
         self._client = self._create_client(config)
         self._collection = self._get_or_create_collection(config)
 
+    def _init_client(
+        self,
+        client_factory: Any,
+        config: ChromaVectorStoreConfig,
+        **kwargs: Any,
+    ):
+        client_kwargs = dict(kwargs)
+        if config.tenant:
+            client_kwargs["tenant"] = config.tenant
+        if config.database_name:
+            client_kwargs["database"] = config.database_name
+        try:
+            return client_factory(**client_kwargs)
+        except TypeError:
+            # Older chromadb versions may not support tenant/database kwargs.
+            return client_factory(**kwargs)
+
     def _create_client(self, config: ChromaVectorStoreConfig):
         # Local persistent mode via explicit persist_directory.
         if config.persist_directory:
             os.makedirs(config.persist_directory, exist_ok=True)
-            return chromadb.PersistentClient(path=config.persist_directory)
+            return self._init_client(
+                chromadb.PersistentClient,
+                config,
+                path=config.persist_directory,
+            )
 
         # Treat file:// connection strings as local persistence paths.
         if config.connection_string and config.connection_string.startswith("file://"):
             persist_directory = config.connection_string.removeprefix("file://")
             os.makedirs(persist_directory, exist_ok=True)
-            return chromadb.PersistentClient(path=persist_directory)
+            return self._init_client(
+                chromadb.PersistentClient,
+                config,
+                path=persist_directory,
+            )
 
         # Remote/server mode if host is explicitly configured.
         if config.host:
-            return chromadb.HttpClient(
+            return self._init_client(
+                chromadb.HttpClient,
+                config,
                 host=config.host,
                 port=config.port or 8000,
             )
 
         # Fallback to ephemeral in-memory client.
-        return chromadb.EphemeralClient()
+        return self._init_client(chromadb.EphemeralClient, config)
 
     def _get_or_create_collection(self, config: ChromaVectorStoreConfig):
         collection_name = config.collection_name or "research_docs"

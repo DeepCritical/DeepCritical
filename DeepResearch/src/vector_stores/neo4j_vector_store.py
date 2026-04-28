@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -307,6 +308,8 @@ class Neo4jVectorStore(VectorStore):
             # Add metadata filters if provided
             metadata_filters = kwargs.get("filters", {})
             for key, value in metadata_filters.items():
+                if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", key):
+                    raise ValueError(f"Invalid filter key: {key}")
                 if isinstance(value, list):
                     filters.append(f"node.metadata.{key} IN $filter_{key}")
                     params[f"filter_{key}"] = value

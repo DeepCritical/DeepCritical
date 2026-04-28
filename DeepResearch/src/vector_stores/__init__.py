@@ -47,7 +47,7 @@ def create_vector_store(
         chroma_config = ChromaVectorStoreConfig(
             store_type=VectorStoreType.CHROMA,
             connection_string=getattr(config, "connection_string", None),
-            host=getattr(config, "host", "localhost"),
+            host=getattr(config, "host", None), # choose localhost only if explicitly set
             port=getattr(config, "port", 8000),
             database=getattr(config, "database", None),
             collection_name=getattr(config, "collection_name", "research_docs"),
