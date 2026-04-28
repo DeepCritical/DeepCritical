@@ -34,6 +34,15 @@ class PostgresVectorStore(VectorStore):
             return 1.0 - float(distance)
         return 1.0 / (1.0 + float(distance))
 
+    @property
+    def _safe_table_name(self) -> str:
+        table_name = self.config.table_name
+        if not re.match(
+            r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$", table_name
+        ):
+            raise ValueError(f"Invalid table name: {table_name}")
+        return ".".join(f'"{part}"' for part in table_name.split("."))
+
     async def _get_pool(self):
         if self._pool is None:
             if not self.config.connection_string:
@@ -50,7 +59,7 @@ class PostgresVectorStore(VectorStore):
         async with pool.acquire() as conn:
             await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
             await conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS {self.config.table_name} (
+                CREATE TABLE IF NOT EXISTS {self._safe_table_name} (
                     id TEXT PRIMARY KEY,
                     content TEXT NOT NULL,
                     metadata JSONB,
@@ -78,7 +87,7 @@ class PostgresVectorStore(VectorStore):
 
         async with pool.acquire() as conn:
             query = f"""
-                INSERT INTO {self.config.table_name} (id, content, metadata, embedding)
+                INSERT INTO {self._safe_table_name} (id, content, metadata, embedding)
                 VALUES ($1, $2, $3::jsonb, $4::vector)
                 ON CONFLICT (id) DO UPDATE 
                 SET content = EXCLUDED.content, 
@@ -118,7 +127,7 @@ class PostgresVectorStore(VectorStore):
 
         pool = await self._get_pool()
         async with pool.acquire() as conn:
-            query = f"DELETE FROM {self.config.table_name} WHERE id = ANY($1)"
+            query = f"DELETE FROM {self._safe_table_name} WHERE id = ANY($1)"
             result = await conn.execute(query, document_ids)
             # Returns something like 'DELETE <count>'
             return result.startswith("DELETE")
@@ -145,7 +154,7 @@ class PostgresVectorStore(VectorStore):
         pool = await self._get_pool()
 
         top_k = kwargs.get("top_k", 5)
-        filters = kwargs.get("filters", {})
+        filters = kwargs.get("filters") or {}
 
         # Format the embedding vector
         vector_str = "[" + ",".join(str(v) for v in query_embedding) + "]"
@@ -166,12 +175,18 @@ class PostgresVectorStore(VectorStore):
         if where_clauses:
             where_sql = "WHERE " + " AND ".join(where_clauses)
 
-        # Select using <-> operator for L2 distance, or <=> for cosine distance
-        operator = "<=>" if self.config.distance_metric == "cosine" else "<->"
+        # Select using proper operator for metric: <-> (L2), <=> (Cosine), <#> (Inner Product)
+        metric = (self.config.distance_metric or "cosine").lower()
+        if metric in ("ip", "dot"):
+            operator = "<#>"
+        elif metric == "cosine":
+            operator = "<=>"
+        else:
+            operator = "<->"
 
         query = f"""
             SELECT id, content, metadata::text as metadata, embedding {operator} $1::vector AS distance
-            FROM {self.config.table_name}
+            FROM {self._safe_table_name}
             {where_sql}
             ORDER BY distance ASC
             LIMIT $2
@@ -193,7 +208,7 @@ class PostgresVectorStore(VectorStore):
     async def get_document(self, document_id: str) -> Document | None:
         pool = await self._get_pool()
         async with pool.acquire() as conn:
-            query = f"SELECT id, content, metadata::text as metadata FROM {self.config.table_name} WHERE id = $1"
+            query = f"SELECT id, content, metadata::text as metadata FROM {self._safe_table_name} WHERE id = $1"
             row = await conn.fetchrow(query, document_id)
             if not row:
                 return None

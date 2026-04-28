@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from ..datatypes.neo4j_types import Neo4jVectorStoreConfig
 from ..datatypes.rag import Embeddings, VectorStore, VectorStoreConfig, VectorStoreType
 from .chroma_config import ChromaVectorStoreConfig
 from .chroma_vector_store import ChromaVectorStore
 from .milvus_config import MilvusVectorStoreConfig
 from .milvus_vector_store import MilvusVectorStore
+from .neo4j_vector_store import Neo4jVectorStore
 from .pinecone_config import PineconeVectorStoreConfig
 from .pinecone_vector_store import PineconeVectorStore
 from .postgres_config import PostgresVectorStoreConfig

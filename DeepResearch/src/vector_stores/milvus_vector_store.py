@@ -119,7 +119,7 @@ class MilvusVectorStore(VectorStore):
         **kwargs: Any,
     ) -> list[SearchResult]:
         top_k = kwargs.get("top_k", 5)
-        filters = kwargs.get("filters", {})
+        filters = kwargs.get("filters") or {}
 
         filter_expr = ""
         if filters:

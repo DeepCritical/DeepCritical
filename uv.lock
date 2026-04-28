@@ -1058,6 +1058,7 @@ name = "deepcritical"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "asyncpg" },
     { name = "beautifulsoup4" },
     { name = "chromadb" },
@@ -1123,6 +1124,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.12.15" },
     { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
     { name = "chromadb", specifier = ">=1.5.8" },
