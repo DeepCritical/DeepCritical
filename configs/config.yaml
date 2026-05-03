@@ -5,6 +5,7 @@ defaults:
   - workflow_orchestration: default
   - hypothesis: default
   - models: default
+  - literature_review: default
   - db: neo4j
   - neo4j: orchestrator
   - _self_
@@ -45,6 +46,8 @@ workflow_orchestration:
 
 # Legacy flow configurations (for backward compatibility)
 flows:
+  literature_review:
+    enabled: false
   hypothesis_generation:
     enabled: false
   hypothesis_testing:

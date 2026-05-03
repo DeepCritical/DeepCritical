@@ -1,0 +1,55 @@
+{
+  "sources": [
+    {
+      "source_id": "sleep-memory-2021",
+      "title": "Sleep quality and memory consolidation in adult learners",
+      "authors": ["A. Rivera", "M. Chen"],
+      "year": 2021,
+      "venue": "Journal of Cognitive Sleep Research",
+      "doi": "10.1234/sleep-memory",
+      "abstract": "Consistent sleep quality was associated with stronger memory consolidation after learning. The study used repeated recall testing and controlled for baseline performance.",
+      "publication_type": "observational study",
+      "keywords": ["sleep", "memory", "consolidation", "learning"]
+    },
+    {
+      "source_id": "sleep-memory-duplicate",
+      "title": "Sleep quality and memory consolidation in adults",
+      "authors": ["A. Rivera", "M. Chen"],
+      "year": 2021,
+      "venue": "Journal of Cognitive Sleep Research",
+      "doi": "10.1234/sleep-memory",
+      "abstract": "Duplicate record for the same sleep and memory source.",
+      "publication_type": "observational study",
+      "keywords": ["sleep", "memory"]
+    },
+    {
+      "source_id": "sleep-recall-trial-2023",
+      "title": "Targeted sleep interventions and delayed recall",
+      "authors": ["N. Patel", "S. Gomez"],
+      "year": 2023,
+      "venue": "Learning and Sleep",
+      "doi": "10.1234/sleep-recall",
+      "abstract": "A randomized sleep hygiene intervention improved delayed recall in students, although effects were smaller for participants with irregular schedules.",
+      "publication_type": "randomized trial",
+      "keywords": ["sleep", "recall", "memory", "intervention"]
+    },
+    {
+      "source_id": "marketing-notifications-2019",
+      "title": "Mobile notification color and purchase intent",
+      "authors": ["J. Park"],
+      "year": 2019,
+      "venue": "Digital Marketing Notes",
+      "abstract": "Notification color changed click behavior in a retail app. The study did not measure sleep, learning, recall, or memory.",
+      "publication_type": "field study",
+      "keywords": ["notifications", "marketing"]
+    },
+    {
+      "source_id": "no-abstract-source",
+      "title": "Memory consolidation during sleep",
+      "authors": ["L. Morgan"],
+      "year": 2012,
+      "venue": "Archived Neuroscience",
+      "keywords": ["memory", "sleep"]
+    }
+  ]
+}

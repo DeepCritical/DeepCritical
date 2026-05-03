@@ -87,6 +87,7 @@ class ResearchState:
     reasoning_results: list[ReasoningResult] = field(default_factory=list)
     judge_evaluations: dict[str, Any] = field(default_factory=dict)
     hypothesis_results: dict[str, Any] = field(default_factory=dict)
+    literature_review_results: dict[str, Any] = field(default_factory=dict)
     # Enhanced REACT architecture state
     app_configuration: AppConfiguration | None = None
     agent_orchestrator: AgentOrchestrator | None = None
@@ -112,6 +113,7 @@ class Plan(BaseNode[ResearchState]):
         self, ctx: GraphRunContext[ResearchState]
     ) -> (
         Search
+        | LiteratureReviewRun
         | HypothesisRun
         | PrimaryREACTWorkflow
         | EnhancedREACTWorkflow
@@ -131,6 +133,11 @@ class Plan(BaseNode[ResearchState]):
             return EnhancedREACTWorkflow()
 
         flows_cfg = getattr(cfg, "flows", {})
+        literature_review_cfg = getattr(flows_cfg, "literature_review", None)
+        if getattr(literature_review_cfg or {}, "enabled", False):
+            ctx.state.notes.append("Literature review flow enabled")
+            return LiteratureReviewRun()
+
         hypothesis_generation_cfg = getattr(flows_cfg, "hypothesis_generation", None)
         hypothesis_testing_cfg = getattr(flows_cfg, "hypothesis_testing", None)
         if any(
@@ -868,6 +875,60 @@ class DSSynthesize(BaseNode[ResearchState]):
         return End(answer)
 
 
+# --- Literature review flow nodes ---
+@dataclass
+class LiteratureReviewRun(BaseNode[ResearchState]):
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Annotated[End[str], Edge(label="done")]:
+        from .src.statemachines.literature_review_workflow import (
+            run_literature_review_workflow,
+        )
+
+        question = ctx.state.question
+        cfg = ctx.state.config
+
+        ctx.state.notes.append("Starting literature review workflow")
+
+        try:
+            result = await run_literature_review_workflow(question, cfg)
+            ctx.state.literature_review_results = result
+            ctx.state.execution_results["literature_review"] = result
+
+            status = result.get("status")
+            error_items = [
+                str(item)
+                for item in (result.get("errors") or [])
+                if isinstance(item, str) and item.strip()
+            ]
+            error_summary = "; ".join(error_items) or str(
+                result.get("error") or "Unknown error"
+            )
+            final_answer = result.get("markdown_report")
+            if not final_answer:
+                if status == "success":
+                    final_answer = "Literature review completed."
+                else:
+                    final_answer = f"Literature review workflow failed: {error_summary}"
+
+            ctx.state.answers.append(final_answer)
+            if status == "success":
+                ctx.state.notes.append(
+                    "Literature review workflow completed successfully"
+                )
+            else:
+                ctx.state.notes.append(
+                    "Literature review workflow completed with failure status: "
+                    f"{error_summary}"
+                )
+            return End(final_answer)
+        except Exception as e:
+            error_msg = f"Literature review workflow failed: {e!s}"
+            ctx.state.notes.append(error_msg)
+            ctx.state.answers.append(f"Error: {error_msg}")
+            return End(f"Error: {error_msg}")
+
+
 # --- Hypothesis flow nodes ---
 @dataclass
 class HypothesisRun(BaseNode[ResearchState]):
@@ -1180,6 +1241,7 @@ def run_graph(question: str, cfg: DictConfig) -> str:
         PrimeEvaluate(),
         BioinformaticsParse(),
         BioinformaticsFuse(),
+        LiteratureReviewRun(),
         HypothesisRun(),
         RAGParse(),
         RAGExecute(),
@@ -1201,7 +1263,9 @@ def run_graph(question: str, cfg: DictConfig) -> str:
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
     question = cfg.get("question", "What is deep research?")
-    run_graph(question, cfg)
+    output = run_graph(question, cfg)
+    if output:
+        print(output)
 
 
 if __name__ == "__main__":

@@ -538,6 +538,7 @@ class TestSubmoduleImports:
                 error_analyzer,
                 evaluator,
                 finalizer,
+                literature_review,
                 orchestrator,
                 planner,
                 query_rewriter,
@@ -558,6 +559,7 @@ class TestSubmoduleImports:
             assert error_analyzer is not None
             assert evaluator is not None
             assert finalizer is not None
+            assert literature_review is not None
             assert orchestrator is not None
             assert planner is not None
             assert query_rewriter is not None
@@ -575,6 +577,7 @@ class TestSubmoduleImports:
             from DeepResearch.src.statemachines import (
                 bioinformatics_workflow,
                 deepsearch_workflow,
+                literature_review_workflow,
                 rag_workflow,
                 search_workflow,
             )
@@ -582,6 +585,7 @@ class TestSubmoduleImports:
             # Verify they are all accessible
             assert bioinformatics_workflow is not None
             assert deepsearch_workflow is not None
+            assert literature_review_workflow is not None
             assert rag_workflow is not None
             assert search_workflow is not None
         else:

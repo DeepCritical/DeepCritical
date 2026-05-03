@@ -1,0 +1,29 @@
+# Example configuration for the critical literature review app
+
+defaults:
+  - literature_review/default
+  - _self_
+
+question: "What evidence links sleep quality to memory consolidation?"
+
+workflow_orchestration:
+  enabled: false
+
+flows:
+  literature_review:
+    enabled: true
+  hypothesis_generation:
+    enabled: false
+  hypothesis_testing:
+    enabled: false
+
+literature_review:
+  mode: review
+  source_mode: fixture
+  max_sources: 8
+  include_preprints: true
+  live_retrieval_enabled: false
+  min_relevance_score: 0.35
+  search:
+    max_queries: 3
+    year_min: null
