@@ -26,6 +26,7 @@ from DeepResearch.src.tools.integrated_search_tools import (
     rag_search_tool,
 )
 from DeepResearch.src.tools.websearch_tools import chunked_search_tool, web_search_tool
+from DeepResearch.src.utils.model_registry import resolve_pydantic_ai_model
 
 
 class SearchAgent:
@@ -33,8 +34,12 @@ class SearchAgent:
 
     def __init__(self, config: SearchAgentConfig):
         self.config = config
+        model = config.model or resolve_pydantic_ai_model(
+            {"models": config.models} if config.models else None,
+            config.model_role,
+        )
         self.agent = Agent[SearchAgentDependencies, str](
-            model=config.model,
+            model=model,
             deps_type=SearchAgentDependencies,
             system_prompt=self._get_system_prompt(),
             tools=[
@@ -113,8 +118,12 @@ class SearchAgent:
 
     def create_rag_agent(self) -> Agent:
         """Create a specialized RAG agent for vector store integration."""
+        model = self.config.model or resolve_pydantic_ai_model(
+            {"models": self.config.models} if self.config.models else None,
+            self.config.model_role,
+        )
         return Agent(
-            model=self.config.model,
+            model=model,
             system_prompt=SearchAgentPrompts.RAG_SEARCH_SYSTEM,
             tools=[rag_search_tool, integrated_search_tool],
         )

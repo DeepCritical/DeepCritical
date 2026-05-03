@@ -104,8 +104,17 @@ class TestToolsModuleImports:
         from DeepResearch.src.tools import registry
 
         assert registry is not None
+        assert "generate_hypotheses" in registry.list()
         assert "go_annotation_processor" in registry.list()
         assert "pubmed_retriever" in registry.list()
+
+    def test_hypothesis_tools_module_imports(self):
+        """Test lazy access to the hypothesis tools module."""
+
+        from DeepResearch.src.tools import hypothesis_tools
+
+        assert hypothesis_tools is not None
+        assert hasattr(hypothesis_tools, "GenerateHypothesesTool")
 
     def test_tools_datatypes_imports(self):
         """Test all imports from tools datatypes module."""
@@ -337,6 +346,40 @@ class TestToolsModuleImports:
 
         # Verify they are all accessible and not None
         assert IntegratedSearchTool is not None
+
+    def test_literature_review_tools_imports(self):
+        """Test all imports from literature_review_tools module."""
+
+        from DeepResearch.src.tools.literature_review_tools import (
+            LiteratureEvidenceAppraisalTool,
+            LiteratureRetrievalTool,
+            LiteratureSearchPlanningTool,
+            LiteratureSourceCurationTool,
+            LiteratureSynthesisTool,
+        )
+
+        assert LiteratureSearchPlanningTool is not None
+        assert LiteratureRetrievalTool is not None
+        assert LiteratureSourceCurationTool is not None
+        assert LiteratureEvidenceAppraisalTool is not None
+        assert LiteratureSynthesisTool is not None
+
+    def test_literature_review_tools_package_exports(self):
+        """Test package-level exports for literature review tools."""
+
+        from DeepResearch.src.tools import (
+            LiteratureEvidenceAppraisalTool,
+            LiteratureRetrievalTool,
+            LiteratureSearchPlanningTool,
+            LiteratureSourceCurationTool,
+            LiteratureSynthesisTool,
+        )
+
+        assert LiteratureSearchPlanningTool is not None
+        assert LiteratureRetrievalTool is not None
+        assert LiteratureSourceCurationTool is not None
+        assert LiteratureEvidenceAppraisalTool is not None
+        assert LiteratureSynthesisTool is not None
 
     def test_deep_agent_middleware_imports(self):
         """Test all imports from deep_agent_middleware module."""
@@ -753,3 +796,12 @@ class TestToolsImportErrorHandling:
         assert spec is not None
         assert spec.name == "test_tool"
         assert "param" in spec.inputs
+
+    def test_tools_package_unknown_attribute_raises_attribute_error(self):
+        """Unknown lazy exports should raise AttributeError."""
+        from operator import attrgetter
+
+        from DeepResearch.src import tools
+
+        with pytest.raises(AttributeError):
+            attrgetter("not_a_real_tool_module")(tools)

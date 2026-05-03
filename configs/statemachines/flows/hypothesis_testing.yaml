@@ -1,7 +1,7 @@
 # Hypothesis testing flow compatibility shim
 
 enabled: false
-mode: generate_and_plan_tests
+mode: testing
 generate_testing_plans: true
 engine_config_group: hypothesis/default
 description: "Compatibility flow config for hypothesis generation with validation planning."

@@ -272,6 +272,19 @@ class TestAgentsModuleImports:
         assert hasattr(SearchAgent, "_get_system_prompt")
         assert hasattr(SearchAgent, "create_rag_agent")
 
+    def test_literature_review_agent_imports(self):
+        """Test all imports from literature_review_agents module."""
+
+        from DeepResearch.src.agents.literature_review_agents import (
+            LiteratureCurationAgent,
+            LiteratureSearchPlannerAgent,
+            LiteratureSynthesisAgent,
+        )
+
+        assert LiteratureSearchPlannerAgent is not None
+        assert LiteratureCurationAgent is not None
+        assert LiteratureSynthesisAgent is not None
+
     def test_workflow_orchestrator_imports(self):
         """Test all imports from workflow_orchestrator module."""
 

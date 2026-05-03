@@ -66,6 +66,7 @@ class TestAppModuleImport:
             Analyze,
             EvaluateChallenge,
             HypothesisRun,
+            LiteratureReviewRun,
             Plan,
             PrepareChallenge,
             RunChallenge,
@@ -153,3 +154,11 @@ class TestAppModuleImport:
             agent_registry.clear()
             for agent_id, executor in previous_executors.items():
                 agent_registry.register(agent_id, executor)
+        assert LiteratureReviewRun is not None
+
+    def test_literature_review_app_can_be_imported(self):
+        """Test that the dedicated literature review app can be imported."""
+        import DeepResearch.literature_review_app
+
+        assert DeepResearch.literature_review_app is not None
+        assert hasattr(DeepResearch.literature_review_app, "main")

@@ -5,6 +5,7 @@
 
 # Model configuration
 model:
+  role: "bioinformatics_reasoning"
   default: "anthropic:claude-sonnet-4-0"
   alternatives:
     anthropic: "anthropic:claude-sonnet-4-0"

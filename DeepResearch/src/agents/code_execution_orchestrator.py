@@ -20,14 +20,21 @@ from DeepResearch.src.agents.code_generation_agent import (
 from DeepResearch.src.datatypes.agent_framework_types import AgentRunResponse
 from DeepResearch.src.datatypes.agents import AgentDependencies, AgentResult, AgentType
 from DeepResearch.src.statemachines.code_execution_workflow import CodeExecutionWorkflow
+from DeepResearch.src.utils.model_registry import resolve_pydantic_ai_model
 
 
 class CodeExecutionConfig(BaseModel):
     """Configuration for code execution orchestrator."""
 
     # Agent configuration
-    generation_model: str = Field(
-        "anthropic:claude-sonnet-4-0", description="Model for code generation"
+    generation_model: str | None = Field(
+        None, description="Explicit model for code generation"
+    )
+    generation_model_role: str = Field(
+        "code_generation", description="Model-registry role for code generation"
+    )
+    models: dict[str, Any] | None = Field(
+        None, description="Optional model registry configuration"
     )
 
     # Execution configuration
@@ -72,16 +79,20 @@ class CodeExecutionOrchestrator:
             config: Configuration for the orchestrator
         """
         self.config = config or CodeExecutionConfig()
+        generation_model = self.config.generation_model or resolve_pydantic_ai_model(
+            {"models": self.config.models} if self.config.models else None,
+            self.config.generation_model_role,
+        )
 
         # Initialize agents
         self.generation_agent = CodeGenerationAgent(
-            model_name=self.config.generation_model,
+            model_name=generation_model,
             max_retries=self.config.max_retries,
             timeout=self.config.generation_timeout,
         )
 
         self.execution_agent = CodeExecutionAgent(
-            model_name=self.config.generation_model,
+            model_name=generation_model,
             use_docker=self.config.use_docker,
             use_jupyter=self.config.use_jupyter,
             jupyter_config=self.config.jupyter_config,
@@ -93,12 +104,12 @@ class CodeExecutionOrchestrator:
         from DeepResearch.src.agents.code_improvement_agent import CodeImprovementAgent
 
         self.improvement_agent = CodeImprovementAgent(
-            model_name=self.config.generation_model,
+            model_name=generation_model,
             max_improvement_attempts=self.config.max_improvement_attempts,
         )
 
         self.agent_system = CodeExecutionAgentSystem(
-            generation_model=self.config.generation_model,
+            generation_model=generation_model,
             execution_config={
                 "use_docker": self.config.use_docker,
                 "use_jupyter": self.config.use_jupyter,
@@ -110,6 +121,13 @@ class CodeExecutionOrchestrator:
 
         # Initialize workflow
         self.workflow = CodeExecutionWorkflow() if self.config.use_workflow else None
+
+    def _resolve_generation_model(self) -> Any:
+        """Resolve the configured generation model through the model registry."""
+        return self.config.generation_model or resolve_pydantic_ai_model(
+            {"models": self.config.models} if self.config.models else None,
+            self.config.generation_model_role,
+        )
 
     async def process_request(
         self,
@@ -158,7 +176,7 @@ class CodeExecutionOrchestrator:
                 else {},
                 metadata={
                     "orchestrator": "code_execution",
-                    "generation_model": self.config.generation_model,
+                    "generation_model": self._resolve_generation_model(),
                     "execution_config": self.config.dict(),
                 },
                 error=None,
@@ -404,10 +422,17 @@ class CodeExecutionOrchestrator:
         # Reinitialize agents if necessary
         if any(
             key in kwargs
-            for key in ["generation_model", "max_retries", "generation_timeout"]
+            for key in [
+                "generation_model",
+                "generation_model_role",
+                "models",
+                "max_retries",
+                "generation_timeout",
+            ]
         ):
+            generation_model = self._resolve_generation_model()
             self.generation_agent = CodeGenerationAgent(
-                model_name=self.config.generation_model,
+                model_name=generation_model,
                 max_retries=self.config.max_retries,
                 timeout=self.config.generation_timeout,
             )
@@ -422,8 +447,9 @@ class CodeExecutionOrchestrator:
                 "execution_timeout",
             ]
         ):
+            generation_model = self._resolve_generation_model()
             self.execution_agent = CodeExecutionAgent(
-                model_name=self.config.generation_model,
+                model_name=generation_model,
                 use_docker=self.config.use_docker,
                 use_jupyter=self.config.use_jupyter,
                 jupyter_config=self.config.jupyter_config,
@@ -457,7 +483,7 @@ async def execute_auto_code(description: str, **kwargs) -> AgentResult:
 
 # Factory function for creating configured orchestrators
 def create_code_execution_orchestrator(
-    generation_model: str = "anthropic:claude-sonnet-4-0",
+    generation_model: str | None = None,
     use_docker: bool = True,
     use_jupyter: bool = False,
     max_retries: int = 3,

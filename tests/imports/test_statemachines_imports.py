@@ -104,6 +104,33 @@ class TestStatemachinesModuleImports:
         assert GenerateFinalResponse is not None
         assert SearchWorkflowError is not None
 
+    def test_literature_review_workflow_imports(self):
+        """Test all imports from literature_review_workflow module."""
+
+        from DeepResearch.src.statemachines.literature_review_workflow import (
+            CurateSources,
+            ExtractEvidenceAndAppraise,
+            LiteratureReviewError,
+            LiteratureReviewWorkflowState,
+            ParseLiteratureReviewRequest,
+            PlanSearchStrategy,
+            RetrieveCandidateSources,
+            SynthesizeLiteratureReview,
+            create_literature_review_workflow,
+            run_literature_review_workflow,
+        )
+
+        assert LiteratureReviewWorkflowState is not None
+        assert ParseLiteratureReviewRequest is not None
+        assert PlanSearchStrategy is not None
+        assert RetrieveCandidateSources is not None
+        assert CurateSources is not None
+        assert ExtractEvidenceAndAppraise is not None
+        assert SynthesizeLiteratureReview is not None
+        assert LiteratureReviewError is not None
+        assert create_literature_review_workflow is not None
+        assert run_literature_review_workflow is not None
+
 
 class TestStatemachinesCrossModuleImports:
     """Test cross-module imports and dependencies within statemachines."""

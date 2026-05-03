@@ -18,7 +18,7 @@ def build_config(args: argparse.Namespace):
             "workflow_orchestration": {"enabled": False},
             "flows": {
                 "hypothesis_generation": {"enabled": mode == "generate"},
-                "hypothesis_testing": {"enabled": mode == "generate_and_plan_tests"},
+                "hypothesis_testing": {"enabled": mode in {"testing", "full"}},
             },
             "hypothesis": {
                 "mode": mode,
@@ -26,7 +26,7 @@ def build_config(args: argparse.Namespace):
                 "top_k": args.top_k,
                 "evidence_mode": args.evidence_mode,
                 "live_evidence_enabled": False,
-                "generate_testing_plans": mode == "generate_and_plan_tests",
+                "generate_testing_plans": mode in {"testing", "full"},
             },
         }
     )
@@ -39,7 +39,7 @@ def main() -> int:
     parser.add_argument("question", help="Research question to turn into hypotheses")
     parser.add_argument(
         "--mode",
-        choices=["generate", "generate_and_plan_tests"],
+        choices=["generate", "testing", "full"],
         default="generate",
         help="Hypothesis workflow mode",
     )

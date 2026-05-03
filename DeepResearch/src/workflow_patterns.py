@@ -8,6 +8,7 @@ agent interaction design patterns with minimal external dependencies.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -145,43 +146,55 @@ class WorkflowPatternFactory:
 
     @staticmethod
     def create_collaborative_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ) -> CollaborativePatternAgent:
         """Create a collaborative pattern agent."""
-        return create_collaborative_agent(model_name, dependencies)
+        return create_collaborative_agent(model_name, dependencies, model_role, config)
 
     @staticmethod
     def create_sequential_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ) -> SequentialPatternAgent:
         """Create a sequential pattern agent."""
-        return create_sequential_agent(model_name, dependencies)
+        return create_sequential_agent(model_name, dependencies, model_role, config)
 
     @staticmethod
     def create_hierarchical_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ) -> HierarchicalPatternAgent:
         """Create a hierarchical pattern agent."""
-        return create_hierarchical_agent(model_name, dependencies)
+        return create_hierarchical_agent(model_name, dependencies, model_role, config)
 
     @staticmethod
     def create_pattern_orchestrator(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ) -> PatternOrchestratorAgent:
         """Create a pattern orchestrator agent."""
-        return create_pattern_orchestrator(model_name, dependencies)
+        return create_pattern_orchestrator(model_name, dependencies, model_role, config)
 
     @staticmethod
     def create_adaptive_pattern_agent(
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: Any | None = None,
         dependencies: AgentDependencies | None = None,
+        model_role: str = "workflow_pattern",
+        config: Mapping[str, Any] | None = None,
     ) -> AdaptivePatternAgent:
         """Create an adaptive pattern agent."""
-        return create_adaptive_pattern_agent(model_name, dependencies)
+        return create_adaptive_pattern_agent(
+            model_name, dependencies, model_role, config
+        )
 
 
 class WorkflowPatternExecutor:

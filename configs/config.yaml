@@ -4,6 +4,8 @@ defaults:
   - challenge: default
   - workflow_orchestration: default
   - hypothesis: default
+  - models: default
+  - literature_review: default
   - db: neo4j
   - neo4j: orchestrator
   - _self_
@@ -61,6 +63,8 @@ flows:
     require_consensus: true
     development_mock: false
     agent_executors: {}
+  literature_review:
+    enabled: false
   hypothesis_generation:
     enabled: false
   hypothesis_testing:

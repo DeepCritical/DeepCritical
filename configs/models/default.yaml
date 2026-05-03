@@ -1,0 +1,168 @@
+# @package models
+
+version: 1
+
+default_models:
+  llm: default_chat
+  embedding: default_embedding
+  predictor: default_predictor
+
+llms:
+  default_chat:
+    kind: llm
+    runtime: pydantic_ai
+    provider: anthropic
+    model_name: "anthropic:claude-sonnet-4-0"
+    generation:
+      temperature: 0.7
+      max_tokens: 2048
+
+  search_chat:
+    kind: llm
+    runtime: pydantic_ai
+    provider: openai
+    model_name: "gpt-4"
+    notes: "Preserves the previous SearchAgentConfig default."
+
+  local_vllm:
+    kind: llm
+    runtime: openai_compatible
+    provider: vllm
+    model_name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    base_url: "http://localhost:8000/v1"
+    api_key: ${oc.env:VLLM_API_KEY,EMPTY}
+    host: localhost
+    port: 8000
+    generation:
+      temperature: 0.7
+      max_tokens: 2048
+      top_p: 0.9
+
+embeddings:
+  default_embedding:
+    kind: embedding
+    provider: sentence_transformers
+    model_type: sentence_transformers
+    model_name: "all-MiniLM-L6-v2"
+    num_dimensions: 384
+    batch_size: 32
+    device: cpu
+
+  mixedbread_large:
+    kind: embedding
+    provider: mixedbread
+    model_type: mixedbread
+    model_name: "mixedbread-ai/mxbai-embed-large-v1"
+    num_dimensions: 1024
+    batch_size: 32
+    query_instruction: "Represent this sentence for searching relevant passages:"
+
+  openai_text_embedding_3_small:
+    kind: embedding
+    provider: openai
+    model_type: openai
+    model_name: "text-embedding-3-small"
+    num_dimensions: 1536
+    api_key: ${oc.env:OPENAI_API_KEY,null}
+    supported: false
+    unsupported_reason: "OpenAI embeddings config exists, but the embedding factory does not implement it yet."
+
+  local_vllm_embedding:
+    kind: embedding
+    provider: vllm
+    model_type: vllm
+    model_name: "sentence-transformers/all-MiniLM-L6-v2"
+    base_url: "http://localhost:8001"
+    num_dimensions: 384
+    batch_size: 32
+    timeout: 30.0
+
+predictors:
+  default_predictor:
+    kind: predictor
+    provider: none
+    enabled: false
+
+  search_reranker:
+    kind: predictor
+    task: reranking
+    provider: custom
+    enabled: false
+
+  bioinformatics_data_quality:
+    kind: predictor
+    task: data_quality
+    provider: custom
+    enabled: false
+
+roles:
+  default:
+    llm: default_chat
+    embedding: default_embedding
+    predictor: default_predictor
+
+  parser:
+    llm: default_chat
+
+  planner:
+    llm: default_chat
+
+  executor:
+    llm: default_chat
+
+  search:
+    llm: search_chat
+    embedding: default_embedding
+    predictor: search_reranker
+
+  rag:
+    llm: default_chat
+    embedding: default_embedding
+
+  rag_generation:
+    llm: local_vllm
+
+  rag_embedding:
+    embedding: default_embedding
+
+  mgrep_embedding:
+    embedding: default_embedding
+
+  neo4j_embedding:
+    embedding: default_embedding
+
+  judge:
+    llm: default_chat
+
+  evaluator:
+    llm: default_chat
+
+  bioinformatics:
+    llm: default_chat
+    predictor: bioinformatics_data_quality
+
+  bioinformatics_reasoning:
+    llm: default_chat
+    predictor: bioinformatics_data_quality
+
+  code_generation:
+    llm: default_chat
+
+  data_enhancement:
+    llm: default_chat
+    predictor: bioinformatics_data_quality
+
+  tool_use:
+    llm: default_chat
+
+  deep_agent:
+    llm: default_chat
+
+  deepsearch:
+    llm: default_chat
+
+  workflow_pattern:
+    llm: default_chat
+
+  workflow_orchestration:
+    llm: default_chat

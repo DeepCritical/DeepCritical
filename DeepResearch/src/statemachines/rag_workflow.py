@@ -85,7 +85,7 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             rag_cfg = getattr(cfg, "rag", {})
 
             # Create RAG configuration from Hydra config
-            rag_config = self._create_rag_config(rag_cfg)
+            rag_config = self._create_rag_config(rag_cfg, cfg)
             ctx.state.rag_config = rag_config
 
             ctx.state.processing_steps.append("rag_initialized")
@@ -99,7 +99,9 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             ctx.state.execution_status = ExecutionStatus.FAILED
             return RAGError()
 
-    def _create_rag_config(self, rag_cfg: dict[str, Any]) -> RAGConfig:
+    def _create_rag_config(
+        self, rag_cfg: dict[str, Any], root_cfg: Any | None = None
+    ) -> RAGConfig:
         """Create RAG configuration from Hydra config."""
         from DeepResearch.src.datatypes.rag import (
             EmbeddingModelType,
@@ -109,33 +111,49 @@ class InitializeRAG(BaseNode[RAGState]):  # type: ignore[unsupported-base]
             VectorStoreType,
             VLLMConfig,
         )
+        from DeepResearch.src.utils.model_registry import (
+            resolve_embeddings_config,
+            resolve_vllm_config,
+        )
 
         # Create embeddings config
-        embeddings_cfg = rag_cfg.get("embeddings", {})
-        embeddings_config = EmbeddingsConfig(
-            model_type=EmbeddingModelType(
-                embeddings_cfg.get("model_type", "sentence_transformers")
-            ),
-            model_name=embeddings_cfg.get("model_name", "all-MiniLM-L6-v2"),
-            api_key=embeddings_cfg.get("api_key"),
-            base_url=embeddings_cfg.get("base_url"),
-            num_dimensions=embeddings_cfg.get("num_dimensions", 384),
-            batch_size=embeddings_cfg.get("batch_size", 32),
-            query_instruction=embeddings_cfg.get("query_instruction"),
-            device=embeddings_cfg.get("device"),
-        )
+        embeddings_role = rag_cfg.get("embedding_model_role")
+        if embeddings_role:
+            embeddings_config = resolve_embeddings_config(
+                root_cfg, str(embeddings_role)
+            )
+        else:
+            embeddings_cfg = rag_cfg.get("embeddings", {})
+            embeddings_config = EmbeddingsConfig(
+                model_type=EmbeddingModelType(
+                    embeddings_cfg.get("model_type", "sentence_transformers")
+                ),
+                model_name=embeddings_cfg.get("model_name", "all-MiniLM-L6-v2"),
+                api_key=embeddings_cfg.get("api_key"),
+                base_url=embeddings_cfg.get("base_url"),
+                num_dimensions=embeddings_cfg.get("num_dimensions", 384),
+                batch_size=embeddings_cfg.get("batch_size", 32),
+                query_instruction=embeddings_cfg.get("query_instruction"),
+                device=embeddings_cfg.get("device"),
+            )
 
         # Create LLM config
-        llm_cfg = rag_cfg.get("llm", {})
-        llm_config = VLLMConfig(
-            model_type=LLMModelType(llm_cfg.get("model_type", "huggingface")),
-            model_name=llm_cfg.get("model_name", "TinyLlama/TinyLlama-1.1B-Chat-v1.0"),
-            host=llm_cfg.get("host", "localhost"),
-            port=llm_cfg.get("port", 8000),
-            api_key=llm_cfg.get("api_key"),
-            max_tokens=llm_cfg.get("max_tokens", 2048),
-            temperature=llm_cfg.get("temperature", 0.7),
-        )
+        llm_role = rag_cfg.get("llm_model_role")
+        if llm_role:
+            llm_config = resolve_vllm_config(root_cfg, str(llm_role))
+        else:
+            llm_cfg = rag_cfg.get("llm", {})
+            llm_config = VLLMConfig(
+                model_type=LLMModelType(llm_cfg.get("model_type", "huggingface")),
+                model_name=llm_cfg.get(
+                    "model_name", "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+                ),
+                host=llm_cfg.get("host", "localhost"),
+                port=llm_cfg.get("port", 8000),
+                api_key=llm_cfg.get("api_key"),
+                max_tokens=llm_cfg.get("max_tokens", 2048),
+                temperature=llm_cfg.get("temperature", 0.7),
+            )
 
         # Create vector store config
         vs_cfg = rag_cfg.get("vector_store", {})
