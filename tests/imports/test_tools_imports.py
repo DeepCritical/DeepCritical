@@ -104,8 +104,17 @@ class TestToolsModuleImports:
         from DeepResearch.src.tools import registry
 
         assert registry is not None
+        assert "generate_hypotheses" in registry.list()
         assert "go_annotation_processor" in registry.list()
         assert "pubmed_retriever" in registry.list()
+
+    def test_hypothesis_tools_module_imports(self):
+        """Test lazy access to the hypothesis tools module."""
+
+        from DeepResearch.src.tools import hypothesis_tools
+
+        assert hypothesis_tools is not None
+        assert hasattr(hypothesis_tools, "GenerateHypothesesTool")
 
     def test_tools_datatypes_imports(self):
         """Test all imports from tools datatypes module."""
@@ -787,3 +796,12 @@ class TestToolsImportErrorHandling:
         assert spec is not None
         assert spec.name == "test_tool"
         assert "param" in spec.inputs
+
+    def test_tools_package_unknown_attribute_raises_attribute_error(self):
+        """Unknown lazy exports should raise AttributeError."""
+        from operator import attrgetter
+
+        from DeepResearch.src import tools
+
+        with pytest.raises(AttributeError):
+            attrgetter("not_a_real_tool_module")(tools)
