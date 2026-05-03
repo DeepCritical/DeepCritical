@@ -4,6 +4,8 @@ defaults:
   - challenge: default
   - workflow_orchestration: default
   - hypothesis: default
+  - models: default
+  - literature_review: default
   - db: neo4j
   - neo4j: orchestrator
   - _self_
@@ -44,6 +46,25 @@ workflow_orchestration:
 
 # Legacy flow configurations (for backward compatibility)
 flows:
+  workflow_patterns:
+    enabled: false
+    pattern: collaborative
+    agents:
+      - id: parser
+        type: parser
+      - id: planner
+        type: planner
+      - id: executor
+        type: executor
+    coordinator_id: null
+    max_rounds: 3
+    consensus_threshold: 0.8
+    consensus_algorithm: simple_agreement
+    require_consensus: true
+    development_mock: false
+    agent_executors: {}
+  literature_review:
+    enabled: false
   hypothesis_generation:
     enabled: false
   hypothesis_testing:

@@ -5,13 +5,19 @@ This module defines Pydantic models for search agent configuration, queries,
 and results that align with DeepCritical's architecture.
 """
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class SearchAgentConfig(BaseModel):
     """Configuration for the search agent."""
 
-    model: str = Field("gpt-4", description="Model to use for the agent")
+    model: str | None = Field(None, description="Explicit model override for the agent")
+    model_role: str = Field("search", description="Model-registry role to resolve")
+    models: dict[str, Any] | None = Field(
+        None, description="Optional model registry configuration"
+    )
     enable_analytics: bool = Field(
         True, description="Whether to enable analytics tracking"
     )

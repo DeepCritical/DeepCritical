@@ -7,10 +7,10 @@ data processing, fusion, and reasoning tasks.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModel
 
 from DeepResearch.src.datatypes.bioinformatics import (
     BioinformaticsAgentDeps,
@@ -23,6 +23,7 @@ from DeepResearch.src.datatypes.bioinformatics import (
     ReasoningTask,
 )
 from DeepResearch.src.prompts.bioinformatics_agents import BioinformaticsAgentPrompts
+from DeepResearch.src.utils.model_registry import resolve_pydantic_ai_model
 
 
 class DataFusionAgent:
@@ -30,10 +31,12 @@ class DataFusionAgent:
 
     def __init__(
         self,
-        model_name: str = "anthropic:claude-sonnet-4-0",
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
         config: dict[str, Any] | None = None,
     ):
-        self.model_name = model_name
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.model_role = model_role
         self.config = config or {}
         self.agent: Agent[BioinformaticsAgentDeps, DataFusionResult] = (
             self._create_agent()
@@ -46,8 +49,7 @@ class DataFusionAgent:
         agents_config = bioinformatics_config.get("agents", {})
         data_fusion_config = agents_config.get("data_fusion", {})
 
-        model_name = data_fusion_config.get("model", self.model_name)
-        model = AnthropicModel(model_name)
+        model = data_fusion_config.get("model", self.model_name)
 
         # Get system prompt from config or use default
         system_prompt = data_fusion_config.get(
@@ -82,18 +84,21 @@ class DataFusionAgent:
 class GOAnnotationAgent:
     """Agent for processing GO annotations with PubMed context."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
-        self.model_name = model_name
+    def __init__(
+        self,
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
+        config: Mapping[str, Any] | None = None,
+    ):
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
         self.agent: Agent[BioinformaticsAgentDeps, list[GOAnnotation]] = (
             self._create_agent()
         )
 
     def _create_agent(self) -> Agent[BioinformaticsAgentDeps, list[GOAnnotation]]:
         """Create the GO annotation agent."""
-        model = AnthropicModel(self.model_name)
-
         return Agent[BioinformaticsAgentDeps, list[GOAnnotation]](
-            model=model,
+            model=self.model_name,
             deps_type=BioinformaticsAgentDeps,
             output_type=list[GOAnnotation],
             system_prompt=BioinformaticsAgentPrompts.GO_ANNOTATION_SYSTEM,
@@ -121,18 +126,21 @@ class GOAnnotationAgent:
 class ReasoningAgent:
     """Agent for performing reasoning tasks on fused bioinformatics data."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
-        self.model_name = model_name
+    def __init__(
+        self,
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
+        config: Mapping[str, Any] | None = None,
+    ):
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
         self.agent: Agent[BioinformaticsAgentDeps, ReasoningResult] = (
             self._create_agent()
         )
 
     def _create_agent(self) -> Agent[BioinformaticsAgentDeps, ReasoningResult]:
         """Create the reasoning agent."""
-        model = AnthropicModel(self.model_name)
-
         return Agent[BioinformaticsAgentDeps, ReasoningResult](
-            model=model,
+            model=self.model_name,
             deps_type=BioinformaticsAgentDeps,
             output_type=ReasoningResult,
             system_prompt=BioinformaticsAgentPrompts.REASONING_SYSTEM,
@@ -165,18 +173,21 @@ class ReasoningAgent:
 class DataQualityAgent:
     """Agent for assessing data quality and consistency."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
-        self.model_name = model_name
+    def __init__(
+        self,
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
+        config: Mapping[str, Any] | None = None,
+    ):
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
         self.agent: Agent[BioinformaticsAgentDeps, dict[str, float]] = (
             self._create_agent()
         )
 
     def _create_agent(self) -> Agent[BioinformaticsAgentDeps, dict[str, float]]:
         """Create the data quality agent."""
-        model = AnthropicModel(self.model_name)
-
         return Agent[BioinformaticsAgentDeps, dict[str, float]](
-            model=model,
+            model=self.model_name,
             deps_type=BioinformaticsAgentDeps,
             output_type=dict[str, float],
             system_prompt=BioinformaticsAgentPrompts.DATA_QUALITY_SYSTEM,
@@ -207,9 +218,16 @@ class DataQualityAgent:
 class BioinformaticsAgent:
     """Main bioinformatics agent that coordinates all bioinformatics operations."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
-        self.model_name = model_name
-        self.orchestrator = AgentOrchestrator(model_name)
+    def __init__(
+        self,
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
+        config: Mapping[str, Any] | None = None,
+    ):
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.orchestrator = AgentOrchestrator(
+            self.model_name, model_role=model_role, config=config
+        )
 
     async def process_request(
         self, request: DataFusionRequest, deps: BioinformaticsAgentDeps
@@ -241,12 +259,25 @@ class BioinformaticsAgent:
 class AgentOrchestrator:
     """Orchestrator for coordinating multiple bioinformatics agents."""
 
-    def __init__(self, model_name: str = "anthropic:claude-sonnet-4-0"):
-        self.model_name = model_name
-        self.fusion_agent = DataFusionAgent(model_name)
-        self.go_agent = GOAnnotationAgent(model_name)
-        self.reasoning_agent = ReasoningAgent(model_name)
-        self.quality_agent = DataQualityAgent(model_name)
+    def __init__(
+        self,
+        model_name: str | None = None,
+        model_role: str = "bioinformatics_reasoning",
+        config: Mapping[str, Any] | None = None,
+    ):
+        self.model_name = model_name or resolve_pydantic_ai_model(config, model_role)
+        self.fusion_agent = DataFusionAgent(
+            self.model_name, model_role=model_role, config=dict(config or {})
+        )
+        self.go_agent = GOAnnotationAgent(
+            self.model_name, model_role=model_role, config=config
+        )
+        self.reasoning_agent = ReasoningAgent(
+            self.model_name, model_role=model_role, config=config
+        )
+        self.quality_agent = DataQualityAgent(
+            self.model_name, model_role=model_role, config=config
+        )
 
     async def create_reasoning_dataset(
         self, request: DataFusionRequest, deps: BioinformaticsAgentDeps

@@ -56,6 +56,7 @@ dev = [
 [project.scripts]
 deepresearch = "DeepResearch.app:main"
 deepresearch-hypothesis = "DeepResearch.hypothesis_app:main"
+deepresearch-literature-review = "DeepResearch.literature_review_app:main"
 
 [build-system]
 requires = ["hatchling"]

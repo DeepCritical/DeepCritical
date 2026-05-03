@@ -37,6 +37,7 @@ from .src.datatypes.workflow_orchestration import (
     WorkflowType,
 )
 from .src.utils.execution_history import ExecutionHistory as PrimeExecutionHistory
+from .src.utils.model_registry import resolve_model_name
 from .src.utils.tool_registry import ToolRegistry
 
 # from .src.tools import bioinformatics_tools
@@ -86,6 +87,7 @@ class ResearchState:
     reasoning_results: list[ReasoningResult] = field(default_factory=list)
     judge_evaluations: dict[str, Any] = field(default_factory=dict)
     hypothesis_results: dict[str, Any] = field(default_factory=dict)
+    literature_review_results: dict[str, Any] = field(default_factory=dict)
     # Enhanced REACT architecture state
     app_configuration: AppConfiguration | None = None
     agent_orchestrator: AgentOrchestrator | None = None
@@ -111,7 +113,9 @@ class Plan(BaseNode[ResearchState]):
         self, ctx: GraphRunContext[ResearchState]
     ) -> (
         Search
+        | LiteratureReviewRun
         | HypothesisRun
+        | WorkflowPatternRun
         | PrimaryREACTWorkflow
         | EnhancedREACTWorkflow
         | PrepareChallenge
@@ -130,6 +134,11 @@ class Plan(BaseNode[ResearchState]):
             return EnhancedREACTWorkflow()
 
         flows_cfg = getattr(cfg, "flows", {})
+        literature_review_cfg = getattr(flows_cfg, "literature_review", None)
+        if getattr(literature_review_cfg or {}, "enabled", False):
+            ctx.state.notes.append("Literature review flow enabled")
+            return LiteratureReviewRun()
+
         hypothesis_generation_cfg = getattr(flows_cfg, "hypothesis_generation", None)
         hypothesis_testing_cfg = getattr(flows_cfg, "hypothesis_testing", None)
         if any(
@@ -140,6 +149,11 @@ class Plan(BaseNode[ResearchState]):
         ):
             ctx.state.notes.append("Hypothesis engine flow enabled")
             return HypothesisRun()
+
+        workflow_patterns_cfg = getattr(flows_cfg, "workflow_patterns", None)
+        if getattr(workflow_patterns_cfg or {}, "enabled", False):
+            ctx.state.notes.append("Workflow pattern flow enabled")
+            return WorkflowPatternRun()
 
         # Check if primary REACT workflow orchestration is enabled
         orchestration_cfg = getattr(cfg, "workflow_orchestration", None)
@@ -211,7 +225,9 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
 
         try:
             # Initialize orchestration configuration
-            orchestration_config = self._create_orchestration_config(orchestration_cfg)
+            orchestration_config = self._create_orchestration_config(
+                orchestration_cfg, cfg
+            )
             ctx.state.orchestration_config = orchestration_config
 
             # Create primary workflow orchestrator
@@ -263,7 +279,7 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             return End(f"Error: {error_msg}")
 
     def _create_orchestration_config(
-        self, orchestration_cfg: dict[str, Any]
+        self, orchestration_cfg: dict[str, Any], root_cfg: Any | None = None
     ) -> WorkflowOrchestrationConfig:
         """Create orchestration configuration from Hydra config."""
         from .src.datatypes.workflow_orchestration import (
@@ -327,12 +343,21 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             for agent_data in system_data.get("agents", []):
                 from .src.datatypes.workflow_orchestration import AgentConfig
 
+                role = AgentRole(agent_data.get("role", "executor"))
+                model_role = agent_data.get("model_role") or {
+                    AgentRole.SEARCH_AGENT: "search",
+                    AgentRole.RAG_AGENT: "rag",
+                    AgentRole.BIOINFORMATICS_AGENT: "bioinformatics_reasoning",
+                    AgentRole.EVALUATOR: "evaluator",
+                    AgentRole.JUDGE: "judge",
+                    AgentRole.CODE_EXECUTOR: "code_generation",
+                    AgentRole.ORCHESTRATOR_AGENT: "deep_agent",
+                }.get(role, role.value)
                 agent_config = AgentConfig(
                     agent_id=agent_data.get("agent_id", "unnamed_agent"),
-                    role=AgentRole(agent_data.get("role", "executor")),
-                    model_name=agent_data.get(
-                        "model_name", "anthropic:claude-sonnet-4-0"
-                    ),
+                    role=role,
+                    model_name=agent_data.get("model_name")
+                    or resolve_model_name(root_cfg, model_role),
                     system_prompt=agent_data.get("system_prompt"),
                     tools=agent_data.get("tools", []),
                     max_iterations=agent_data.get("max_iterations", 10),
@@ -363,7 +388,8 @@ class PrimaryREACTWorkflow(BaseNode[ResearchState]):
             judge_config = JudgeConfig(
                 judge_id=judge_data.get("judge_id", "unnamed_judge"),
                 name=judge_data.get("name", "Unnamed Judge"),
-                model_name=judge_data.get("model_name", "anthropic:claude-sonnet-4-0"),
+                model_name=judge_data.get("model_name")
+                or resolve_model_name(root_cfg, judge_data.get("model_role", "judge")),
                 evaluation_criteria=judge_data.get(
                     "evaluation_criteria", ["quality", "accuracy"]
                 ),
@@ -530,7 +556,8 @@ class EnhancedREACTWorkflow(BaseNode[ResearchState]):
         primary_orchestrator = AgentOrchestratorConfig(
             orchestrator_id="primary_orchestrator",
             agent_role=AgentRole.ORCHESTRATOR_AGENT,
-            model_name=cfg.get("model_name", "anthropic:claude-sonnet-4-0"),
+            model_name=cfg.get("model_name")
+            or resolve_model_name(cfg, cfg.get("model_role", "deep_agent")),
             max_nested_loops=cfg.get("max_nested_loops", 5),
             coordination_strategy=cfg.get("coordination_strategy", "collaborative"),
             can_spawn_subgraphs=cfg.get("can_spawn_subgraphs", True),
@@ -854,7 +881,182 @@ class DSSynthesize(BaseNode[ResearchState]):
         return End(answer)
 
 
+# --- Literature review flow nodes ---
+@dataclass
+class LiteratureReviewRun(BaseNode[ResearchState]):
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Annotated[End[str], Edge(label="done")]:
+        from .src.statemachines.literature_review_workflow import (
+            run_literature_review_workflow,
+        )
+
+        question = ctx.state.question
+        cfg = ctx.state.config
+
+        ctx.state.notes.append("Starting literature review workflow")
+
+        try:
+            result = await run_literature_review_workflow(question, cfg)
+            ctx.state.literature_review_results = result
+            ctx.state.execution_results["literature_review"] = result
+
+            status = result.get("status")
+            error_items = [
+                str(item)
+                for item in (result.get("errors") or [])
+                if isinstance(item, str) and item.strip()
+            ]
+            error_summary = "; ".join(error_items) or str(
+                result.get("error") or "Unknown error"
+            )
+            final_answer = result.get("markdown_report")
+            if not final_answer:
+                if status == "success":
+                    final_answer = "Literature review completed."
+                else:
+                    final_answer = f"Literature review workflow failed: {error_summary}"
+
+            ctx.state.answers.append(final_answer)
+            if status == "success":
+                ctx.state.notes.append(
+                    "Literature review workflow completed successfully"
+                )
+            else:
+                ctx.state.notes.append(
+                    "Literature review workflow completed with failure status: "
+                    f"{error_summary}"
+                )
+            return End(final_answer)
+        except Exception as e:
+            error_msg = f"Literature review workflow failed: {e!s}"
+            ctx.state.notes.append(error_msg)
+            ctx.state.answers.append(f"Error: {error_msg}")
+            return End(f"Error: {error_msg}")
+
+
 # --- Hypothesis flow nodes ---
+@dataclass
+class WorkflowPatternRun(BaseNode[ResearchState]):
+    async def run(
+        self, ctx: GraphRunContext[ResearchState]
+    ) -> Annotated[End[str], Edge(label="done")]:
+        from omegaconf import OmegaConf
+
+        from .src.datatypes.agents import AgentType
+        from .src.datatypes.workflow_patterns import InteractionPattern
+        from .src.statemachines.workflow_pattern_statemachines import (
+            run_pattern_workflow,
+        )
+        from .src.workflow_patterns import agent_registry
+
+        cfg = ctx.state.config
+        flow_cfg = getattr(getattr(cfg, "flows", {}), "workflow_patterns", {})
+
+        try:
+            pattern = InteractionPattern(
+                getattr(flow_cfg, "pattern", InteractionPattern.COLLABORATIVE.value)
+            )
+            agent_ids, agent_types = self._parse_agents(flow_cfg, AgentType)
+            executors = self._resolve_executors(
+                flow_cfg, agent_ids, agent_registry, ctx.state.question
+            )
+            config_dict = OmegaConf.to_container(flow_cfg, resolve=True)
+            workflow_config = OmegaConf.create(config_dict or {})
+            output = await run_pattern_workflow(
+                question=ctx.state.question,
+                pattern=pattern,
+                agents=agent_ids,
+                agent_types=agent_types,
+                agent_executors=executors,
+                config=workflow_config,
+            )
+            success = not output.startswith("Workflow Pattern Execution Failed")
+            ctx.state.execution_results["workflow_patterns"] = {
+                "pattern": pattern.value,
+                "agents": agent_ids,
+                "success": success,
+                "output": output,
+            }
+            ctx.state.answers.append(output)
+            if success:
+                ctx.state.notes.append(f"Workflow pattern completed: {pattern.value}")
+            else:
+                ctx.state.notes.append(f"Workflow pattern failed: {pattern.value}")
+            return End(output)
+        except Exception as e:
+            error_msg = f"Workflow pattern flow failed: {e!s}"
+            ctx.state.notes.append(error_msg)
+            ctx.state.answers.append(f"Error: {error_msg}")
+            return End(f"Error: {error_msg}")
+
+    def _parse_agents(
+        self, flow_cfg: Any, agent_type_cls: Any
+    ) -> tuple[list[str], dict[str, Any]]:
+        agents_cfg = getattr(flow_cfg, "agents", None) or []
+        if not agents_cfg:
+            msg = "flows.workflow_patterns.agents must contain at least one agent"
+            raise ValueError(msg)
+
+        agent_ids: list[str] = []
+        agent_types: dict[str, Any] = {}
+        for item in agents_cfg:
+            if isinstance(item, dict):
+                agent_id = str(item.get("id") or item.get("agent_id") or "")
+                type_value = item.get("type") or item.get("agent_type")
+            else:
+                agent_id = str(
+                    getattr(item, "id", None) or getattr(item, "agent_id", None) or ""
+                )
+                type_value = getattr(item, "type", None) or getattr(
+                    item, "agent_type", None
+                )
+            if not agent_id:
+                msg = "Each workflow pattern agent must define id"
+                raise ValueError(msg)
+            agent_ids.append(agent_id)
+            agent_types[agent_id] = agent_type_cls(
+                type_value or agent_type_cls.EXECUTOR.value
+            )
+        return agent_ids, agent_types
+
+    def _resolve_executors(
+        self,
+        flow_cfg: Any,
+        agent_ids: list[str],
+        agent_registry: Any,
+        question: str,
+    ) -> dict[str, Any]:
+        development_mock = bool(getattr(flow_cfg, "development_mock", False))
+        configured = getattr(flow_cfg, "agent_executors", {}) or {}
+        executors: dict[str, Any] = {}
+
+        for agent_id in agent_ids:
+            executor_id = configured.get(agent_id, agent_id)
+            executor = agent_registry.get(str(executor_id))
+            if executor:
+                executors[agent_id] = executor
+            elif development_mock:
+                executors[agent_id] = self._development_executor(agent_id, question)
+            else:
+                msg = (
+                    f"No registered executor found for workflow pattern agent "
+                    f"{agent_id}: {executor_id}"
+                )
+                raise ValueError(msg)
+        return executors
+
+    def _development_executor(self, agent_id: str, question: str):
+        async def executor(messages: list[Any], _state: Any) -> dict[str, Any]:
+            return {
+                "answer": question,
+                "result": "Development workflow-pattern result",
+                "messages_processed": len(messages),
+            }
+
+        return executor
+
+
 @dataclass
 class HypothesisRun(BaseNode[ResearchState]):
     async def run(
@@ -1166,6 +1368,7 @@ def run_graph(question: str, cfg: DictConfig) -> str:
         PrimeEvaluate(),
         BioinformaticsParse(),
         BioinformaticsFuse(),
+        LiteratureReviewRun(),
         HypothesisRun(),
         RAGParse(),
         RAGExecute(),
@@ -1187,7 +1390,9 @@ def run_graph(question: str, cfg: DictConfig) -> str:
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def main(cfg: DictConfig) -> None:
     question = cfg.get("question", "What is deep research?")
-    run_graph(question, cfg)
+    output = run_graph(question, cfg)
+    if output:
+        print(output)
 
 
 if __name__ == "__main__":

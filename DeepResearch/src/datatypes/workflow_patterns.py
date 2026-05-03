@@ -8,6 +8,8 @@ Pydantic AI and Pydantic Graph integration.
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -93,6 +95,13 @@ class AgentInteractionMode(str, Enum):
     BATCH = "batch"
 
 
+SUPPORTED_WORKFLOW_PATTERNS: set[InteractionPattern] = {
+    InteractionPattern.COLLABORATIVE,
+    InteractionPattern.SEQUENTIAL,
+    InteractionPattern.HIERARCHICAL,
+}
+
+
 @dataclass
 class InteractionMessage:
     """Message for agent-to-agent communication."""
@@ -174,7 +183,7 @@ class AgentInteractionState:
 
     def activate_agent(self, agent_id: str) -> None:
         """Activate an agent for the current round."""
-        if agent_id in self.agents:
+        if agent_id in self.agents and agent_id not in self.active_agents:
             self.active_agents.append(agent_id)
             self.agent_states[agent_id] = AgentStatus.RUNNING
 
@@ -184,15 +193,25 @@ class AgentInteractionState:
             self.active_agents.remove(agent_id)
         self.agent_states[agent_id] = AgentStatus.COMPLETED
 
+    def finish_agent(
+        self, agent_id: str, status: AgentStatus = AgentStatus.COMPLETED
+    ) -> None:
+        """Mark an agent as finished and remove it from the active set."""
+        if agent_id in self.active_agents:
+            self.active_agents.remove(agent_id)
+        if agent_id in self.agents:
+            self.agent_states[agent_id] = status
+
     def send_message(self, message: InteractionMessage) -> None:
         """Send a message in the interaction."""
         self.messages.append(message)
-        if message.receiver_id:
-            self.message_queue.append(message)
+        self.message_queue.append(message)
 
     def get_messages_for_agent(self, agent_id: str) -> list[InteractionMessage]:
         """Get messages addressed to a specific agent."""
-        return [msg for msg in self.message_queue if msg.receiver_id == agent_id]
+        return [
+            msg for msg in self.message_queue if msg.receiver_id in {None, agent_id}
+        ]
 
     def get_broadcast_messages(self) -> list[InteractionMessage]:
         """Get broadcast messages."""
@@ -215,10 +234,10 @@ class AgentInteractionState:
         self.current_round += 1
         self.clear_message_queue()
 
-    def finalize(self) -> None:
+    def finalize(self, status: ExecutionStatus = ExecutionStatus.SUCCESS) -> None:
         """Finalize the interaction."""
         self.end_time = time.time()
-        self.execution_status = ExecutionStatus.SUCCESS
+        self.execution_status = status
 
     def get_summary(self) -> dict[str, Any]:
         """Get a summary of the interaction state."""
@@ -246,7 +265,7 @@ class WorkflowOrchestrator:
 
     def register_agent_executor(self, agent_id: str, executor: Callable) -> None:
         """Register an executor for an agent."""
-        self.executors[agent_id] = executor
+        self.executors[agent_id] = normalize_agent_executor(executor)
 
     async def execute_collaborative_pattern(self) -> Any:
         """Execute collaborative interaction pattern."""
@@ -260,17 +279,31 @@ class WorkflowOrchestrator:
             # Execute agents concurrently
             results = await self._execute_agents_parallel()
 
+            for agent_id, result in results.items():
+                if result["success"]:
+                    self.state.results[agent_id] = result["data"]
+                else:
+                    self.state.errors.append(
+                        f"Agent {agent_id} failed: {result['error']}"
+                    )
+
             # Process results
             consensus_result = self._process_collaborative_results(results)
+            self.state.final_result = consensus_result["result"]
+            self.state.next_round()
+
+            if self.state.errors:
+                break
 
             if consensus_result["consensus_reached"]:
                 self.state.consensus_reached = True
-                self.state.final_result = consensus_result["result"]
                 break
 
-            self.state.next_round()
-
-        self.state.finalize()
+        self.state.finalize(
+            ExecutionStatus.SUCCESS
+            if self.state.final_result is not None and not self.state.errors
+            else ExecutionStatus.FAILED
+        )
         return self.state.final_result
 
     async def execute_sequential_pattern(self) -> Any:
@@ -299,7 +332,14 @@ class WorkflowOrchestrator:
                 self.state.errors.append(f"Agent {agent_id} failed: {result['error']}")
                 break
 
-        self.state.finalize()
+        self.state.final_result = (
+            next(reversed(self.state.results.values())) if self.state.results else None
+        )
+        self.state.finalize(
+            ExecutionStatus.SUCCESS
+            if self.state.results and not self.state.errors
+            else ExecutionStatus.FAILED
+        )
         return self.state.results
 
     async def execute_hierarchical_pattern(self) -> Any:
@@ -313,39 +353,55 @@ class WorkflowOrchestrator:
             coord_result = await self._execute_single_agent(coordinator_id)
 
             if coord_result["success"]:
+                self.state.results["coordinator"] = coord_result["data"]
+                self.state.results[coordinator_id] = coord_result["data"]
+                self.state.deactivate_agent(coordinator_id)
                 # Execute subordinate agents
                 sub_results = await self._execute_hierarchical_subordinates(
-                    coord_result["data"]
+                    coordinator_id, coord_result["data"]
                 )
+                self.state.results["subordinates"] = sub_results
                 self.state.results.update(sub_results)
+                self.state.final_result = {
+                    "coordinator": coord_result["data"],
+                    "subordinates": sub_results,
+                }
             else:
                 self.state.errors.append(f"Coordinator failed: {coord_result['error']}")
+        else:
+            self.state.errors.append("No coordinator agent available")
 
-        self.state.finalize()
-        return self.state.results
+        self.state.finalize(
+            ExecutionStatus.SUCCESS
+            if self.state.final_result is not None and not self.state.errors
+            else ExecutionStatus.FAILED
+        )
+        return self.state.final_result
 
     async def _execute_agents_parallel(self) -> dict[str, dict[str, Any]]:
         """Execute all active agents in parallel."""
 
-        tasks = []
-        for agent_id in self.state.active_agents:
-            if agent_id in self.executors:
-                task = self._execute_single_agent(agent_id)
-                tasks.append((agent_id, task))
+        tasks: list[tuple[str, Any]] = []
+        for agent_id in list(self.state.active_agents):
+            task = self._execute_single_agent(agent_id)
+            tasks.append((agent_id, task))
 
+        gathered = await asyncio.gather(
+            *(task for _, task in tasks), return_exceptions=True
+        )
         results = {}
-        for agent_id, task in tasks:
-            try:
-                result = await task
+        for (agent_id, _), result in zip(tasks, gathered, strict=False):
+            if isinstance(result, Exception):
+                results[agent_id] = {"success": False, "error": str(result)}
+            else:
                 results[agent_id] = result
-            except Exception as e:
-                results[agent_id] = {"success": False, "error": str(e)}
 
         return results
 
     async def _execute_single_agent(self, agent_id: str) -> dict[str, Any]:
         """Execute a single agent."""
         if agent_id not in self.executors:
+            self.state.finish_agent(agent_id, AgentStatus.FAILED)
             return {"success": False, "error": f"No executor for agent {agent_id}"}
 
         try:
@@ -353,11 +409,12 @@ class WorkflowOrchestrator:
             # Get messages for this agent
             messages = self.state.get_messages_for_agent(agent_id)
 
-            # Execute agent with messages
             result = await executor(messages, self.state)
 
+            self.state.finish_agent(agent_id)
             return {"success": True, "data": result}
         except Exception as e:
+            self.state.finish_agent(agent_id, AgentStatus.FAILED)
             return {"success": False, "error": str(e)}
 
     def _process_collaborative_results(
@@ -446,11 +503,36 @@ class WorkflowOrchestrator:
         return 1.0 - (unique_results - 1) / total_results
 
     async def _execute_hierarchical_subordinates(
-        self, _coordinator_data: Any
+        self, coordinator_id: str, coordinator_data: Any
     ) -> dict[str, Any]:
         """Execute subordinate agents in hierarchical pattern."""
-        # This would implement hierarchical execution logic
-        return {}
+        subordinate_ids = [
+            agent_id for agent_id in self.state.agents if agent_id != coordinator_id
+        ]
+        for sub_id in subordinate_ids:
+            self.state.send_message(
+                InteractionMessage(
+                    sender_id=coordinator_id,
+                    receiver_id=sub_id,
+                    message_type=MessageType.DATA,
+                    content=coordinator_data,
+                )
+            )
+            self.state.activate_agent(sub_id)
+
+        results = await self._execute_agents_parallel()
+        sub_results: dict[str, Any] = {}
+        for sub_id in subordinate_ids:
+            result = results.get(sub_id)
+            if not result:
+                self.state.errors.append(f"Subordinate {sub_id} was not executed")
+            elif result["success"]:
+                sub_results[sub_id] = result["data"]
+            else:
+                self.state.errors.append(
+                    f"Subordinate {sub_id} failed: {result['error']}"
+                )
+        return sub_results
 
     def _get_next_agent(self, current_agent: str) -> str | None:
         """Get the next agent in sequential pattern."""
@@ -467,9 +549,50 @@ class WorkflowOrchestrator:
 
     def _get_coordinator_agent(self) -> str | None:
         """Get the coordinator agent in hierarchical pattern."""
-        # In a real implementation, this would identify the coordinator
-        # For now, return the first agent
+        for agent_id, agent_type in self.state.agents.items():
+            if agent_type in {AgentType.ORCHESTRATOR, AgentType.PLANNER}:
+                return agent_id
         return next(iter(self.state.agents.keys())) if self.state.agents else None
+
+
+def normalize_agent_executor(executor: Callable) -> Callable:
+    """Normalize sync/async one- or two-argument agent callables."""
+
+    async def normalized(
+        messages: list[InteractionMessage], state: AgentInteractionState
+    ) -> Any:
+        accepts_state = _callable_accepts_state(executor)
+        if accepts_state:
+            result = executor(messages, state)
+        else:
+            result = executor(messages)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    return normalized
+
+
+def _callable_accepts_state(executor: Callable) -> bool:
+    try:
+        signature = inspect.signature(executor)
+    except (TypeError, ValueError):
+        return True
+
+    positional = [
+        parameter
+        for parameter in signature.parameters.values()
+        if parameter.kind
+        in {
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        }
+    ]
+    has_varargs = any(
+        parameter.kind == inspect.Parameter.VAR_POSITIONAL
+        for parameter in signature.parameters.values()
+    )
+    return has_varargs or len(positional) >= 2
 
 
 # Pydantic models for type safety
@@ -523,7 +646,8 @@ def create_interaction_state(
     """Create a new interaction state."""
     state = AgentInteractionState(pattern=pattern)
 
-    if agents and agent_types:
+    if agents:
+        agent_types = agent_types or {}
         for agent_id in agents:
             agent_type = agent_types.get(agent_id, AgentType.EXECUTOR)
             state.add_agent(agent_id, agent_type)

@@ -8,6 +8,8 @@ defaults:
   - vector_store: chroma
 
 # RAG system settings
+embedding_model_role: null
+llm_model_role: null
 chunk_size: 1000
 chunk_overlap: 200
 max_context_length: 4000

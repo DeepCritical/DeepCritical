@@ -84,6 +84,7 @@ class HypothesisWorkflowState(BaseModel):
         default_factory=dict, description="Optional score weights"
     )
     config: Any | None = Field(default=None, description="Original config object")
+    provided_hypotheses: list[HypothesisCandidate] = Field(default_factory=list)
     evidence: list[HypothesisEvidence] = Field(default_factory=list)
     candidates: list[HypothesisCandidate] = Field(default_factory=list)
     ranked_candidates: list[HypothesisCandidate] = Field(default_factory=list)
@@ -140,6 +141,27 @@ def _build_failure_payload(state: HypothesisWorkflowState) -> dict[str, Any]:
     }
 
 
+def _normalize_mode(mode: str | None) -> str:
+    normalized = (mode or "generate").strip().lower()
+    aliases = {
+        "generate": "generate",
+        "generation": "generate",
+        "testing": "testing",
+        "generate_and_plan_tests": "testing",
+        "full": "full",
+    }
+    return aliases.get(normalized, "generate")
+
+
+def _normalize_hypothesis_candidates(items: list[Any]) -> list[HypothesisCandidate]:
+    return [
+        item
+        if isinstance(item, HypothesisCandidate)
+        else HypothesisCandidate.model_validate(item)
+        for item in items
+    ]
+
+
 class ParseHypothesisRequest(BaseNode[HypothesisWorkflowState]):  # type: ignore[unsupported-base]
     """Validate and normalize workflow inputs."""
 
@@ -148,20 +170,27 @@ class ParseHypothesisRequest(BaseNode[HypothesisWorkflowState]):  # type: ignore
     ) -> GatherEvidence | End[dict[str, Any]]:
         state = ctx.state
         question = state.question.strip()
-        if not question:
+        if not question and not state.provided_hypotheses:
             _mark_failure(
                 state,
-                "Question cannot be empty",
+                "Question cannot be empty unless hypotheses are provided",
                 stage="request_parsing",
             )
             return End(_build_failure_payload(state))
 
-        state.question = question
-        state.max_hypotheses = max(1, int(state.max_hypotheses))
-        state.top_k = max(1, min(int(state.top_k), state.max_hypotheses))
-        state.generate_testing_plans = (
-            state.generate_testing_plans or state.mode == "generate_and_plan_tests"
+        state.question = question or "Provided hypotheses"
+        state.mode = _normalize_mode(state.mode)
+        state.max_hypotheses = max(
+            1, int(state.max_hypotheses), len(state.provided_hypotheses)
         )
+        state.top_k = max(1, min(int(state.top_k), state.max_hypotheses))
+        state.generate_testing_plans = state.generate_testing_plans or state.mode in {
+            "testing",
+            "full",
+        }
+        if state.provided_hypotheses:
+            state.candidates = list(state.provided_hypotheses)
+            state.metadata["used_provided_hypotheses"] = True
         state.status = ExecutionStatus.RUNNING
         return GatherEvidence()
 
@@ -206,6 +235,8 @@ class GenerateHypotheses(BaseNode[HypothesisWorkflowState]):  # type: ignore[uns
         self, ctx: GraphRunContext[HypothesisWorkflowState]
     ) -> ScoreAndRankHypotheses | HypothesisError:
         state = ctx.state
+        if state.candidates:
+            return ScoreAndRankHypotheses()
         try:
             generator = HypothesisGeneratorAgent()
             state.candidates = generator.generate(
@@ -381,7 +412,7 @@ def _build_testing_environments(
                         candidate.score.overall_score if candidate.score else None
                     ),
                 },
-                status=WorkflowStatus.COMPLETED,
+                status=WorkflowStatus.PENDING,
             )
         )
     return environments
@@ -407,6 +438,7 @@ async def run_hypothesis_workflow(
     question: str,
     cfg: Any | None = None,
     mode: str | None = None,
+    existing_hypotheses: list[dict[str, Any]] | list[HypothesisCandidate] | None = None,
 ) -> dict[str, Any]:
     """Run the hypothesis workflow with config-derived defaults."""
 
@@ -417,9 +449,14 @@ async def run_hypothesis_workflow(
     inferred_mode = mode
     if inferred_mode is None:
         if _section_get(testing_cfg, "enabled", False):
-            inferred_mode = "generate_and_plan_tests"
+            inferred_mode = "testing"
         else:
             inferred_mode = _section_get(hypothesis_cfg, "mode", "generate")
+    inferred_mode = _normalize_mode(inferred_mode)
+
+    provided_hypotheses = existing_hypotheses
+    if provided_hypotheses is None:
+        provided_hypotheses = _section_get(hypothesis_cfg, "existing_hypotheses", [])
 
     state = HypothesisWorkflowState(
         question=question,
@@ -432,14 +469,19 @@ async def run_hypothesis_workflow(
         top_k=int(_section_get(hypothesis_cfg, "top_k", 3) or 3),
         generate_testing_plans=bool(
             _section_get(hypothesis_cfg, "generate_testing_plans", False)
-            or inferred_mode == "generate_and_plan_tests"
+            or inferred_mode in {"testing", "full"}
         ),
         score_weights=dict(_section_get(hypothesis_cfg, "score_weights", {}) or {}),
         config=cfg,
+        provided_hypotheses=_normalize_hypothesis_candidates(
+            list(provided_hypotheses or [])
+        ),
     )
     workflow = create_hypothesis_workflow()
     result = await workflow.run(ParseHypothesisRequest(), state=state)  # type: ignore[arg-type]
-    return result.output if hasattr(result, "output") else {"error": "No output"}  # type: ignore[return-value]
+    if not hasattr(result, "output") or not isinstance(result.output, dict):
+        raise RuntimeError("Hypothesis workflow did not return a structured output")
+    return result.output  # type: ignore[return-value]
 
 
 __all__ = [

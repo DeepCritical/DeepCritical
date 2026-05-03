@@ -76,6 +76,10 @@ class MgrepConfig(BaseModel):
     chunking_strategy_version: str = Field(
         CHUNKING_STRATEGY_VERSION, description="Chunking strategy fingerprint"
     )
+    embedding_model_role: str | None = Field(
+        None,
+        description="Optional model-registry role used to resolve embeddings",
+    )
     embeddings: EmbeddingsConfig = Field(
         default_factory=lambda: EmbeddingsConfig(
             model_type=EmbeddingModelType.SENTENCE_TRANSFORMERS,
