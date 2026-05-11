@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from DeepResearch.src.agents import vllm_agent as vllm_agent_module
 from DeepResearch.src.agents.vllm_agent import (
@@ -265,7 +266,7 @@ async def test_invalid_prompt_shape_raises_validation_error() -> None:
     client = RecordingClient()
     agent.client = client  # type: ignore[assignment]
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         await agent.chat("not a message list")  # type: ignore[arg-type]
 
 
