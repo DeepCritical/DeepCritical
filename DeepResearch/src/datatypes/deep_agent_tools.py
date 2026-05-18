@@ -11,11 +11,33 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from .deep_agent_state import TaskStatus
+
+
+class TodoInput(BaseModel):
+    """Structured todo item accepted by DeepAgent todo tools."""
+
+    content: str = Field(..., description="Todo content or description")
+    status: TaskStatus = Field(TaskStatus.PENDING, description="Todo status")
+    priority: int = Field(0, description="Priority level")
+    tags: list[str] = Field(default_factory=list, description="Todo tags")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional todo metadata"
+    )
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def validate_content(cls, v: Any) -> str:
+        if not v or not str(v).strip():
+            msg = "Todo content cannot be empty"
+            raise ValueError(msg)
+        return str(v).strip()
+
 
 class WriteTodosRequest(BaseModel):
     """Request for writing todos."""
 
-    todos: list[dict[str, Any]] = Field(..., description="List of todos to write")
+    todos: list[TodoInput] = Field(..., description="List of todos to write")
 
     @field_validator("todos")
     @classmethod
@@ -23,13 +45,6 @@ class WriteTodosRequest(BaseModel):
         if not v:
             msg = "Todos list cannot be empty"
             raise ValueError(msg)
-        for todo in v:
-            if not isinstance(todo, dict):
-                msg = "Each todo must be a dictionary"
-                raise ValueError(msg)
-            if "content" not in todo:
-                msg = "Each todo must have 'content' field"
-                raise ValueError(msg)
         return v
 
 

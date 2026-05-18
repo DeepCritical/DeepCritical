@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import uuid
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Sequence
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import RunContext, Tool
@@ -22,10 +22,10 @@ from ..datatypes.deep_agent_runtime import DeepAgentDeps
 # Import existing DeepCritical types
 from ..datatypes.deep_agent_state import (
     DeepAgentState,
-    TaskStatus,
     create_file_info,
     create_todo,
 )
+from ..datatypes.deep_agent_tools import TodoInput
 from ..datatypes.deep_agent_types import TaskRequest
 from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 
@@ -33,18 +33,13 @@ from .base import ExecutionResult, ToolRunner, ToolSpec, registry
 class WriteTodosRequest(BaseModel):
     """Request for writing todos."""
 
-    todos: list[dict[str, Any]] = Field(..., description="List of todos to write")
+    todos: list[TodoInput] = Field(..., description="List of todos to write")
 
     @field_validator("todos")
     @classmethod
-    def validate_todos(cls, v: Any) -> list[dict[str, Any]]:
+    def validate_todos(cls, v: Any) -> list[TodoInput]:
         if not v:
             raise ValueError("Todos list cannot be empty")
-        for todo in v:
-            if not isinstance(todo, dict):
-                raise ValueError("Each todo must be a dictionary")
-            if "content" not in todo:
-                raise ValueError("Each todo must have 'content' field")
         return v
 
 
@@ -225,17 +220,13 @@ def write_todos_to_state(
         todos_created = 0
         for todo_data in request.todos:
             todo = create_todo(
-                content=todo_data["content"],
-                priority=todo_data.get("priority", 0),
-                tags=todo_data.get("tags", []),
-                metadata=todo_data.get("metadata", {}),
+                content=todo_data.content,
+                priority=todo_data.priority,
+                tags=todo_data.tags,
+                metadata=todo_data.metadata,
             )
 
-            if "status" in todo_data:
-                try:
-                    todo.status = TaskStatus(todo_data["status"])
-                except ValueError:
-                    todo.status = TaskStatus.PENDING
+            todo.status = todo_data.status
 
             state.add_todo(todo)
             todos_created += 1
@@ -853,6 +844,7 @@ __all__ = [
     "TaskRequestModel",
     "TaskResponse",
     "TaskToolRunner",
+    "TodoInput",
     "WriteFileRequest",
     "WriteFileResponse",
     "WriteFileToolRunner",

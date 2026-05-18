@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_ai import Agent
@@ -30,7 +30,10 @@ from ..tools.deep_agent_tools import resolve_deep_agent_tools
 class AgentBuilderConfig(BaseModel):
     """Configuration for agent builder."""
 
-    model_name: str = Field("anthropic:claude-sonnet-4-0", description="Model name")
+    model_name: Any = Field(
+        "anthropic:claude-sonnet-4-0",
+        description="Pydantic AI model id string or Model instance (e.g. TestModel in CI)",
+    )
     instructions: str = Field("", description="Additional instructions")
     tools: list[str] = Field(default_factory=list, description="Tool names to include")
     subagents: list[Union[SubAgent, CustomSubAgent]] = Field(
@@ -469,7 +472,7 @@ class AgentBuilder:
 
 # Factory functions
 def create_agent_builder(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
     tools: list[str] | None = None,
     subagents: list[Union[SubAgent, CustomSubAgent]] | None = None,
@@ -487,7 +490,7 @@ def create_agent_builder(
 
 
 def create_simple_agent(
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any = "anthropic:claude-sonnet-4-0",
     instructions: str = "",
     tools: list[str] | None = None,
 ) -> Agent:
@@ -500,7 +503,7 @@ def create_deep_agent(
     tools: list[str] | None = None,
     instructions: str = "",
     subagents: list[Union[SubAgent, CustomSubAgent]] | None = None,
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:
     """Create a deep agent with full capabilities."""
@@ -528,7 +531,7 @@ def create_async_deep_agent(
     tools: list[str] | None = None,
     instructions: str = "",
     subagents: list[Union[SubAgent, CustomSubAgent]] | None = None,
-    model_name: str = "anthropic:claude-sonnet-4-0",
+    model_name: Any = "anthropic:claude-sonnet-4-0",
     **kwargs,
 ) -> Agent:
     """Create an async deep agent with full capabilities."""

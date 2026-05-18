@@ -6,11 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from DeepResearch.src.datatypes.deep_agent_runtime import DeepAgentDeps
-from DeepResearch.src.datatypes.deep_agent_state import DeepAgentState
+from DeepResearch.src.datatypes.deep_agent_state import DeepAgentState, TaskStatus
 from DeepResearch.src.tools.deep_agent_tools import (
     EditFileRequest,
     ReadFileRequest,
     TaskRequestModel,
+    TodoInput,
     WriteFileRequest,
     WriteTodosRequest,
     edit_file_tool,
@@ -33,8 +34,8 @@ def test_todo_tool_mutates_state() -> None:
         _ctx(state),
         WriteTodosRequest(
             todos=[
-                {"content": "Draft plan", "priority": 2},
-                {"content": "Run tests", "status": "in_progress"},
+                TodoInput(content="Draft plan", priority=2),
+                TodoInput(content="Run tests", status=TaskStatus.IN_PROGRESS),
             ]
         ),
     )
@@ -43,6 +44,27 @@ def test_todo_tool_mutates_state() -> None:
     assert response.todos_created == 2
     assert [todo.content for todo in state.todos] == ["Draft plan", "Run tests"]
     assert state.todos[1].status.value == "in_progress"
+
+
+def test_write_todos_request_schema_exposes_todo_content() -> None:
+    schema = WriteTodosRequest.model_json_schema()
+    todo_items_schema = schema["properties"]["todos"]["items"]
+
+    if "$ref" in todo_items_schema:
+        ref_name = todo_items_schema["$ref"].rsplit("/", 1)[-1]
+        todo_items_schema = schema["$defs"][ref_name]
+
+    assert "content" in todo_items_schema["properties"]
+    assert "content" in todo_items_schema["required"]
+
+
+def test_write_todos_request_accepts_dict_payloads() -> None:
+    request = WriteTodosRequest.model_validate(
+        {"todos": [{"content": "Draft plan", "status": "in_progress"}]}
+    )
+
+    assert request.todos[0].content == "Draft plan"
+    assert request.todos[0].status.value == "in_progress"
 
 
 def test_file_tools_use_state_backed_filesystem() -> None:
@@ -71,7 +93,9 @@ def test_file_tools_use_state_backed_filesystem() -> None:
     )
     assert edit_response.success
     assert edit_response.replacements_made == 2
-    assert state.get_file("/notes.md").content == "gamma\nbeta\ngamma"
+    file_info = state.get_file("/notes.md")
+    assert file_info is not None
+    assert file_info.content == "gamma\nbeta\ngamma"
 
 
 def test_read_missing_file_is_deterministic() -> None:
