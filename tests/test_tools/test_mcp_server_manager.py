@@ -13,7 +13,22 @@ from DeepResearch.src.datatypes.mcp import (
     MCPServerStatus,
 )
 from DeepResearch.src.tools.bioinformatics.fastqc_server import FastQCServer
-from DeepResearch.src.tools.mcp_server_tools import MCPServerManager
+from DeepResearch.src.tools.mcp_server_management import SERVER_IMPLEMENTATIONS
+from DeepResearch.src.tools.mcp_server_tools import (
+    MCP_STUB_SERVER_NAMES,
+    MCPServerManager,
+)
+from DeepResearch.src.utils.testcontainers_deployer import (
+    TestcontainersDeployer as MCPTestcontainersDeployer,
+)
+
+ISSUE_130_RECONCILED_SERVER_KEYS = {
+    "deeptools",
+    "gunzip",
+    "haplotypecaller",
+    "mafft",
+    "multiqc",
+}
 
 
 class TestMCPServerManager:
@@ -30,6 +45,23 @@ class TestMCPServerManager:
         assert "gunzip" in servers
         assert "haplotypecaller" in servers
         assert "mafft" in servers
+
+    def test_issue_130_reconciled_servers_are_publicly_discoverable(self):
+        """Existing issue #130 servers are aligned across public registries."""
+        manager = MCPServerManager()
+        deployer = MCPTestcontainersDeployer()
+
+        for server_key in ISSUE_130_RECONCILED_SERVER_KEYS:
+            assert server_key in manager.list_implemented()
+            assert server_key in SERVER_IMPLEMENTATIONS
+            assert server_key in deployer.server_implementations
+            assert server_key not in MCP_STUB_SERVER_NAMES
+
+    def test_management_map_matches_manager_registry(self):
+        """Public management tools do not drift from MCPServerManager keys."""
+        manager = MCPServerManager()
+
+        assert set(SERVER_IMPLEMENTATIONS) == set(manager.servers)
 
     def test_get_server_returns_class_for_valid_name(self, mcp_manager):
         """get_server() returns server class when name exists."""
