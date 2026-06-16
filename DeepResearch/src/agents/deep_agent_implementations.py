@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_ai import Agent, ModelRetry
@@ -196,7 +196,7 @@ class BaseDeepAgent:
 
             return AgentExecutionResult(
                 success=True,
-                result=result,
+                result=self._normalize_agent_result(result),
                 execution_time=execution_time,
                 iterations_used=iterations_used,
                 tools_used=tools_used,
@@ -249,6 +249,20 @@ class BaseDeepAgent:
 
         assert last_error is not None
         raise last_error
+
+    @staticmethod
+    def _normalize_agent_result(result: Any) -> dict[str, Any]:
+        """Convert Pydantic AI run results into the public result contract."""
+
+        if isinstance(result, dict):
+            return result
+
+        if hasattr(result, "output"):
+            return {"output": result.output}
+        if hasattr(result, "data"):
+            return {"output": result.data}
+
+        return {"output": result}
 
     def _update_metrics(
         self, execution_time: float, success: bool, tools_used: list[str]

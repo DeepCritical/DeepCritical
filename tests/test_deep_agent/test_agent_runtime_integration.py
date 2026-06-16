@@ -47,11 +47,42 @@ def test_deep_agent_wrapper_uses_runtime_deps(monkeypatch: pytest.MonkeyPatch) -
     assert planning_agent.agent._deps_type is DeepAgentDeps
 
 
+@pytest.mark.asyncio
+async def test_deep_agent_wrapper_executes_state_backed_tool() -> None:
+    state = DeepAgentState(session_id="agent-execute")
+    planning_agent = PlanningAgent(
+        AgentConfig(
+            name="planning-agent",
+            model_name=TestModel(),
+            tools=["write_todos"],
+            retry_attempts=0,
+        )
+    )
+
+    result = await planning_agent.execute("Create one todo", state)
+
+    assert result.success
+    assert result.error is None
+    assert isinstance(result.result, dict)
+    assert "write_todos" in result.result["output"]
+    assert len(state.todos) == 1
+    assert state.todos[0].content
+
+
 def test_deep_agent_wrapper_rejects_unknown_tools() -> None:
     config = AgentConfig(name="invalid-agent", tools=["missing_tool"])
 
     with pytest.raises(ValueError, match="missing_tool"):
         PlanningAgent(config)
+
+
+def test_agent_builder_accepts_model_instances() -> None:
+    agent = AgentBuilder(
+        AgentBuilderConfig(model_name=TestModel(), tools=["write_todos"])
+    ).build_agent()
+
+    assert set(agent._function_toolset.tools) == {"write_todos"}
+    assert agent._deps_type is DeepAgentDeps
 
 
 def test_agent_builder_rejects_unknown_tools() -> None:

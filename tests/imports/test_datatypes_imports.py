@@ -356,6 +356,7 @@ class TestDatatypesModuleImports:
             ReadFileResponse,
             TaskRequestModel,
             TaskResponse,
+            TodoInput,
             WriteFileRequest,
             WriteFileResponse,
             WriteTodosRequest,
@@ -374,19 +375,23 @@ class TestDatatypesModuleImports:
         assert EditFileResponse is not None
         assert TaskRequestModel is not None
         assert TaskResponse is not None
+        assert TodoInput is not None
 
         # Test that they are proper Pydantic models
         assert hasattr(WriteTodosRequest, "model_fields") or hasattr(
             WriteTodosRequest, "__fields__"
         )
+        assert hasattr(TodoInput, "model_fields") or hasattr(TodoInput, "__fields__")
         assert hasattr(TaskRequestModel, "model_fields") or hasattr(
             TaskRequestModel, "__fields__"
         )
 
         # Test that they can be instantiated
         try:
-            request = WriteTodosRequest(todos=[{"content": "test todo"}])
-            assert request.todos[0]["content"] == "test todo"
+            request = WriteTodosRequest.model_validate(
+                {"todos": [{"content": "test todo"}]}
+            )
+            assert request.todos[0].content == "test todo"
 
             response = WriteTodosResponse(success=True, todos_created=1, message="test")
             assert response.success is True
