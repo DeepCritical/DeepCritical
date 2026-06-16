@@ -6,6 +6,8 @@ from typing import Any
 
 import pytest
 from hydra import compose, initialize_config_dir
+from omegaconf import OmegaConf
+from pydantic_ai.exceptions import AgentRunError
 
 from DeepResearch.app import PrimaryREACTWorkflow
 from DeepResearch.src.agents.workflow_orchestrator import (
@@ -233,6 +235,49 @@ async def test_execute_workflow_plan_retries_retryable_adapter_failure(
 
 
 @pytest.mark.asyncio
+async def test_execute_workflow_plan_result_is_scoped_to_current_invocation(
+    no_primary_agent: None,
+) -> None:
+    workflow = WorkflowConfig(
+        workflow_type=WorkflowType.SEARCH_WORKFLOW,
+        name="search",
+        max_retries=0,
+    )
+    orchestrator = make_orchestrator([workflow])
+    calls: list[tuple[str, list[str]]] = []
+    orchestrator.adapter_registry = {
+        WorkflowType.SEARCH_WORKFLOW.value: RecordingAdapter(
+            WorkflowType.SEARCH_WORKFLOW, calls, always_fail=True
+        )
+    }
+
+    first = await orchestrator.execute_workflow_plan(
+        WorkflowPlan(user_input="question", workflow_names=["search"]),
+        {"question": "question"},
+        execution_mode="test",
+    )
+    assert first["success"] is False
+
+    orchestrator.adapter_registry = {
+        WorkflowType.SEARCH_WORKFLOW.value: RecordingAdapter(
+            WorkflowType.SEARCH_WORKFLOW, calls
+        )
+    }
+    second = await orchestrator.execute_workflow_plan(
+        WorkflowPlan(user_input="question", workflow_names=["search"]),
+        {"question": "question"},
+        execution_mode="test",
+    )
+
+    assert second["success"] is True
+    assert second["execution_metadata"]["total_executions"] == 1
+    assert second["execution_metadata"]["failed_executions"] == 0
+    assert len(second["completed_executions"]) == 1
+    assert second["completed_executions"][0].status == WorkflowStatus.COMPLETED
+    assert len(orchestrator.state.completed_executions) == 2
+
+
+@pytest.mark.asyncio
 async def test_execute_workflow_plan_skips_dependents_after_dependency_failure(
     no_primary_agent: None,
 ) -> None:
@@ -354,6 +399,50 @@ async def test_spawned_workflows_are_drained_before_completion(
 
     await orchestrator._drain_workflows()
 
+    assert orchestrator.state.active_executions == []
+    assert len(orchestrator.state.completed_executions) == 1
+    assert orchestrator.state.completed_executions[0].status == WorkflowStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_execute_primary_workflow_failure_metadata_reflects_drained_workflows(
+    no_primary_agent: None,
+) -> None:
+    workflow = WorkflowConfig(
+        workflow_type=WorkflowType.SEARCH_WORKFLOW,
+        name="search",
+        max_retries=0,
+    )
+    orchestrator = make_orchestrator([workflow])
+    calls: list[tuple[str, list[str]]] = []
+    orchestrator.adapter_registry = {
+        WorkflowType.SEARCH_WORKFLOW.value: RecordingAdapter(
+            WorkflowType.SEARCH_WORKFLOW, calls
+        )
+    }
+
+    class FailingPrimaryAgent:
+        async def run(self, *_args: Any, **_kwargs: Any) -> None:
+            orchestrator._spawn_workflow(
+                WorkflowSpawnRequest(
+                    workflow_type=WorkflowType.SEARCH_WORKFLOW,
+                    workflow_name="search",
+                    input_data={"question": "question"},
+                )
+            )
+            raise AgentRunError("model unavailable")
+
+    orchestrator.primary_agent = FailingPrimaryAgent()
+
+    result = await orchestrator.execute_primary_workflow(
+        "question", OmegaConf.create({})
+    )
+
+    assert result["success"] is False
+    assert result["execution_metadata"]["failure_kind"] == "agent_run_error"
+    assert result["execution_metadata"]["workflows_spawned"] == 1
+    assert result["execution_metadata"]["active_executions"] == 0
+    assert result["execution_metadata"]["total_executions"] == 1
     assert orchestrator.state.active_executions == []
     assert len(orchestrator.state.completed_executions) == 1
     assert orchestrator.state.completed_executions[0].status == WorkflowStatus.COMPLETED
