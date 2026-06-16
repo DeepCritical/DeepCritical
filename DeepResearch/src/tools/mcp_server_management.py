@@ -33,6 +33,8 @@ from ..tools.bioinformatics.fastqc_server import FastQCServer
 from ..tools.bioinformatics.featurecounts_server import FeatureCountsServer
 from ..tools.bioinformatics.flye_server import FlyeServer
 from ..tools.bioinformatics.freebayes_server import FreeBayesServer
+from ..tools.bioinformatics.gunzip_server import GunzipServer
+from ..tools.bioinformatics.haplotypecaller_server import HaplotypeCallerServer
 from ..tools.bioinformatics.hisat2_server import HISAT2Server
 from ..tools.bioinformatics.kallisto_server import KallistoServer
 from ..tools.bioinformatics.macs3_server import MACS3Server
@@ -167,6 +169,9 @@ SERVER_IMPLEMENTATIONS = {
     # Variant Analysis
     "bcftools": BCFtoolsServer,
     "freebayes": FreeBayesServer,
+    "haplotypecaller": HaplotypeCallerServer,
+    # Compression & Utilities
+    "gunzip": GunzipServer,
     # Multiple Sequence Alignment
     "mafft": MAFFTServer,
 }

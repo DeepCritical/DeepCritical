@@ -6,6 +6,27 @@ DeepCritical provides bioinformatics tools for integrative biological data analy
 
 The bioinformatics tools integrate multiple biological databases and provide sophisticated analysis capabilities for gene function prediction, protein analysis, and biological data integration.
 
+## BioinfoMCP Server Catalog
+
+DeepCritical also tracks BioContainers-backed BioinfoMCP tools for issue #130 in `configs/bioinformatics/tools.yaml`. The public issue names are kept as aliases while the runtime uses stable server keys and Python method names.
+
+| Issue tool name | Server key | Method | Current status |
+| --- | --- | --- | --- |
+| `bamCoverage` | `deeptools` | `deeptools_bam_coverage` | Implemented and reconciled through the shared deeptools server |
+| `gatk_HaplotypeCaller` | `haplotypecaller` | `call_variants` | Implemented and reconciled through the HaplotypeCaller server |
+| `gunzip` | `gunzip` | `gunzip_decompress` | Implemented and reconciled through the gunzip server |
+| `mafft` | `mafft` | `mafft_align` | Implemented and reconciled through the MAFFT server |
+| `multiqc` | `multiqc` | `multiqc_run` | Implemented and reconciled through the MultiQC server |
+| `faToTwoBit` | `fatotwobit` | `fatotwobit_convert` | Planned follow-up server |
+| `gatk_ApplyBQSR` | `gatk` | `gatk_apply_bqsr` | Planned follow-up GATK server method |
+| `gatk_BaseRecalibrator` | `gatk` | `gatk_base_recalibrator` | Planned follow-up GATK server method |
+| `gatk_SelectVariants` | `gatk` | `gatk_select_variants` | Planned follow-up GATK server method |
+| `plotCorrelation` | `deeptools` | `deeptools_plot_correlation` | Planned follow-up deeptools method |
+| `quast` | `quast` | `quast_assess` | Planned follow-up server |
+| `trimmomatic` | `trimmomatic` | `trimmomatic_pe` | Planned follow-up server |
+
+Use `mcp_server_list` to discover reconciled server keys and `mcp_server_execute` to call a method after the server is available. Unit tests may use `DEEPC_BIOINFORMATICS_ALLOW_MOCK=1` for command-construction paths when local bioinformatics binaries are unavailable; production runs should provide the real executable or configured container image.
+
 ## Data Sources
 
 ### Gene Ontology (GO)

@@ -26,6 +26,23 @@ from DeepResearch.src.utils.vllm_client import (
 )
 
 
+def _generation_kwargs(
+    kwargs: dict[str, Any],
+    *,
+    max_tokens: int,
+    temperature: float,
+    top_p: float,
+) -> dict[str, Any]:
+    """Merge configured generation defaults with caller overrides."""
+    extra = dict(kwargs)
+    return {
+        "max_tokens": extra.pop("max_tokens", max_tokens),
+        "temperature": extra.pop("temperature", temperature),
+        "top_p": extra.pop("top_p", top_p),
+        **extra,
+    }
+
+
 class VLLMAgent:
     """VLLM-powered agent for Pydantic AI."""
 
@@ -44,6 +61,10 @@ class VLLMAgent:
         # Test connection
         await self.client.health()
 
+    async def close(self) -> None:
+        """Release VLLM client resources."""
+        await self.client.close()
+
     async def chat(
         self, messages: list[dict[str, str]], model: str | None = None, **kwargs
     ) -> str:
@@ -53,14 +74,16 @@ class VLLMAgent:
         request = ChatCompletionRequest(
             model=model,
             messages=messages,
-            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
-            temperature=kwargs.get("temperature", self.config.temperature),
-            top_p=kwargs.get("top_p", self.config.top_p),
-            **kwargs,
+            **_generation_kwargs(
+                kwargs,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+            ),
         )
 
         response = await self.client.chat_completions(request)
-        return response.choices[0].message.content
+        return response.choices[0].message.content or ""
 
     async def complete(self, prompt: str, model: str | None = None, **kwargs) -> str:
         """Complete text with the VLLM model."""
@@ -69,10 +92,12 @@ class VLLMAgent:
         request = CompletionRequest(
             model=model,
             prompt=prompt,
-            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
-            temperature=kwargs.get("temperature", self.config.temperature),
-            top_p=kwargs.get("top_p", self.config.top_p),
-            **kwargs,
+            **_generation_kwargs(
+                kwargs,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+            ),
         )
 
         response = await self.client.completions(request)
@@ -100,14 +125,18 @@ class VLLMAgent:
         """Stream chat completion."""
         model = model or self.config.default_model
 
+        extra = _generation_kwargs(
+            kwargs,
+            max_tokens=self.config.max_tokens,
+            temperature=self.config.temperature,
+            top_p=self.config.top_p,
+        )
+        extra["stream"] = True
+
         request = ChatCompletionRequest(
             model=model,
             messages=messages,
-            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
-            temperature=kwargs.get("temperature", self.config.temperature),
-            top_p=kwargs.get("top_p", self.config.top_p),
-            stream=True,
-            **kwargs,
+            **extra,
         )
 
         full_response = ""
@@ -136,17 +165,14 @@ class VLLMAgent:
             ctx, messages: list[dict[str, str]], model: str | None = None, **kwargs
         ) -> str:
             """Chat with the VLLM model."""
-            return (
-                await ctx.deps.vllm_client.chat_completions(
-                    ChatCompletionRequest(
-                        model=model or ctx.deps.default_model,
-                        messages=messages,
-                        **kwargs,
-                    )
+            response = await ctx.deps.vllm_client.chat_completions(
+                ChatCompletionRequest(
+                    model=model or ctx.deps.default_model,
+                    messages=messages,
+                    **kwargs,
                 )
-                .choices[0]
-                .message.content
             )
+            return response.choices[0].message.content or ""
 
         # Text completion tool
         @agent.tool
@@ -154,15 +180,14 @@ class VLLMAgent:
             ctx, prompt: str, model: str | None = None, **kwargs
         ) -> str:
             """Complete text with the VLLM model."""
-            return (
-                await ctx.deps.vllm_client.completions(
-                    CompletionRequest(
-                        model=model or ctx.deps.default_model, prompt=prompt, **kwargs
-                    )
+            response = await ctx.deps.vllm_client.completions(
+                CompletionRequest(
+                    model=model or ctx.deps.default_model,
+                    prompt=prompt,
+                    **kwargs,
                 )
-                .choices[0]
-                .text
             )
+            return response.choices[0].text
 
         # Embedding generation tool
         @agent.tool
@@ -177,56 +202,73 @@ class VLLMAgent:
                 model or ctx.deps.embedding_model or ctx.deps.default_model
             )
 
-            return (
-                await ctx.deps.vllm_client.embeddings(
-                    EmbeddingRequest(model=embedding_model, input=texts, **kwargs)
-                )
-                .data[0]
-                .embedding
-                if len(texts) == 1
-                else [
-                    item.embedding
-                    for item in await ctx.deps.vllm_client.embeddings(
-                        EmbeddingRequest(model=embedding_model, input=texts, **kwargs)
-                    ).data
-                ]
+            response = await ctx.deps.vllm_client.embeddings(
+                EmbeddingRequest(model=embedding_model, input=texts, **kwargs)
             )
+            return [item.embedding for item in response.data]
 
         # Model information tool
         @agent.tool
         async def get_model_info(ctx, model_name: str) -> dict[str, Any]:
             """Get information about a specific model."""
-            return await ctx.deps.vllm_client.get_model_info(model_name)
+            client = VLLMClientWrapper(ctx.deps.vllm_client)
+            response = await client.models()
+            for item in response.get("data", []):
+                if item.get("id") == model_name:
+                    return dict(item)
+            msg = f"Model not found: {model_name}"
+            raise ValueError(msg)
 
         # List models tool
         @agent.tool
         async def list_models(ctx) -> list[str]:
             """List available models."""
-            response = await ctx.deps.vllm_client.models()
-            return [model.id for model in response.data]
+            response = await VLLMClientWrapper(ctx.deps.vllm_client).models()
+            return [item["id"] for item in response.get("data", []) if "id" in item]
 
         # Tokenization tools
         @agent.tool
         async def tokenize(ctx, text: str, model: str | None = None) -> dict[str, Any]:
             """Tokenize text."""
-            return await ctx.deps.vllm_client.tokenize(
-                text, model or ctx.deps.default_model
-            )
+            selected_model = model or ctx.deps.default_model
+            client = VLLMClientWrapper(ctx.deps.vllm_client)
+            if client._use_http():
+                return await client._http_request(
+                    "POST",
+                    "/tokenize",
+                    {"model": selected_model, "prompt": text},
+                )
+            tokens = text.split()
+            return {
+                "model": selected_model,
+                "tokens": list(range(len(tokens))),
+                "token_texts": tokens,
+            }
 
         @agent.tool
         async def detokenize(
             ctx, token_ids: list[int], model: str | None = None
         ) -> dict[str, Any]:
             """Detokenize token IDs."""
-            return await ctx.deps.vllm_client.detokenize(
-                token_ids, model or ctx.deps.default_model
-            )
+            selected_model = model or ctx.deps.default_model
+            client = VLLMClientWrapper(ctx.deps.vllm_client)
+            if client._use_http():
+                return await client._http_request(
+                    "POST",
+                    "/detokenize",
+                    {"model": selected_model, "tokens": token_ids},
+                )
+            return {
+                "model": selected_model,
+                "tokens": token_ids,
+                "text": " ".join(str(token_id) for token_id in token_ids),
+            }
 
         # Health check tool
         @agent.tool
         async def health_check(ctx) -> dict[str, Any]:
             """Check server health."""
-            return await ctx.deps.vllm_client.health()
+            return await VLLMClientWrapper(ctx.deps.vllm_client).health()
 
         return agent
 
@@ -265,6 +307,7 @@ def create_advanced_vllm_agent(
         DeviceConfig,
         LoadConfig,
         ModelConfig,
+        ObservabilityConfig,
         ParallelConfig,
         SchedulerConfig,
     )
@@ -289,6 +332,7 @@ def create_advanced_vllm_agent(
         parallel=parallel_config,
         scheduler=SchedulerConfig(),
         device=DeviceConfig(),
+        observability=ObservabilityConfig(),
     )
 
     config = VLLMAgentConfig(
@@ -304,7 +348,7 @@ def create_advanced_vllm_agent(
 # ============================================================================
 
 
-async def example_vllm_agent():
+async def example_vllm_agent():  # pragma: no cover
     """Example usage of VLLM agent."""
 
     # Create agent
@@ -331,7 +375,7 @@ async def example_vllm_agent():
         await agent.embed(texts)
 
 
-async def example_pydantic_ai_integration():
+async def example_pydantic_ai_integration():  # pragma: no cover
     """Example of using VLLM agent with Pydantic AI."""
 
     # Create agent
@@ -351,7 +395,7 @@ async def example_pydantic_ai_integration():
     )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # Run basic example
     asyncio.run(example_vllm_agent())
 

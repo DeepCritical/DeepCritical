@@ -7,12 +7,11 @@ dependencies, and related data structures.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-if TYPE_CHECKING:
-    from DeepResearch.src.utils.vllm_client import VLLMClient
+from DeepResearch.src.utils.vllm_client import VLLMClient
 
 
 class VLLMAgentDependencies(BaseModel):
