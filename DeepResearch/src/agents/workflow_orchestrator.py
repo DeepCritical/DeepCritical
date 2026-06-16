@@ -473,6 +473,7 @@ class PrimaryWorkflowOrchestrator:
     ) -> dict[str, Any]:
         """Execute the primary REACT workflow."""
         start_ts = time.perf_counter()
+        completed_before = len(self.state.completed_executions)
         cfg_dict = self._config_to_dict(config)
         configured_ids = list(self.agent_registry.get("configured_agent_ids", []))
         system_ids = list(self.agent_registry.get("multi_agent_system_ids", []))
@@ -489,38 +490,17 @@ class PrimaryWorkflowOrchestrator:
         )
 
         run_result: Any = None
+        error: str | None = None
+        failure_kind: str | None = None
         try:
-            try:
-                run_result = await self.primary_agent.run(user_input, deps=deps)
-            except AgentRunError as e:
-                elapsed = time.perf_counter() - start_ts
-                return {
-                    "success": False,
-                    "error": str(e),
-                    "result": {"output": None, "usage": None},
-                    "state": self.state,
-                    "execution_metadata": {
-                        "workflows_spawned": len(self.state.active_executions),
-                        "total_executions": len(self.state.completed_executions),
-                        "elapsed_seconds": elapsed,
-                        "failure_kind": "agent_run_error",
-                    },
-                }
-            except Exception as e:
-                elapsed = time.perf_counter() - start_ts
-                logger.exception("Primary workflow agent.run failed")
-                return {
-                    "success": False,
-                    "error": str(e),
-                    "result": {"output": None, "usage": None},
-                    "state": self.state,
-                    "execution_metadata": {
-                        "workflows_spawned": len(self.state.active_executions),
-                        "total_executions": len(self.state.completed_executions),
-                        "elapsed_seconds": elapsed,
-                        "failure_kind": "unexpected_error",
-                    },
-                }
+            run_result = await self.primary_agent.run(user_input, deps=deps)
+        except AgentRunError as e:
+            error = str(e)
+            failure_kind = "agent_run_error"
+        except Exception as e:
+            error = str(e)
+            failure_kind = "unexpected_error"
+            logger.exception("Primary workflow agent.run failed")
         finally:
             await self._drain_workflows()
             self.state.last_updated = datetime.now()
@@ -531,6 +511,23 @@ class PrimaryWorkflowOrchestrator:
                 self.state.active_executions
             )
 
+        completed_this_run = len(self.state.completed_executions) - completed_before
+        elapsed = time.perf_counter() - start_ts
+        if error is not None:
+            return {
+                "success": False,
+                "error": error,
+                "result": {"output": None, "usage": None},
+                "state": self.state,
+                "execution_metadata": {
+                    "workflows_spawned": completed_this_run,
+                    "active_executions": len(self.state.active_executions),
+                    "total_executions": len(self.state.completed_executions),
+                    "elapsed_seconds": elapsed,
+                    "failure_kind": failure_kind,
+                },
+            }
+
         out = getattr(run_result, "output", None)
         usage = getattr(run_result, "usage", None)
         usage_payload: Any = None
@@ -539,13 +536,13 @@ class PrimaryWorkflowOrchestrator:
         elif usage is not None:
             usage_payload = str(usage)
 
-        elapsed = time.perf_counter() - start_ts
         return {
             "success": True,
             "result": {"output": out, "usage": usage_payload},
             "state": self.state,
             "execution_metadata": {
-                "workflows_spawned": len(self.state.active_executions),
+                "workflows_spawned": completed_this_run,
+                "active_executions": len(self.state.active_executions),
                 "total_executions": len(self.state.completed_executions),
                 "elapsed_seconds": elapsed,
             },
@@ -560,6 +557,7 @@ class PrimaryWorkflowOrchestrator:
     ) -> dict[str, Any]:
         """Execute a deterministic workflow composition without LLM tool calls."""
         start_time = time.monotonic()
+        completed_before = len(self.state.completed_executions)
         input_payload = dict(input_data or {})
         workflow_names = self._plan_workflow_names(plan)
         dependency_map = self._plan_dependency_map(plan, workflow_names)
@@ -641,17 +639,18 @@ class PrimaryWorkflowOrchestrator:
         self.state.system_metrics["active_executions"] = len(
             self.state.active_executions
         )
+        plan_results = self.state.completed_executions[completed_before:]
         failed = [
             result
-            for result in self.state.completed_executions
+            for result in plan_results
             if result.status != WorkflowStatus.COMPLETED
         ]
         return {
             "success": not failed,
             "state": self.state,
-            "completed_executions": self.state.completed_executions,
+            "completed_executions": plan_results,
             "execution_metadata": {
-                "total_executions": len(self.state.completed_executions),
+                "total_executions": len(plan_results),
                 "failed_executions": len(failed),
                 "execution_time": time.monotonic() - start_time,
             },
