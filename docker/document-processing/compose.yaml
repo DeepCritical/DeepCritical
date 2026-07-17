@@ -1,0 +1,281 @@
+name: deepcritical-document-processing
+
+x-docling-environment: &docling-environment
+  UVICORN_HOST: "0.0.0.0"
+  UVICORN_PORT: "5001"
+  UVICORN_WORKERS: "1"
+  DOCLING_SERVE_API_KEY: "${DOCLING_API_KEY:?Set a non-default DOCLING_API_KEY}"
+  DOCLING_SERVE_ENABLE_UI: "false"
+  DOCLING_SERVE_ENABLE_MANAGEMENT_ENDPOINTS: "false"
+  DOCLING_SERVE_SHOW_VERSION_INFO: "true"
+  DOCLING_SERVE_DEBUG_ERROR_DETAILS: "false"
+  DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "false"
+  DOCLING_SERVE_ALLOW_EXTERNAL_PLUGINS: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_VLM_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_CODE_FORMULA_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_TABLE_STRUCTURE_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_LAYOUT_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_CLASSIFICATION_CONFIG: "false"
+  DOCLING_SERVE_ALLOW_CUSTOM_OCR_CONFIG: "false"
+  DOCLING_SERVE_CORS_ORIGINS: '["http://127.0.0.1","http://localhost"]'
+  DOCLING_SERVE_CORS_METHODS: '["GET","POST"]'
+  DOCLING_SERVE_CORS_HEADERS: '["Accept","Content-Type","X-Api-Key","X-Docling-Log-RequestID"]'
+  # The application deletes its remote-task checkpoint only after the result and
+  # ParserRun are durable in CAS. Keep results re-readable across that crash window.
+  DOCLING_SERVE_SINGLE_USE_RESULTS: "false"
+  DOCLING_SERVE_MAX_DOCUMENT_TIMEOUT: "1800"
+  DOCLING_SERVE_MAX_NUM_PAGES: "1000"
+  DOCLING_SERVE_MAX_FILE_SIZE: "104857600"
+  DOCLING_SERVE_MAX_SYNC_WAIT: "120"
+  DOCLING_SERVE_SCRATCH_PATH: "/tmp/docling"
+  DOCLING_SERVE_LOG_FORMAT: "json"
+  DOCLING_SERVE_LOG_LEVEL: "INFO"
+  DOCLING_SERVE_ENG_KIND: "rq"
+  DOCLING_SERVE_ENG_RQ_REDIS_URL: "redis://:${REDIS_PASSWORD:?Set a non-default REDIS_PASSWORD}@redis:6379/0"
+  DOCLING_SERVE_ENG_RQ_RESULTS_PREFIX: "deepcritical:docling:results"
+  DOCLING_SERVE_ENG_RQ_SUB_CHANNEL: "deepcritical:docling:updates"
+  DOCLING_SERVE_ENG_RQ_RESULTS_TTL: "14400"
+  DOCLING_SERVE_ENG_RQ_FAILURE_TTL: "14400"
+  DOCLING_SERVE_ENG_RQ_REDIS_MAX_CONNECTIONS: "50"
+  DOCLING_SERVE_ENG_RQ_REDIS_SOCKET_TIMEOUT: "5"
+  DOCLING_SERVE_ENG_RQ_REDIS_SOCKET_CONNECT_TIMEOUT: "5"
+  DOCLING_SERVE_QUEUE_MAX_SIZE: "32"
+  DOCLING_SERVE_OPTIONS_CACHE_SIZE: "2"
+  DOCLING_NUM_THREADS: "${DOCLING_NUM_THREADS:-4}"
+  DOCLING_DEVICE: "${DOCLING_DEVICE:-cpu}"
+  DOCLING_PERF_PAGE_BATCH_SIZE: "${DOCLING_PAGE_BATCH_SIZE:-4}"
+  DOCLING_PERF_ELEMENTS_BATCH_SIZE: "${DOCLING_ELEMENTS_BATCH_SIZE:-8}"
+
+x-docling-container: &docling-container
+  image: "quay.io/docling-project/docling-serve-cpu:v1.21.0@${DOCLING_IMAGE_DIGEST:?Set an approved DOCLING_IMAGE_DIGEST}"
+  pull_policy: never
+  platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  networks:
+    - parser-internal
+  tmpfs:
+    - /tmp:size=2g,mode=1777
+  stop_grace_period: 2m
+
+services:
+  redis:
+    image: "redis:7.2.14-alpine3.21@${REDIS_IMAGE_DIGEST:?Set an approved REDIS_IMAGE_DIGEST}"
+    pull_policy: never
+    platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+    init: true
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "60"
+      - "1"
+      - --maxmemory
+      - "512mb"
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - "${REDIS_PASSWORD:?Set a non-default REDIS_PASSWORD}"
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?Set a non-default REDIS_PASSWORD}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - parser-internal
+    volumes:
+      - redis-data:/data
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    cpus: "${REDIS_CPUS:-0.5}"
+    mem_limit: "${REDIS_MEMORY:-768m}"
+    pids_limit: 128
+    stop_grace_period: 30s
+
+  docling-api:
+    <<: *docling-container
+    environment:
+      <<: *docling-environment
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${DOCLING_PORT:-5001}:5001"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import os, urllib.request;
+          request = urllib.request.Request("http://127.0.0.1:5001/ready", headers={"X-Api-Key": os.environ["DOCLING_SERVE_API_KEY"]});
+          urllib.request.urlopen(request, timeout=5).read()
+      interval: 15s
+      timeout: 8s
+      retries: 20
+      start_period: 30s
+    cpus: "${DOCLING_API_CPUS:-1.0}"
+    mem_limit: "${DOCLING_API_MEMORY:-2g}"
+    pids_limit: 256
+
+  docling-worker:
+    <<: *docling-container
+    command: ["docling-serve", "rq-worker"]
+    environment:
+      <<: *docling-environment
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "true"
+    depends_on:
+      redis:
+        condition: service_healthy
+      docling-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import os, socket, time;
+          from redis import Redis;
+          from rq import Worker;
+          connection = Redis.from_url(os.environ["DOCLING_SERVE_ENG_RQ_REDIS_URL"], socket_timeout=5);
+          assert connection.ping();
+          workers = Worker.all(connection=connection);
+          hostname = socket.gethostname();
+          assert any(worker.hostname == hostname and worker.last_heartbeat is not None and 0 <= time.time() - worker.last_heartbeat.timestamp() < 90 for worker in workers)
+      interval: 30s
+      timeout: 8s
+      retries: 10
+      start_period: 180s
+    cpus: "${DOCLING_WORKER_CPUS:-4.0}"
+    mem_limit: "${DOCLING_WORKER_MEMORY:-8g}"
+    pids_limit: 512
+
+  # Build helper only. Publish or mirror this image, record the resulting
+  # manifest digest, then run the digest-addressed `grobid` service below.
+  grobid-build:
+    profiles: ["build"]
+    build:
+      context: .
+      dockerfile: Dockerfile.grobid
+      args:
+        GROBID_BASE_DIGEST: "${GROBID_BASE_DIGEST:?Set an approved GROBID_BASE_DIGEST}"
+    image: "${GROBID_IMAGE_REPOSITORY:-deepcritical/grobid}:0.9.0-full-p0-c2"
+    pull_policy: build
+    platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+    entrypoint: ["/bin/true"]
+
+  grobid:
+    image: "${GROBID_IMAGE_REPOSITORY:-deepcritical/grobid}:0.9.0-full-p0-c2@${GROBID_IMAGE_DIGEST:?Set an approved GROBID_IMAGE_DIGEST}"
+    pull_policy: never
+    platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - parser-internal
+    tmpfs:
+      - /tmp:size=2g,mode=1777
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error http://127.0.0.1:8070/api/version >/dev/null"]
+      interval: 20s
+      timeout: 8s
+      retries: 20
+      start_period: 180s
+    cpus: "${GROBID_CPUS:-4.0}"
+    mem_limit: "${GROBID_MEMORY:-8g}"
+    pids_limit: 1024
+    ulimits:
+      core: 0
+    stop_grace_period: 2m
+
+  grobid-proxy:
+    image: "caddy:2.11.4-alpine@${CADDY_IMAGE_DIGEST:?Set an approved CADDY_IMAGE_DIGEST}"
+    pull_policy: never
+    platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      GROBID_API_KEY: "${GROBID_API_KEY:?Set a non-default GROBID_API_KEY}"
+    networks:
+      - parser-internal
+    ports:
+      - "127.0.0.1:${GROBID_PORT:-8070}:8070"
+    volumes:
+      - ./Caddyfile.grobid:/etc/caddy/Caddyfile:ro
+    tmpfs:
+      - /config:size=16m,mode=0700
+      - /data:size=16m,mode=0700
+      - /tmp:size=32m,mode=1777
+    depends_on:
+      grobid:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget --header="X-API-Key: $$GROBID_API_KEY" --quiet --output-document=-
+          http://127.0.0.1:8070/api/version >/dev/null
+      interval: 20s
+      timeout: 8s
+      retries: 10
+      start_period: 10s
+    cpus: "${GROBID_PROXY_CPUS:-0.5}"
+    mem_limit: "${GROBID_PROXY_MEMORY:-128m}"
+    pids_limit: 128
+    stop_grace_period: 30s
+
+  # OCRmyPDF is intentionally an ephemeral CLI, not a long-running web service.
+  # Start it only with `docker compose --profile tools run --rm ocrmypdf ...`.
+  ocrmypdf:
+    profiles: ["tools"]
+    image: "jbarlow83/ocrmypdf:v17.4.1@${OCRMYPDF_IMAGE_DIGEST:?Set an approved OCRMYPDF_IMAGE_DIGEST}"
+    pull_policy: never
+    platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
+    command: ["--version"]
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=2g,mode=1777
+    cpus: "${OCRMYPDF_CPUS:-2.0}"
+    mem_limit: "${OCRMYPDF_MEMORY:-4g}"
+    pids_limit: 256
+
+networks:
+  parser-internal:
+    internal: true
+
+volumes:
+  redis-data:

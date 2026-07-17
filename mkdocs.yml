@@ -173,6 +173,7 @@ nav:
     - Configuration: getting-started/configuration.md
   - User Guide:
     - Architecture Overview: architecture/overview.md
+    - Scientific Document Processing: document-processing.md
     - Configuration: user-guide/configuration.md
     - LLM Models: user-guide/llm-models.md
     - Flows:

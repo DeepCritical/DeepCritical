@@ -42,6 +42,9 @@ dependencies = [
   "pymilvus>=2.4.0",
   "pinecone>=5.0.0",
   "aiohttp>=3.12.15",
+  "bioc>=2.1,<3",
+  "defusedxml>=0.7.1,<1",
+  "pypdf>=6.14.2,<7",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +66,8 @@ deepresearch-llm-hypothesis = "DeepResearch.scripts.run_llm_hypothesis_pipeline:
 deepresearch-literature-pipeline = "DeepResearch.scripts.run_literature_review_pipeline:main"
 deepresearch-hypothesis-literature = "DeepResearch.scripts.run_hypothesis_literature_pipeline:main"
 deepresearch-upload-dataset = "DeepResearch.scripts.upload_dataset_repository:main"
+deepcritical-process-document = "DeepResearch.scripts.process_document:main"
+deepcritical-generate-document-observations = "DeepResearch.scripts.generate_document_processing_observations:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -109,7 +114,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 # Enable only essential linting rules to avoid conflicts
-select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TC", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
 ignore = [
     # Allow non-abstract empty methods in abstract base classes
     "B027",
@@ -140,9 +145,9 @@ ignore = [
     # Ignore pathlib suggestions
     "PTH123", "PTH110", "PTH103", "PTH118", "PTH117", "PTH120",
     # Ignore type checking issues
-    "PGH003", "TCH001", "TCH002", "TCH003",
+    "PGH003", "TC001", "TC002", "TC003",
     # Ignore deprecated typing
-    "UP035", "UP038", "UP007",
+    "UP035", "UP007",
     # Ignore import namespace issues
     "INP001",
     # Ignore simplification suggestions
@@ -169,8 +174,6 @@ ignore = [
     "B011", "PT015",
     # Ignore list comprehension suggestions
     "PERF401", "C416", "C401",
-    # Ignore pandas DataFrame naming
-    "PD901",
     # Ignore imports outside top-level (common in test files)
     "PLC0415",
     # Ignore private member access

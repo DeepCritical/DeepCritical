@@ -1,0 +1,183 @@
+# Reuse-first scientific document-processing defaults.
+# This configuration is intentionally self-hosted and offline by default.
+
+enabled: true
+
+storage:
+  root: data/document-processing
+  hash_algorithm: sha256
+  content_addressed: true
+  immutable_originals: true
+  atomic_writes: true
+  preserve_native_jats: true
+  preserve_native_bioc: true
+  preserve_docling_document: true
+  preserve_grobid_tei: true
+  preserve_ocr_derivatives: true
+  preserve_parser_logs: true
+  supplements_are_separate_artifacts: true
+
+routing:
+  preflight_enabled: true
+  sniff_media_type: true
+  prefer_native_jats: true
+  reject_extension_only_detection: true
+  max_source_bytes: 104857600
+  max_pdf_pages: 1000
+  routes:
+    jats_xml: docling_jats
+    bioc_xml: bioc_adapter
+    bioc_json: bioc_adapter
+    pdf: docling_pdf_with_grobid
+    html: docling
+    docx: docling
+    xlsx: docling
+    pptx: docling
+    image: docling_ocr
+  pdf:
+    run_grobid: true
+    docling_ocr_original: true
+    detect_image_only: true
+    min_text_characters_per_page: 20
+    image_only_page_ratio: 0.8
+    create_searchable_derivative: true
+    grobid_scanned_input: ocrmypdf_derivative
+  fallback:
+    silent: false
+    each_fallback_creates_parser_run: true
+    quarantine_on_exhaustion: true
+
+services:
+  docling:
+    enabled: true
+    base_url: http://127.0.0.1:5001
+    api_key_env: DOCLING_API_KEY
+    container_image: quay.io/docling-project/docling-serve-cpu:v1.21.0
+    container_digest: null
+    parser_version: "2.113.0"
+    serve_version: "1.21.0"
+    model_versions: {}
+    model_hashes: {}
+    async: true
+    submit_path: /v1/convert/file/async
+    version_path: /version
+    connect_timeout_seconds: 10
+    request_timeout_seconds: 120
+    max_response_bytes: 268435456
+    job_timeout_seconds: 1800
+    poll_interval_seconds: 2
+    memory_reporter:
+      enabled: false
+      base_url: http://127.0.0.1:8091
+      api_key_env: RESOURCE_REPORTER_API_KEY
+      connect_timeout_seconds: 5
+      request_timeout_seconds: 30
+      resolution_timeout_seconds: 30
+      poll_interval_seconds: 0.25
+    runtime_attestation_reporter:
+      enabled: false
+      base_url: http://127.0.0.1:8091
+      api_key_env: RUNTIME_ATTESTATION_API_KEY
+      expected_reporter_id: deepcritical-local-supervisor
+      connect_timeout_seconds: 5
+      request_timeout_seconds: 30
+      resolution_timeout_seconds: 30
+      poll_interval_seconds: 0.25
+  grobid:
+    enabled: true
+    base_url: http://127.0.0.1:8070
+    api_key_env: GROBID_API_KEY
+    container_image: deepcritical/grobid:0.9.0-full-p0-c2
+    container_digest: null
+    parser_version: "0.9.0"
+    model_versions: {}
+    model_hashes: {}
+    process_path: /api/processFulltextDocument
+    version_path: /api/version
+    connect_timeout_seconds: 10
+    request_timeout_seconds: 600
+    max_response_bytes: 134217728
+    consolidate_header: false
+    consolidate_citations: false
+    include_raw_citations: true
+    include_pdf_coordinates: true
+    memory_reporter:
+      enabled: false
+      base_url: http://127.0.0.1:8091
+      api_key_env: RESOURCE_REPORTER_API_KEY
+      connect_timeout_seconds: 5
+      request_timeout_seconds: 30
+      resolution_timeout_seconds: 30
+      poll_interval_seconds: 0.25
+    runtime_attestation_reporter:
+      enabled: false
+      base_url: http://127.0.0.1:8091
+      api_key_env: RUNTIME_ATTESTATION_API_KEY
+      expected_reporter_id: deepcritical-local-supervisor
+      connect_timeout_seconds: 5
+      request_timeout_seconds: 30
+      resolution_timeout_seconds: 30
+      poll_interval_seconds: 0.25
+  ocr:
+    enabled: true
+    mode: container_cli
+    container_image: jbarlow83/ocrmypdf:v17.4.1
+    container_digest: null
+    parser_version: "17.4.1"
+    engine: tesseract
+    languages: [eng]
+    jobs: 2
+    timeout_seconds: 1800
+    skip_text_pages: true
+    rotate_pages: true
+    deskew: true
+    output_type: pdf
+    optimize: 1
+    memory_meter:
+      enabled: false
+      cgroup_v2_parent: null
+      environment_sha256: null
+
+quality:
+  minimum_pdf_locator_coverage: 0.95
+  require_pdf_page_and_bounding_box: true
+  require_content_hashes: true
+  require_source_locators: true
+  require_resolved_item_references: true
+  unaligned_citations_are_diagnostics: true
+  unaligned_tables_are_diagnostics: true
+  unaligned_figures_are_diagnostics: true
+  empty_success_is_failure: true
+  require_runtime_identity: true
+  # Required identity is fail-closed: Docling/GROBID need authenticated,
+  # invocation-bound deployment attestations and OCR needs a digest-addressed
+  # container image. Set false only for explicitly non-baseline development.
+  # Enable only with both task-bound service reporters and the delegated OCR
+  # cgroup configured above. Startup fails rather than accepting partial wiring.
+  memory_measurement_required: false
+  allowed_terminal_statuses:
+    - complete
+    - partial
+    - quarantined
+    - failed
+
+security:
+  allow_external_parser_endpoints: false
+  allow_remote_source_urls: false
+  allow_docling_remote_services: false
+  allow_external_plugins: false
+  retain_document_text_in_service_logs: false
+  require_mime_sniffing: true
+  allow_encrypted_pdfs: false
+  require_pdf_page_count: true
+  quarantine_on_pdf_structure_uncertainty: true
+  allow_source_symlinks: false
+
+managed_providers:
+  enabled: false
+  allow_implicit_fallback: false
+  upload_policy_approved: false
+  mathpix:
+    enabled: false
+  azure_document_intelligence:
+    enabled: false

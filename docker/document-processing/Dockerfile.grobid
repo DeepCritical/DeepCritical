@@ -1,0 +1,16 @@
+ARG GROBID_BASE_DIGEST
+FROM grobid/grobid:0.9.0-full@${GROBID_BASE_DIGEST}
+
+# GROBID 0.9 no longer supports configuration through environment variables.
+# Apply the two local deployment overrides to the complete configuration that
+# is already shipped in the version-pinned official image.
+RUN sed -i \
+      -e 's#temp: "tmp"#temp: "/tmp/grobid"#' \
+      -e 's#concurrency: 10#concurrency: 2#' \
+      /opt/grobid/grobid-home/config/grobid.yaml \
+    && grep -q 'temp: "/tmp/grobid"' /opt/grobid/grobid-home/config/grobid.yaml \
+    && grep -q 'concurrency: 2' /opt/grobid/grobid-home/config/grobid.yaml
+
+LABEL org.opencontainers.image.title="DeepCritical GROBID sidecar" \
+      org.opencontainers.image.version="0.9.0-full-p0" \
+      org.opencontainers.image.source="https://github.com/DeepCritical/DeepCritical"

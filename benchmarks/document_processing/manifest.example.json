@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "name": "pmc-document-processing-bakeoff-example",
+  "artifact_root": ".",
+  "allowed_outcomes": [
+    "complete",
+    "partial",
+    "quarantined"
+  ],
+  "thresholds": {
+    "text_fidelity": 0.0,
+    "reading_order": 0.0,
+    "headings": 0.0,
+    "tables": 0.0,
+    "figure_caption_association": 0.0,
+    "references": 0.0,
+    "locator_coverage": 0.95,
+    "determinism": 1.0
+  },
+  "performance_limits": {},
+  "observation_sets": {
+    "reference": {
+      "path": "observations/reference.jsonl",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "media_type": "application/x-ndjson"
+    }
+  },
+  "documents": [
+    {
+      "id": "PMC0000000",
+      "pmcid": "PMC0000000",
+      "categories": [
+        "multi-column",
+        "table-heavy",
+        "figure-heavy"
+      ],
+      "reuse": {
+        "license": "CC-BY-4.0",
+        "license_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC0000000/",
+        "reuse_allowed": true,
+        "verified": false
+      },
+      "artifacts": {
+        "jats": {
+          "path": "corpus/PMC0000000/article.nxml",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "media_type": "application/jats+xml"
+        },
+        "pdf": {
+          "path": "corpus/PMC0000000/article.pdf",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "media_type": "application/pdf"
+        }
+      }
+    },
+    {
+      "id": "PMC0000001",
+      "pmcid": "PMC0000001",
+      "categories": [
+        "scanned",
+        "malformed"
+      ],
+      "reuse": {
+        "license": "CC0-1.0",
+        "license_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC0000001/",
+        "reuse_allowed": true,
+        "verified": false
+      },
+      "artifacts": {
+        "jats": {
+          "path": "corpus/PMC0000001/article.nxml",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "media_type": "application/jats+xml"
+        },
+        "pdf": {
+          "path": "corpus/PMC0000001/article.pdf",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "media_type": "application/pdf"
+        }
+      }
+    }
+  ]
+}

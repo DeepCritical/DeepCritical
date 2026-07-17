@@ -1,0 +1,247 @@
+from __future__ import annotations
+
+from io import BytesIO
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+from pypdf import PdfWriter
+
+from DeepResearch.src.document_processing.models import DiagnosticSeverity
+from DeepResearch.src.document_processing.preflight import (
+    PdfPageCountSource,
+    PreflightDecision,
+    PreflightDiagnosticCode,
+    PreflightLimits,
+    PreflightResult,
+    preflight_bytes,
+    preflight_path,
+)
+
+
+def _pdf(
+    pages: int = 2,
+    *,
+    password: str | None = None,
+    decoy_metadata: bool = False,
+) -> bytes:
+    writer = PdfWriter()
+    for _ in range(pages):
+        writer.add_blank_page(width=72, height=72)
+    if decoy_metadata:
+        writer.add_metadata({"/Subject": "/Encrypt /Type /Page /Count 999"})
+    if password is not None:
+        writer.encrypt(password)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
+def _codes(result: PreflightResult) -> set[PreflightDiagnosticCode]:
+    return {item.code for item in result.diagnostics}
+
+
+def test_limits_reject_non_positive_values() -> None:
+    with pytest.raises(ValidationError):
+        PreflightLimits(max_source_bytes=0)
+    with pytest.raises(ValidationError):
+        PreflightLimits(max_pdf_pages=0)
+
+
+def test_oversized_path_is_rejected_before_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "large.bin"
+    source.write_bytes(b"012345")
+
+    def forbidden_open(*args: object, **kwargs: object) -> object:
+        raise AssertionError("oversized source must not be opened")
+
+    monkeypatch.setattr(Path, "open", forbidden_open)
+    result = preflight_path(source, limits=PreflightLimits(max_source_bytes=5))
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert result.byte_size == 6
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_TOO_LARGE}
+    assert result.diagnostics[0].details == {
+        "actual_bytes": 6,
+        "max_source_bytes": 5,
+    }
+
+
+def test_missing_and_non_regular_paths_are_explicit(tmp_path: Path) -> None:
+    missing = preflight_path(tmp_path / "missing.pdf")
+    directory = preflight_path(tmp_path)
+
+    assert _codes(missing) == {PreflightDiagnosticCode.SOURCE_NOT_FOUND}
+    assert _codes(directory) == {PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE}
+    assert missing.decision is PreflightDecision.QUARANTINE
+    assert directory.decision is PreflightDecision.QUARANTINE
+
+
+def test_pdf_path_uses_established_inspector(tmp_path: Path) -> None:
+    source = tmp_path / "paper.pdf"
+    source.write_bytes(_pdf(2))
+
+    result = preflight_path(source)
+
+    assert result.may_proceed
+    assert result.byte_size == source.stat().st_size
+    assert result.pdf_page_count == 2
+    assert result.pdf_page_count_source is PdfPageCountSource.PYPDF
+
+
+def test_path_open_failure_is_machine_readable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "paper.pdf"
+    source.write_bytes(_pdf())
+
+    def denied_open(*args: object, **kwargs: object) -> object:
+        raise PermissionError("denied for test")
+
+    monkeypatch.setattr(Path, "open", denied_open)
+    result = preflight_path(source)
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_READ_FAILED}
+    assert result.diagnostics[0].details["error_type"] == "PermissionError"
+
+
+def test_empty_and_oversized_bytes_are_quarantined() -> None:
+    empty = preflight_bytes(b"")
+    oversized = preflight_bytes(b"1234", limits=PreflightLimits(max_source_bytes=3))
+
+    assert _codes(empty) == {PreflightDiagnosticCode.SOURCE_EMPTY}
+    assert _codes(oversized) == {PreflightDiagnosticCode.SOURCE_TOO_LARGE}
+
+
+def test_non_pdf_at_exact_byte_limit_may_proceed() -> None:
+    result = preflight_bytes(b"text", limits=PreflightLimits(max_source_bytes=4))
+
+    assert result.may_proceed
+    assert result.byte_size == 4
+    assert not result.is_pdf
+    assert result.diagnostics == ()
+
+
+def test_pdf_page_count_within_limit_may_proceed() -> None:
+    result = preflight_bytes(_pdf(2), limits=PreflightLimits(max_pdf_pages=2))
+
+    assert result.decision is PreflightDecision.PROCEED
+    assert result.is_pdf
+    assert result.pdf_encrypted is False
+    assert result.pdf_page_count == 2
+    assert result.pdf_page_count_source is PdfPageCountSource.PYPDF
+    assert result.diagnostics == ()
+
+
+def test_pdf_page_limit_is_enforced() -> None:
+    result = preflight_bytes(_pdf(2), limits=PreflightLimits(max_pdf_pages=1))
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert result.pdf_page_count == 2
+    assert _codes(result) == {PreflightDiagnosticCode.PDF_PAGE_LIMIT_EXCEEDED}
+    assert result.diagnostics[0].severity is DiagnosticSeverity.FATAL
+
+
+def test_pdf_metadata_is_not_mistaken_for_structure() -> None:
+    result = preflight_bytes(_pdf(1, decoy_metadata=True))
+
+    assert result.may_proceed
+    assert result.pdf_encrypted is False
+    assert result.pdf_page_count == 1
+
+
+def test_encrypted_pdf_is_quarantined_by_default() -> None:
+    result = preflight_bytes(_pdf(2, password="secret"))
+
+    assert result.pdf_encrypted is True
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert PreflightDiagnosticCode.PDF_ENCRYPTED in _codes(result)
+    encryption = next(
+        item
+        for item in result.diagnostics
+        if item.code is PreflightDiagnosticCode.PDF_ENCRYPTED
+    )
+    assert encryption.details == {"allowed_by_policy": False}
+
+
+def test_encrypted_pdf_can_be_retained_when_unknown_count_is_allowed() -> None:
+    result = preflight_bytes(
+        _pdf(2, password="secret"),
+        limits=PreflightLimits(
+            allow_encrypted_pdfs=True,
+            require_pdf_page_count=False,
+        ),
+    )
+
+    assert result.may_proceed
+    assert result.pdf_encrypted is True
+    assert result.pdf_page_count is None
+    assert _codes(result) == {
+        PreflightDiagnosticCode.PDF_ENCRYPTED,
+        PreflightDiagnosticCode.PDF_PAGE_COUNT_UNCERTAIN,
+    }
+    assert all(
+        item.severity is DiagnosticSeverity.WARNING for item in result.diagnostics
+    )
+
+
+def test_corrupted_pdf_fails_closed_with_explicit_structure_diagnostics() -> None:
+    result = preflight_bytes(b"%PDF-1.7\nnot-a-valid-pdf\n%%EOF\n")
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert result.pdf_page_count is None
+    assert _codes(result) == {
+        PreflightDiagnosticCode.PDF_PAGE_COUNT_UNCERTAIN,
+        PreflightDiagnosticCode.PDF_STRUCTURE_UNCERTAIN,
+    }
+    structure = next(
+        item
+        for item in result.diagnostics
+        if item.code is PreflightDiagnosticCode.PDF_STRUCTURE_UNCERTAIN
+    )
+    assert structure.details["error_type"] in {"PdfReadError", "PdfStreamError"}
+
+
+def test_structure_uncertainty_policy_can_retain_with_warnings() -> None:
+    result = preflight_bytes(
+        b"%PDF-1.7\nnot-a-valid-pdf\n%%EOF\n",
+        limits=PreflightLimits(
+            require_pdf_page_count=False,
+            quarantine_on_pdf_structure_uncertainty=False,
+        ),
+    )
+
+    assert result.may_proceed
+    assert all(
+        item.severity is DiagnosticSeverity.WARNING for item in result.diagnostics
+    )
+
+
+@pytest.mark.parametrize(
+    ("filename", "media_type"),
+    [
+        ("paper.pdf", None),
+        (None, "application/pdf; version=1.7"),
+    ],
+)
+def test_pdf_metadata_without_header_is_rejected(
+    filename: str | None, media_type: str | None
+) -> None:
+    result = preflight_bytes(b"not a pdf", filename=filename, media_type=media_type)
+
+    assert result.is_pdf
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert _codes(result) == {PreflightDiagnosticCode.PDF_HEADER_INVALID}
+
+
+def test_result_is_machine_serializable() -> None:
+    result = preflight_bytes(_pdf(2), limits=PreflightLimits(max_pdf_pages=1))
+
+    payload = result.model_dump(mode="json")
+
+    assert payload["decision"] == "quarantine"
+    assert payload["diagnostics"][0]["code"] == "PDF_PAGE_LIMIT_EXCEEDED"
+    assert payload["diagnostics"][0]["details"]["actual_pages"] == 2
