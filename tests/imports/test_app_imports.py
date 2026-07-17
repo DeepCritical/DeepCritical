@@ -13,6 +13,22 @@ from omegaconf import OmegaConf
 class TestAppModuleImport:
     """Test imports for the main application module."""
 
+    def test_pydantic_graph_workflows_construct(self):
+        """Guard the v1 Pydantic Graph constructor contract used by workflows."""
+        from pydantic_graph import Graph
+
+        from DeepResearch.src.statemachines.bioinformatics_workflow import (
+            bioinformatics_workflow,
+        )
+        from DeepResearch.src.statemachines.rag_workflow import rag_workflow_graph
+        from DeepResearch.src.statemachines.workflow_pattern_statemachines import (
+            create_supported_pattern_graph,
+        )
+
+        assert isinstance(rag_workflow_graph, Graph)
+        assert isinstance(bioinformatics_workflow, Graph)
+        assert isinstance(create_supported_pattern_graph(), Graph)
+
     def test_app_module_can_be_imported(self):
         """Test that DeepResearch.app can be imported without errors.
 
