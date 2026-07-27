@@ -1,7 +1,7 @@
 """Stable provenance contracts for scientific document processing.
 
-These records deliberately wrap, rather than replace, parser-native document
-models.  In particular, parsed content remains in serialized
+These records deliberately wrap, rather than replace, component-native document
+models. In particular, parsed content remains in serialized
 ``DoclingDocument`` output while these contracts make source identity,
 transformation lineage, and evidence locators stable across parser upgrades.
 """
@@ -52,7 +52,7 @@ def configuration_sha256(configuration: dict[str, Any]) -> str:
 
     Configuration values must be JSON serializable.  Rejecting implicit string
     conversion is intentional: environment-specific object representations
-    would make otherwise identical parser runs appear reproducible.
+    would make otherwise identical processing runs appear reproducible.
     """
 
     encoded = json.dumps(
@@ -89,7 +89,7 @@ class ArtifactLocationRole(StrEnum):
     OTHER_DERIVATIVE = "other_derivative"
 
 
-class ParserRunStatus(StrEnum):
+class ProcessingRunStatus(StrEnum):
     """Terminal processing outcomes; none imply silent success."""
 
     COMPLETE = "complete"
@@ -99,7 +99,7 @@ class ParserRunStatus(StrEnum):
 
 
 class DiagnosticSeverity(StrEnum):
-    """Severity of a parse diagnostic."""
+    """Severity of a processing diagnostic."""
 
     INFO = "info"
     WARNING = "warning"
@@ -117,7 +117,7 @@ class RemediationStatus(StrEnum):
 
 
 class MemoryMeasurementStatus(StrEnum):
-    """Whether a parser-stage memory measurement is trustworthy."""
+    """Whether a component-stage memory measurement is trustworthy."""
 
     MEASURED = "measured"
     UNAVAILABLE = "unavailable"
@@ -195,6 +195,9 @@ class LicenseMetadata(FrozenModel):
 class DocumentArtifact(FrozenModel):
     """Immutable identity and lineage for one acquired or derived document."""
 
+    schema_version: Literal["deepcritical-document-artifact-v1"] = (
+        "deepcritical-document-artifact-v1"
+    )
     artifact_id: str
     source_sha256: Sha256
     acquisition_uri: str
@@ -267,7 +270,9 @@ class DocumentArtifact(FrozenModel):
 class IntakeQuarantineRecord(FrozenModel):
     """Bounded evidence for a local path rejected before artifact ingestion."""
 
-    schema_version: Literal["1"] = "1"
+    schema_version: Literal["deepcritical-intake-quarantine-v1"] = (
+        "deepcritical-intake-quarantine-v1"
+    )
     intake_id: str
     source_path: str
     acquisition_uri: str
@@ -312,10 +317,10 @@ class IntakeQuarantineRecord(FrozenModel):
 
 
 class MemoryMeasurement(FrozenModel):
-    """Provenance for a peak-memory value, separate from parser output data.
+    """Provenance for a peak-memory value, separate from component output data.
 
-    A numeric peak without this record is retained for older parser runs, but is
-    intentionally not sufficient for a baseline comparison.
+    A numeric peak without this record is retained for older processing runs,
+    but is intentionally not sufficient for a baseline comparison.
     """
 
     status: MemoryMeasurementStatus
@@ -414,7 +419,7 @@ class MemoryMeasurement(FrozenModel):
 
 
 class ResourceUsage(FrozenModel):
-    """Optional measured resources for a parser invocation."""
+    """Optional measured resources for a component invocation."""
 
     wall_time_seconds: float | None = Field(default=None, ge=0)
     cpu_time_seconds: float | None = Field(default=None, ge=0)
@@ -431,8 +436,71 @@ class ResourceUsage(FrozenModel):
         return self
 
 
+class ComponentDescriptor(FrozenModel):
+    """Stable identity and capability of one processing component."""
+
+    schema_version: Literal["deepcritical-component-descriptor-v1"] = (
+        "deepcritical-component-descriptor-v1"
+    )
+    component_id: str
+    component_version: str
+    capability: str
+
+    @field_validator("component_id", "component_version", "capability")
+    @classmethod
+    def _strip_component_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("component descriptor values must not be empty")
+        return normalized
+
+
+class DataProductRef(FrozenModel):
+    """Typed, content-addressed reference to one immutable stage product."""
+
+    schema_version: Literal["deepcritical-data-product-ref-v1"] = (
+        "deepcritical-data-product-ref-v1"
+    )
+    name: str
+    product_id: str
+    blob_sha256: Sha256
+    uri: str
+    byte_size: int = Field(ge=0)
+    media_type: str
+    payload_schema_uri: str
+    payload_schema_version: str
+    producer_run_id: str
+    source_artifact_ids: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator(
+        "name",
+        "product_id",
+        "uri",
+        "media_type",
+        "payload_schema_uri",
+        "payload_schema_version",
+        "producer_run_id",
+    )
+    @classmethod
+    def _strip_product_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("data product values must not be empty")
+        return normalized
+
+    @field_validator("source_artifact_ids")
+    @classmethod
+    def _validate_source_artifacts(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        normalized = tuple(item.strip() for item in value)
+        if any(not item for item in normalized):
+            raise ValueError("source artifact IDs must not be empty")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("source artifact IDs must be unique")
+        return normalized
+
+
 class RuntimeAttestation(FrozenModel):
-    """Observed parser identity bound to one concrete invocation.
+    """Observed component identity bound to one concrete invocation.
 
     Expected identities belong in processing configuration.  This record is
     reserved for evidence independently observed by a trusted deployment
@@ -443,8 +511,8 @@ class RuntimeAttestation(FrozenModel):
     schema_version: Literal["deepcritical-runtime-attestation-v1"] = (
         "deepcritical-runtime-attestation-v1"
     )
-    parser_name: Literal["docling", "grobid", "ocrmypdf"]
-    parser_version: str
+    component_id: str
+    component_version: str
     invocation_id: str
     source: RuntimeAttestationSource
     reporter_id: str
@@ -459,7 +527,7 @@ class RuntimeAttestation(FrozenModel):
 
     @field_validator(
         "invocation_id",
-        "parser_version",
+        "component_version",
         "reporter_id",
         "workload_id",
         "container_reference",
@@ -496,16 +564,6 @@ class RuntimeAttestation(FrozenModel):
             raise ValueError(
                 "runtime attestation model version and hash inventories must match"
             )
-        expected_source = (
-            RuntimeAttestationSource.DIGEST_ADDRESSED_OCI_INVOCATION
-            if self.parser_name == "ocrmypdf"
-            else RuntimeAttestationSource.AUTHENTICATED_DEPLOYMENT_REPORTER
-        )
-        if self.source is not expected_source:
-            raise ValueError(
-                f"{self.parser_name} runtime attestation requires source "
-                f"{expected_source.value!r}"
-            )
         digest_suffix = f"@{self.container_digest}"
         if digest_suffix not in self.container_reference:
             raise ValueError(
@@ -514,16 +572,19 @@ class RuntimeAttestation(FrozenModel):
         return self
 
 
-class ParserRun(FrozenModel):
-    """Reproducible record of one parser invocation on one artifact."""
+class ProcessingRun(FrozenModel):
+    """Reproducible record of one component invocation on one artifact."""
 
+    schema_version: Literal["deepcritical-processing-run-v1"] = (
+        "deepcritical-processing-run-v1"
+    )
     run_id: str
     artifact_id: str
-    workflow_run_id: str | None = None
+    pipeline_run_id: str | None = None
     repetition_group_id: str | None = None
-    parser_name: str
-    parser_version: str
-    parser_invocation_id: str | None = None
+    stage_id: str
+    component: ComponentDescriptor
+    component_invocation_id: str | None = None
     runtime_identity_required: bool = False
     component_versions: dict[str, str] = Field(default_factory=dict)
     model_versions: dict[str, str] = Field(default_factory=dict)
@@ -542,21 +603,20 @@ class ParserRun(FrozenModel):
     output_policy_sha256: Sha256 | None = None
     started_at: datetime
     finished_at: datetime
-    status: ParserRunStatus
+    status: ProcessingRunStatus
     resource_usage: ResourceUsage = Field(default_factory=ResourceUsage)
     warnings: tuple[str, ...] = ()
-    output_hashes: dict[str, Sha256] = Field(default_factory=dict)
-    output_locations: dict[str, str] = Field(default_factory=dict)
+    inputs: tuple[DataProductRef, ...] = ()
+    outputs: tuple[DataProductRef, ...] = ()
     completed_stages: tuple[str, ...] = ()
 
     @field_validator(
         "run_id",
         "artifact_id",
-        "workflow_run_id",
+        "pipeline_run_id",
         "repetition_group_id",
-        "parser_name",
-        "parser_version",
-        "parser_invocation_id",
+        "stage_id",
+        "component_invocation_id",
         "container_image",
     )
     @classmethod
@@ -565,7 +625,7 @@ class ParserRun(FrozenModel):
             return value
         normalized = value.strip()
         if not normalized:
-            raise ValueError("parser run values must not be empty")
+            raise ValueError("processing run values must not be empty")
         return normalized
 
     @field_validator("started_at", "finished_at")
@@ -573,12 +633,12 @@ class ParserRun(FrozenModel):
     def _normalize_run_time(cls, value: datetime, info: Any) -> datetime:
         return _as_utc(value, info.field_name)
 
-    @field_validator("component_versions", "model_versions", "output_locations")
+    @field_validator("component_versions", "model_versions")
     @classmethod
     def _validate_string_mappings(cls, value: dict[str, str]) -> dict[str, str]:
         return _normalized_mapping(value)
 
-    @field_validator("model_hashes", "output_hashes")
+    @field_validator("model_hashes")
     @classmethod
     def _validate_hash_mapping_keys(cls, value: dict[str, str]) -> dict[str, str]:
         if any(not key.strip() for key in value):
@@ -596,7 +656,7 @@ class ParserRun(FrozenModel):
         return normalized
 
     @model_validator(mode="after")
-    def _validate_provenance(self) -> ParserRun:
+    def _validate_provenance(self) -> ProcessingRun:
         try:
             expected_config_hash = configuration_sha256(self.configuration)
         except (TypeError, ValueError) as exc:
@@ -638,15 +698,19 @@ class ParserRun(FrozenModel):
                 )
         else:
             attestation = self.runtime_attestation
-            if attestation.parser_name != self.parser_name:
-                raise ValueError("runtime attestation parser does not match parser run")
-            if attestation.parser_version != self.parser_version:
-                raise ValueError("parser_version must come from runtime attestation")
-            if self.parser_invocation_id != attestation.invocation_id:
-                raise ValueError("parser_invocation_id must match runtime attestation")
+            if attestation.component_id != self.component.component_id:
+                raise ValueError(
+                    "runtime attestation component does not match processing run"
+                )
+            if attestation.component_version != self.component.component_version:
+                raise ValueError("component_version must come from runtime attestation")
+            if self.component_invocation_id != attestation.invocation_id:
+                raise ValueError(
+                    "component_invocation_id must match runtime attestation"
+                )
             if not self.started_at <= attestation.observed_at <= self.finished_at:
                 raise ValueError(
-                    "runtime attestation observation must fall within the parser run"
+                    "runtime attestation observation must fall within the processing run"
                 )
             expected_attestation_hash = configuration_sha256(
                 attestation.model_dump(mode="json")
@@ -655,12 +719,20 @@ class ParserRun(FrozenModel):
                 raise ValueError(
                     "runtime_attestation_sha256 does not match runtime_attestation"
                 )
+            attestation_output = next(
+                (
+                    product
+                    for product in self.outputs
+                    if product.name == "runtime_attestation"
+                ),
+                None,
+            )
             if (
-                self.output_hashes.get("runtime_attestation")
-                != expected_attestation_hash
+                attestation_output is None
+                or attestation_output.blob_sha256 != expected_attestation_hash
             ):
                 raise ValueError(
-                    "runtime attestation must be preserved as a parser-run output"
+                    "runtime attestation must be preserved as a processing-run output"
                 )
             if self.container_digest != attestation.container_digest:
                 raise ValueError("container_digest must come from runtime attestation")
@@ -674,29 +746,76 @@ class ParserRun(FrozenModel):
                 raise ValueError("model_versions must come from runtime attestation")
             if self.model_hashes != attestation.model_hashes:
                 raise ValueError("model_hashes must come from runtime attestation")
-        if self.repetition_group_id is not None and self.workflow_run_id is None:
-            raise ValueError("repetition_group_id requires workflow_run_id")
-        if self.runtime_identity_required and self.status is ParserRunStatus.COMPLETE:
+        if self.repetition_group_id is not None and self.pipeline_run_id is None:
+            raise ValueError("repetition_group_id requires pipeline_run_id")
+        if (
+            self.runtime_identity_required
+            and self.status is ProcessingRunStatus.COMPLETE
+        ):
             if self.runtime_attestation is None:
                 raise ValueError(
-                    "complete parser runs require task-bound runtime attestation"
+                    "complete processing runs require task-bound runtime attestation"
                 )
             if not self.component_versions:
                 raise ValueError(
-                    "complete parser runs require observed component versions"
+                    "complete processing runs require observed component versions"
                 )
             if self.container_image is not None and self.container_digest is None:
                 raise ValueError(
-                    "complete container parser runs require an immutable digest"
+                    "complete container processing runs require an immutable digest"
                 )
             if self.model_versions.keys() != self.model_hashes.keys():
                 raise ValueError(
                     "model version and hash inventories must have identical keys"
                 )
-        unknown_locations = self.output_locations.keys() - self.output_hashes.keys()
-        if unknown_locations:
-            raise ValueError("every output location requires a matching output hash")
+        input_ids = [product.product_id for product in self.inputs]
+        if len(set(input_ids)) != len(input_ids):
+            raise ValueError("processing-run input product IDs must be unique")
+        output_names = [product.name for product in self.outputs]
+        if len(set(output_names)) != len(output_names):
+            raise ValueError("processing-run output names must be unique")
+        output_ids = [product.product_id for product in self.outputs]
+        if len(set(output_ids)) != len(output_ids):
+            raise ValueError("processing-run output product IDs must be unique")
+        for product in self.outputs:
+            if product.producer_run_id != self.run_id:
+                raise ValueError("output producer_run_id must match processing run")
+            if self.artifact_id not in product.source_artifact_ids:
+                raise ValueError(
+                    "processing-run artifact must be included in output lineage"
+                )
         return self
+
+    @property
+    def component_id(self) -> str:
+        """Return the component identifier without duplicating persisted data."""
+
+        return self.component.component_id
+
+    @property
+    def component_version(self) -> str:
+        """Return the component version without duplicating persisted data."""
+
+        return self.component.component_version
+
+    def output(self, name: str) -> DataProductRef | None:
+        """Return a named output, if the run produced it."""
+
+        return next((product for product in self.outputs if product.name == name), None)
+
+    def require_output(self, name: str) -> DataProductRef:
+        """Return a named output or raise a precise contract error."""
+
+        product = self.output(name)
+        if product is None:
+            raise KeyError(f"processing run {self.run_id!r} has no output {name!r}")
+        return product
+
+    def output_sha256(self, name: str) -> Sha256 | None:
+        """Return the digest of a named output without materializing a map."""
+
+        product = self.output(name)
+        return product.blob_sha256 if product is not None else None
 
 
 class PdfBoundingBox(FrozenModel):
@@ -794,9 +913,10 @@ class BioCLocator(FrozenModel):
 class DoclingItemLocator(FrozenModel):
     """Parser-native locator for formats without a stable source coordinate contract.
 
-    The immutable ``DoclingDocument`` remains the canonical content tree for these
-    formats.  This locator is deliberately explicit about being parser-native; it
-    must not be presented as an HTML XPath, Office object ID, or image coordinate.
+    The immutable ``DoclingDocument`` remains a native processor product for
+    these formats. This locator is deliberately explicit about being
+    processor-native; it must not be presented as an HTML XPath, Office object
+    ID, or image coordinate.
     """
 
     kind: Literal["docling_item"] = "docling_item"
@@ -818,27 +938,30 @@ SourceLocator = Annotated[
 ]
 
 
-class ExternalTaskCheckpoint(FrozenModel):
-    """Durable identity of a submitted asynchronous parser task."""
+class ExecutionCheckpoint(FrozenModel):
+    """Durable identity of a submitted asynchronous component task."""
 
+    schema_version: Literal["deepcritical-execution-checkpoint-v1"] = (
+        "deepcritical-execution-checkpoint-v1"
+    )
     checkpoint_id: str
     artifact_id: str
-    parser_name: str
+    component_id: str
     configuration_sha256: Sha256
     output_policy_sha256: Sha256
-    workflow_run_id: str | None = None
+    pipeline_run_id: str | None = None
     repetition_group_id: str | None = None
-    workflow_attempt_id: str | None = None
+    pipeline_attempt_id: str | None = None
     remote_task_id: str
     created_at: datetime = Field(default_factory=utc_now)
 
     @field_validator(
         "checkpoint_id",
         "artifact_id",
-        "parser_name",
-        "workflow_run_id",
+        "component_id",
+        "pipeline_run_id",
         "repetition_group_id",
-        "workflow_attempt_id",
+        "pipeline_attempt_id",
         "remote_task_id",
     )
     @classmethod
@@ -851,9 +974,9 @@ class ExternalTaskCheckpoint(FrozenModel):
         return normalized
 
     @model_validator(mode="after")
-    def _validate_attempt_scope(self) -> ExternalTaskCheckpoint:
-        if self.workflow_attempt_id is not None and self.workflow_run_id is None:
-            raise ValueError("workflow_attempt_id requires workflow_run_id")
+    def _validate_attempt_scope(self) -> ExecutionCheckpoint:
+        if self.pipeline_attempt_id is not None and self.pipeline_run_id is None:
+            raise ValueError("pipeline_attempt_id requires pipeline_run_id")
         return self
 
     @field_validator("created_at")
@@ -862,19 +985,40 @@ class ExternalTaskCheckpoint(FrozenModel):
         return _as_utc(value, "created_at")
 
 
+class RepresentationAnchor(FrozenModel):
+    """A character range in one exact native or canonical representation."""
+
+    product_id: str
+    node_id: str
+    char_start: int = Field(ge=0)
+    char_end: int = Field(gt=0)
+
+    @field_validator("product_id", "node_id")
+    @classmethod
+    def _strip_anchor_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("representation anchor values must not be empty")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_character_range(self) -> RepresentationAnchor:
+        if self.char_end <= self.char_start:
+            raise ValueError("char_end must be greater than char_start")
+        return self
+
+
 class ContentSpan(FrozenModel):
-    """A content-addressed evidence span anchored in parser and source space."""
+    """A content-addressed evidence span anchored in representation/source space."""
 
     span_id: str
     artifact_id: str
-    parser_run_id: str
-    docling_item_ref: str
-    item_char_start: int = Field(ge=0)
-    item_char_end: int = Field(gt=0)
+    processing_run_id: str
+    representation_anchor: RepresentationAnchor
     content_sha256: Sha256
     source_locator: SourceLocator
 
-    @field_validator("span_id", "artifact_id", "parser_run_id", "docling_item_ref")
+    @field_validator("span_id", "artifact_id", "processing_run_id")
     @classmethod
     def _strip_span_text(cls, value: str) -> str:
         normalized = value.strip()
@@ -882,19 +1026,55 @@ class ContentSpan(FrozenModel):
             raise ValueError("content span values must not be empty")
         return normalized
 
+
+class ContentSpanSet(FrozenModel):
+    """Versioned persisted set of spans targeting one representation product."""
+
+    schema_version: Literal["deepcritical-content-span-set-v1"] = (
+        "deepcritical-content-span-set-v1"
+    )
+    artifact_id: str
+    processing_run_id: str
+    representation_product_id: str
+    spans: tuple[ContentSpan, ...] = ()
+
+    @field_validator(
+        "artifact_id",
+        "processing_run_id",
+        "representation_product_id",
+    )
+    @classmethod
+    def _strip_span_set_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("content span set values must not be empty")
+        return normalized
+
     @model_validator(mode="after")
-    def _validate_character_range(self) -> ContentSpan:
-        if self.item_char_end <= self.item_char_start:
-            raise ValueError("item_char_end must be greater than item_char_start")
+    def _validate_span_lineage(self) -> ContentSpanSet:
+        span_ids: set[str] = set()
+        for span in self.spans:
+            if span.artifact_id != self.artifact_id:
+                raise ValueError("content span artifact_id does not match set")
+            if span.processing_run_id != self.processing_run_id:
+                raise ValueError("content span processing_run_id does not match set")
+            if span.representation_anchor.product_id != self.representation_product_id:
+                raise ValueError("content span representation does not match set")
+            if span.span_id in span_ids:
+                raise ValueError("content span IDs must be unique")
+            span_ids.add(span.span_id)
         return self
 
 
-class ParseDiagnostic(FrozenModel):
-    """Machine-actionable, source-anchored parser warning or failure."""
+class ProcessingDiagnostic(FrozenModel):
+    """Machine-actionable, source-anchored processing warning or failure."""
 
+    schema_version: Literal["deepcritical-processing-diagnostic-v1"] = (
+        "deepcritical-processing-diagnostic-v1"
+    )
     diagnostic_id: str
     artifact_id: str
-    parser_run_id: str | None = None
+    processing_run_id: str | None = None
     severity: DiagnosticSeverity
     stage: str
     code: str
@@ -910,7 +1090,7 @@ class ParseDiagnostic(FrozenModel):
     @field_validator(
         "diagnostic_id",
         "artifact_id",
-        "parser_run_id",
+        "processing_run_id",
         "stage",
         "message",
         "item_ref",
@@ -939,7 +1119,7 @@ class ParseDiagnostic(FrozenModel):
         return _as_utc(value, "created_at")
 
     @model_validator(mode="after")
-    def _validate_remediation(self) -> ParseDiagnostic:
+    def _validate_remediation(self) -> ProcessingDiagnostic:
         if (
             self.remediation_status is RemediationStatus.RESOLVED
             and self.remediation_note is None
@@ -953,15 +1133,17 @@ class ParseDiagnostic(FrozenModel):
         return self
 
 
-class ParserRunDiagnosticManifest(FrozenModel):
+class ProcessingRunDiagnosticManifest(FrozenModel):
     """Durable diagnostic set that must be indexed before a run is reusable."""
 
-    schema_version: Literal["1"] = "1"
+    schema_version: Literal["deepcritical-processing-diagnostic-manifest-v1"] = (
+        "deepcritical-processing-diagnostic-manifest-v1"
+    )
     artifact_id: str
-    parser_run_id: str
-    diagnostics: tuple[ParseDiagnostic, ...] = ()
+    processing_run_id: str
+    diagnostics: tuple[ProcessingDiagnostic, ...] = ()
 
-    @field_validator("artifact_id", "parser_run_id")
+    @field_validator("artifact_id", "processing_run_id")
     @classmethod
     def _strip_manifest_text(cls, value: str) -> str:
         normalized = value.strip()
@@ -970,13 +1152,13 @@ class ParserRunDiagnosticManifest(FrozenModel):
         return normalized
 
     @model_validator(mode="after")
-    def _validate_diagnostic_lineage(self) -> ParserRunDiagnosticManifest:
+    def _validate_diagnostic_lineage(self) -> ProcessingRunDiagnosticManifest:
         diagnostic_ids: set[str] = set()
         for diagnostic in self.diagnostics:
             if diagnostic.artifact_id != self.artifact_id:
                 raise ValueError("manifest diagnostic artifact_id does not match")
-            if diagnostic.parser_run_id != self.parser_run_id:
-                raise ValueError("manifest diagnostic parser_run_id does not match")
+            if diagnostic.processing_run_id != self.processing_run_id:
+                raise ValueError("manifest diagnostic processing_run_id does not match")
             if diagnostic.diagnostic_id in diagnostic_ids:
                 raise ValueError("manifest diagnostic IDs must be unique")
             diagnostic_ids.add(diagnostic.diagnostic_id)
@@ -1007,12 +1189,15 @@ __all__ = [
     "ArtifactLocationRole",
     "ArtifactRelationship",
     "BioCLocator",
+    "ComponentDescriptor",
     "ContentSpan",
+    "ContentSpanSet",
+    "DataProductRef",
     "DiagnosticSeverity",
     "DoclingInputFormat",
     "DoclingItemLocator",
     "DocumentArtifact",
-    "ExternalTaskCheckpoint",
+    "ExecutionCheckpoint",
     "IntakeQuarantineRecord",
     "JatsLocator",
     "LicenseMetadata",
@@ -1020,13 +1205,14 @@ __all__ = [
     "MemoryMeasurementScope",
     "MemoryMeasurementStatus",
     "OciDigest",
-    "ParseDiagnostic",
-    "ParserRun",
-    "ParserRunDiagnosticManifest",
-    "ParserRunStatus",
     "PdfBoundingBox",
     "PdfLocator",
+    "ProcessingDiagnostic",
+    "ProcessingRun",
+    "ProcessingRunDiagnosticManifest",
+    "ProcessingRunStatus",
     "RemediationStatus",
+    "RepresentationAnchor",
     "ResourceUsage",
     "RuntimeAttestation",
     "RuntimeAttestationSource",

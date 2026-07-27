@@ -1,4 +1,4 @@
-"""Crash-recovery tests for atomic parser-run diagnostic commitments."""
+"""Crash-recovery tests for atomic processing-run diagnostic commitments."""
 
 from __future__ import annotations
 
@@ -14,24 +14,24 @@ from DeepResearch.src.document_processing import (
     DoclingServeClient,
     DocumentProcessingConfig,
     DocumentProcessor,
-    ParseDiagnostic,
-    ParserRunCommitIncompleteError,
-    ParserRunDiagnosticManifest,
-    ParserRunStatus,
+    ProcessingDiagnostic,
+    ProcessingRunCommitIncompleteError,
+    ProcessingRunDiagnosticManifest,
+    ProcessingRunStatus,
 )
 
 
 class FailOnceDiagnosticStore(ContentAddressedStore):
-    """Simulate a process failure after its parser run is already durable."""
+    """Simulate a process failure after its processing run is already durable."""
 
     def __init__(self, root: Path, *, fail_once: bool) -> None:
         super().__init__(root)
         self.fail_once = fail_once
 
-    def save_diagnostic(self, diagnostic: ParseDiagnostic) -> Path:
-        if self.fail_once and diagnostic.parser_run_id is not None:
-            run = self.get_parser_run(diagnostic.parser_run_id)
-            if run.parser_name == "docling":
+    def save_diagnostic(self, diagnostic: ProcessingDiagnostic) -> Path:
+        if self.fail_once and diagnostic.processing_run_id is not None:
+            run = self.get_processing_run(diagnostic.processing_run_id)
+            if run.component_id == "docling":
                 self.fail_once = False
                 raise OSError("injected diagnostic index failure")
         return super().save_diagnostic(diagnostic)
@@ -118,24 +118,30 @@ async def test_retry_reconciles_diagnostics_without_repeating_docling(
     )
 
     with pytest.raises(
-        ParserRunCommitIncompleteError, match="diagnostic reconciliation is incomplete"
+        ProcessingRunCommitIncompleteError,
+        match="diagnostic reconciliation is incomplete",
     ):
         await first_processor.process_artifact(artifact.artifact_id)
 
-    persisted_runs = first_store.list_parser_runs(
-        artifact_id=artifact.artifact_id, parser_name="docling"
+    persisted_runs = first_store.list_processing_runs(
+        artifact_id=artifact.artifact_id, component_id="docling"
     )
     assert len(persisted_runs) == 1
     persisted_run = persisted_runs[0]
-    assert persisted_run.status is ParserRunStatus.COMPLETE
-    manifest = ParserRunDiagnosticManifest.model_validate_json(
-        first_store.read_blob(persisted_run.output_hashes["diagnostics_manifest"])
+    assert persisted_run.status is ProcessingRunStatus.COMPLETE
+    manifest = ProcessingRunDiagnosticManifest.model_validate_json(
+        first_store.read_blob(
+            persisted_run.require_output("diagnostics_manifest").blob_sha256
+        )
     )
     assert [item.code for item in manifest.diagnostics] == ["EMPTY_TEXT_ITEM"]
-    assert first_store.list_diagnostics(parser_run_id=persisted_run.run_id) == ()
+    assert first_store.list_diagnostics(processing_run_id=persisted_run.run_id) == ()
     assert not first_store.has_complete_run(artifact.artifact_id, "docling")
     assert first_store.list_resume_candidates("docling") == (artifact,)
-    assert len(list((store_root / "records" / "external_tasks").glob("*.json"))) == 1
+    assert (
+        len(list((store_root / "records" / "execution_checkpoints").glob("*.json")))
+        == 1
+    )
     assert docling.calls == 1
 
     reopened_store = FailOnceDiagnosticStore(store_root, fail_once=False)
@@ -146,19 +152,22 @@ async def test_retry_reconciles_diagnostics_without_repeating_docling(
     )
     result = await reopened_processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     assert docling.calls == 1
     assert (
-        next(run for run in result.parser_runs if run.parser_name == "docling")
+        next(run for run in result.processing_runs if run.component_id == "docling")
         == persisted_run
     )
     assert any(
-        run.parser_name == "docling-content-integrity" for run in result.parser_runs
+        run.component_id == "docling-content-integrity"
+        for run in result.processing_runs
     )
     assert [
         item.code
-        for item in reopened_store.list_diagnostics(parser_run_id=persisted_run.run_id)
+        for item in reopened_store.list_diagnostics(
+            processing_run_id=persisted_run.run_id
+        )
     ] == ["EMPTY_TEXT_ITEM"]
     assert reopened_store.has_complete_run(artifact.artifact_id, "docling")
     assert reopened_store.list_resume_candidates("docling") == ()
-    assert list((store_root / "records" / "external_tasks").glob("*.json")) == []
+    assert list((store_root / "records" / "execution_checkpoints").glob("*.json")) == []

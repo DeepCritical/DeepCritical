@@ -20,12 +20,13 @@ from typing import Any, cast
 
 from .models import (
     ContentSpan,
+    ContentSpanSet,
     DocumentArtifact,
     JatsLocator,
     MemoryMeasurement,
-    ParserRun,
-    ParserRunStatus,
     PdfLocator,
+    ProcessingRun,
+    ProcessingRunStatus,
     RuntimeAttestation,
     RuntimeAttestationSource,
     configuration_sha256,
@@ -606,53 +607,55 @@ def _read_json_blob(store: ContentAddressedStore, digest: str, context: str) -> 
 
 def _content_spans(
     store: ContentAddressedStore,
-    run: ParserRun,
+    run: ProcessingRun,
 ) -> list[ContentSpan]:
-    digest = run.output_hashes.get("content_spans")
+    digest = run.output_sha256("content_spans")
     if digest is None:
         raise BenchmarkError(
-            f"parser run {run.run_id!r} has no persisted content_spans output"
+            f"processing run {run.run_id!r} has no persisted content_spans output"
         )
     payload = _read_json_blob(store, digest, "content spans")
-    if not isinstance(payload, list):
+    try:
+        span_set = ContentSpanSet.model_validate(payload)
+    except ValueError as exc:
         raise BenchmarkError(
-            f"persisted content spans for run {run.run_id!r} must be an array"
+            f"invalid persisted content span set for run {run.run_id!r}: {exc}"
+        ) from exc
+    if (
+        span_set.artifact_id != run.artifact_id
+        or span_set.processing_run_id != run.run_id
+    ):
+        raise BenchmarkError(
+            f"persisted content span set does not belong to processing run "
+            f"{run.run_id!r}"
         )
-
-    spans: list[ContentSpan] = []
-    for position, raw_span in enumerate(payload):
-        try:
-            span = ContentSpan.model_validate(raw_span)
-        except ValueError as exc:
-            raise BenchmarkError(
-                f"invalid persisted content span at index {position} for "
-                f"run {run.run_id!r}: {exc}"
-            ) from exc
-        if span.artifact_id != run.artifact_id or span.parser_run_id != run.run_id:
-            raise BenchmarkError(
-                f"persisted content span {span.span_id!r} does not belong to "
-                f"parser run {run.run_id!r}"
-            )
-        spans.append(span)
-
-    return spans
+    representation = run.output("docling_document")
+    if (
+        representation is not None
+        and span_set.representation_product_id != representation.product_id
+    ):
+        raise BenchmarkError(
+            f"persisted content span set for run {run.run_id!r} targets a "
+            "different representation product"
+        )
+    return list(span_set.spans)
 
 
 def _content_span_index(
     store: ContentAddressedStore,
-    run: ParserRun,
+    run: ProcessingRun,
 ) -> dict[str, ContentSpan]:
     selected: dict[str, ContentSpan] = {}
     for span in sorted(
         _content_spans(store, run),
         key=lambda value: (
-            value.docling_item_ref,
-            value.item_char_start,
-            value.item_char_end,
+            value.representation_anchor.node_id,
+            value.representation_anchor.char_start,
+            value.representation_anchor.char_end,
             value.span_id,
         ),
     ):
-        selected.setdefault(span.docling_item_ref, span)
+        selected.setdefault(span.representation_anchor.node_id, span)
     return selected
 
 
@@ -677,10 +680,10 @@ def _derivation_runs_to_root(
     store: ContentAddressedStore,
     artifact_id: str,
     root_artifact_id: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
-) -> tuple[ParserRun, ...]:
-    derivation_runs: list[ParserRun] = []
+) -> tuple[ProcessingRun, ...]:
+    derivation_runs: list[ProcessingRun] = []
     visited: set[str] = set()
     current_id = artifact_id
     while current_id != root_artifact_id:
@@ -696,41 +699,43 @@ def _derivation_runs_to_root(
             )
         workflow_creators = [
             run
-            for run in store.list_parser_runs(artifact_id=parent_id)
-            if run.workflow_run_id == workflow_run_id
+            for run in store.list_processing_runs(artifact_id=parent_id)
+            if run.pipeline_run_id == pipeline_run_id
             and run.repetition_group_id == repetition_group_id
-            and run.status in {ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}
-            and artifact.source_sha256 in run.output_hashes.values()
+            and run.status
+            in {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}
+            and any(
+                product.blob_sha256 == artifact.source_sha256 for product in run.outputs
+            )
         ]
         creator_run_id = artifact.raw_location.created_by_run_id
         if workflow_creators:
             creator_run = workflow_creators[-1]
         elif creator_run_id is None:
             raise BenchmarkError(
-                f"derived artifact {current_id!r} has no creating ParserRun"
+                f"derived artifact {current_id!r} has no creating ProcessingRun"
             )
         else:
-            creator_run = store.get_parser_run(creator_run_id)
+            creator_run = store.get_processing_run(creator_run_id)
             if (
-                creator_run.workflow_run_id != workflow_run_id
+                creator_run.pipeline_run_id != pipeline_run_id
                 or creator_run.repetition_group_id != repetition_group_id
             ):
                 raise BenchmarkError(
                     f"derived artifact {current_id!r} has no creator in workflow "
-                    f"{workflow_run_id!r}"
+                    f"{pipeline_run_id!r}"
                 )
         if creator_run.artifact_id != parent_id:
             raise BenchmarkError(
                 f"derivative creator run {creator_run_id!r} does not belong to "
                 f"parent artifact {parent_id!r}"
             )
-        if (
-            creator_run.status
-            not in {
-                ParserRunStatus.COMPLETE,
-                ParserRunStatus.PARTIAL,
-            }
-            or artifact.source_sha256 not in creator_run.output_hashes.values()
+        if creator_run.status not in {
+            ProcessingRunStatus.COMPLETE,
+            ProcessingRunStatus.PARTIAL,
+        } or not any(
+            product.blob_sha256 == artifact.source_sha256
+            for product in creator_run.outputs
         ):
             raise BenchmarkError(
                 f"derivative creator run {creator_run_id!r} does not own successful "
@@ -745,8 +750,8 @@ def _derivation_runs_to_root(
 
 def _grobid_run_for_alignment(
     store: ContentAddressedStore,
-    alignment_run: ParserRun,
-) -> tuple[ParserRun, tuple[ParserRun, ...]]:
+    alignment_run: ProcessingRun,
+) -> tuple[ProcessingRun, tuple[ProcessingRun, ...]]:
     tei_digest = alignment_run.configuration.get("grobid_tei_sha256")
     if not isinstance(tei_digest, str) or not _SHA256_RE.fullmatch(tei_digest):
         raise BenchmarkError(
@@ -755,22 +760,22 @@ def _grobid_run_for_alignment(
         )
     matching = [
         run
-        for run in store.list_parser_runs(
-            parser_name="grobid",
+        for run in store.list_processing_runs(
+            component_id="grobid",
         )
-        if run.status in {ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}
-        and run.output_hashes.get("grobid_tei") == tei_digest
-        and run.workflow_run_id == alignment_run.workflow_run_id
+        if run.status in {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}
+        and run.output_sha256("grobid_tei") == tei_digest
+        and run.pipeline_run_id == alignment_run.pipeline_run_id
         and run.repetition_group_id == alignment_run.repetition_group_id
     ]
-    lineage_matches: list[tuple[ParserRun, tuple[ParserRun, ...]]] = []
+    lineage_matches: list[tuple[ProcessingRun, tuple[ProcessingRun, ...]]] = []
     for run in matching:
         try:
             lineage = _derivation_runs_to_root(
                 store,
                 run.artifact_id,
                 alignment_run.artifact_id,
-                alignment_run.workflow_run_id,
+                alignment_run.pipeline_run_id,
                 alignment_run.repetition_group_id,
             )
         except BenchmarkError:
@@ -779,7 +784,7 @@ def _grobid_run_for_alignment(
     if not lineage_matches:
         raise BenchmarkError(
             f"alignment run {alignment_run.run_id!r} pins GROBID TEI {tei_digest}, "
-            "but no successful GROBID ParserRun in the source/derivative lineage "
+            "but no successful GROBID ProcessingRun in the source/derivative lineage "
             "owns that output"
         )
     selected, lineage = lineage_matches[-1]
@@ -791,34 +796,34 @@ def _scholarly_references(
     store: ContentAddressedStore,
     artifact_id: str,
     docling_document_sha256: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
 ) -> tuple[
     list[dict[str, Any]] | None,
     dict[str, Any] | None,
-    ParserRun | None,
-    ParserRun | None,
-    tuple[ParserRun, ...],
+    ProcessingRun | None,
+    ProcessingRun | None,
+    tuple[ProcessingRun, ...],
 ]:
-    runs = store.list_parser_runs(
+    runs = store.list_processing_runs(
         artifact_id=artifact_id,
-        parser_name="docling-grobid-aligner",
+        component_id="docling-grobid-aligner",
     )
     matching = [
         run
         for run in runs
-        if run.status in {ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}
+        if run.status in {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}
         and run.configuration.get("docling_document_sha256") == docling_document_sha256
-        and run.workflow_run_id == workflow_run_id
+        and run.pipeline_run_id == pipeline_run_id
         and run.repetition_group_id == repetition_group_id
-        and "alignment_overlay" in run.output_hashes
+        and run.output("alignment_overlay") is not None
     ]
     if not matching:
         return None, None, None, None, ()
 
     run = matching[-1]
     grobid_run, derivation_runs = _grobid_run_for_alignment(store, run)
-    digest = run.output_hashes["alignment_overlay"]
+    digest = run.require_output("alignment_overlay").blob_sha256
     payload = _read_json_blob(store, digest, "Docling-GROBID alignment overlay")
     if not isinstance(payload, Mapping) or not isinstance(payload.get("records"), list):
         raise BenchmarkError(
@@ -849,30 +854,30 @@ def _scholarly_references(
     return (
         references,
         {
-            "parser_run_id": run.run_id,
-            "workflow_run_id": run.workflow_run_id,
+            "processing_run_id": run.run_id,
+            "pipeline_run_id": run.pipeline_run_id,
             "repetition_group_id": run.repetition_group_id,
-            "parser_name": run.parser_name,
-            "parser_version": run.parser_version,
+            "component_id": run.component_id,
+            "component_version": run.component_version,
             "configuration_sha256": run.configuration_sha256,
             "output_sha256": digest,
             "docling_document_sha256": run.configuration.get("docling_document_sha256"),
             "grobid_tei_sha256": run.configuration.get("grobid_tei_sha256"),
-            "grobid_parser_run": {
-                "parser_run_id": grobid_run.run_id,
+            "grobid_processing_run": {
+                "processing_run_id": grobid_run.run_id,
                 "artifact_id": grobid_run.artifact_id,
-                "parser_name": grobid_run.parser_name,
-                "parser_version": grobid_run.parser_version,
+                "component_id": grobid_run.component_id,
+                "component_version": grobid_run.component_version,
                 "configuration_sha256": grobid_run.configuration_sha256,
-                "output_sha256": grobid_run.output_hashes["grobid_tei"],
+                "output_sha256": grobid_run.require_output("grobid_tei").blob_sha256,
             },
-            "derivation_parser_runs": [
+            "derivation_processing_runs": [
                 {
-                    "parser_run_id": derivation_run.run_id,
-                    "workflow_run_id": derivation_run.workflow_run_id,
+                    "processing_run_id": derivation_run.run_id,
+                    "pipeline_run_id": derivation_run.pipeline_run_id,
                     "repetition_group_id": derivation_run.repetition_group_id,
-                    "parser_name": derivation_run.parser_name,
-                    "parser_version": derivation_run.parser_version,
+                    "component_id": derivation_run.component_id,
+                    "component_version": derivation_run.component_version,
                     "configuration_sha256": derivation_run.configuration_sha256,
                 }
                 for derivation_run in derivation_runs
@@ -886,14 +891,14 @@ def _scholarly_references(
 
 def _docling_observation_fields(
     store: ContentAddressedStore,
-    run: ParserRun,
+    run: ProcessingRun,
     document: Mapping[str, Any],
 ) -> tuple[
     dict[str, Any],
     dict[str, Any],
-    ParserRun | None,
-    ParserRun | None,
-    tuple[ParserRun, ...],
+    ProcessingRun | None,
+    ProcessingRun | None,
+    tuple[ProcessingRun, ...],
 ]:
     item_index = _docling_item_index(document)
     ordered_texts = _ordered_docling_text_items(document, item_index)
@@ -975,8 +980,8 @@ def _docling_observation_fields(
     ) = _scholarly_references(
         store,
         run.artifact_id,
-        run.output_hashes["docling_document"],
-        run.workflow_run_id,
+        run.require_output("docling_document").blob_sha256,
+        run.pipeline_run_id,
         run.repetition_group_id,
     )
     references = (
@@ -1050,16 +1055,16 @@ def _select_manifest_artifact(
     )
 
 
-def _select_parser_run(
+def _select_processing_run(
     store: ContentAddressedStore,
     artifact: DocumentArtifact,
-    parser_name: str,
+    component_id: str,
     configuration_hash: str | None,
     output_policy_hash: str | None,
-) -> ParserRun:
-    runs = store.list_parser_runs(
+) -> ProcessingRun:
+    runs = store.list_processing_runs(
         artifact_id=artifact.artifact_id,
-        parser_name=parser_name,
+        component_id=component_id,
         configuration_sha256=configuration_hash,
     )
     if output_policy_hash is not None:
@@ -1073,19 +1078,19 @@ def _select_parser_run(
         if output_policy_hash is not None:
             selectors.append(f"output-policy hash {output_policy_hash}")
         raise BenchmarkError(
-            f"artifact {artifact.artifact_id!r} has no {parser_name!r} parser run "
+            f"artifact {artifact.artifact_id!r} has no {component_id!r} processing run "
             f"with {' and '.join(selectors)}"
         )
 
     terminal_failures = [
         run
-        for run in store.list_parser_runs(artifact_id=artifact.artifact_id)
-        if run.status in {ParserRunStatus.QUARANTINED, ParserRunStatus.FAILED}
+        for run in store.list_processing_runs(artifact_id=artifact.artifact_id)
+        if run.status in {ProcessingRunStatus.QUARANTINED, ProcessingRunStatus.FAILED}
     ]
     if terminal_failures:
         return terminal_failures[-1]
     raise BenchmarkError(
-        f"artifact {artifact.artifact_id!r} has no {parser_name!r} parser run "
+        f"artifact {artifact.artifact_id!r} has no {component_id!r} processing run "
         "and no explicit quarantined or failed terminal run"
     )
 
@@ -1131,7 +1136,7 @@ _CANONICAL_COMPONENT_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
-def _output_policy_snapshot(run: ParserRun) -> dict[str, Any] | None:
+def _output_policy_snapshot(run: ProcessingRun) -> dict[str, Any] | None:
     """Return one run's persisted static output policy, if it has one.
 
     Older, non-baseline fixtures did not record this contract.  They remain
@@ -1143,50 +1148,50 @@ def _output_policy_snapshot(run: ParserRun) -> dict[str, Any] | None:
         return None
     if run.output_policy_sha256 is None:
         raise BenchmarkError(
-            f"parser run {run.run_id!r} has an output policy without its hash"
+            f"processing run {run.run_id!r} has an output policy without its hash"
         )
     snapshot = dict(run.output_policy_snapshot)
     actual_hash = configuration_sha256(snapshot)
     if actual_hash != run.output_policy_sha256:
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy hash does not match its snapshot"
+            f"processing run {run.run_id!r} output policy hash does not match its snapshot"
         )
     if snapshot.get("schema") != _OUTPUT_POLICY_SCHEMA:
         raise BenchmarkError(
-            f"parser run {run.run_id!r} has unsupported output policy schema"
+            f"processing run {run.run_id!r} has unsupported output policy schema"
         )
     if not isinstance(snapshot.get("document_processing_config"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no full processing configuration"
+            f"processing run {run.run_id!r} output policy has no full processing configuration"
         )
     if not isinstance(snapshot.get("effective_parser_options"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no effective parser options"
+            f"processing run {run.run_id!r} output policy has no effective parser options"
         )
     if not isinstance(snapshot.get("execution_limits"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no execution limits"
+            f"processing run {run.run_id!r} output policy has no execution limits"
         )
     if not isinstance(snapshot.get("runtime_trust_policy"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no runtime trust policy"
+            f"processing run {run.run_id!r} output policy has no runtime trust policy"
         )
     if not isinstance(snapshot.get("routing"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no routing contract"
+            f"processing run {run.run_id!r} output policy has no routing contract"
         )
     if not isinstance(snapshot.get("algorithms"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no algorithm inventory"
+            f"processing run {run.run_id!r} output policy has no algorithm inventory"
         )
     if not isinstance(snapshot.get("contract_schemas"), Mapping):
         raise BenchmarkError(
-            f"parser run {run.run_id!r} output policy has no schema inventory"
+            f"processing run {run.run_id!r} output policy has no schema inventory"
         )
     return snapshot
 
 
-def _benchmark_recipe_hash(run: ParserRun) -> str:
+def _benchmark_recipe_hash(run: ProcessingRun) -> str:
     configuration = {
         key: value
         for key, value in run.configuration.items()
@@ -1202,12 +1207,12 @@ def _pipeline_recipe_identity(recipe: Mapping[str, Any]) -> str:
 
 
 def _primary_parser_identity(
-    run: ParserRun,
+    run: ProcessingRun,
     pipeline_recipe: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     return {
-        "name": run.parser_name,
-        "version": run.parser_version,
+        "name": run.component_id,
+        "version": run.component_version,
         "configuration_hash": (
             _pipeline_recipe_identity(pipeline_recipe)
             if pipeline_recipe is not None
@@ -1217,10 +1222,10 @@ def _primary_parser_identity(
 
 
 def _composite_parser_identity(
-    run: ParserRun,
-    grobid_run: ParserRun,
-    scholarly_run: ParserRun,
-    derivation_runs: Sequence[ParserRun],
+    run: ProcessingRun,
+    grobid_run: ProcessingRun,
+    scholarly_run: ProcessingRun,
+    derivation_runs: Sequence[ProcessingRun],
     pipeline_recipe: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, str], dict[str, Any]]:
     """Report executed stages without making them the candidate recipe identity.
@@ -1233,24 +1238,24 @@ def _composite_parser_identity(
     components: dict[str, Any] = {
         "schema": "deepcritical-benchmark-executed-composition-v2",
         "primary": {
-            "parser_name": run.parser_name,
-            "parser_version": run.parser_version,
+            "component_id": run.component_id,
+            "component_version": run.component_version,
             "configuration_sha256": _benchmark_recipe_hash(run),
         },
         "grobid": {
-            "parser_name": grobid_run.parser_name,
-            "parser_version": grobid_run.parser_version,
+            "component_id": grobid_run.component_id,
+            "component_version": grobid_run.component_version,
             "configuration_sha256": _benchmark_recipe_hash(grobid_run),
         },
         "scholarly_alignment": {
-            "parser_name": scholarly_run.parser_name,
-            "parser_version": scholarly_run.parser_version,
+            "component_id": scholarly_run.component_id,
+            "component_version": scholarly_run.component_version,
             "configuration_sha256": _benchmark_recipe_hash(scholarly_run),
         },
         "derivations": [
             {
-                "parser_name": derivation.parser_name,
-                "parser_version": derivation.parser_version,
+                "component_id": derivation.component_id,
+                "component_version": derivation.component_version,
                 "configuration_sha256": _benchmark_recipe_hash(derivation),
             }
             for derivation in derivation_runs
@@ -1285,9 +1290,9 @@ def _descendant_artifact_ids(
 def _workflow_stage_runs(
     store: ContentAddressedStore,
     root_artifact_id: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
-) -> tuple[ParserRun, ...]:
+) -> tuple[ProcessingRun, ...]:
     """Find parser attempts in one source-to-derivative workflow.
 
     Preflight and content-integrity timing are deliberately excluded: this bake-off
@@ -1299,9 +1304,9 @@ def _workflow_stage_runs(
     runs = [
         candidate
         for artifact_id in artifact_ids
-        for candidate in store.list_parser_runs(artifact_id=artifact_id)
-        if candidate.parser_name in _PIPELINE_STAGE_NAMES
-        and candidate.workflow_run_id == workflow_run_id
+        for candidate in store.list_processing_runs(artifact_id=artifact_id)
+        if candidate.component_id in _PIPELINE_STAGE_NAMES
+        and candidate.pipeline_run_id == pipeline_run_id
         and candidate.repetition_group_id == repetition_group_id
     ]
     return tuple(
@@ -1319,7 +1324,7 @@ def _workflow_stage_runs(
 def _workflow_output_policy_snapshot(
     store: ContentAddressedStore,
     root_artifact_id: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
 ) -> dict[str, Any] | None:
     """Get one workflow's declared static policy without stage unioning."""
@@ -1327,7 +1332,7 @@ def _workflow_output_policy_snapshot(
     stages = _workflow_stage_runs(
         store,
         root_artifact_id,
-        workflow_run_id,
+        pipeline_run_id,
         repetition_group_id,
     )
     snapshots = [(stage.run_id, _output_policy_snapshot(stage)) for stage in stages]
@@ -1352,7 +1357,7 @@ def _workflow_output_policy_snapshot(
 def _workflow_pipeline_recipe(
     store: ContentAddressedStore,
     root_artifact_id: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
 ) -> dict[str, Any]:
     """Normalize static configurations for one conditional processing workflow."""
@@ -1360,7 +1365,7 @@ def _workflow_pipeline_recipe(
     persisted_policy = _workflow_output_policy_snapshot(
         store,
         root_artifact_id,
-        workflow_run_id,
+        pipeline_run_id,
         repetition_group_id,
     )
     if persisted_policy is not None:
@@ -1370,7 +1375,7 @@ def _workflow_pipeline_recipe(
     for stage in _workflow_stage_runs(
         store,
         root_artifact_id,
-        workflow_run_id,
+        pipeline_run_id,
         repetition_group_id,
     ):
         static_configuration = {
@@ -1379,8 +1384,8 @@ def _workflow_pipeline_recipe(
             if key not in _CONTENT_CONFIGURATION_KEYS
         }
         static_hash = configuration_sha256(static_configuration)
-        components.setdefault(stage.parser_name, {})[static_hash] = {
-            "parser_version": stage.parser_version,
+        components.setdefault(stage.component_id, {})[static_hash] = {
+            "component_version": stage.component_version,
             "configuration": static_configuration,
         }
     return {
@@ -1398,7 +1403,7 @@ def _workflow_pipeline_recipe(
 
 def _corpus_pipeline_recipe(
     store: ContentAddressedStore,
-    runs: Sequence[ParserRun],
+    runs: Sequence[ProcessingRun],
 ) -> dict[str, Any]:
     """Pin one configured policy while preserving branch execution separately."""
 
@@ -1406,7 +1411,7 @@ def _corpus_pipeline_recipe(
         _workflow_pipeline_recipe(
             store,
             run.artifact_id,
-            run.workflow_run_id,
+            run.pipeline_run_id,
             run.repetition_group_id,
         )
         for run in runs
@@ -1443,7 +1448,7 @@ def _corpus_pipeline_recipe(
                 assert isinstance(entry, Mapping)
                 digest = str(entry["configuration_sha256"])
                 components.setdefault(stage_name, {})[digest] = {
-                    "parser_version": entry["parser_version"],
+                    "component_version": entry["component_version"],
                     "configuration": entry["configuration"],
                 }
     return {
@@ -1496,7 +1501,7 @@ def _require_baseline_output_policy(
 
 def _stage_runtime_issues(
     store: ContentAddressedStore,
-    stage: ParserRun,
+    stage: ProcessingRun,
     policy: Mapping[str, Any],
 ) -> list[str]:
     """Validate observed runtime identity against the declared static policy."""
@@ -1512,7 +1517,7 @@ def _stage_runtime_issues(
     if not isinstance(raw_config, Mapping):  # guarded by _output_policy_snapshot
         return [f"{stage.run_id}: malformed processing configuration"]
     config = raw_config
-    if stage.parser_name == "docling":
+    if stage.component_id == "docling":
         expected_version = config.get("docling_version")
         expected_image = config.get("docling_container_image")
         expected_digest = config.get("docling_container_digest")
@@ -1522,14 +1527,14 @@ def _stage_runtime_issues(
             "docling": expected_version,
             "docling_serve": config.get("docling_serve_version"),
         }
-    elif stage.parser_name == "grobid":
+    elif stage.component_id == "grobid":
         expected_version = config.get("grobid_version")
         expected_image = config.get("grobid_container_image")
         expected_digest = config.get("grobid_container_digest")
         expected_models = config.get("grobid_model_versions", {})
         expected_hashes = config.get("grobid_model_hashes", {})
         expected_components = {"grobid": expected_version}
-    elif stage.parser_name == "ocrmypdf":
+    elif stage.component_id == "ocrmypdf":
         expected_version = config.get("ocrmypdf_version")
         ocr_is_container = config.get("ocr_mode") == "container_cli"
         expected_image = config.get("ocr_container_image") if ocr_is_container else None
@@ -1539,14 +1544,14 @@ def _stage_runtime_issues(
         expected_models = {}
         expected_hashes = {}
         expected_components = {"ocrmypdf": expected_version}
-    elif stage.parser_name == "docling-grobid-aligner":
+    elif stage.component_id == "docling-grobid-aligner":
         algorithms = policy.get("algorithms")
         expected_algorithm = (
             algorithms.get("grobid_docling_alignment")
             if isinstance(algorithms, Mapping)
             else None
         )
-        if stage.parser_version != "2":
+        if stage.component_version != "2":
             issues.append(
                 f"{stage.run_id}: alignment parser version is not pinned to 2"
             )
@@ -1574,17 +1579,17 @@ def _stage_runtime_issues(
     raw_trust_policy = policy.get("runtime_trust_policy")
     if not isinstance(raw_trust_policy, Mapping):
         return [f"{stage.run_id}: output policy has no runtime trust policy"]
-    raw_stage_trust = raw_trust_policy.get(stage.parser_name)
+    raw_stage_trust = raw_trust_policy.get(stage.component_id)
     if not isinstance(raw_stage_trust, Mapping):
         return [
-            f"{stage.run_id}: output policy has no {stage.parser_name} runtime trust policy"
+            f"{stage.run_id}: output policy has no {stage.component_id} runtime trust policy"
         ]
     expected_reporter_id = raw_stage_trust.get("expected_reporter_id")
     expected_source = raw_stage_trust.get("expected_source")
     expected_schema = raw_stage_trust.get("attestation_schema_version")
     expected_contract = (
         _OCR_ATTESTATION_CONTRACT
-        if stage.parser_name == "ocrmypdf"
+        if stage.component_id == "ocrmypdf"
         else _REMOTE_ATTESTATION_CONTRACT
     )
     if raw_stage_trust.get("reporter_configured") is not True:
@@ -1598,7 +1603,7 @@ def _stage_runtime_issues(
     if raw_stage_trust.get("attestation_contract_version") != expected_contract:
         issues.append(f"{stage.run_id}: runtime attestation contract is not pinned")
     if (
-        stage.parser_name == "ocrmypdf"
+        stage.component_id == "ocrmypdf"
         and raw_stage_trust.get("local_digest_runner_version")
         != _OCR_ATTESTATION_CONTRACT
     ):
@@ -1625,9 +1630,9 @@ def _stage_runtime_issues(
                 issues.append(
                     f"{stage.run_id}: runtime attestation evidence is unreadable: {exc}"
                 )
-        if attestation.parser_name != stage.parser_name:
+        if attestation.component_id != stage.component_id:
             issues.append(
-                f"{stage.run_id}: attested parser does not match the parser run"
+                f"{stage.run_id}: attested component does not match the processing run"
             )
         if attestation.schema_version != expected_schema:
             issues.append(
@@ -1639,11 +1644,11 @@ def _stage_runtime_issues(
             )
         if attestation.source.value != expected_source:
             issues.append(f"{stage.run_id}: attested source differs from output policy")
-        if attestation.parser_version != stage.parser_version:
+        if attestation.component_version != stage.component_version:
             issues.append(
                 f"{stage.run_id}: parser version was not sourced from attestation"
             )
-        if attestation.invocation_id != stage.parser_invocation_id:
+        if attestation.invocation_id != stage.component_invocation_id:
             issues.append(
                 f"{stage.run_id}: parser invocation id does not match attestation"
             )
@@ -1663,7 +1668,7 @@ def _stage_runtime_issues(
             issues.append(
                 f"{stage.run_id}: model hashes were not sourced from attestation"
             )
-    if stage.parser_version != expected_version:
+    if stage.component_version != expected_version:
         issues.append(f"{stage.run_id}: parser version differs from output policy")
     if attestation is not None:
         observed_image = attestation.container_reference.split("@", maxsplit=1)[0]
@@ -1678,9 +1683,9 @@ def _stage_runtime_issues(
         issues.append(
             f"{stage.run_id}: container image is present without runtime attestation"
         )
-    if stage.parser_name in {"docling", "grobid"} and not expected_hashes:
+    if stage.component_id in {"docling", "grobid"} and not expected_hashes:
         issues.append(f"{stage.run_id}: model hash inventory is empty")
-    if stage.parser_name == "ocrmypdf" and config.get("ocr_mode") == "local_cli":
+    if stage.component_id == "ocrmypdf" and config.get("ocr_mode") == "local_cli":
         if stage.container_image is not None or stage.container_digest is not None:
             issues.append(
                 f"{stage.run_id}: local OCR run must not declare a container identity"
@@ -1712,14 +1717,14 @@ def _stage_runtime_issues(
 def _workflow_runtime_provenance(
     store: ContentAddressedStore,
     root_artifact_id: str,
-    workflow_run_id: str | None,
+    pipeline_run_id: str | None,
     repetition_group_id: str | None,
     policy: Mapping[str, Any],
 ) -> dict[str, Any]:
     stages = _workflow_stage_runs(
         store,
         root_artifact_id,
-        workflow_run_id,
+        pipeline_run_id,
         repetition_group_id,
     )
     issues = [
@@ -1733,10 +1738,10 @@ def _workflow_runtime_provenance(
         "issues": issues,
         "stages": [
             {
-                "parser_run_id": stage.run_id,
-                "parser_name": stage.parser_name,
-                "parser_version": stage.parser_version,
-                "parser_invocation_id": stage.parser_invocation_id,
+                "processing_run_id": stage.run_id,
+                "component_id": stage.component_id,
+                "component_version": stage.component_version,
+                "component_invocation_id": stage.component_invocation_id,
                 "runtime_identity_required": stage.runtime_identity_required,
                 "component_versions": dict(stage.component_versions),
                 "container_image": stage.container_image,
@@ -1744,7 +1749,7 @@ def _workflow_runtime_provenance(
                 "model_versions": dict(stage.model_versions),
                 "model_hashes": dict(stage.model_hashes),
                 "runtime_attestation_sha256": stage.runtime_attestation_sha256,
-                "runtime_attestation_output_sha256": stage.output_hashes.get(
+                "runtime_attestation_output_sha256": stage.output_sha256(
                     "runtime_attestation"
                 ),
                 "runtime_attestation_observed_at": (
@@ -1765,13 +1770,13 @@ def _workflow_runtime_provenance(
 
 def _projected_content_spans_hash(
     store: ContentAddressedStore,
-    run: ParserRun,
+    run: ProcessingRun,
 ) -> str:
     normalized_spans = [
         {
-            "docling_item_ref": span.docling_item_ref,
-            "item_char_start": span.item_char_start,
-            "item_char_end": span.item_char_end,
+            "representation_node_id": span.representation_anchor.node_id,
+            "representation_char_start": span.representation_anchor.char_start,
+            "representation_char_end": span.representation_anchor.char_end,
             "content_sha256": span.content_sha256,
             "source_locator": span.source_locator.model_dump(mode="json"),
         }
@@ -1779,9 +1784,9 @@ def _projected_content_spans_hash(
     ]
     normalized_spans.sort(
         key=lambda value: (
-            str(value["docling_item_ref"]),
-            int(value["item_char_start"]),
-            int(value["item_char_end"]),
+            str(value["representation_node_id"]),
+            int(value["representation_char_start"]),
+            int(value["representation_char_end"]),
             str(value["content_sha256"]),
             json.dumps(
                 value["source_locator"],
@@ -1801,80 +1806,80 @@ def _projected_content_spans_hash(
 
 def _composite_output_hash(
     store: ContentAddressedStore,
-    run: ParserRun,
-    scholarly_run: ParserRun | None,
+    run: ProcessingRun,
+    scholarly_run: ProcessingRun | None,
 ) -> str:
     components = {
         "schema": "deepcritical-benchmark-projected-content-v1",
-        "docling_document_sha256": run.output_hashes["docling_document"],
+        "docling_document_sha256": run.require_output("docling_document").blob_sha256,
         "projected_content_spans_sha256": _projected_content_spans_hash(store, run),
     }
     if scholarly_run is not None:
-        components["scholarly_alignment_sha256"] = scholarly_run.output_hashes[
+        components["scholarly_alignment_sha256"] = scholarly_run.require_output(
             "alignment_overlay"
-        ]
+        ).blob_sha256
     return configuration_sha256(components)
 
 
 def _verify_projected_components(
     store: ContentAddressedStore,
-    run: ParserRun,
-    scholarly_run: ParserRun | None,
+    run: ProcessingRun,
+    scholarly_run: ProcessingRun | None,
 ) -> None:
-    store.verify_blob(run.output_hashes["docling_document"])
+    store.verify_blob(run.require_output("docling_document").blob_sha256)
     _projected_content_spans_hash(store, run)
     if scholarly_run is not None:
-        store.verify_blob(scholarly_run.output_hashes["alignment_overlay"])
+        store.verify_blob(scholarly_run.require_output("alignment_overlay").blob_sha256)
 
 
 def _repeat_output_hashes(
     store: ContentAddressedStore,
-    run: ParserRun,
-    scholarly_run: ParserRun | None,
+    run: ProcessingRun,
+    scholarly_run: ProcessingRun | None,
 ) -> tuple[list[str], list[str]]:
     _verify_projected_components(store, run, scholarly_run)
     current_hash = _composite_output_hash(store, run, scholarly_run)
     current_workflow_recipe = _workflow_pipeline_recipe(
         store,
         run.artifact_id,
-        run.workflow_run_id,
+        run.pipeline_run_id,
         run.repetition_group_id,
     )
-    workflow_run_id = run.workflow_run_id
+    pipeline_run_id = run.pipeline_run_id
     repetition_group_id = run.repetition_group_id
-    if workflow_run_id is None or repetition_group_id is None:
+    if pipeline_run_id is None or repetition_group_id is None:
         return [current_hash], []
 
-    matching_runs = store.list_parser_runs(
+    matching_runs = store.list_processing_runs(
         artifact_id=run.artifact_id,
-        parser_name=run.parser_name,
+        component_id=run.component_id,
     )
-    selected_by_workflow: dict[str, ParserRun] = {}
+    selected_by_workflow: dict[str, ProcessingRun] = {}
     for candidate in matching_runs:
         if (
-            candidate.workflow_run_id is None
+            candidate.pipeline_run_id is None
             or candidate.repetition_group_id != repetition_group_id
             or candidate.status
-            not in {ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}
-            or "docling_document" not in candidate.output_hashes
-            or "content_spans" not in candidate.output_hashes
+            not in {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}
+            or candidate.output("docling_document") is None
+            or candidate.output("content_spans") is None
             or _benchmark_recipe_hash(candidate) != _benchmark_recipe_hash(run)
         ):
             continue
-        selected_by_workflow[candidate.workflow_run_id] = candidate
+        selected_by_workflow[candidate.pipeline_run_id] = candidate
 
     repeat_hashes = [current_hash]
-    repeat_workflow_ids = [workflow_run_id]
+    repeat_workflow_ids = [pipeline_run_id]
     for candidate_workflow_id in sorted(selected_by_workflow):
-        if candidate_workflow_id == workflow_run_id:
+        if candidate_workflow_id == pipeline_run_id:
             continue
         candidate = selected_by_workflow[candidate_workflow_id]
-        candidate_scholarly_run: ParserRun | None = None
-        candidate_grobid_run: ParserRun | None = None
+        candidate_scholarly_run: ProcessingRun | None = None
+        candidate_grobid_run: ProcessingRun | None = None
         candidate_workflow_recipe = _workflow_pipeline_recipe(
             store,
             candidate.artifact_id,
-            candidate.workflow_run_id,
+            candidate.pipeline_run_id,
             candidate.repetition_group_id,
         )
         if candidate_workflow_recipe != current_workflow_recipe:
@@ -1889,8 +1894,8 @@ def _repeat_output_hashes(
             ) = _scholarly_references(
                 store,
                 candidate.artifact_id,
-                candidate.output_hashes["docling_document"],
-                candidate.workflow_run_id,
+                candidate.require_output("docling_document").blob_sha256,
+                candidate.pipeline_run_id,
                 candidate.repetition_group_id,
             )
             if candidate_scholarly_run is None or candidate_grobid_run is None:
@@ -1903,7 +1908,7 @@ def _repeat_output_hashes(
     return repeat_hashes, repeat_workflow_ids
 
 
-def _run_wall_time(run: ParserRun) -> float:
+def _run_wall_time(run: ProcessingRun) -> float:
     measured = run.resource_usage.wall_time_seconds
     if measured is not None:
         return measured
@@ -1911,14 +1916,14 @@ def _run_wall_time(run: ParserRun) -> float:
 
 
 def _resource_fields(
-    runs: Sequence[ParserRun],
+    runs: Sequence[ProcessingRun],
 ) -> tuple[float, int | None, dict[str, Any]]:
     elapsed = sum(_run_wall_time(run) for run in runs)
     memory_runs = tuple(
-        run for run in runs if run.parser_name in _MEMORY_SCOPED_PARSER_NAMES
+        run for run in runs if run.component_id in _MEMORY_SCOPED_PARSER_NAMES
     )
     excluded_runs = tuple(
-        run for run in runs if run.parser_name not in _MEMORY_SCOPED_PARSER_NAMES
+        run for run in runs if run.component_id not in _MEMORY_SCOPED_PARSER_NAMES
     )
     recorded_peaks = [run.resource_usage.peak_memory_bytes for run in memory_runs]
     peak_memory = (
@@ -1935,16 +1940,16 @@ def _resource_fields(
             baseline_comparable = False
             measurement_records.append(
                 {
-                    "parser_run_id": run.run_id,
-                    "parser_name": run.parser_name,
+                    "processing_run_id": run.run_id,
+                    "component_id": run.component_id,
                     "measurement": None,
                 }
             )
             continue
         measurement_records.append(
             {
-                "parser_run_id": run.run_id,
-                "parser_name": run.parser_name,
+                "processing_run_id": run.run_id,
+                "component_id": run.component_id,
                 "measurement": measurement.model_dump(mode="json"),
             }
         )
@@ -1966,14 +1971,14 @@ def _resource_fields(
                 if peak_memory is not None
                 else "unmeasured_when_any_heavy_parser_stage_missing"
             ),
-            "parser_run_ids": [run.run_id for run in runs],
+            "processing_run_ids": [run.run_id for run in runs],
             "memory_scope": _MEMORY_SCOPE,
-            "memory_required_parser_names": sorted(_MEMORY_SCOPED_PARSER_NAMES),
+            "memory_required_component_ids": sorted(_MEMORY_SCOPED_PARSER_NAMES),
             "memory_required_run_ids": [run.run_id for run in memory_runs],
             "memory_excluded_runs": [
                 {
-                    "parser_run_id": run.run_id,
-                    "parser_name": run.parser_name,
+                    "processing_run_id": run.run_id,
+                    "component_id": run.component_id,
                     "reason": "not_an_isolated_heavy_parser_invocation",
                 }
                 for run in excluded_runs
@@ -1990,11 +1995,11 @@ def _resource_fields(
 
 def _composite_resource_runs(
     store: ContentAddressedStore,
-    primary_run: ParserRun,
-    scholarly_run: ParserRun,
-    grobid_run: ParserRun,
-    derivation_runs: Sequence[ParserRun],
-) -> tuple[ParserRun, ...]:
+    primary_run: ProcessingRun,
+    scholarly_run: ProcessingRun,
+    grobid_run: ProcessingRun,
+    derivation_runs: Sequence[ProcessingRun],
+) -> tuple[ProcessingRun, ...]:
     """Account for selected stages and failed original-PDF GROBID attempts.
 
     The pipeline first tries GROBID on every PDF.  A scanned document then has an
@@ -2009,10 +2014,10 @@ def _composite_resource_runs(
         for candidate in _workflow_stage_runs(
             store,
             primary_run.artifact_id,
-            primary_run.workflow_run_id,
+            primary_run.pipeline_run_id,
             primary_run.repetition_group_id,
         )
-        if candidate.parser_name == "grobid"
+        if candidate.component_id == "grobid"
         and candidate.artifact_id == primary_run.artifact_id
     ]
     ordered = (
@@ -2022,7 +2027,7 @@ def _composite_resource_runs(
         grobid_run,
         scholarly_run,
     )
-    selected: list[ParserRun] = []
+    selected: list[ProcessingRun] = []
     seen: set[str] = set()
     for stage in ordered:
         if stage.run_id not in seen:
@@ -2035,7 +2040,7 @@ def _candidate_observation(
     store: ContentAddressedStore,
     document: Mapping[str, Any],
     artifact: DocumentArtifact,
-    run: ParserRun,
+    run: ProcessingRun,
     source_artifact: str,
     pipeline_recipe: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -2057,24 +2062,24 @@ def _candidate_observation(
         "provenance": {
             "artifact_id": artifact.artifact_id,
             "source_sha256": artifact.source_sha256,
-            "parser_run_id": run.run_id,
-            "workflow_run_id": run.workflow_run_id,
+            "processing_run_id": run.run_id,
+            "pipeline_run_id": run.pipeline_run_id,
             "repetition_group_id": run.repetition_group_id,
             "peak_memory_bytes_recorded": peak_memory is not None,
             "resource_accounting": resource_provenance,
-            "parser_run_configuration_sha256": run.configuration_sha256,
+            "processing_run_configuration_sha256": run.configuration_sha256,
             "warnings": list(run.warnings),
         },
     }
     if peak_memory is not None:
         observation["peak_memory_bytes"] = peak_memory
-    if run.status not in {ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}:
+    if run.status not in {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}:
         return observation
 
-    document_digest = run.output_hashes.get("docling_document")
+    document_digest = run.output_sha256("docling_document")
     if document_digest is None:
         raise BenchmarkError(
-            f"successful parser run {run.run_id!r} has no docling_document output"
+            f"successful processing run {run.run_id!r} has no docling_document output"
         )
     document_payload = _read_json_blob(store, document_digest, "DoclingDocument")
     if not isinstance(document_payload, Mapping):
@@ -2140,7 +2145,7 @@ def _candidate_observation(
         runtime_provenance = _workflow_runtime_provenance(
             store,
             artifact.artifact_id,
-            run.workflow_run_id,
+            run.pipeline_run_id,
             run.repetition_group_id,
             pipeline_recipe,
         )
@@ -2152,7 +2157,7 @@ def _candidate_observation(
     if len(repeat_workflow_ids) >= 2:
         provenance["determinism"] = {
             "status": "measured",
-            "workflow_run_ids": repeat_workflow_ids,
+            "pipeline_run_ids": repeat_workflow_ids,
             "repetition_group_id": run.repetition_group_id,
         }
     else:
@@ -2162,12 +2167,12 @@ def _candidate_observation(
             "required_action": (
                 "run the process command at least twice with --force-reprocess and "
                 "the same --benchmark-repetition-group, using a distinct "
-                "--workflow-attempt-id for each independent repeat (reuse an ID only "
+                "--pipeline-attempt-id for each independent repeat (reuse an ID only "
                 "to retry that same attempt), then regenerate observations"
             ),
         }
     provenance["docling_document_sha256"] = document_digest
-    provenance["content_spans_sha256"] = run.output_hashes["content_spans"]
+    provenance["content_spans_sha256"] = run.require_output("content_spans").blob_sha256
     return observation
 
 
@@ -2176,7 +2181,7 @@ def generate_candidate_observations(
     cas_root: str | Path,
     *,
     source_artifact: str = "pdf",
-    parser_name: str = "docling",
+    component_id: str = "docling",
     configuration_hash: str | None = None,
     output_policy_hash: str | None = None,
     enforce_baseline: bool = False,
@@ -2185,13 +2190,13 @@ def generate_candidate_observations(
 
     This adapter is read-only with respect to parser state: it does not download a
     corpus, call a service, rerun a parser, or manufacture reference annotations.
-    Manifest artifact hashes select source records; immutable parser runs and their
+    Manifest artifact hashes select source records; immutable processing runs and their
     verified CAS outputs supply every generated field.
     """
 
     if source_artifact not in {"pdf", "jats"}:
         raise BenchmarkError("source_artifact must be 'pdf' or 'jats'")
-    parser_name = _string(parser_name, "parser_name")
+    component_id = _string(component_id, "component_id")
     if configuration_hash is not None:
         configuration_hash = _sha256(configuration_hash, "configuration_hash")
     if output_policy_hash is not None:
@@ -2214,7 +2219,7 @@ def generate_candidate_observations(
     required_directories = (
         resolved_cas_root / "blobs" / "sha256",
         resolved_cas_root / "records" / "artifacts",
-        resolved_cas_root / "records" / "parser_runs",
+        resolved_cas_root / "records" / "processing_runs",
     )
     if not resolved_cas_root.is_dir() or any(
         not directory.is_dir() for directory in required_directories
@@ -2230,7 +2235,7 @@ def generate_candidate_observations(
         for artifact in artifacts:
             artifacts_by_hash.setdefault(artifact.source_sha256, []).append(artifact)
 
-        selected: list[tuple[Mapping[str, Any], DocumentArtifact, ParserRun]] = []
+        selected: list[tuple[Mapping[str, Any], DocumentArtifact, ProcessingRun]] = []
         documents = sorted(manifest["documents"], key=lambda item: str(item["id"]))
         for document in documents:
             document_mapping = _mapping(document, "manifest.documents")
@@ -2238,10 +2243,10 @@ def generate_candidate_observations(
                 document_mapping, source_artifact, artifacts_by_hash
             )
             store.verify_blob(artifact.source_sha256)
-            run = _select_parser_run(
+            run = _select_processing_run(
                 store,
                 artifact,
-                parser_name,
+                component_id,
                 configuration_hash,
                 output_policy_hash,
             )
@@ -2255,7 +2260,7 @@ def generate_candidate_observations(
             run.run_id: _workflow_pipeline_recipe(
                 store,
                 run.artifact_id,
-                run.workflow_run_id,
+                run.pipeline_run_id,
                 run.repetition_group_id,
             )
             for _, _, run in selected
@@ -2270,7 +2275,7 @@ def generate_candidate_observations(
                 runtime_provenance = _workflow_runtime_provenance(
                     store,
                     artifact.artifact_id,
-                    run.workflow_run_id,
+                    run.pipeline_run_id,
                     run.repetition_group_id,
                     workflow_recipe,
                 )
@@ -2319,7 +2324,7 @@ def generate_candidate_observations(
         },
         "selection": {
             "source_artifact": source_artifact,
-            "parser_name": parser_name,
+            "component_id": component_id,
             "configuration_hash": configuration_hash,
             "output_policy_hash": output_policy_hash,
             "pipeline_recipe_sha256": _pipeline_recipe_identity(pipeline_recipe),
@@ -2694,23 +2699,23 @@ def _candidate_runtime_identity_issues(
             issues.append(f"{stage_context} must be an object")
             continue
         stage = cast("Mapping[str, Any]", stage_value)
-        run_id_value = stage.get("parser_run_id")
+        run_id_value = stage.get("processing_run_id")
         run_id = (
             run_id_value.strip()
             if isinstance(run_id_value, str) and run_id_value.strip()
             else None
         )
         if run_id is None:
-            issues.append(f"{stage_context}.parser_run_id is missing")
+            issues.append(f"{stage_context}.processing_run_id is missing")
         elif run_id in seen_run_ids:
-            issues.append(f"{stage_context}.parser_run_id is duplicated")
+            issues.append(f"{stage_context}.processing_run_id is duplicated")
         else:
             seen_run_ids.add(run_id)
 
-        parser_name = stage.get("parser_name")
-        if parser_name == "docling-grobid-aligner":
-            if stage.get("parser_version") != "2":
-                issues.append(f"{stage_context}.parser_version is not pinned to 2")
+        component_id = stage.get("component_id")
+        if component_id == "docling-grobid-aligner":
+            if stage.get("component_version") != "2":
+                issues.append(f"{stage_context}.component_version is not pinned to 2")
             if stage.get("runtime_identity_required") is not False:
                 issues.append(
                     f"{stage_context} must mark local alignment identity optional"
@@ -2720,7 +2725,7 @@ def _candidate_runtime_identity_issues(
                     f"{stage_context} local alignment must not carry OCI attestation"
                 )
             for field in (
-                "parser_invocation_id",
+                "component_invocation_id",
                 "container_image",
                 "container_digest",
                 "runtime_attestation_sha256",
@@ -2733,14 +2738,14 @@ def _candidate_runtime_identity_issues(
                 if stage.get(field) != {}:
                     issues.append(f"{stage_context}.{field} must be empty")
             continue
-        if parser_name not in _CANONICAL_COMPONENT_KEYS:
-            issues.append(f"{stage_context}.parser_name is unsupported")
+        if component_id not in _CANONICAL_COMPONENT_KEYS:
+            issues.append(f"{stage_context}.component_id is unsupported")
             continue
         heavy_stage_count += 1
         if stage.get("runtime_identity_required") is not True:
             issues.append(f"{stage_context} did not require runtime identity")
 
-        stage_trust_value = trust_value.get(parser_name)
+        stage_trust_value = trust_value.get(component_id)
         if not isinstance(stage_trust_value, Mapping):
             issues.append(f"{stage_context} has no parser trust policy")
             continue
@@ -2750,7 +2755,7 @@ def _candidate_runtime_identity_issues(
         expected_schema = stage_trust.get("attestation_schema_version")
         expected_contract = (
             _OCR_ATTESTATION_CONTRACT
-            if parser_name == "ocrmypdf"
+            if component_id == "ocrmypdf"
             else _REMOTE_ATTESTATION_CONTRACT
         )
         if stage_trust.get("reporter_configured") is not True:
@@ -2764,7 +2769,7 @@ def _candidate_runtime_identity_issues(
         if stage_trust.get("attestation_contract_version") != expected_contract:
             issues.append(f"{stage_context} attestation contract is not pinned")
         if (
-            parser_name == "ocrmypdf"
+            component_id == "ocrmypdf"
             and stage_trust.get("local_digest_runner_version")
             != _OCR_ATTESTATION_CONTRACT
         ):
@@ -2782,9 +2787,9 @@ def _candidate_runtime_identity_issues(
 
         if attestation.schema_version != expected_schema:
             issues.append(f"{stage_context} attestation schema differs from policy")
-        if attestation.parser_name != parser_name:
+        if attestation.component_id != component_id:
             issues.append(f"{stage_context} attested parser does not match")
-        if attestation.invocation_id != stage.get("parser_invocation_id"):
+        if attestation.invocation_id != stage.get("component_invocation_id"):
             issues.append(f"{stage_context} attested invocation does not match")
         if attestation.reporter_id != expected_reporter_id:
             issues.append(f"{stage_context} attested reporter does not match policy")
@@ -2820,7 +2825,7 @@ def _candidate_runtime_identity_issues(
             )
 
         mirrored_fields = {
-            "parser_version": attestation.parser_version,
+            "component_version": attestation.component_version,
             "container_image": attestation.container_reference,
             "container_digest": attestation.container_digest,
             "component_versions": dict(attestation.component_versions),
@@ -2836,7 +2841,7 @@ def _candidate_runtime_identity_issues(
                     f"{stage_context}.{field} was not sourced from attestation"
                 )
 
-        if parser_name == "docling":
+        if component_id == "docling":
             expected_version = config.get("docling_version")
             expected_image = config.get("docling_container_image")
             expected_digest = config.get("docling_container_digest")
@@ -2846,7 +2851,7 @@ def _candidate_runtime_identity_issues(
             }
             expected_models = config.get("docling_model_versions", {})
             expected_model_hashes = config.get("docling_model_hashes", {})
-        elif parser_name == "grobid":
+        elif component_id == "grobid":
             expected_version = config.get("grobid_version")
             expected_image = config.get("grobid_container_image")
             expected_digest = config.get("grobid_container_digest")
@@ -2868,7 +2873,7 @@ def _candidate_runtime_identity_issues(
             issues.append(f"{stage_context} model hash policy is malformed")
             expected_model_hashes = {}
 
-        if attestation.parser_version != expected_version:
+        if attestation.component_version != expected_version:
             issues.append(f"{stage_context} parser version differs from policy")
         expected_reference = (
             f"{str(expected_image).split('@', maxsplit=1)[0]}@{expected_digest}"
@@ -2882,7 +2887,7 @@ def _candidate_runtime_identity_issues(
             issues.append(f"{stage_context} container reference differs from policy")
         if attestation.container_digest != expected_digest:
             issues.append(f"{stage_context} container digest differs from policy")
-        for component in _CANONICAL_COMPONENT_KEYS[parser_name]:
+        for component in _CANONICAL_COMPONENT_KEYS[component_id]:
             expected_component = expected_components.get(component)
             if (
                 not isinstance(expected_component, str)
@@ -2936,8 +2941,8 @@ def _baseline_memory_environment(
         record = _mapping(record_value, f"{context}.memory_measurements[{index}]")
         measured_ids.add(
             _string(
-                record.get("parser_run_id"),
-                f"{context}.memory_measurements[{index}].parser_run_id",
+                record.get("processing_run_id"),
+                f"{context}.memory_measurements[{index}].processing_run_id",
             )
         )
         measurement = _mapping(

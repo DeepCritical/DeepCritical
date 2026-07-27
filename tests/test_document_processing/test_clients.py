@@ -23,6 +23,7 @@ from DeepResearch.src.document_processing.clients import (
     ParserServiceError,
     RemoteMemoryMeasurementReporter,
     RemoteRuntimeAttestationReporter,
+    ServiceHealth,
 )
 from DeepResearch.src.document_processing.models import (
     MemoryMeasurement,
@@ -36,7 +37,7 @@ from DeepResearch.src.document_processing.resources import MemoryMeasurementRequ
 
 class _ManagedAdapterFixture:
     provider_name = "disabled-test-provider"
-    parser_version = "1"
+    component_version = "1"
 
     async def parse(
         self,
@@ -47,7 +48,7 @@ class _ManagedAdapterFixture:
     ) -> ManagedParserResult:
         return ManagedParserResult(
             provider_name=self.provider_name,
-            parser_version=self.parser_version,
+            component_version=self.component_version,
             raw_output=content,
             media_type=media_type,
             metadata={"filename": filename},
@@ -56,9 +57,9 @@ class _ManagedAdapterFixture:
 
 class _RemoteMemoryReporter:
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> dict[str, object]:
-        assert parser_name == "docling"
+        assert component_id == "docling"
         assert remote_task_id == "task-123"
         return {
             "status": "measured",
@@ -78,9 +79,9 @@ class _GrobidMemoryReporter:
         self.remote_task_id: str | None = None
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> dict[str, object]:
-        assert parser_name == "grobid"
+        assert component_id == "grobid"
         assert remote_task_id is not None
         self.remote_task_id = remote_task_id
         return {
@@ -104,15 +105,15 @@ class _GrobidRuntimeReporter:
         self.remote_task_id: str | None = None
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> RuntimeAttestation:
-        assert parser_name == "grobid"
+        assert component_id == "grobid"
         assert remote_task_id is not None
         self.remote_task_id = remote_task_id
         digest = "sha256:" + ("9" * 64)
         return RuntimeAttestation(
-            parser_name="grobid",
-            parser_version="0.9.0",
+            component_id="grobid",
+            component_version="0.9.0",
             invocation_id=remote_task_id,
             source=RuntimeAttestationSource.AUTHENTICATED_DEPLOYMENT_REPORTER,
             reporter_id="fixture-supervisor",
@@ -128,21 +129,94 @@ class _GrobidRuntimeReporter:
 
 class _MismatchedMemoryReporter:
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> dict[str, object]:
-        assert parser_name in {"docling", "grobid"}
+        assert component_id in {"docling", "grobid"}
         assert remote_task_id is not None
         return {
             "status": "measured",
             "method": "cgroup-v2-memory.peak",
             "scope": "invocation_cgroup",
-            "boundary": f"{parser_name}-invocation",
+            "boundary": f"{component_id}-invocation",
             "peak_memory_bytes": 1024,
             "environment_sha256": "c" * 64,
             "measurement_id": "different-invocation",
             "exclusive": True,
             "memory_events": {"oom_kill": 0},
         }
+
+
+@pytest.mark.parametrize(
+    ("readiness", "expected"),
+    [
+        ({"ready": True}, True),
+        ({"ready": False}, False),
+        ({}, False),
+        ({"status": "ok"}, False),
+        ({"ready": 1}, False),
+    ],
+)
+@pytest.mark.asyncio
+async def test_docling_health_requires_explicit_boolean_readiness(
+    readiness: dict[str, object],
+    expected: bool,
+) -> None:
+    async def ready(_: web.Request) -> web.Response:
+        return web.json_response(readiness)
+
+    async def version(_: web.Request) -> web.Response:
+        return web.json_response({"docling": "2.113.0", "serve": "1.21.0"})
+
+    app = web.Application()
+    app.router.add_get("/ready", ready)
+    app.router.add_get("/version", version)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        health = await DoclingServeClient(
+            str(server.make_url("/")).rstrip("/"),
+            api_key="docling-fixture-key-123",
+        ).health()
+    finally:
+        await server.close()
+
+    assert isinstance(health, ServiceHealth)
+    assert health.ready is expected
+    assert health.readiness == readiness
+    assert health.versions == {"docling": "2.113.0", "serve": "1.21.0"}
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "expected_code"),
+    [
+        (200, b"{not-json", "parser_invalid_json_response"),
+        (503, b'{"ready": false}', "docling_not_ready"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_docling_health_rejects_malformed_or_http_failure(
+    status: int,
+    body: bytes,
+    expected_code: str,
+) -> None:
+    async def ready(_: web.Request) -> web.Response:
+        return web.Response(status=status, body=body, content_type="application/json")
+
+    app = web.Application()
+    app.router.add_get("/ready", ready)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        client = DoclingServeClient(
+            str(server.make_url("/")).rstrip("/"),
+            api_key="docling-fixture-key-123",
+        )
+        with pytest.raises(ParserServiceError) as error:
+            await client.health()
+    finally:
+        await server.close()
+
+    assert error.value.code == expected_code
 
 
 class _MeasuredLease:
@@ -202,9 +276,9 @@ async def test_http_memory_reporter_authenticates_and_polls_exact_task() -> None
     requests: list[tuple[str, str, str | None]] = []
 
     async def measurement(request: web.Request) -> web.Response:
-        parser_name = request.match_info["parser_name"]
+        component_id = request.match_info["component_id"]
         task_id = request.match_info["task_id"]
-        requests.append((parser_name, task_id, request.headers.get("X-API-Key")))
+        requests.append((component_id, task_id, request.headers.get("X-API-Key")))
         if len(requests) == 1:
             return web.Response(status=202)
         return web.json_response(
@@ -226,7 +300,7 @@ async def test_http_memory_reporter_authenticates_and_polls_exact_task() -> None
 
     app = web.Application()
     app.router.add_get(
-        "/v1/measurements/{parser_name}/{task_id}",
+        "/v1/measurements/{component_id}/{task_id}",
         measurement,
     )
     server = TestServer(app)
@@ -238,7 +312,7 @@ async def test_http_memory_reporter_authenticates_and_polls_exact_task() -> None
             poll_interval_seconds=0.001,
         )
         payload = await reporter.resolve(
-            parser_name="docling",
+            component_id="docling",
             remote_task_id="task-123",
         )
     finally:
@@ -257,16 +331,16 @@ async def test_http_runtime_reporter_authenticates_and_binds_exact_task() -> Non
     digest = "sha256:" + ("d" * 64)
 
     async def attestation(request: web.Request) -> web.Response:
-        parser_name = request.match_info["parser_name"]
+        component_id = request.match_info["component_id"]
         task_id = request.match_info["task_id"]
-        requests.append((parser_name, task_id, request.headers.get("X-API-Key")))
+        requests.append((component_id, task_id, request.headers.get("X-API-Key")))
         if len(requests) == 1:
             return web.Response(status=202)
         return web.json_response(
             {
                 "schema_version": "deepcritical-runtime-attestation-v1",
-                "parser_name": parser_name,
-                "parser_version": "2.113.0",
+                "component_id": component_id,
+                "component_version": "2.113.0",
                 "invocation_id": task_id,
                 "source": "authenticated_deployment_reporter",
                 "reporter_id": "fixture-supervisor",
@@ -285,7 +359,7 @@ async def test_http_runtime_reporter_authenticates_and_binds_exact_task() -> Non
 
     app = web.Application()
     app.router.add_get(
-        "/v1/attestations/{parser_name}/{task_id}",
+        "/v1/attestations/{component_id}/{task_id}",
         attestation,
     )
     server = TestServer(app)
@@ -299,7 +373,7 @@ async def test_http_runtime_reporter_authenticates_and_binds_exact_task() -> Non
         )
         assert isinstance(reporter, RemoteRuntimeAttestationReporter)
         payload = await reporter.resolve(
-            parser_name="docling", remote_task_id="task-123"
+            component_id="docling", remote_task_id="task-123"
         )
     finally:
         await server.close()
@@ -864,7 +938,7 @@ async def test_container_ocr_digest_invocation_produces_bound_attestation(
 
     assert result.runtime_attestation is not None
     assert isinstance(result.runtime_attestation, RuntimeAttestation)
-    assert result.runtime_attestation.parser_version == "17.4.1"
+    assert result.runtime_attestation.component_version == "17.4.1"
     assert result.runtime_attestation.container_digest == digest
     assert result.runtime_attestation.source is (
         RuntimeAttestationSource.DIGEST_ADDRESSED_OCI_INVOCATION

@@ -7,14 +7,16 @@ after the source has passed a strict byte-size gate.
 
 from __future__ import annotations
 
+import errno
 import os
 import re
 import stat
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from io import BytesIO
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Iterator
 
 from pydantic import Field
 from pypdf import PdfReader
@@ -97,6 +99,23 @@ class PreflightResult(FrozenModel):
         return self.decision is PreflightDecision.PROCEED
 
 
+class SourceSnapshotError(RuntimeError):
+    """A path could not yield one stable, policy-compliant descriptor snapshot."""
+
+    def __init__(self, result: PreflightResult) -> None:
+        super().__init__(result.diagnostics[0].message)
+        self.result = result
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedSource:
+    """An opened source whose descriptor matches the pre-open path identity."""
+
+    path: Path
+    stream: BinaryIO
+    opened_stat: os.stat_result
+
+
 @dataclass(frozen=True, slots=True)
 class _PdfInspection:
     encrypted: bool | None
@@ -104,6 +123,205 @@ class _PdfInspection:
     page_count_source: PdfPageCountSource | None
     structure_complete: bool
     error_type: str | None = None
+
+
+def _source_snapshot_signature(value: os.stat_result) -> tuple[int, ...]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _source_path_descriptor_signature(value: os.stat_result) -> tuple[int, ...]:
+    """Return metadata comparable between a path stat and descriptor stat.
+
+    Windows can report creation time through ``lstat().st_ctime_ns`` while
+    ``fstat().st_ctime_ns`` reflects the latest metadata change for the same
+    file. File identity, type, size, and modification time remain comparable;
+    descriptor-to-descriptor validation retains the full signature.
+    """
+
+    signature = _source_snapshot_signature(value)
+    return signature[:-1] if os.name == "nt" else signature
+
+
+def _snapshot_failure(
+    code: PreflightDiagnosticCode,
+    message: str,
+    path: Path,
+    *,
+    byte_size: int | None = None,
+    error_type: str | None = None,
+) -> PreflightResult:
+    details: dict[str, str | int | bool] = {"path": str(path)}
+    if error_type is not None:
+        details["error_type"] = error_type
+    return _single_failure(
+        code,
+        message,
+        byte_size=byte_size,
+        details=details,
+    )
+
+
+def _open_source_descriptor(path: Path, flags: int) -> int:
+    """Open *path* through one patchable boundary for deterministic race tests."""
+
+    return os.open(path, flags)
+
+
+def _verified_path_stat(path: Path, *, allow_symlinks: bool) -> os.stat_result:
+    try:
+        path_stat = path.lstat()
+    except FileNotFoundError as exc:
+        raise SourceSnapshotError(
+            _snapshot_failure(
+                PreflightDiagnosticCode.SOURCE_NOT_FOUND,
+                "Source path does not exist.",
+                path,
+                error_type=type(exc).__name__,
+            )
+        ) from exc
+    except OSError as exc:
+        raise SourceSnapshotError(
+            _snapshot_failure(
+                PreflightDiagnosticCode.SOURCE_STAT_FAILED,
+                "Source metadata could not be read.",
+                path,
+                error_type=type(exc).__name__,
+            )
+        ) from exc
+
+    if stat.S_ISLNK(path_stat.st_mode):
+        if not allow_symlinks:
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED,
+                    "Symbolic-link sources are disabled by preflight policy.",
+                    path,
+                    byte_size=path_stat.st_size,
+                )
+            )
+        try:
+            path_stat = path.stat()
+        except OSError as exc:
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_STAT_FAILED,
+                    "Symbolic-link target metadata could not be read.",
+                    path,
+                    error_type=type(exc).__name__,
+                )
+            ) from exc
+
+    if not stat.S_ISREG(path_stat.st_mode):
+        raise SourceSnapshotError(
+            _snapshot_failure(
+                PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE,
+                "Source is not a regular file.",
+                path,
+                byte_size=path_stat.st_size,
+            )
+        )
+    return path_stat
+
+
+@contextmanager
+def verified_open_path(
+    source: str | Path,
+    *,
+    limits: PreflightLimits | None = None,
+) -> Iterator[VerifiedSource]:
+    """Open one stable source snapshot without following forbidden symlinks.
+
+    The path identity is checked against the opened descriptor and checked
+    again after the caller finishes inspecting or reading it. On POSIX,
+    ``O_NOFOLLOW`` closes the lstat/open symlink race when symlinks are
+    forbidden; ``O_CLOEXEC`` prevents descriptor inheritance.
+    """
+
+    policy = limits or PreflightLimits()
+    path = Path(source)
+    path_stat = _verified_path_stat(path, allow_symlinks=policy.allow_symlinks)
+    if path_stat.st_size > policy.max_source_bytes:
+        raise SourceSnapshotError(
+            too_large_result(path_stat.st_size, policy.max_source_bytes)
+        )
+    if path_stat.st_size == 0:
+        raise SourceSnapshotError(
+            _single_failure(
+                PreflightDiagnosticCode.SOURCE_EMPTY,
+                "Source is empty.",
+                byte_size=0,
+            )
+        )
+
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_CLOEXEC", 0)
+    if not policy.allow_symlinks:
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = _open_source_descriptor(path, flags)
+    except OSError as exc:
+        if not policy.allow_symlinks and exc.errno in {errno.ELOOP, errno.EMLINK}:
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED,
+                    "Source became a symbolic link while it was being opened.",
+                    path,
+                    error_type=type(exc).__name__,
+                )
+            ) from exc
+        raise
+
+    with os.fdopen(descriptor, "rb") as stream:
+        opened_stat = os.fstat(stream.fileno())
+        if (
+            not stat.S_ISREG(opened_stat.st_mode)
+            or not os.path.samestat(path_stat, opened_stat)
+            or _source_path_descriptor_signature(path_stat)
+            != _source_path_descriptor_signature(opened_stat)
+        ):
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
+                    "Source identity changed while opening the intake snapshot.",
+                    path,
+                    byte_size=opened_stat.st_size,
+                )
+            )
+        yield VerifiedSource(path=path, stream=stream, opened_stat=opened_stat)
+        final_stat = os.fstat(stream.fileno())
+        if _source_snapshot_signature(opened_stat) != _source_snapshot_signature(
+            final_stat
+        ):
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
+                    "Source changed while its intake snapshot was being read.",
+                    path,
+                    byte_size=final_stat.st_size,
+                )
+            )
+        final_path_stat = _verified_path_stat(
+            path, allow_symlinks=policy.allow_symlinks
+        )
+        if not os.path.samestat(
+            final_path_stat, final_stat
+        ) or _source_path_descriptor_signature(
+            final_path_stat
+        ) != _source_path_descriptor_signature(final_stat):
+            raise SourceSnapshotError(
+                _snapshot_failure(
+                    PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
+                    "Source path changed while its snapshot was being inspected.",
+                    path,
+                    byte_size=final_stat.st_size,
+                )
+            )
 
 
 def preflight_path(
@@ -120,92 +338,23 @@ def preflight_path(
     """
 
     policy = limits or PreflightLimits()
-    path = Path(source)
     try:
-        path_stat = path.lstat()
-    except FileNotFoundError:
-        return _single_failure(
-            PreflightDiagnosticCode.SOURCE_NOT_FOUND,
-            "Source path does not exist.",
-            details={"path": str(path)},
-        )
-    except OSError as exc:
-        return _single_failure(
-            PreflightDiagnosticCode.SOURCE_STAT_FAILED,
-            "Source metadata could not be read.",
-            details={"path": str(path), "error_type": type(exc).__name__},
-        )
-
-    if stat.S_ISLNK(path_stat.st_mode) and not policy.allow_symlinks:
-        return _single_failure(
-            PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED,
-            "Symbolic-link sources are disabled by preflight policy.",
-            byte_size=path_stat.st_size,
-            details={"path": str(path)},
-        )
-    if stat.S_ISLNK(path_stat.st_mode):
-        try:
-            path_stat = path.stat()
-        except OSError as exc:
-            return _single_failure(
-                PreflightDiagnosticCode.SOURCE_STAT_FAILED,
-                "Symbolic-link target metadata could not be read.",
-                details={"path": str(path), "error_type": type(exc).__name__},
-            )
-
-    if not stat.S_ISREG(path_stat.st_mode):
-        return _single_failure(
-            PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE,
-            "Source is not a regular file.",
-            byte_size=path_stat.st_size,
-            details={"path": str(path)},
-        )
-    if path_stat.st_size > policy.max_source_bytes:
-        return too_large_result(path_stat.st_size, policy.max_source_bytes)
-    if path_stat.st_size == 0:
-        return _single_failure(
-            PreflightDiagnosticCode.SOURCE_EMPTY,
-            "Source is empty.",
-            byte_size=0,
-        )
-
-    try:
-        with path.open("rb") as stream:
-            opened_stat = os.fstat(stream.fileno())
-            if not stat.S_ISREG(opened_stat.st_mode):
-                return _single_failure(
-                    PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE,
-                    "Opened source is not a regular file.",
-                    byte_size=opened_stat.st_size,
-                    details={"path": str(path)},
-                )
-            if opened_stat.st_size > policy.max_source_bytes:
-                return too_large_result(opened_stat.st_size, policy.max_source_bytes)
-            if opened_stat.st_size == 0:
-                return _single_failure(
-                    PreflightDiagnosticCode.SOURCE_EMPTY,
-                    "Source became empty before inspection.",
-                    byte_size=0,
-                )
-
+        with verified_open_path(source, limits=policy) as verified:
             result = preflight_stream(
-                stream,
-                byte_size=opened_stat.st_size,
-                filename=path.name,
+                verified.stream,
+                byte_size=verified.opened_stat.st_size,
+                filename=verified.path.name,
                 media_type=media_type,
                 limits=policy,
             )
-            final_size = os.fstat(stream.fileno()).st_size
-            if final_size > policy.max_source_bytes:
-                return too_large_result(
-                    final_size, policy.max_source_bytes, is_pdf=result.is_pdf
-                )
             return result
+    except SourceSnapshotError as exc:
+        return exc.result
     except OSError as exc:
+        path = Path(source)
         return _single_failure(
             PreflightDiagnosticCode.SOURCE_READ_FAILED,
             "Source could not be opened or read.",
-            byte_size=path_stat.st_size,
             details={"path": str(path), "error_type": type(exc).__name__},
         )
 
@@ -470,8 +619,11 @@ __all__ = [
     "PreflightDiagnosticCode",
     "PreflightLimits",
     "PreflightResult",
+    "SourceSnapshotError",
+    "VerifiedSource",
     "preflight_bytes",
     "preflight_path",
     "preflight_stream",
     "too_large_result",
+    "verified_open_path",
 ]

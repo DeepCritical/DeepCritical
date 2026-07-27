@@ -191,7 +191,7 @@ Selection and projection are intentionally strict:
   identifiers may disambiguate duplicate source bytes;
 - a `complete` or `partial` run must retain both `docling_document` and
   `content_spans` outputs;
-- when no requested parser run exists, only an explicit persisted `quarantined` or
+- when no requested processing run exists, only an explicit persisted `quarantined` or
   `failed` terminal run can become an outcome observation;
 - reading order follows the Docling body tree, with detached parser-native text items
   appended in collection order;
@@ -213,7 +213,7 @@ preflight and content-integrity validation, which are separately persisted contr
 checks rather than document conversion work. Missing peak-memory instrumentation on
 any included stage leaves peak memory unmeasured; it is never converted to zero.
 
-Current parser runs may omit peak-memory instrumentation. In that case
+Current processing runs may omit peak-memory instrumentation. In that case
 `peak_memory_bytes` is omitted and `provenance.peak_memory_bytes_recorded` is false.
 `--enforce-baseline` rejects observation generation itself when any included stage
 lacks comparable accounting or when measurement environments differ across the
@@ -230,16 +230,16 @@ task-bound isolation; neither client RSS nor Docker stats is acceptable evidence
 
 To measure determinism, process each source twice with distinct forced workflows and
 the same group, then regenerate the observations. Give every independent repeat a
-different `--workflow-attempt-id`. Reuse an attempt ID only when retrying or resuming
+different `--pipeline-attempt-id`. Reuse an attempt ID only when retrying or resuming
 that same interrupted attempt; reusing it for another repeat invalidates independence:
 
 ```console
 uv run deepcritical-process-document paper.pdf \
   --force-reprocess --benchmark-repetition-group p0-bakeoff-2026-07 \
-  --workflow-attempt-id paper-attempt-01
+  --pipeline-attempt-id paper-attempt-01
 uv run deepcritical-process-document paper.pdf \
   --force-reprocess --benchmark-repetition-group p0-bakeoff-2026-07 \
-  --workflow-attempt-id paper-attempt-02
+  --pipeline-attempt-id paper-attempt-02
 ```
 
 ## Run it

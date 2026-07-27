@@ -94,20 +94,23 @@ def test_non_native_formats_receive_explicit_docling_item_spans(
     spans = build_docling_content_spans(
         _docling_document(),
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
         input_format=input_format,
     )
 
     assert len(spans) == 2
-    assert spans[0].item_char_start == 0
-    assert spans[0].item_char_end == len("Methods")
+    assert spans[0].representation_anchor.char_start == 0
+    assert spans[0].representation_anchor.char_end == len("Methods")
+    assert spans[0].representation_anchor.product_id == "product-docling-document"
     assert spans[0].source_locator.kind == "docling_item"
     assert spans[0].source_locator.input_format == input_format
     assert spans[0].source_locator.item_ref == "#/texts/0"
     assert spans == build_docling_content_spans(
         _docling_document(),
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
         input_format=input_format,
     )
 
@@ -237,7 +240,10 @@ def test_pdf_quality_and_spans_enforce_geometry_threshold() -> None:
     assert complete.locator_coverage == 1.0
 
     spans = build_pdf_content_spans(
-        _docling_document(), artifact_id="artifact-1", parser_run_id="run-1"
+        _docling_document(),
+        artifact_id="artifact-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
     assert len(spans) == 2
     assert spans[0].source_locator.kind == "pdf"
@@ -337,10 +343,16 @@ def test_pdf_spans_preserve_multi_page_item_character_ranges() -> None:
     document["pages"] = {"1": {"page_no": 1}, "2": {"page_no": 2}}
 
     spans = build_pdf_content_spans(
-        document, artifact_id="artifact-1", parser_run_id="run-1"
+        document,
+        artifact_id="artifact-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
-    assert [(span.item_char_start, span.item_char_end) for span in spans] == [
+    assert [
+        (span.representation_anchor.char_start, span.representation_anchor.char_end)
+        for span in spans
+    ] == [
         (0, 4),
         (4, 10),
     ]
@@ -368,14 +380,17 @@ def test_multi_region_pdf_without_charspans_is_explicitly_rejected() -> None:
         require_pdf_geometry=True,
     )
     spans = build_pdf_content_spans(
-        document, artifact_id="artifact-1", parser_run_id="run-1"
+        document,
+        artifact_id="artifact-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert not report.acceptable
     assert any(
         issue.code == "PDF_MULTI_PROVENANCE_CHARSPAN_MISSING" for issue in report.issues
     )
-    assert not any(span.docling_item_ref == "#/texts/0" for span in spans)
+    assert not any(span.representation_anchor.node_id == "#/texts/0" for span in spans)
 
 
 def test_jats_locator_adapter_preserves_xml_id_and_xpath() -> None:
@@ -410,7 +425,8 @@ def test_jats_span_alignment_records_every_aligned_and_unaligned_locator() -> No
         _docling_document(),
         locators,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert len(result.spans) == 1
@@ -497,7 +513,8 @@ def test_bioc_alignment_records_every_locator_and_native_range() -> None:
         _docling_document(),
         locators,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert len(result.records) == len(locators)
@@ -543,13 +560,15 @@ def test_bioc_alignment_consumes_duplicate_texts_in_source_order() -> None:
         document,
         locators,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
     second = align_bioc_content_spans(
         document,
         locators,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert [record.docling_item_ref for record in first.records] == [

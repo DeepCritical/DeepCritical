@@ -118,7 +118,7 @@ def test_unavailable_meter_never_fabricates_a_zero_peak() -> None:
         UnavailableMemoryMeter()
         .begin(
             MemoryMeasurementRequest(
-                measurement_id="run-1", parser_name="ocrmypdf", boundary="ocr-local"
+                measurement_id="run-1", component_id="ocrmypdf", boundary="ocr-local"
             )
         )
         .finish()

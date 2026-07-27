@@ -257,11 +257,12 @@ async def test_live_docling_async_conversion_contract(
         options={"do_ocr": False},
     )
 
-    assert isinstance(health.get("ready"), Mapping)
-    assert isinstance(health.get("versions"), Mapping)
+    assert health.ready is True
+    assert isinstance(health.readiness, Mapping)
+    assert isinstance(health.versions, Mapping)
     assert versions.get("docling") == live_stack_config.expected_docling_version
     assert versions.get("serve") == live_stack_config.expected_docling_serve_version
-    assert health["versions"] == versions
+    assert health.versions == versions
     assert result.status in {"success", "partial_success"}
     assert result.remote_task_id
     assert result.raw_response.get("status") == result.status

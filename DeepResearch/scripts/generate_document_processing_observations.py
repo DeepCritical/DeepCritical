@@ -17,9 +17,9 @@ from DeepResearch.src.document_processing.benchmark import (
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Project immutable DocumentArtifact, ParserRun, DoclingDocument, and "
+            "Project immutable DocumentArtifact, ProcessingRun, DoclingDocument, and "
             "ContentSpan records from a local CAS into benchmark candidate "
-            "observations. No parser is called and no corpus is downloaded."
+            "observations. No component is called and no corpus is downloaded."
         )
     )
     parser.add_argument("manifest", help="Path to the benchmark manifest JSON")
@@ -40,16 +40,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Manifest artifact to correlate with CAS records (default: pdf)",
     )
     parser.add_argument(
-        "--parser-name",
+        "--component-id",
         default="docling",
-        help="Persisted primary parser run to select (default: docling)",
+        help="Persisted primary processing component to select (default: docling)",
     )
     selectors = parser.add_mutually_exclusive_group()
     selectors.add_argument(
         "--configuration-hash",
         default=None,
         help=(
-            "Select an exact per-invocation parser configuration SHA-256; this "
+            "Select an exact per-invocation component configuration SHA-256; this "
             "usually differs for every source because it includes input identity"
         ),
     )
@@ -93,7 +93,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.manifest,
             args.cas,
             source_artifact=args.source_artifact,
-            parser_name=args.parser_name,
+            component_id=args.component_id,
             configuration_hash=args.configuration_hash,
             output_policy_hash=args.output_policy_hash,
             enforce_baseline=args.enforce_baseline,

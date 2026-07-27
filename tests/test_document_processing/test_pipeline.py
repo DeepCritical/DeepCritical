@@ -10,6 +10,7 @@ from bioc import BioCCollection, BioCDocument, BioCPassage, biocjson
 from pypdf import PdfWriter
 
 from DeepResearch.src.document_processing import pipeline as pipeline_module
+from DeepResearch.src.document_processing import preflight as preflight_module
 from DeepResearch.src.document_processing.clients import (
     DoclingConversionResult,
     GrobidResult,
@@ -22,7 +23,7 @@ from DeepResearch.src.document_processing.models import (
     MemoryMeasurement,
     MemoryMeasurementScope,
     MemoryMeasurementStatus,
-    ParserRunStatus,
+    ProcessingRunStatus,
     RuntimeAttestation,
     RuntimeAttestationSource,
     sha256_bytes,
@@ -32,7 +33,7 @@ from DeepResearch.src.document_processing.pipeline import (
     ArtifactMetadataConflictError,
     DocumentProcessingConfig,
     DocumentProcessor,
-    ParserRunCommitIncompleteError,
+    ProcessingRunCommitIncompleteError,
     SourcePreflightError,
 )
 from DeepResearch.src.document_processing.storage import ContentAddressedStore
@@ -402,8 +403,8 @@ class VersionedDocling(FakeDocling):
             processing_time_seconds=result.processing_time_seconds,
             remote_task_id=result.remote_task_id,
             runtime_attestation=RuntimeAttestation(
-                parser_name="docling",
-                parser_version=self.observed_version,
+                component_id="docling",
+                component_version=self.observed_version,
                 invocation_id="task-1",
                 source=(RuntimeAttestationSource.AUTHENTICATED_DEPLOYMENT_REPORTER),
                 reporter_id=self.observed_reporter_id,
@@ -530,7 +531,7 @@ async def test_docling_effective_options_are_sent_and_persisted(tmp_path) -> Non
     )
 
     result = await processor.process_artifact(artifact.artifact_id)
-    run = next(run for run in result.parser_runs if run.parser_name == "docling")
+    run = next(run for run in result.processing_runs if run.component_id == "docling")
     expected = {
         "to_formats": ["json"],
         "image_export_mode": "embedded",
@@ -589,7 +590,7 @@ async def test_pipeline_persists_trusted_docling_memory_measurement(tmp_path) ->
     )
 
     result = await processor.process_artifact(artifact.artifact_id)
-    run = next(run for run in result.parser_runs if run.parser_name == "docling")
+    run = next(run for run in result.processing_runs if run.component_id == "docling")
 
     assert run.resource_usage.peak_memory_bytes == 8192
     assert run.resource_usage.memory_measurement is not None
@@ -620,14 +621,14 @@ async def test_pipeline_records_unavailable_memory_only_when_policy_requires_it(
 
     result = await processor.process_artifact(artifact.artifact_id)
     docling_run = next(
-        run for run in result.parser_runs if run.parser_name == "docling"
+        run for run in result.processing_runs if run.component_id == "docling"
     )
 
     assert any(
         diagnostic.code == "MEMORY_MEASUREMENT_UNAVAILABLE"
         for diagnostic in result.diagnostics
     )
-    assert docling_run.status is ParserRunStatus.PARTIAL
+    assert docling_run.status is ProcessingRunStatus.PARTIAL
 
 
 @pytest.mark.asyncio
@@ -651,14 +652,16 @@ async def test_required_zero_peak_memory_is_noncomparable_and_partial(tmp_path) 
     )
 
     result = await processor.process_artifact(artifact.artifact_id)
-    run = next(item for item in result.parser_runs if item.parser_name == "docling")
+    run = next(
+        item for item in result.processing_runs if item.component_id == "docling"
+    )
     diagnostic = next(
         item
         for item in result.diagnostics
         if item.code == "MEMORY_MEASUREMENT_NONCOMPARABLE"
     )
 
-    assert run.status is ParserRunStatus.PARTIAL
+    assert run.status is ProcessingRunStatus.PARTIAL
     assert diagnostic.details["failure_reason"] == "peak_memory_not_positive"
 
 
@@ -702,9 +705,9 @@ async def test_pipeline_quarantines_encrypted_pdf_before_parser_submission(
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.QUARANTINED
+    assert result.status is ProcessingRunStatus.QUARANTINED
     assert result.route == ("preflight", "quarantine")
-    assert result.parser_runs[0].parser_name == "document-preflight"
+    assert result.processing_runs[0].component_id == "document-preflight"
     assert any(diagnostic.code == "PDF_ENCRYPTED" for diagnostic in result.diagnostics)
     assert docling.calls == 0
 
@@ -804,7 +807,7 @@ def test_ingest_path_rejects_a_descriptor_that_changes_during_snapshot(
     source = tmp_path / "changing.html"
     content = b"<html><body>stable descriptor fixture</body></html>"
     source.write_bytes(content)
-    real_signature = pipeline_module._source_snapshot_signature
+    real_signature = preflight_module._source_snapshot_signature
     calls = 0
 
     def drift_on_final_stat(value: Any) -> tuple[int, ...]:
@@ -816,7 +819,7 @@ def test_ingest_path_rejects_a_descriptor_that_changes_during_snapshot(
         return signature
 
     monkeypatch.setattr(
-        pipeline_module, "_source_snapshot_signature", drift_on_final_stat
+        preflight_module, "_source_snapshot_signature", drift_on_final_stat
     )
 
     with pytest.raises(SourcePreflightError) as error:
@@ -868,24 +871,24 @@ async def test_expected_runtime_config_not_transient_probe_controls_reuse(
     )
     fourth = await upgraded.process_artifact(artifact.artifact_id)
 
-    assert first.status is ParserRunStatus.COMPLETE
-    assert second.status is ParserRunStatus.COMPLETE
-    assert third.status is ParserRunStatus.COMPLETE
-    assert fourth.status is ParserRunStatus.COMPLETE
+    assert first.status is ProcessingRunStatus.COMPLETE
+    assert second.status is ProcessingRunStatus.COMPLETE
+    assert third.status is ProcessingRunStatus.COMPLETE
+    assert fourth.status is ProcessingRunStatus.COMPLETE
     assert docling.calls == 2
     first_docling_run = next(
-        run for run in first.parser_runs if run.parser_name == "docling"
+        run for run in first.processing_runs if run.component_id == "docling"
     )
     third_docling_run = next(
-        run for run in third.parser_runs if run.parser_name == "docling"
+        run for run in third.processing_runs if run.component_id == "docling"
     )
     fourth_docling_run = next(
-        run for run in fourth.parser_runs if run.parser_name == "docling"
+        run for run in fourth.processing_runs if run.component_id == "docling"
     )
     assert first_docling_run.component_versions["docling"] == "2.113.0"
     assert first_docling_run.runtime_attestation is not None
     assert (
-        first_docling_run.parser_invocation_id
+        first_docling_run.component_invocation_id
         == first_docling_run.runtime_attestation.invocation_id
     )
     processor.store.verify_blob(first_docling_run.runtime_attestation_sha256 or "")
@@ -924,10 +927,14 @@ async def test_runtime_reporter_trust_drift_prevents_cross_policy_reuse(
     docling.observed_reporter_id = "replacement-supervisor"
     second = await processor.process_artifact(artifact.artifact_id)
 
-    first_run = next(run for run in first.parser_runs if run.parser_name == "docling")
-    second_run = next(run for run in second.parser_runs if run.parser_name == "docling")
-    assert first.status is ParserRunStatus.COMPLETE
-    assert second.status is ParserRunStatus.COMPLETE
+    first_run = next(
+        run for run in first.processing_runs if run.component_id == "docling"
+    )
+    second_run = next(
+        run for run in second.processing_runs if run.component_id == "docling"
+    )
+    assert first.status is ProcessingRunStatus.COMPLETE
+    assert second.status is ProcessingRunStatus.COMPLETE
     assert docling.calls == 2
     assert first_run.run_id != second_run.run_id
     assert first_run.output_policy_sha256 != second_run.output_policy_sha256
@@ -960,8 +967,8 @@ def test_runtime_attestation_requires_exact_canonical_component_names(
     )
     digest = "sha256:" + ("a" * 64)
     spoofed = RuntimeAttestation(
-        parser_name="docling",
-        parser_version="2.113.0",
+        component_id="docling",
+        component_version="2.113.0",
         invocation_id="task-spoofed-components",
         source=RuntimeAttestationSource.AUTHENTICATED_DEPLOYMENT_REPORTER,
         reporter_id="fixture-supervisor",
@@ -1010,9 +1017,11 @@ async def test_configured_runtime_identity_is_not_treated_as_observed(tmp_path) 
     )
 
     result = await processor.process_artifact(artifact.artifact_id)
-    run = next(item for item in result.parser_runs if item.parser_name == "docling")
+    run = next(
+        item for item in result.processing_runs if item.component_id == "docling"
+    )
 
-    assert run.status is ParserRunStatus.PARTIAL
+    assert run.status is ProcessingRunStatus.PARTIAL
     assert run.runtime_attestation is None
     assert run.container_digest is None
     assert run.model_hashes == {}
@@ -1056,10 +1065,10 @@ async def test_effective_client_option_drift_prevents_cross_policy_reuse(
 
     second_result = await changed.process_artifact(artifact.artifact_id)
     first_run = next(
-        run for run in first_result.parser_runs if run.parser_name == "docling"
+        run for run in first_result.processing_runs if run.component_id == "docling"
     )
     second_run = next(
-        run for run in second_result.parser_runs if run.parser_name == "docling"
+        run for run in second_result.processing_runs if run.component_id == "docling"
     )
 
     assert docling.calls == 2
@@ -1069,12 +1078,12 @@ async def test_effective_client_option_drift_prevents_cross_policy_reuse(
     assert current_policy is not None
     second_preflight = next(
         run
-        for run in second_result.parser_runs
-        if run.parser_name == "document-preflight"
+        for run in second_result.processing_runs
+        if run.component_id == "document-preflight"
     )
     assert second_preflight.output_policy_sha256 == current_policy
     assert second_preflight.run_id not in {
-        run.run_id for run in first_result.parser_runs
+        run.run_id for run in first_result.processing_runs
     }
 
 
@@ -1112,8 +1121,8 @@ async def test_parser_container_images_are_part_of_reuse_identity(tmp_path) -> N
     )
     second = await changed.process_artifact(artifact.artifact_id)
 
-    assert first.status is ParserRunStatus.COMPLETE
-    assert second.status is ParserRunStatus.COMPLETE
+    assert first.status is ProcessingRunStatus.COMPLETE
+    assert second.status is ProcessingRunStatus.COMPLETE
     assert docling.calls == 2
     assert grobid.calls == 2
 
@@ -1139,7 +1148,7 @@ async def test_missing_runtime_provenance_is_explicitly_partial(tmp_path) -> Non
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     assert any(
         diagnostic.code == "DOCLING_RUNTIME_PROVENANCE_INCOMPLETE"
         for diagnostic in result.diagnostics
@@ -1166,24 +1175,24 @@ async def test_pipeline_persists_outputs_and_resumes_completed_stages(tmp_path) 
     )
 
     first = await processor.process_artifact(artifact.artifact_id)
-    assert first.status is ParserRunStatus.COMPLETE
-    assert first.canonical_document_sha256
+    assert first.status is ProcessingRunStatus.COMPLETE
+    assert first.docling_document_sha256
     assert first.grobid_tei_sha256
     assert first.alignment_sha256
     assert first.content_integrity_sha256
     assert first.content_span_count == 2
-    assert {run.parser_name for run in first.parser_runs} >= {
+    assert {run.component_id for run in first.processing_runs} >= {
         "docling",
         "grobid",
         "docling-grobid-aligner",
         "docling-content-integrity",
     }
-    policy_hashes = {run.output_policy_sha256 for run in first.parser_runs}
+    policy_hashes = {run.output_policy_sha256 for run in first.processing_runs}
     assert len(policy_hashes) == 1
     assert None not in policy_hashes
     assert all(
         run.output_policy_snapshot["schema"] == "deepcritical-document-output-policy-v1"
-        for run in first.parser_runs
+        for run in first.processing_runs
     )
     assert docling.calls == 1
     assert grobid.calls == 1
@@ -1191,11 +1200,11 @@ async def test_pipeline_persists_outputs_and_resumes_completed_stages(tmp_path) 
 
     processor.aligner = FailingAligner()
     second = await processor.process_artifact(artifact.artifact_id)
-    assert second.status is ParserRunStatus.COMPLETE
-    assert second.canonical_document_sha256 == first.canonical_document_sha256
+    assert second.status is ProcessingRunStatus.COMPLETE
+    assert second.docling_document_sha256 == first.docling_document_sha256
     assert second.alignment_sha256 == first.alignment_sha256
     assert second.content_integrity_sha256 == first.content_integrity_sha256
-    assert {run.parser_name for run in second.parser_runs} >= {
+    assert {run.component_id for run in second.processing_runs} >= {
         "docling",
         "grobid",
         "docling-grobid-aligner",
@@ -1231,24 +1240,25 @@ async def test_forced_benchmark_workflows_are_independent_and_pairable(
         artifact.artifact_id,
         force_reprocess=True,
         repetition_group_id="benchmark-pmc-v1",
-        workflow_attempt_id="attempt-1",
+        pipeline_attempt_id="attempt-1",
     )
     second = await processor.process_artifact(
         artifact.artifact_id,
         force_reprocess=True,
         repetition_group_id="benchmark-pmc-v1",
-        workflow_attempt_id="attempt-2",
+        pipeline_attempt_id="attempt-2",
     )
 
-    assert first.status is ParserRunStatus.COMPLETE
-    assert second.status is ParserRunStatus.COMPLETE
-    first_workflows = {run.workflow_run_id for run in first.parser_runs}
-    second_workflows = {run.workflow_run_id for run in second.parser_runs}
+    assert first.status is ProcessingRunStatus.COMPLETE
+    assert second.status is ProcessingRunStatus.COMPLETE
+    first_workflows = {run.pipeline_run_id for run in first.processing_runs}
+    second_workflows = {run.pipeline_run_id for run in second.processing_runs}
     assert len(first_workflows) == 1
     assert len(second_workflows) == 1
     assert first_workflows.isdisjoint(second_workflows)
     assert {
-        run.repetition_group_id for run in first.parser_runs + second.parser_runs
+        run.repetition_group_id
+        for run in first.processing_runs + second.processing_runs
     } == {"benchmark-pmc-v1"}
     assert docling.calls == 2
     assert grobid.calls == 4
@@ -1266,12 +1276,12 @@ async def test_named_attempt_and_benchmark_group_require_forced_scope(tmp_path) 
         config=_config(),
     )
 
-    with pytest.raises(ValueError, match="workflow_attempt_id requires"):
+    with pytest.raises(ValueError, match="pipeline_attempt_id requires"):
         await processor.process_artifact(
             "not-loaded",
-            workflow_attempt_id="attempt-1",
+            pipeline_attempt_id="attempt-1",
         )
-    with pytest.raises(ValueError, match="require workflow_attempt_id"):
+    with pytest.raises(ValueError, match="require pipeline_attempt_id"):
         await processor.process_artifact(
             "not-loaded",
             force_reprocess=True,
@@ -1299,15 +1309,15 @@ async def test_content_integrity_overlay_marks_unaligned_tables_and_result_parti
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     integrity_run = next(
         run
-        for run in result.parser_runs
-        if run.parser_name == "docling-content-integrity"
+        for run in result.processing_runs
+        if run.component_id == "docling-content-integrity"
     )
     overlay = json.loads(
         processor.store.read_blob(
-            integrity_run.output_hashes["content_integrity_overlay"]
+            integrity_run.require_output("content_integrity_overlay").blob_sha256
         )
     )
     assert overlay["records"][0]["kind"] == "table"
@@ -1315,6 +1325,10 @@ async def test_content_integrity_overlay_marks_unaligned_tables_and_result_parti
     assert any(
         diagnostic.code == "UNALIGNED_TABLE" for diagnostic in result.diagnostics
     )
+    docling_run = next(
+        run for run in result.processing_runs if run.component_id == "docling"
+    )
+    assert integrity_run.inputs == (docling_run.require_output("docling_document"),)
 
 
 @pytest.mark.asyncio
@@ -1339,10 +1353,12 @@ async def test_page_level_image_only_signal_triggers_ocr_even_when_grobid_is_usa
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     assert ocr.calls == 1
     assert grobid.calls == 2
-    ocr_run = next(run for run in result.parser_runs if run.parser_name == "ocrmypdf")
+    ocr_run = next(
+        run for run in result.processing_runs if run.component_id == "ocrmypdf"
+    )
     assert ocr_run.configuration["fallback_reason"] == "image_only_pages"
 
 
@@ -1368,11 +1384,46 @@ async def test_scanned_pdf_creates_recorded_ocr_derivative_and_retries_grobid(
     )
 
     result = await processor.process_artifact(artifact.artifact_id)
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     assert len(result.derivative_artifact_ids) == 1
     assert ocr.calls == 1
     assert grobid.calls == 2
-    assert any(run.parser_name == "ocrmypdf" for run in result.parser_runs)
+    ocr_run = next(
+        run for run in result.processing_runs if run.component_id == "ocrmypdf"
+    )
+    fallback_grobid_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "grobid"
+        and run.artifact_id == result.derivative_artifact_ids[0]
+    )
+    assert fallback_grobid_run.inputs == (ocr_run.require_output("searchable_pdf"),)
+    assert fallback_grobid_run.require_output("grobid_tei").source_artifact_ids == (
+        result.derivative_artifact_ids[0],
+        artifact.artifact_id,
+    )
+    alignment_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "docling-grobid-aligner"
+    )
+    assert [product.name for product in alignment_run.inputs] == [
+        "docling_document",
+        "grobid_tei",
+    ]
+    assert alignment_run.require_output("alignment_overlay").source_artifact_ids == (
+        artifact.artifact_id,
+        result.derivative_artifact_ids[0],
+    )
+    integrity_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "docling-content-integrity"
+    )
+    assert [product.name for product in integrity_run.inputs] == [
+        "docling_document",
+        "alignment_overlay",
+    ]
     assert any(
         diagnostic.code == "GROBID_TEXT_INSUFFICIENT"
         for diagnostic in result.diagnostics
@@ -1414,15 +1465,17 @@ async def test_ocr_derivative_lineage_recovers_after_run_commit_crash(
 
     monkeypatch.setattr(processor, "ingest_bytes", crash_once)
 
-    with pytest.raises(ParserRunCommitIncompleteError):
+    with pytest.raises(ProcessingRunCommitIncompleteError):
         await processor.process_artifact(artifact.artifact_id)
 
     ocr_run = next(
         run
-        for run in processor.store.list_parser_runs(artifact_id=artifact.artifact_id)
-        if run.parser_name == "ocrmypdf"
+        for run in processor.store.list_processing_runs(
+            artifact_id=artifact.artifact_id
+        )
+        if run.component_id == "ocrmypdf"
     )
-    assert ocr_run.status is ParserRunStatus.COMPLETE
+    assert ocr_run.status is ProcessingRunStatus.COMPLETE
     assert ocr.calls == 1
     assert not any(
         candidate.parent_artifact_id == artifact.artifact_id
@@ -1431,7 +1484,7 @@ async def test_ocr_derivative_lineage_recovers_after_run_commit_crash(
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     assert ocr.calls == 1
     derivative = processor.store.get_artifact(result.derivative_artifact_ids[0])
     assert derivative.raw_location.created_by_run_id == ocr_run.run_id
@@ -1460,13 +1513,13 @@ async def test_quarantined_ocr_derivative_is_never_sent_to_grobid(tmp_path) -> N
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.QUARANTINED
+    assert result.status is ProcessingRunStatus.QUARANTINED
     assert grobid.calls == 1
     assert len(result.derivative_artifact_ids) == 1
     assert any(
-        run.parser_name == "document-fallback-policy"
-        and run.status is ParserRunStatus.QUARANTINED
-        for run in result.parser_runs
+        run.component_id == "document-fallback-policy"
+        and run.status is ProcessingRunStatus.QUARANTINED
+        for run in result.processing_runs
     )
     assert any(
         diagnostic.code == "PDF_STRUCTURE_UNCERTAIN"
@@ -1495,8 +1548,8 @@ async def test_unsupported_input_is_explicitly_quarantined(tmp_path) -> None:
         identifiers={"filename": "blob.bin"},
     )
     result = await processor.process_artifact(artifact.artifact_id)
-    assert result.status is ParserRunStatus.QUARANTINED
-    assert result.parser_runs[0].status is ParserRunStatus.QUARANTINED
+    assert result.status is ProcessingRunStatus.QUARANTINED
+    assert result.processing_runs[0].status is ProcessingRunStatus.QUARANTINED
     assert result.diagnostics[0].code == "UNSUPPORTED_INPUT_FORMAT"
     assert docling.calls == 0
 
@@ -1511,14 +1564,14 @@ async def test_unsupported_input_is_explicitly_quarantined(tmp_path) -> None:
     )
     changed_result = await changed.process_artifact(artifact.artifact_id)
 
-    assert changed_result.status is ParserRunStatus.QUARANTINED
-    first_router = result.parser_runs[0]
-    second_router = changed_result.parser_runs[0]
+    assert changed_result.status is ProcessingRunStatus.QUARANTINED
+    first_router = result.processing_runs[0]
+    second_router = changed_result.processing_runs[0]
     assert first_router.run_id != second_router.run_id
     assert first_router.output_policy_sha256 != second_router.output_policy_sha256
-    preflight_runs = processor.store.list_parser_runs(
+    preflight_runs = processor.store.list_processing_runs(
         artifact_id=artifact.artifact_id,
-        parser_name="document-preflight",
+        component_id="document-preflight",
     )
     assert len(preflight_runs) == 2
     assert len({run.output_policy_sha256 for run in preflight_runs}) == 2
@@ -1543,8 +1596,8 @@ async def test_parser_failure_is_persisted_with_machine_readable_diagnostic(
         identifiers={"filename": "encrypted.pdf"},
     )
     result = await processor.process_artifact(artifact.artifact_id)
-    assert result.status is ParserRunStatus.FAILED
-    assert result.parser_runs[0].status is ParserRunStatus.FAILED
+    assert result.status is ProcessingRunStatus.FAILED
+    assert result.processing_runs[0].status is ProcessingRunStatus.FAILED
     assert result.diagnostics[0].code == "DOCLING_ENCRYPTED_PDF"
     assert result.diagnostics[0].details["status_code"] == 422
 
@@ -1569,10 +1622,12 @@ async def test_empty_docling_parse_is_failed_not_successful_or_partial(
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.FAILED
+    assert result.status is ProcessingRunStatus.FAILED
     assert (
-        next(run for run in result.parser_runs if run.parser_name == "docling").status
-        is ParserRunStatus.FAILED
+        next(
+            run for run in result.processing_runs if run.component_id == "docling"
+        ).status
+        is ProcessingRunStatus.FAILED
     )
     assert any(diagnostic.code == "NO_TEXT_ITEMS" for diagnostic in result.diagnostics)
 
@@ -1595,13 +1650,20 @@ async def test_html_pipeline_persists_docling_item_content_spans(tmp_path) -> No
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     docling_run = next(
-        run for run in result.parser_runs if run.parser_name == "docling"
+        run for run in result.processing_runs if run.component_id == "docling"
     )
-    assert docling_run.status is ParserRunStatus.COMPLETE
-    spans = json.loads(
-        processor.store.read_blob(docling_run.output_hashes["content_spans"])
+    assert docling_run.status is ProcessingRunStatus.COMPLETE
+    span_set = json.loads(
+        processor.store.read_blob(
+            docling_run.require_output("content_spans").blob_sha256
+        )
+    )
+    spans = span_set["spans"]
+    assert (
+        span_set["representation_product_id"]
+        == docling_run.require_output("docling_document").product_id
     )
     assert [span["source_locator"] for span in spans] == [
         {
@@ -1639,8 +1701,8 @@ async def test_docling_remote_task_checkpoint_resumes_after_interruption(
     first = await processor.process_artifact(artifact.artifact_id)
     second = await processor.process_artifact(artifact.artifact_id)
 
-    assert first.status is ParserRunStatus.FAILED
-    assert second.status is ParserRunStatus.COMPLETE
+    assert first.status is ProcessingRunStatus.FAILED
+    assert second.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, "remote-task-persisted"]
 
 
@@ -1666,16 +1728,18 @@ async def test_named_forced_attempt_resumes_across_restart_and_is_idempotent(
     attempt = {
         "force_reprocess": True,
         "repetition_group_id": "restart-benchmark-v1",
-        "workflow_attempt_id": "attempt-001",
+        "pipeline_attempt_id": "attempt-001",
     }
 
     interrupted = await first_processor.process_artifact(
         artifact.artifact_id, **attempt
     )
-    checkpoint_paths = tuple((store.root / "records" / "external_tasks").glob("*.json"))
+    checkpoint_paths = tuple(
+        (store.root / "records" / "execution_checkpoints").glob("*.json")
+    )
     assert len(checkpoint_paths) == 1
     checkpoint_payload = json.loads(checkpoint_paths[0].read_text(encoding="utf-8"))
-    assert checkpoint_payload["workflow_attempt_id"] == "attempt-001"
+    assert checkpoint_payload["pipeline_attempt_id"] == "attempt-001"
     assert checkpoint_payload["repetition_group_id"] == "restart-benchmark-v1"
     restarted_processor = DocumentProcessor(
         ContentAddressedStore(store.root),
@@ -1699,24 +1763,26 @@ async def test_named_forced_attempt_resumes_across_restart_and_is_idempotent(
     )
 
     interrupted_docling = next(
-        run for run in interrupted.parser_runs if run.parser_name == "docling"
+        run for run in interrupted.processing_runs if run.component_id == "docling"
     )
     resumed_docling = next(
-        run for run in resumed.parser_runs if run.parser_name == "docling"
+        run for run in resumed.processing_runs if run.component_id == "docling"
     )
     completed_retry_docling = next(
-        run for run in completed_retry.parser_runs if run.parser_name == "docling"
+        run for run in completed_retry.processing_runs if run.component_id == "docling"
     )
-    assert interrupted.status is ParserRunStatus.FAILED
-    assert resumed.status is ParserRunStatus.COMPLETE
-    assert completed_retry.status is ParserRunStatus.COMPLETE
+    assert interrupted.status is ProcessingRunStatus.FAILED
+    assert resumed.status is ProcessingRunStatus.COMPLETE
+    assert completed_retry.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, "remote-task-persisted"]
     assert docling.calls == 2
-    assert interrupted_docling.workflow_run_id == resumed_docling.workflow_run_id
-    assert checkpoint_payload["workflow_run_id"] == resumed_docling.workflow_run_id
+    assert interrupted_docling.pipeline_run_id == resumed_docling.pipeline_run_id
+    assert checkpoint_payload["pipeline_run_id"] == resumed_docling.pipeline_run_id
     assert completed_retry_docling.run_id == resumed_docling.run_id
-    assert completed_retry_docling.workflow_run_id == resumed_docling.workflow_run_id
-    assert tuple((store.root / "records" / "external_tasks").glob("*.json")) == ()
+    assert completed_retry_docling.pipeline_run_id == resumed_docling.pipeline_run_id
+    assert (
+        tuple((store.root / "records" / "execution_checkpoints").glob("*.json")) == ()
+    )
 
 
 @pytest.mark.asyncio
@@ -1742,20 +1808,20 @@ async def test_different_forced_attempt_never_resumes_interrupted_checkpoint(
         artifact.artifact_id,
         force_reprocess=True,
         repetition_group_id="attempt-isolation-v1",
-        workflow_attempt_id="attempt-a",
+        pipeline_attempt_id="attempt-a",
     )
     independent = await processor.process_artifact(
         artifact.artifact_id,
         force_reprocess=True,
         repetition_group_id="attempt-isolation-v1",
-        workflow_attempt_id="attempt-b",
+        pipeline_attempt_id="attempt-b",
     )
 
-    assert interrupted.status is ParserRunStatus.FAILED
-    assert independent.status is ParserRunStatus.COMPLETE
+    assert interrupted.status is ProcessingRunStatus.FAILED
+    assert independent.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, None]
-    assert {run.workflow_run_id for run in interrupted.parser_runs}.isdisjoint(
-        {run.workflow_run_id for run in independent.parser_runs}
+    assert {run.pipeline_run_id for run in interrupted.processing_runs}.isdisjoint(
+        {run.pipeline_run_id for run in independent.processing_runs}
     )
 
 
@@ -1781,7 +1847,7 @@ async def test_policy_drift_never_resumes_named_forced_attempt_checkpoint(
     attempt = {
         "force_reprocess": True,
         "repetition_group_id": "policy-isolation-v1",
-        "workflow_attempt_id": "attempt-a",
+        "pipeline_attempt_id": "attempt-a",
     }
 
     interrupted = await first_processor.process_artifact(
@@ -1796,11 +1862,11 @@ async def test_policy_drift_never_resumes_named_forced_attempt_checkpoint(
     )
     changed = await changed_processor.process_artifact(artifact.artifact_id, **attempt)
 
-    assert interrupted.status is ParserRunStatus.FAILED
-    assert changed.status is ParserRunStatus.COMPLETE
+    assert interrupted.status is ProcessingRunStatus.FAILED
+    assert changed.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, None]
-    assert {run.output_policy_sha256 for run in interrupted.parser_runs}.isdisjoint(
-        {run.output_policy_sha256 for run in changed.parser_runs}
+    assert {run.output_policy_sha256 for run in interrupted.processing_runs}.isdisjoint(
+        {run.output_policy_sha256 for run in changed.processing_runs}
     )
 
 
@@ -1828,14 +1894,14 @@ async def test_forced_docling_workflow_never_resumes_an_older_checkpoint(
         artifact.artifact_id,
         force_reprocess=True,
         repetition_group_id="checkpoint-isolation-v1",
-        workflow_attempt_id="forced-attempt-1",
+        pipeline_attempt_id="forced-attempt-1",
     )
 
-    assert interrupted.status is ParserRunStatus.FAILED
-    assert forced.status is ParserRunStatus.COMPLETE
+    assert interrupted.status is ProcessingRunStatus.FAILED
+    assert forced.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, None]
     forced_docling = next(
-        run for run in forced.parser_runs if run.parser_name == "docling"
+        run for run in forced.processing_runs if run.component_id == "docling"
     )
     assert forced_docling.repetition_group_id == "checkpoint-isolation-v1"
 
@@ -1861,9 +1927,9 @@ async def test_terminal_docling_task_is_not_resumed_forever(tmp_path) -> None:
     second = await processor.process_artifact(artifact.artifact_id)
     third = await processor.process_artifact(artifact.artifact_id)
 
-    assert first.status is ParserRunStatus.FAILED
-    assert second.status is ParserRunStatus.FAILED
-    assert third.status is ParserRunStatus.COMPLETE
+    assert first.status is ProcessingRunStatus.FAILED
+    assert second.status is ProcessingRunStatus.FAILED
+    assert third.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, "terminal-task", None]
 
 
@@ -1888,12 +1954,14 @@ async def test_immediately_terminal_new_docling_task_clears_checkpoint(
     )
 
     first = await processor.process_artifact(artifact.artifact_id)
-    checkpoints = list((store.root / "records" / "external_tasks").glob("*.json"))
+    checkpoints = list(
+        (store.root / "records" / "execution_checkpoints").glob("*.json")
+    )
     second = await processor.process_artifact(artifact.artifact_id)
 
-    assert first.status is ParserRunStatus.FAILED
+    assert first.status is ProcessingRunStatus.FAILED
     assert checkpoints == []
-    assert second.status is ParserRunStatus.COMPLETE
+    assert second.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, None]
 
 
@@ -1918,21 +1986,23 @@ async def test_oversized_docling_result_is_failed_and_clears_checkpoint(
     )
 
     failed = await processor.process_artifact(artifact.artifact_id)
-    checkpoints = list((store.root / "records" / "external_tasks").glob("*.json"))
+    checkpoints = list(
+        (store.root / "records" / "execution_checkpoints").glob("*.json")
+    )
     retried = await processor.process_artifact(artifact.artifact_id)
 
     failed_docling = next(
-        run for run in failed.parser_runs if run.parser_name == "docling"
+        run for run in failed.processing_runs if run.component_id == "docling"
     )
-    assert failed.status is ParserRunStatus.FAILED
-    assert failed_docling.status is ParserRunStatus.FAILED
+    assert failed.status is ProcessingRunStatus.FAILED
+    assert failed_docling.status is ProcessingRunStatus.FAILED
     assert any(
         diagnostic.code == "DOCLING_RESPONSE_TOO_LARGE"
-        and diagnostic.parser_run_id == failed_docling.run_id
+        and diagnostic.processing_run_id == failed_docling.run_id
         for diagnostic in failed.diagnostics
     )
     assert checkpoints == []
-    assert retried.status is ParserRunStatus.COMPLETE
+    assert retried.status is ProcessingRunStatus.COMPLETE
     assert docling.resume_task_ids == [None, None]
 
 
@@ -1956,11 +2026,11 @@ async def test_jats_locator_failure_is_recorded_and_makes_result_partial(
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     assert any(
-        run.parser_name == "jats-locator-adapter"
-        and run.status is ParserRunStatus.FAILED
-        for run in result.parser_runs
+        run.component_id == "jats-locator-adapter"
+        and run.status is ProcessingRunStatus.FAILED
+        for run in result.processing_runs
     )
     assert any(
         diagnostic.code == "JATS_LOCATOR_ADAPTER_FAILED"
@@ -1987,13 +2057,15 @@ async def test_alignment_failure_is_explicit_and_makes_result_partial(tmp_path) 
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     assert result.grobid_tei_sha256
     assert result.alignment_sha256 is None
     assert any(
-        run.parser_name == "docling-grobid-aligner"
-        and run.status is ParserRunStatus.FAILED
-        for run in result.parser_runs
+        run.component_id == "docling-grobid-aligner"
+        and run.status is ProcessingRunStatus.FAILED
+        and [product.name for product in run.inputs]
+        == ["docling_document", "grobid_tei"]
+        for run in result.processing_runs
     )
     assert any(
         diagnostic.code == "DOCLING_GROBID_ALIGNER_FAILED"
@@ -2019,12 +2091,18 @@ async def test_jats_unaligned_locators_are_persisted_and_diagnosed(tmp_path) -> 
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     docling_run = next(
-        run for run in result.parser_runs if run.parser_name == "docling"
+        run for run in result.processing_runs if run.component_id == "docling"
     )
-    assert docling_run.status is ParserRunStatus.PARTIAL
-    assert "jats_locator_alignment" in docling_run.output_hashes
+    assert docling_run.status is ProcessingRunStatus.PARTIAL
+    assert docling_run.output("jats_locator_alignment") is not None
+    adapter_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "jats-locator-adapter"
+    )
+    assert docling_run.inputs == (adapter_run.require_output("native_locator_overlay"),)
     assert any(
         diagnostic.code == "JATS_LOCATORS_UNALIGNED"
         for diagnostic in result.diagnostics
@@ -2057,11 +2135,11 @@ async def test_bioc_unaligned_locators_are_partial_and_diagnosed(tmp_path) -> No
 
     result = await processor.process_artifact(artifact.artifact_id)
     docling_run = next(
-        run for run in result.parser_runs if run.parser_name == "docling"
+        run for run in result.processing_runs if run.component_id == "docling"
     )
 
-    assert result.status is ParserRunStatus.PARTIAL
-    assert docling_run.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
+    assert docling_run.status is ProcessingRunStatus.PARTIAL
     assert any(
         diagnostic.code == "BIOC_LOCATORS_UNALIGNED"
         for diagnostic in result.diagnostics
@@ -2086,7 +2164,7 @@ async def test_jats_without_native_text_locators_is_partial(tmp_path) -> None:
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.PARTIAL
+    assert result.status is ProcessingRunStatus.PARTIAL
     assert any(
         diagnostic.code == "JATS_NATIVE_LOCATORS_EMPTY"
         for diagnostic in result.diagnostics
@@ -2131,13 +2209,15 @@ async def test_bioc_pipeline_persists_native_content_spans(tmp_path) -> None:
 
     result = await processor.process_artifact(artifact.artifact_id)
 
-    assert result.status is ParserRunStatus.COMPLETE
+    assert result.status is ProcessingRunStatus.COMPLETE
     assert result.content_span_count == 2
     adapter_run = next(
-        run for run in result.parser_runs if run.parser_name == "bioc-adapter"
+        run for run in result.processing_runs if run.component_id == "bioc-adapter"
     )
     native_locators = json.loads(
-        processor.store.read_blob(adapter_run.output_hashes["native_locator_overlay"])
+        processor.store.read_blob(
+            adapter_run.require_output("native_locator_overlay").blob_sha256
+        )
     )
     assert [locator["document_index"] for locator in native_locators] == [0, 1]
     assert [locator["length"] for locator in native_locators] == [
@@ -2145,12 +2225,19 @@ async def test_bioc_pipeline_persists_native_content_spans(tmp_path) -> None:
         len(second_passage.text),
     ]
     docling_run = next(
-        run for run in result.parser_runs if run.parser_name == "docling"
+        run for run in result.processing_runs if run.component_id == "docling"
     )
-    assert "bioc_locator_alignment" in docling_run.output_hashes
-    spans = json.loads(
-        processor.store.read_blob(docling_run.output_hashes["content_spans"])
+    assert docling_run.output("bioc_locator_alignment") is not None
+    assert docling_run.inputs == (
+        adapter_run.require_output("html_projection"),
+        adapter_run.require_output("native_locator_overlay"),
     )
+    span_set = json.loads(
+        processor.store.read_blob(
+            docling_run.require_output("content_spans").blob_sha256
+        )
+    )
+    spans = span_set["spans"]
     assert spans[0]["source_locator"] == {
         "kind": "bioc",
         "document_index": 0,
@@ -2165,6 +2252,6 @@ async def test_bioc_pipeline_persists_native_content_spans(tmp_path) -> None:
 
     resumed = await processor.process_artifact(artifact.artifact_id)
 
-    assert resumed.status is ParserRunStatus.COMPLETE
+    assert resumed.status is ProcessingRunStatus.COMPLETE
     assert resumed.content_span_count == 2
     assert docling.calls == 1
