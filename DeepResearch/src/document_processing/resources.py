@@ -36,7 +36,7 @@ class MemoryMeasurementRequest:
     """Static identity used to create one isolated measurement boundary."""
 
     measurement_id: str
-    parser_name: str
+    component_id: str
     boundary: str
 
 
@@ -155,8 +155,8 @@ class LinuxCgroupV2InvocationMeter:
 
     def begin(self, request: MemoryMeasurementRequest) -> CgroupV2MemoryLease:
         _validate_safe_name(request.measurement_id)
-        _validate_safe_name(request.parser_name)
-        child = self.parent / f"{request.parser_name}-{request.measurement_id}"
+        _validate_safe_name(request.component_id)
+        child = self.parent / f"{request.component_id}-{request.measurement_id}"
         if child.exists():
             raise RuntimeError("memory measurement cgroup already exists")
         child.mkdir(mode=0o700)

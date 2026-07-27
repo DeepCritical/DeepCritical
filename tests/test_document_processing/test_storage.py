@@ -1,5 +1,6 @@
 """Tests for immutable content-addressed document-processing storage."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
@@ -11,21 +12,25 @@ from DeepResearch.src.document_processing import storage as storage_module
 from DeepResearch.src.document_processing.models import (
     ArtifactLocationRole,
     ArtifactRelationship,
+    ComponentDescriptor,
     DiagnosticSeverity,
     DocumentArtifact,
-    ExternalTaskCheckpoint,
-    ParseDiagnostic,
-    ParserRun,
-    ParserRunStatus,
+    ExecutionCheckpoint,
+    ProcessingDiagnostic,
+    ProcessingRun,
+    ProcessingRunStatus,
     configuration_sha256,
 )
+from DeepResearch.src.document_processing.products import build_data_product_ref
 from DeepResearch.src.document_processing.storage import (
     BlobNotFoundError,
     BlobTooLargeError,
     ContentAddressedStore,
+    CorruptRecordError,
     HashMismatchError,
     RecordConflictError,
     RecordNotFoundError,
+    UnsupportedSchemaVersionError,
 )
 
 
@@ -59,22 +64,41 @@ def save_artifact(
 
 
 def make_run(
+    store: ContentAddressedStore,
     artifact_id: str,
     run_id: str,
-    status: ParserRunStatus,
+    status: ProcessingRunStatus,
     *,
     minute: int = 0,
-    output_hashes: dict[str, str] | None = None,
-    output_locations: dict[str, str] | None = None,
+    outputs: dict[str, str] | None = None,
     output_policy_snapshot: dict[str, object] | None = None,
-) -> ParserRun:
+) -> ProcessingRun:
     config = {"do_ocr": True}
     started_at = datetime(2026, 7, 17, 12, minute, tzinfo=UTC)
-    return ParserRun(
+    product_refs = tuple(
+        build_data_product_ref(
+            name=name,
+            blob_sha256=digest,
+            uri=store.blob_uri(digest),
+            byte_size=(
+                store.blob_path(digest).stat().st_size
+                if store.blob_path(digest).is_file()
+                else 0
+            ),
+            producer_run_id=run_id,
+            source_artifact_ids=(artifact_id,),
+        )
+        for name, digest in (outputs or {}).items()
+    )
+    return ProcessingRun(
         run_id=run_id,
         artifact_id=artifact_id,
-        parser_name="docling",
-        parser_version="2.113.0",
+        stage_id="docling",
+        component=ComponentDescriptor(
+            component_id="docling",
+            component_version="2.113.0",
+            capability="document-conversion",
+        ),
         configuration=config,
         configuration_sha256=configuration_sha256(config),
         output_policy_snapshot=output_policy_snapshot or {},
@@ -86,8 +110,7 @@ def make_run(
         started_at=started_at,
         finished_at=started_at + timedelta(seconds=2),
         status=status,
-        output_hashes=output_hashes or {},
-        output_locations=output_locations or {},
+        outputs=product_refs,
     )
 
 
@@ -192,6 +215,40 @@ def test_artifact_records_are_idempotent_and_conflicts_never_overwrite(
     assert store.get_artifact(artifact.artifact_id) == artifact
 
 
+def test_record_loading_dispatches_schema_versions_before_validation(
+    store: ContentAddressedStore,
+) -> None:
+    artifact = save_artifact(store, "schema-dispatch")
+    record_path = store.save_artifact(artifact)
+    payload = json.loads(record_path.read_text(encoding="utf-8"))
+
+    payload["schema_version"] = "deepcritical-document-artifact-v99"
+    record_path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(UnsupportedSchemaVersionError, match="v99"):
+        store.get_artifact(artifact.artifact_id)
+
+    payload.pop("schema_version")
+    record_path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(UnsupportedSchemaVersionError, match="None"):
+        store.get_artifact(artifact.artifact_id)
+
+    record_path.write_text("{not-json", encoding="utf-8")
+    with pytest.raises(CorruptRecordError, match="invalid record"):
+        store.get_artifact(artifact.artifact_id)
+
+
+def test_legacy_unversioned_processing_run_directory_is_rejected(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "legacy-store"
+    legacy = root / "records" / "parser_runs"
+    legacy.mkdir(parents=True)
+    (legacy / "prototype.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(UnsupportedSchemaVersionError, match="migrate or remove"):
+        ContentAddressedStore(root)
+
+
 def test_save_revalidates_model_copy_before_persisting(
     store: ContentAddressedStore,
 ) -> None:
@@ -270,33 +327,36 @@ def test_derived_artifact_creator_lineage_requires_matching_durable_run(
 
     unrelated_output = store.put_blob(b"different output")
     wrong_output_run = make_run(
+        store,
         parent.artifact_id,
         "run-wrong-output",
-        ParserRunStatus.COMPLETE,
-        output_hashes={"searchable_pdf": unrelated_output.sha256},
+        ProcessingRunStatus.COMPLETE,
+        outputs={"searchable_pdf": unrelated_output.sha256},
     )
-    store.save_parser_run(wrong_output_run)
+    store.save_processing_run(wrong_output_run)
     with pytest.raises(RecordConflictError, match="does not declare"):
         store.save_artifact(derivative_for(wrong_output_run.run_id))
 
     other_parent = save_artifact(store, "other-parent-lineage")
     wrong_parent_run = make_run(
+        store,
         other_parent.artifact_id,
         "run-wrong-parent",
-        ParserRunStatus.COMPLETE,
-        output_hashes={"searchable_pdf": derivative_blob.sha256},
+        ProcessingRunStatus.COMPLETE,
+        outputs={"searchable_pdf": derivative_blob.sha256},
     )
-    store.save_parser_run(wrong_parent_run)
+    store.save_processing_run(wrong_parent_run)
     with pytest.raises(RecordConflictError, match="different artifact"):
         store.save_artifact(derivative_for(wrong_parent_run.run_id))
 
     correct_run = make_run(
+        store,
         parent.artifact_id,
         "run-correct-output",
-        ParserRunStatus.COMPLETE,
-        output_hashes={"searchable_pdf": derivative_blob.sha256},
+        ProcessingRunStatus.COMPLETE,
+        outputs={"searchable_pdf": derivative_blob.sha256},
     )
-    store.save_parser_run(correct_run)
+    store.save_processing_run(correct_run)
     derivative = derivative_for(correct_run.run_id)
 
     store.save_artifact(derivative)
@@ -304,36 +364,42 @@ def test_derived_artifact_creator_lineage_requires_matching_durable_run(
     assert store.get_artifact(derivative.artifact_id) == derivative
 
 
-def test_parser_run_requires_artifact_and_verified_outputs(
+def test_processing_run_requires_artifact_and_verified_outputs(
     store: ContentAddressedStore,
 ) -> None:
     with pytest.raises(RecordNotFoundError, match="artifact-1"):
-        store.save_parser_run(
-            make_run("artifact-1", "run-before-artifact", ParserRunStatus.FAILED)
+        store.save_processing_run(
+            make_run(
+                store,
+                "artifact-1",
+                "run-before-artifact",
+                ProcessingRunStatus.FAILED,
+            )
         )
 
     artifact = save_artifact(store)
     output = store.put_blob(b'{"docling": "document"}')
     run = make_run(
+        store,
         artifact.artifact_id,
         "run-complete",
-        ParserRunStatus.COMPLETE,
-        output_hashes={"docling_document": output.sha256},
-        output_locations={"docling_document": output.uri},
+        ProcessingRunStatus.COMPLETE,
+        outputs={"docling_document": output.sha256},
     )
-    store.save_parser_run(run)
+    store.save_processing_run(run)
 
-    assert store.get_parser_run(run.run_id) == run
+    assert store.get_processing_run(run.run_id) == run
     assert store.has_complete_run(artifact.artifact_id, "docling")
 
     missing_output = make_run(
+        store,
         artifact.artifact_id,
         "run-missing-output",
-        ParserRunStatus.PARTIAL,
-        output_hashes={"tei": "e" * 64},
+        ProcessingRunStatus.PARTIAL,
+        outputs={"grobid_tei": "e" * 64},
     )
     with pytest.raises(BlobNotFoundError, match="blob not found"):
-        store.save_parser_run(missing_output)
+        store.save_processing_run(missing_output)
 
 
 def test_save_revalidates_mutated_nested_configuration(
@@ -341,18 +407,19 @@ def test_save_revalidates_mutated_nested_configuration(
 ) -> None:
     artifact = save_artifact(store)
     run = make_run(
+        store,
         artifact.artifact_id,
         "run-mutated-configuration",
-        ParserRunStatus.PARTIAL,
+        ProcessingRunStatus.PARTIAL,
     )
     run.configuration["do_ocr"] = False
 
     with pytest.raises(
         ValidationError, match="configuration_sha256 does not match configuration"
     ):
-        store.save_parser_run(run)
+        store.save_processing_run(run)
     with pytest.raises(RecordNotFoundError, match="run-mutated-configuration"):
-        store.get_parser_run(run.run_id)
+        store.get_processing_run(run.run_id)
 
 
 def test_run_queries_make_interrupted_work_resumable(
@@ -363,14 +430,20 @@ def test_run_queries_make_interrupted_work_resumable(
         save_artifact(store, artifact_id)
 
     statuses = {
-        "partial": ParserRunStatus.PARTIAL,
-        "failed": ParserRunStatus.FAILED,
-        "complete": ParserRunStatus.COMPLETE,
-        "quarantined": ParserRunStatus.QUARANTINED,
+        "partial": ProcessingRunStatus.PARTIAL,
+        "failed": ProcessingRunStatus.FAILED,
+        "complete": ProcessingRunStatus.COMPLETE,
+        "quarantined": ProcessingRunStatus.QUARANTINED,
     }
     for minute, (artifact_id, status) in enumerate(statuses.items()):
-        store.save_parser_run(
-            make_run(artifact_id, f"run-{artifact_id}", status, minute=minute)
+        store.save_processing_run(
+            make_run(
+                store,
+                artifact_id,
+                f"run-{artifact_id}",
+                status,
+                minute=minute,
+            )
         )
 
     candidates = store.list_resume_candidates("docling")
@@ -379,8 +452,8 @@ def test_run_queries_make_interrupted_work_resumable(
         "partial",
         "failed",
     }
-    assert store.latest_parser_run("partial", "docling") is not None
-    assert len(store.list_parser_runs(status=ParserRunStatus.FAILED)) == 1
+    assert store.latest_processing_run("partial", "docling") is not None
+    assert len(store.list_processing_runs(status=ProcessingRunStatus.FAILED)) == 1
 
 
 def test_run_queries_can_isolate_output_policies(
@@ -394,33 +467,36 @@ def test_run_queries_can_isolate_output_policies(
     policy_b_hash = configuration_sha256(policy_b)
     policy_c_hash = configuration_sha256(policy_c)
     complete_a = make_run(
+        store,
         artifact.artifact_id,
         "run-policy-a",
-        ParserRunStatus.COMPLETE,
+        ProcessingRunStatus.COMPLETE,
         output_policy_snapshot=policy_a,
     )
     failed_b = make_run(
+        store,
         artifact.artifact_id,
         "run-policy-b",
-        ParserRunStatus.FAILED,
+        ProcessingRunStatus.FAILED,
         minute=1,
         output_policy_snapshot=policy_b,
     )
     legacy_partial = make_run(
+        store,
         artifact.artifact_id,
         "run-without-policy",
-        ParserRunStatus.PARTIAL,
+        ProcessingRunStatus.PARTIAL,
         minute=2,
     )
     for run in (complete_a, failed_b, legacy_partial):
-        store.save_parser_run(run)
+        store.save_processing_run(run)
 
-    assert store.list_parser_runs(
+    assert store.list_processing_runs(
         artifact_id=artifact.artifact_id,
         output_policy_sha256=policy_a_hash,
     ) == (complete_a,)
     assert (
-        store.latest_parser_run(
+        store.latest_processing_run(
             artifact.artifact_id,
             "docling",
             output_policy_sha256=policy_a_hash,
@@ -452,7 +528,9 @@ def test_run_queries_can_isolate_output_policies(
         "docling",
         output_policy_sha256=policy_c_hash,
     ) == (artifact,)
-    assert store.latest_parser_run(artifact.artifact_id, "docling") == legacy_partial
+    assert (
+        store.latest_processing_run(artifact.artifact_id, "docling") == legacy_partial
+    )
 
 
 def test_run_query_output_policy_filters_validate_hashes(
@@ -461,9 +539,9 @@ def test_run_query_output_policy_filters_validate_hashes(
     invalid_hash = "not-a-sha256"
 
     with pytest.raises(ValueError, match="SHA-256 hashes"):
-        store.list_parser_runs(output_policy_sha256=invalid_hash)
+        store.list_processing_runs(output_policy_sha256=invalid_hash)
     with pytest.raises(ValueError, match="SHA-256 hashes"):
-        store.latest_parser_run(
+        store.latest_processing_run(
             "artifact",
             "docling",
             output_policy_sha256=invalid_hash,
@@ -486,15 +564,15 @@ def test_checkpoint_deletion_fsyncs_only_after_actual_deletion(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     artifact = save_artifact(store, "checkpoint-durability")
-    checkpoint = ExternalTaskCheckpoint(
+    checkpoint = ExecutionCheckpoint(
         checkpoint_id="durable-checkpoint",
         artifact_id=artifact.artifact_id,
-        parser_name="docling",
+        component_id="docling",
         configuration_sha256=configuration_sha256({"do_ocr": True}),
         output_policy_sha256=configuration_sha256({"pipeline": "durable"}),
         remote_task_id="remote-task-1",
     )
-    store.save_external_task_checkpoint(checkpoint)
+    store.save_execution_checkpoint(checkpoint)
     fsynced_directories: list[Path] = []
     monkeypatch.setattr(
         storage_module,
@@ -502,28 +580,34 @@ def test_checkpoint_deletion_fsyncs_only_after_actual_deletion(
         lambda directory: fsynced_directories.append(Path(directory)),
     )
 
-    store.delete_external_task_checkpoint(checkpoint.checkpoint_id)
+    store.delete_execution_checkpoint(checkpoint.checkpoint_id)
 
-    assert fsynced_directories == [store.root / "records" / "external_tasks"]
+    assert fsynced_directories == [store.root / "records" / "execution_checkpoints"]
     with pytest.raises(RecordNotFoundError, match="durable-checkpoint"):
-        store.get_external_task_checkpoint(checkpoint.checkpoint_id)
+        store.get_execution_checkpoint(checkpoint.checkpoint_id)
 
-    store.delete_external_task_checkpoint(checkpoint.checkpoint_id)
-    assert fsynced_directories == [store.root / "records" / "external_tasks"]
+    store.delete_execution_checkpoint(checkpoint.checkpoint_id)
+    assert fsynced_directories == [store.root / "records" / "execution_checkpoints"]
 
 
 def test_newer_failed_run_remains_resumable_after_an_older_complete_run(
     store: ContentAddressedStore,
 ) -> None:
     artifact = save_artifact(store)
-    store.save_parser_run(
-        make_run(artifact.artifact_id, "run-old-complete", ParserRunStatus.COMPLETE)
-    )
-    store.save_parser_run(
+    store.save_processing_run(
         make_run(
+            store,
+            artifact.artifact_id,
+            "run-old-complete",
+            ProcessingRunStatus.COMPLETE,
+        )
+    )
+    store.save_processing_run(
+        make_run(
+            store,
             artifact.artifact_id,
             "run-new-failed",
-            ParserRunStatus.FAILED,
+            ProcessingRunStatus.FAILED,
             minute=1,
         )
     )
@@ -537,13 +621,18 @@ def test_diagnostics_validate_run_lineage_and_are_queryable(
 ) -> None:
     first_artifact = save_artifact(store, "artifact-1")
     second_artifact = save_artifact(store, "artifact-2")
-    run = make_run(first_artifact.artifact_id, "run-partial", ParserRunStatus.PARTIAL)
-    store.save_parser_run(run)
+    run = make_run(
+        store,
+        first_artifact.artifact_id,
+        "run-partial",
+        ProcessingRunStatus.PARTIAL,
+    )
+    store.save_processing_run(run)
 
-    wrong_artifact = ParseDiagnostic(
+    wrong_artifact = ProcessingDiagnostic(
         diagnostic_id="diagnostic-wrong",
         artifact_id=second_artifact.artifact_id,
-        parser_run_id=run.run_id,
+        processing_run_id=run.run_id,
         severity=DiagnosticSeverity.ERROR,
         stage="alignment",
         code="ALIGNMENT.UNRESOLVED_CITATION",
@@ -561,4 +650,4 @@ def test_diagnostics_validate_run_lineage_and_are_queryable(
     store.save_diagnostic(diagnostic)
 
     assert store.get_diagnostic(diagnostic.diagnostic_id) == diagnostic
-    assert store.list_diagnostics(parser_run_id=run.run_id) == (diagnostic,)
+    assert store.list_diagnostics(processing_run_id=run.run_id) == (diagnostic,)

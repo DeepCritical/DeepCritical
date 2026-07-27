@@ -10,29 +10,58 @@ from DeepResearch.src.document_processing.models import (
     ArtifactLocationRole,
     ArtifactRelationship,
     BioCLocator,
+    ComponentDescriptor,
     ContentSpan,
+    ContentSpanSet,
+    DataProductRef,
     DiagnosticSeverity,
     DocumentArtifact,
+    ExecutionCheckpoint,
+    IntakeQuarantineRecord,
     JatsLocator,
     LicenseMetadata,
     MemoryMeasurement,
     MemoryMeasurementScope,
     MemoryMeasurementStatus,
-    ParseDiagnostic,
-    ParserRun,
-    ParserRunStatus,
     PdfBoundingBox,
     PdfLocator,
+    ProcessingDiagnostic,
+    ProcessingRun,
+    ProcessingRunDiagnosticManifest,
+    ProcessingRunStatus,
     RemediationStatus,
+    RepresentationAnchor,
     ResourceUsage,
     RuntimeAttestation,
     RuntimeAttestationSource,
     configuration_sha256,
     sha256_bytes,
 )
+from DeepResearch.src.document_processing.products import build_data_product_ref
 
 SOURCE_BYTES = b"scientific source"
 SOURCE_HASH = sha256_bytes(SOURCE_BYTES)
+
+
+def test_all_persisted_contracts_have_descriptive_schema_versions() -> None:
+    expected = {
+        DocumentArtifact: "deepcritical-document-artifact-v1",
+        ProcessingRun: "deepcritical-processing-run-v1",
+        ProcessingDiagnostic: "deepcritical-processing-diagnostic-v1",
+        ExecutionCheckpoint: "deepcritical-execution-checkpoint-v1",
+        ContentSpanSet: "deepcritical-content-span-set-v1",
+        ProcessingRunDiagnosticManifest: (
+            "deepcritical-processing-diagnostic-manifest-v1"
+        ),
+        RuntimeAttestation: "deepcritical-runtime-attestation-v1",
+        IntakeQuarantineRecord: "deepcritical-intake-quarantine-v1",
+        ComponentDescriptor: "deepcritical-component-descriptor-v1",
+        DataProductRef: "deepcritical-data-product-ref-v1",
+    }
+
+    assert {
+        model: model.model_fields["schema_version"].default for model in expected
+    } == expected
 
 
 def raw_location() -> ArtifactLocation:
@@ -59,12 +88,12 @@ def source_artifact(**overrides: object) -> DocumentArtifact:
     return DocumentArtifact(**values)
 
 
-def parser_run(**overrides: object) -> ParserRun:
+def processing_run(**overrides: object) -> ProcessingRun:
     configuration = {"ocr": True, "table_mode": "accurate"}
     digest = f"sha256:{'2' * 64}"
     attestation = RuntimeAttestation(
-        parser_name="docling",
-        parser_version="2.113.0",
+        component_id="docling",
+        component_version="2.113.0",
         invocation_id="docling-task-1",
         source=RuntimeAttestationSource.AUTHENTICATED_DEPLOYMENT_REPORTER,
         reporter_id="fixture-supervisor",
@@ -77,12 +106,24 @@ def parser_run(**overrides: object) -> ParserRun:
         model_hashes={"layout": "1" * 64},
     )
     attestation_hash = configuration_sha256(attestation.model_dump(mode="json"))
+    attestation_output = build_data_product_ref(
+        name="runtime_attestation",
+        blob_sha256=attestation_hash,
+        uri=f"cas://sha256/{attestation_hash}",
+        byte_size=0,
+        producer_run_id="run-docling-1",
+        source_artifact_ids=("pmc-123-pdf",),
+    )
     values: dict[str, object] = {
         "run_id": "run-docling-1",
         "artifact_id": "pmc-123-pdf",
-        "parser_name": "docling",
-        "parser_version": "2.113.0",
-        "parser_invocation_id": "docling-task-1",
+        "stage_id": "docling",
+        "component": ComponentDescriptor(
+            component_id="docling",
+            component_version="2.113.0",
+            capability="document-conversion",
+        ),
+        "component_invocation_id": "docling-task-1",
         "component_versions": {"docling": "2.113.0"},
         "model_versions": {"layout": "heron-101"},
         "model_hashes": {"layout": "1" * 64},
@@ -94,13 +135,13 @@ def parser_run(**overrides: object) -> ParserRun:
         "configuration_sha256": configuration_sha256(configuration),
         "started_at": datetime(2026, 7, 17, 12, tzinfo=UTC),
         "finished_at": datetime(2026, 7, 17, 12, 0, 4, tzinfo=UTC),
-        "status": ParserRunStatus.COMPLETE,
-        "output_hashes": {"runtime_attestation": attestation_hash},
+        "status": ProcessingRunStatus.COMPLETE,
+        "outputs": (attestation_output,),
         "warnings": ("one formula was low confidence",),
         "completed_stages": ("convert", "validate"),
     }
     values.update(overrides)
-    return ParserRun(**values)
+    return ProcessingRun(**values)
 
 
 def test_configuration_hash_is_canonical_and_rejects_non_json() -> None:
@@ -174,13 +215,17 @@ def test_timestamps_must_be_aware_and_are_normalized_to_utc() -> None:
     assert artifact.created_at.tzinfo is UTC
 
 
-def test_parser_run_captures_reproducibility_provenance() -> None:
-    run = parser_run()
+def test_processing_run_captures_reproducibility_provenance() -> None:
+    run = processing_run()
 
-    assert run.status is ParserRunStatus.COMPLETE
+    assert run.status is ProcessingRunStatus.COMPLETE
     assert run.model_hashes["layout"] == "1" * 64
     assert run.container_digest == f"sha256:{'2' * 64}"
     assert run.completed_stages == ("convert", "validate")
+    assert run.require_output("runtime_attestation").blob_sha256
+    assert run.output("missing") is None
+    with pytest.raises(KeyError, match="has no output"):
+        run.require_output("missing")
 
 
 def test_memory_measurement_requires_isolated_provenance_and_scalar_match() -> None:
@@ -231,20 +276,20 @@ def test_memory_measurement_requires_isolated_provenance_and_scalar_match() -> N
         )
 
 
-def test_parser_run_rejects_mismatched_config_hash_and_bad_times() -> None:
+def test_processing_run_rejects_mismatched_config_hash_and_bad_times() -> None:
     with pytest.raises(ValidationError, match="does not match configuration"):
-        parser_run(configuration_sha256="0" * 64)
+        processing_run(configuration_sha256="0" * 64)
 
     with pytest.raises(ValidationError, match="cannot precede"):
-        parser_run(
+        processing_run(
             finished_at=datetime(2026, 7, 17, 11, tzinfo=UTC),
         )
 
-    with pytest.raises(ValidationError, match="requires workflow_run_id"):
-        parser_run(repetition_group_id="benchmark-v1")
+    with pytest.raises(ValidationError, match="requires pipeline_run_id"):
+        processing_run(repetition_group_id="benchmark-v1")
 
 
-def test_parser_run_validates_the_full_output_policy_snapshot_hash() -> None:
+def test_processing_run_validates_the_full_output_policy_snapshot_hash() -> None:
     policy = {
         "schema": "deepcritical-document-output-policy-v1",
         "document_processing_config": {"ocr_enabled": True},
@@ -252,55 +297,67 @@ def test_parser_run_validates_the_full_output_policy_snapshot_hash() -> None:
         "algorithms": {"grobid_docling_alignment": "token-sequence-v1"},
         "contract_schemas": {"content_span": "1"},
     }
-    run = parser_run(
+    run = processing_run(
         output_policy_snapshot=policy,
         output_policy_sha256=configuration_sha256(policy),
     )
 
     assert run.output_policy_sha256 == configuration_sha256(policy)
     with pytest.raises(ValidationError, match="does not match output_policy_snapshot"):
-        parser_run(output_policy_snapshot=policy, output_policy_sha256="0" * 64)
+        processing_run(output_policy_snapshot=policy, output_policy_sha256="0" * 64)
     with pytest.raises(ValidationError, match="output_policy_sha256 is required"):
-        parser_run(output_policy_snapshot=policy)
+        processing_run(output_policy_snapshot=policy)
 
 
-def test_parser_run_requires_output_hash_for_every_location() -> None:
-    with pytest.raises(ValidationError, match="matching output hash"):
-        parser_run(output_locations={"docling": "cas://sha256/abc"})
+def test_processing_run_requires_unique_typed_outputs() -> None:
+    output = processing_run().require_output("runtime_attestation")
+    with pytest.raises(ValidationError, match="output names must be unique"):
+        processing_run(outputs=(output, output))
 
 
 def test_complete_runtime_identity_requires_task_bound_attestation() -> None:
-    assert parser_run(runtime_identity_required=True).runtime_attestation is not None
+    assert (
+        processing_run(runtime_identity_required=True).runtime_attestation is not None
+    )
 
     with pytest.raises(ValidationError, match="task-bound runtime attestation"):
-        parser_run(
+        processing_run(
             runtime_identity_required=True,
             runtime_attestation=None,
             runtime_attestation_sha256=None,
-            parser_invocation_id=None,
+            component_invocation_id=None,
             component_versions={},
             model_versions={},
             model_hashes={},
             container_image=None,
             container_digest=None,
-            output_hashes={},
+            outputs=(),
         )
 
-    with pytest.raises(ValidationError, match="parser_invocation_id"):
-        parser_run(parser_invocation_id="another-task")
+    with pytest.raises(ValidationError, match="component_invocation_id"):
+        processing_run(component_invocation_id="another-task")
 
     with pytest.raises(ValidationError, match="must come from runtime attestation"):
-        parser_run(parser_version="configured-but-unobserved")
+        processing_run(
+            component=ComponentDescriptor(
+                component_id="docling",
+                component_version="configured-but-unobserved",
+                capability="document-conversion",
+            )
+        )
 
 
 def test_content_span_accepts_pdf_jats_and_bioc_native_locators() -> None:
     pdf_span = ContentSpan(
         span_id="span-1",
         artifact_id="pmc-123-pdf",
-        parser_run_id="run-docling-1",
-        docling_item_ref="#/texts/12",
-        item_char_start=4,
-        item_char_end=19,
+        processing_run_id="run-docling-1",
+        representation_anchor=RepresentationAnchor(
+            product_id="product-docling-document",
+            node_id="#/texts/12",
+            char_start=4,
+            char_end=19,
+        ),
         content_sha256="3" * 64,
         source_locator=PdfLocator(
             page_number=2,
@@ -370,10 +427,10 @@ def test_diagnostic_has_machine_code_and_consistent_locator() -> None:
         page_number=3,
         bounding_box=PdfBoundingBox(left=1, top=2, right=3, bottom=4),
     )
-    diagnostic = ParseDiagnostic(
+    diagnostic = ProcessingDiagnostic(
         diagnostic_id="diagnostic-1",
         artifact_id="pmc-123-pdf",
-        parser_run_id="run-docling-1",
+        processing_run_id="run-docling-1",
         severity=DiagnosticSeverity.WARNING,
         stage="provenance-validation",
         code="pdf.missing_text_geometry",
@@ -384,12 +441,14 @@ def test_diagnostic_has_machine_code_and_consistent_locator() -> None:
 
     assert diagnostic.code == "PDF.MISSING_TEXT_GEOMETRY"
     with pytest.raises(ValidationError, match="must agree"):
-        ParseDiagnostic.model_validate({**diagnostic.model_dump(), "page_number": 4})
+        ProcessingDiagnostic.model_validate(
+            {**diagnostic.model_dump(), "page_number": 4}
+        )
 
 
 def test_resolved_diagnostic_requires_remediation_note() -> None:
     with pytest.raises(ValidationError, match="remediation_note"):
-        ParseDiagnostic(
+        ProcessingDiagnostic(
             diagnostic_id="diagnostic-2",
             artifact_id="pmc-123-pdf",
             severity=DiagnosticSeverity.ERROR,

@@ -114,6 +114,15 @@ class ParserServiceError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class ServiceHealth:
+    """Typed service readiness result with optional version evidence."""
+
+    ready: bool
+    readiness: Mapping[str, Any]
+    versions: Mapping[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
 class DoclingConversionResult:
     """Lossless result returned by Docling Serve."""
 
@@ -165,7 +174,7 @@ class RemoteMemoryMeasurementReporter(Protocol):
     """Trusted deployment adapter that binds metrics to one remote parser task."""
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> MemoryMeasurement | Mapping[str, object] | None:
         """Return a verified metric supplied by the parser deployment."""
 
@@ -175,7 +184,7 @@ class RemoteRuntimeAttestationReporter(Protocol):
     """Trusted deployment adapter for task-bound parser runtime identity."""
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> RuntimeAttestation | Mapping[str, object] | None:
         """Return independently observed identity for one parser invocation."""
 
@@ -184,7 +193,7 @@ class HttpRemoteMemoryMeasurementReporter:
     """Resolve persisted, task-bound measurements from a trusted supervisor.
 
     The supervisor contract is an authenticated
-    ``GET /v1/measurements/{parser_name}/{task_or_request_id}`` endpoint. A
+    ``GET /v1/measurements/{component_id}/{task_or_request_id}`` endpoint. A
     successful response body is one strict ``MemoryMeasurement`` object. The
     reporter never derives a value from service RSS or shared container stats.
     """
@@ -221,15 +230,15 @@ class HttpRemoteMemoryMeasurementReporter:
         self.poll_interval_seconds = poll_interval_seconds
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> Mapping[str, object]:
-        if parser_name not in {"docling", "grobid"}:
-            raise ValueError("resource reporter parser_name is not supported")
+        if component_id not in {"docling", "grobid"}:
+            raise ValueError("resource reporter component_id is not supported")
         if remote_task_id is None or not remote_task_id.strip():
             raise ValueError("resource reporter requires a task or request identity")
         task_id = remote_task_id.strip()
         path = (
-            f"{self.base_url}/v1/measurements/{quote(parser_name, safe='')}/"
+            f"{self.base_url}/v1/measurements/{quote(component_id, safe='')}/"
             f"{quote(task_id, safe='')}"
         )
         timeout = aiohttp.ClientTimeout(
@@ -345,15 +354,15 @@ class HttpRemoteRuntimeAttestationReporter:
         self.poll_interval_seconds = poll_interval_seconds
 
     async def resolve(
-        self, *, parser_name: str, remote_task_id: str | None
+        self, *, component_id: str, remote_task_id: str | None
     ) -> RuntimeAttestation:
-        if parser_name not in {"docling", "grobid"}:
-            raise ValueError("runtime attestation parser_name is not supported")
+        if component_id not in {"docling", "grobid"}:
+            raise ValueError("runtime attestation component_id is not supported")
         if remote_task_id is None or not remote_task_id.strip():
             raise ValueError("runtime attestation requires an invocation identity")
         task_id = remote_task_id.strip()
         path = (
-            f"{self.base_url}/v1/attestations/{quote(parser_name, safe='')}/"
+            f"{self.base_url}/v1/attestations/{quote(component_id, safe='')}/"
             f"{quote(task_id, safe='')}"
         )
         timeout = aiohttp.ClientTimeout(
@@ -384,7 +393,7 @@ class HttpRemoteRuntimeAttestationReporter:
                         payload = await _read_json_response(response)
                         attestation = RuntimeAttestation.model_validate(payload)
                         if (
-                            attestation.parser_name != parser_name
+                            attestation.component_id != component_id
                             or attestation.invocation_id != task_id
                         ):
                             raise ParserServiceError(
@@ -441,7 +450,7 @@ class ManagedParserResult:
     """Provider-native output returned only by an explicitly enabled adapter."""
 
     provider_name: str
-    parser_version: str
+    component_version: str
     raw_output: bytes
     media_type: str
     metadata: Mapping[str, Any] = field(default_factory=dict)
@@ -453,7 +462,7 @@ class ManagedParserAdapter(Protocol):
     """Opt-in boundary for a managed parser; no implementation is enabled in P0."""
 
     provider_name: str
-    parser_version: str
+    component_version: str
 
     async def parse(
         self,
@@ -526,8 +535,12 @@ class DoclingServeClient:
     def headers(self) -> dict[str, str]:
         return {"X-API-Key": self.api_key}
 
-    async def health(self) -> dict[str, Any]:
-        """Return readiness and version data without treating hidden versions as failure."""
+    async def health(self) -> ServiceHealth:
+        """Return explicit readiness and version evidence.
+
+        HTTP success alone is insufficient. Unknown, missing, malformed, and
+        explicitly false readiness payloads all fail closed.
+        """
 
         timeout = aiohttp.ClientTimeout(
             total=self.request_timeout_seconds,
@@ -560,7 +573,11 @@ class DoclingServeClient:
                     await self._raise_for_response(
                         response, code="docling_version_failed"
                     )
-        return {"ready": readiness, "versions": versions}
+        return ServiceHealth(
+            ready=readiness.get("ready") is True,
+            readiness=readiness,
+            versions=versions,
+        )
 
     async def version(self) -> dict[str, Any]:
         """Return the observed Docling Serve component-version payload."""
@@ -649,7 +666,7 @@ class DoclingServeClient:
         measured = await self._with_measurement(result)
         attestation, error = await _resolve_runtime_attestation(
             self.runtime_reporter,
-            parser_name="docling",
+            component_id="docling",
             invocation_id=measured.remote_task_id,
         )
         return DoclingConversionResult(
@@ -678,7 +695,7 @@ class DoclingServeClient:
         try:
             measurement = parse_trusted_memory_measurement(
                 await self.memory_reporter.resolve(
-                    parser_name="docling", remote_task_id=result.remote_task_id
+                    component_id="docling", remote_task_id=result.remote_task_id
                 )
             )
         except Exception:
@@ -1081,7 +1098,7 @@ class GrobidClient:
         measurement = await self._resolve_memory_measurement(measurement_request_id)
         attestation, attestation_error = await _resolve_runtime_attestation(
             self.runtime_reporter,
-            parser_name="grobid",
+            component_id="grobid",
             invocation_id=measurement_request_id,
         )
         return GrobidResult(
@@ -1107,7 +1124,7 @@ class GrobidClient:
         try:
             measurement = parse_trusted_memory_measurement(
                 await self.memory_reporter.resolve(
-                    parser_name="grobid", remote_task_id=measurement_request_id
+                    component_id="grobid", remote_task_id=measurement_request_id
                 )
             )
         except Exception:
@@ -1185,7 +1202,7 @@ class OCRmyPDFRunner:
             return self.memory_meter.begin(
                 MemoryMeasurementRequest(
                     measurement_id=str(uuid4()),
-                    parser_name="ocrmypdf",
+                    component_id="ocrmypdf",
                     boundary=self.memory_boundary,
                 )
             )
@@ -1648,8 +1665,8 @@ class ContainerOCRmyPDFRunner(OCRmyPDFRunner):
                 runtime_attestation = None
                 if self.container_digest is not None and not attestation_error:
                     runtime_attestation = RuntimeAttestation(
-                        parser_name="ocrmypdf",
-                        parser_version=component_versions["ocrmypdf"],
+                        component_id="ocrmypdf",
+                        component_version=component_versions["ocrmypdf"],
                         invocation_id=invocation_id,
                         source=(
                             RuntimeAttestationSource.DIGEST_ADDRESSED_OCI_INVOCATION
@@ -1721,7 +1738,7 @@ class ContainerOCRmyPDFRunner(OCRmyPDFRunner):
 async def _resolve_runtime_attestation(
     reporter: RemoteRuntimeAttestationReporter | None,
     *,
-    parser_name: str,
+    component_id: str,
     invocation_id: str | None,
 ) -> tuple[RuntimeAttestation | None, str | None]:
     """Resolve strict evidence without discarding an otherwise valid parse."""
@@ -1732,7 +1749,7 @@ async def _resolve_runtime_attestation(
         return None, "runtime_attestation_invocation_id_missing"
     try:
         payload = await reporter.resolve(
-            parser_name=parser_name,
+            component_id=component_id,
             remote_task_id=invocation_id,
         )
         if payload is None:
@@ -1743,7 +1760,7 @@ async def _resolve_runtime_attestation(
             else RuntimeAttestation.model_validate(payload)
         )
         if (
-            attestation.parser_name != parser_name
+            attestation.component_id != component_id
             or attestation.invocation_id != invocation_id
         ):
             return None, "runtime_attestation_unbound"
@@ -2144,4 +2161,5 @@ __all__ = [
     "ParserServiceError",
     "RemoteMemoryMeasurementReporter",
     "RemoteRuntimeAttestationReporter",
+    "ServiceHealth",
 ]

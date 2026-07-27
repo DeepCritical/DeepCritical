@@ -83,7 +83,8 @@ def test_invalid_character_ranges_are_rejected_without_clamping(
     spans = build_pdf_content_spans(
         document,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert not report.acceptable
@@ -152,7 +153,8 @@ def test_malformed_pdf_provenance_is_diagnosed_and_never_exported(
         build_pdf_content_spans(
             document,
             artifact_id="artifact-1",
-            parser_run_id="run-1",
+            processing_run_id="run-1",
+            representation_product_id="product-docling-document",
         )
         == ()
     )
@@ -194,7 +196,8 @@ def test_page_references_must_be_present_and_within_document_bounds() -> None:
         build_pdf_content_spans(
             document,
             artifact_id="artifact-1",
-            parser_run_id="run-1",
+            processing_run_id="run-1",
+            representation_product_id="product-docling-document",
         )
         == ()
     )
@@ -282,12 +285,14 @@ def test_span_ids_remain_unique_for_rejected_duplicate_self_refs() -> None:
     pdf_spans = build_pdf_content_spans(
         document,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
     docling_spans = build_docling_content_spans(
         document,
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
         input_format="html",
     )
 
@@ -333,7 +338,8 @@ def test_bioc_sentence_index_is_preserved_in_span_and_alignment_overlay() -> Non
         document,
         (native,),
         artifact_id="artifact-1",
-        parser_run_id="run-1",
+        processing_run_id="run-1",
+        representation_product_id="product-docling-document",
     )
 
     assert result.aligned_count == 1

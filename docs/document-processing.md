@@ -14,7 +14,7 @@ application.
 | Caddy | `caddy:2.11.4-alpine` | Authenticated loopback boundary in front of GROBID |
 | Redis | `redis:7.2.14-alpine3.21` | Durable RQ queue and short-lived Docling results |
 | OCRmyPDF | `jbarlow83/ocrmypdf:v17.4.1` | Searchable PDF derivative for image-only inputs |
-| Tesseract | Version bundled by the pinned OCRmyPDF image | OCR engine; record its runtime version in every OCR parser run |
+| Tesseract | Version bundled by the pinned OCRmyPDF image | OCR engine; record its runtime version in every OCR processing run |
 | pypdf | `6.14.2` in `uv.lock` | Bounded PDF structure, encryption, and page-count preflight; it is not a content extractor |
 
 These tags are intentionally explicit. Do not replace them with `latest` or
@@ -69,12 +69,27 @@ count as observed runtime identity.
 9. Treat every supplement as its own artifact, linked to its parent and routed
    according to its detected media type.
 
-Every transformation creates a new parser run. `complete`, `partial`,
+Every transformation creates a new `ProcessingRun`. `complete`, `partial`,
 `quarantined`, and `failed` are the only terminal outcomes. A process exit code
 of zero is not enough: empty output, missing lineage, or geometry below the
 configured threshold must be diagnosed and cannot become a silent success.
 
-The canonical defaults are in
+Docling output is an immutable native product, not DeepCritical's permanent
+canonical representation. Every evidence span uses a `RepresentationAnchor`
+that identifies the exact representation product, native node, and character
+range. The project-owned `CanonicalDocumentView` described in
+[ADR 0001](adr/0001-project-owned-canonical-document-view.md) will be introduced
+separately through native-output adapters.
+
+Durable records use descriptive `schema_version` values and every stage output
+is a typed `DataProductRef`. A product reference carries its content hash, CAS
+URI, byte size, media and payload schema, producer run, and source-artifact
+lineage. Record loading dispatches on the schema version before model
+validation. Stores containing the old unversioned `records/parser_runs`
+prototype layout are rejected explicitly rather than guessed into the new
+contract.
+
+The default configuration is in
 `configs/document_processing/default.yaml`. In particular, at least 95% of
 PDF-derived textual items must have valid page/bounding-box provenance.
 
@@ -91,7 +106,7 @@ configured content-addressed store. Async Docling task IDs are checkpointed
 before polling, so an interrupted command resumes the submitted remote task
 instead of silently submitting it again. Docling results remain re-readable
 until their four-hour RQ TTL expires, covering a crash after the result is fetched
-but before its raw response, normalized output, and `ParserRun` are durable.
+but before its raw response, normalized output, and `ProcessingRun` are durable.
 
 ## Start the local services
 
@@ -183,7 +198,7 @@ All Docling JSON responses, including asynchronous status/result responses, and
 all GROBID TEI responses are read under configurable byte ceilings. The checked-in
 defaults are 256 MiB (`services.docling.max_response_bytes`) and 128 MiB
 (`services.grobid.max_response_bytes`). A declared or streamed body above its
-ceiling becomes an explicit `*_RESPONSE_TOO_LARGE` failed parser run; operators
+ceiling becomes an explicit `*_RESPONSE_TOO_LARGE` failed processing run; operators
 may raise the limit in a reviewed deployment override for unusually large papers.
 
 ## Opt-in live compatibility contracts
@@ -273,11 +288,12 @@ docker compose -f docker/document-processing/compose.yaml --profile tools run --
 
 ## Provenance and recovery
 
-For every parser run, retain the source hash, exact configuration hash,
-container image reference and observed image digest, parser/model versions,
-timestamps, warnings, resource usage, raw output hashes, and transformation
-lineage. Parser scratch files and RQ results are staging data only; copy raw
-outputs to content-addressed storage before acknowledging completion.
+For every processing run, retain ordered typed inputs and outputs, the source
+artifact lineage, exact configuration and policy hashes, component descriptor,
+container image reference and observed image digest, component/model versions,
+timestamps, warnings, resource usage, and transformation lineage. Component
+scratch files and RQ results are staging data only; copy raw outputs to
+content-addressed storage before acknowledging completion.
 
 The persisted static output policy also records the effective GROBID coordinates
 and consolidation flags, OCR languages/rotation/deskew/jobs/optimization, and
@@ -301,7 +317,7 @@ The CLI can wire two kinds of trustworthy accounting from
 `configs/document_processing/default.yaml`:
 
 - Docling and GROBID each accept an authenticated `memory_reporter` adapter. It
-  resolves `GET /v1/measurements/{parser_name}/{task_or_request_id}` after the
+  resolves `GET /v1/measurements/{component_id}/{task_or_request_id}` after the
   parser result is available. Docling uses the durable RQ task ID. GROBID sends
   a fresh `X-DeepCritical-Invocation-ID` through its proxy and resolves that
   exact request ID. The client rejects a report whose `measurement_id` differs.
@@ -336,7 +352,7 @@ explicit parser failure/partial outcome; it is never converted to zero.
 
 Docling's single-use result mode is disabled deliberately. The application
 persists a remote task checkpoint before polling and removes it only after the
-parser-native response, normalized output, hashes, and `ParserRun` have been
+parser-native response, normalized output, hashes, and `ProcessingRun` have been
 committed to the content-addressed store. If the process stops after fetching a
 result but before that commit, the next invocation must be able to fetch the
 same result again instead of submitting duplicate parser work.
@@ -354,7 +370,7 @@ only for an explicitly non-baseline developer run.
 
 Configured values remain expectations. Docling and GROBID runtime identity must
 come from an authenticated deployment supervisor at
-`GET /v1/attestations/{parser_name}/{invocation_id}`. Docling uses its durable
+`GET /v1/attestations/{component_id}/{invocation_id}`. Docling uses its durable
 task ID; GROBID uses the same `X-DeepCritical-Invocation-ID` that binds optional
 memory evidence. The supervisor must independently inspect the workload image,
 installed component versions, and actual model files. It must not echo expected
@@ -365,7 +381,7 @@ The reporter also exposes an authenticated `/health` endpoint used by
 for invocation-bound evidence.
 
 The strict `RuntimeAttestation` and its canonical JSON hash are preserved in
-CAS. `ParserRun` validates the parser, version, invocation ID, container
+CAS. `ProcessingRun` validates the component, version, invocation ID, container
 reference/digest, component versions, model inventory, and observation time
 against that evidence. Missing, stale, malformed, or mismatched evidence keeps
 the valid parser output but marks the run partial with an explicit diagnostic;
@@ -389,9 +405,9 @@ configured digest is rejected before execution. Service-side Docling/GROBID
 identity still requires the deployment supervisor because an HTTP client cannot
 inspect the remote host container runtime.
 
-An interrupted workflow resumes from persisted artifact and parser-run state.
+An interrupted workflow resumes from persisted artifact and processing-run state.
 The Docling task ID is durably checkpointed before polling and is reused until
-the parser output, terminal `ParserRun`, and its diagnostic manifest are all
+the parser output, terminal `ProcessingRun`, and its diagnostic manifest are all
 durable. A retry therefore reconciles an incomplete local commit without
 submitting the heavy parser job again. Re-reading an uncommitted Docling result
 is bounded by `DOCLING_SERVE_ENG_RQ_RESULTS_TTL=14400` (four hours). Once that
@@ -406,7 +422,7 @@ docker compose -f docker/document-processing/compose.yaml logs --since=30m redis
 ```
 
 The four-hour window is a recovery bound, not a records-retention policy.
-Completed parser outputs and lineage live in the content-addressed store, while
+Completed component outputs and lineage live in the content-addressed store, while
 Redis results expire independently. Redis AOF files and host snapshots may still
 contain document-derived data after logical expiry, so set backup and deletion
 rules appropriate to the source license and data classification.
@@ -458,7 +474,7 @@ No document may be uploaded to Mathpix, Azure Document Intelligence, or another
 provider until the team has approved source-license compatibility, data
 classification, region, retention, training-use, deletion, incident-response,
 and vendor-contract requirements. Enabling a provider must be an explicit,
-audited configuration change that creates its own parser run.
+audited configuration change that creates its own processing run.
 
 The self-hosted parser URLs are also restricted to host-loopback addresses by
 default. Setting `security.allow_external_parser_endpoints: true` is an explicit

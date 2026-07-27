@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import errno
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 from pypdf import PdfWriter
 
+from DeepResearch.src.document_processing import preflight as preflight_module
 from DeepResearch.src.document_processing.models import DiagnosticSeverity
 from DeepResearch.src.document_processing.preflight import (
     PdfPageCountSource,
@@ -14,8 +17,10 @@ from DeepResearch.src.document_processing.preflight import (
     PreflightDiagnosticCode,
     PreflightLimits,
     PreflightResult,
+    SourceSnapshotError,
     preflight_bytes,
     preflight_path,
+    verified_open_path,
 )
 
 
@@ -69,6 +74,84 @@ def test_oversized_path_is_rejected_before_open(
     }
 
 
+def test_preflight_rejects_regular_file_swap_during_verified_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.html"
+    replacement = tmp_path / "replacement.html"
+    displaced = tmp_path / "displaced.html"
+    source.write_text("<html>original</html>", encoding="utf-8")
+    replacement.write_text("<html>replacement</html>", encoding="utf-8")
+    real_open = preflight_module._open_source_descriptor
+
+    def swap_before_open(path: Path, flags: int) -> int:
+        source.rename(displaced)
+        replacement.rename(source)
+        return real_open(path, flags)
+
+    monkeypatch.setattr(
+        preflight_module,
+        "_open_source_descriptor",
+        swap_before_open,
+    )
+
+    result = preflight_path(source, media_type="text/html")
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED}
+
+
+def test_preflight_rejects_descriptor_mutation_after_inspection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.html"
+    source.write_text("<html>stable</html>", encoding="utf-8")
+    real_signature = preflight_module._source_snapshot_signature
+    calls = 0
+
+    def drift_on_final_stat(value: Any) -> tuple[int, ...]:
+        nonlocal calls
+        calls += 1
+        signature = real_signature(value)
+        if calls == 4:
+            return (*signature[:-1], signature[-1] + 1)
+        return signature
+
+    monkeypatch.setattr(
+        preflight_module,
+        "_source_snapshot_signature",
+        drift_on_final_stat,
+    )
+
+    result = preflight_path(source, media_type="text/html")
+
+    assert result.decision is PreflightDecision.QUARANTINE
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED}
+
+
+def test_verified_open_rejects_path_replacement_after_read(tmp_path: Path) -> None:
+    source = tmp_path / "source.html"
+    replacement = tmp_path / "replacement.html"
+    displaced = tmp_path / "displaced.html"
+    source.write_text("<html>original</html>", encoding="utf-8")
+    replacement.write_text("<html>replacement</html>", encoding="utf-8")
+
+    def replace_after_read() -> None:
+        with verified_open_path(source) as verified:
+            assert verified.stream.read() == b"<html>original</html>"
+            source.rename(displaced)
+            replacement.rename(source)
+
+    with pytest.raises(SourceSnapshotError) as error:
+        replace_after_read()
+
+    assert _codes(error.value.result) == {
+        PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED
+    }
+
+
 def test_missing_and_non_regular_paths_are_explicit(tmp_path: Path) -> None:
     missing = preflight_path(tmp_path / "missing.pdf")
     directory = preflight_path(tmp_path)
@@ -77,6 +160,74 @@ def test_missing_and_non_regular_paths_are_explicit(tmp_path: Path) -> None:
     assert _codes(directory) == {PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE}
     assert missing.decision is PreflightDecision.QUARANTINE
     assert directory.decision is PreflightDecision.QUARANTINE
+
+
+def test_symlink_policy_is_explicit_and_allowed_targets_are_inspected(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target.html"
+    source = tmp_path / "source.html"
+    target.write_text("<html>target</html>", encoding="utf-8")
+    try:
+        source.symlink_to(target)
+    except OSError:
+        pytest.skip("symbolic links are unavailable on this platform")
+
+    rejected = preflight_path(source, media_type="text/html")
+    accepted = preflight_path(
+        source,
+        media_type="text/html",
+        limits=PreflightLimits(allow_symlinks=True),
+    )
+
+    assert _codes(rejected) == {PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED}
+    assert accepted.may_proceed
+
+
+def test_source_metadata_errors_are_machine_readable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "source.html"
+    source.write_text("<html>source</html>", encoding="utf-8")
+
+    def stat_failure(*args: object, **kwargs: object) -> object:
+        raise PermissionError("metadata denied")
+
+    monkeypatch.setattr(Path, "lstat", stat_failure)
+
+    result = preflight_path(source, media_type="text/html")
+
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_STAT_FAILED}
+    assert result.diagnostics[0].details["error_type"] == "PermissionError"
+
+
+def test_allowed_symlink_target_metadata_errors_are_machine_readable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "target.html"
+    source = tmp_path / "source.html"
+    target.write_text("<html>target</html>", encoding="utf-8")
+    try:
+        source.symlink_to(target)
+    except OSError:
+        pytest.skip("symbolic links are unavailable on this platform")
+    real_stat = Path.stat
+
+    def target_stat_failure(path: Path, *args: object, **kwargs: object) -> object:
+        if path == source:
+            raise PermissionError("target metadata denied")
+        return real_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", target_stat_failure)
+
+    result = preflight_path(
+        source,
+        media_type="text/html",
+        limits=PreflightLimits(allow_symlinks=True),
+    )
+
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_STAT_FAILED}
+    assert result.diagnostics[0].details["error_type"] == "PermissionError"
 
 
 def test_pdf_path_uses_established_inspector(tmp_path: Path) -> None:
@@ -100,12 +251,41 @@ def test_path_open_failure_is_machine_readable(
     def denied_open(*args: object, **kwargs: object) -> object:
         raise PermissionError("denied for test")
 
-    monkeypatch.setattr(Path, "open", denied_open)
+    monkeypatch.setattr(
+        preflight_module,
+        "_open_source_descriptor",
+        denied_open,
+    )
     result = preflight_path(source)
 
     assert result.decision is PreflightDecision.QUARANTINE
     assert _codes(result) == {PreflightDiagnosticCode.SOURCE_READ_FAILED}
     assert result.diagnostics[0].details["error_type"] == "PermissionError"
+
+
+def test_symlink_swap_during_open_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "paper.pdf"
+    source.write_bytes(_pdf())
+
+    def symlink_race(*args: object, **kwargs: object) -> int:
+        raise OSError(errno.ELOOP, "symbolic-link loop")
+
+    monkeypatch.setattr(preflight_module, "_open_source_descriptor", symlink_race)
+
+    result = preflight_path(source)
+
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED}
+
+
+def test_empty_path_is_quarantined_before_open(tmp_path: Path) -> None:
+    source = tmp_path / "empty.bin"
+    source.write_bytes(b"")
+
+    result = preflight_path(source)
+
+    assert _codes(result) == {PreflightDiagnosticCode.SOURCE_EMPTY}
 
 
 def test_empty_and_oversized_bytes_are_quarantined() -> None:

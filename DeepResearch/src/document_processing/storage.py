@@ -8,21 +8,23 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, TypeVar
+from typing import BinaryIO, Mapping, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
 from .models import (
     ArtifactLocation,
     ArtifactLocationRole,
+    DataProductRef,
     DocumentArtifact,
-    ExternalTaskCheckpoint,
+    ExecutionCheckpoint,
     IntakeQuarantineRecord,
-    ParseDiagnostic,
-    ParserRun,
-    ParserRunDiagnosticManifest,
-    ParserRunStatus,
+    ProcessingDiagnostic,
+    ProcessingRun,
+    ProcessingRunDiagnosticManifest,
+    ProcessingRunStatus,
 )
+from .products import build_data_product_ref, validate_product_contract
 
 _SHA256_PATTERN = frozenset("0123456789abcdef")
 _RECORD_MODEL = TypeVar("_RECORD_MODEL", bound=BaseModel)
@@ -62,6 +64,10 @@ class RecordConflictError(StorageError):
 
 class CorruptRecordError(StorageError):
     """Raised when a stored record cannot be decoded or validated."""
+
+
+class UnsupportedSchemaVersionError(StorageError):
+    """Raised when durable data uses an unknown or missing contract version."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,12 +112,18 @@ class ContentAddressedStore:
         self._blob_root = self.root / "blobs" / "sha256"
         self._record_root = self.root / "records"
         self._temporary_root = self.root / ".tmp"
+        legacy_runs = self._record_root / "parser_runs"
+        if legacy_runs.is_dir() and any(legacy_runs.glob("*.json")):
+            raise UnsupportedSchemaVersionError(
+                "unversioned records/parser_runs data is unsupported; "
+                "migrate or remove the prototype store before opening it"
+            )
         for directory in (
             self._blob_root,
             self._record_root / "artifacts",
-            self._record_root / "parser_runs",
+            self._record_root / "processing_runs",
             self._record_root / "diagnostics",
-            self._record_root / "external_tasks",
+            self._record_root / "execution_checkpoints",
             self._record_root / "intake_quarantines",
             self._temporary_root,
         ):
@@ -246,7 +258,7 @@ class ContentAddressedStore:
         if artifact.raw_location.created_by_run_id is not None:
             if raw_creator_owner is None:
                 raise RecordConflictError(
-                    "a source artifact raw location cannot claim a creator parser run"
+                    "a source artifact raw location cannot claim a creator processing run"
                 )
             self._validate_location_creator(
                 artifact.raw_location,
@@ -269,12 +281,14 @@ class ContentAddressedStore:
         creator_run_id = location.created_by_run_id
         if creator_run_id is None:
             return
-        creator = self.get_parser_run(creator_run_id)
+        creator = self.get_processing_run(creator_run_id)
         if creator.artifact_id != expected_artifact_id:
             raise RecordConflictError(
                 f"creator run {creator_run_id} belongs to a different artifact"
             )
-        if location.sha256 not in creator.output_hashes.values():
+        if not any(
+            product.blob_sha256 == location.sha256 for product in creator.outputs
+        ):
             raise RecordConflictError(
                 f"creator run {creator_run_id} does not declare the location hash"
             )
@@ -321,47 +335,91 @@ class ContentAddressedStore:
             )
         )
 
-    def save_parser_run(self, parser_run: ParserRun) -> Path:
-        """Persist a parser run after validating all referenced content."""
+    def save_processing_run(self, processing_run: ProcessingRun) -> Path:
+        """Persist a processing run after validating every typed product."""
 
-        self.get_artifact(parser_run.artifact_id)
-        for output_name, output_sha256 in parser_run.output_hashes.items():
-            self.verify_blob(output_sha256)
-            output_uri = parser_run.output_locations.get(output_name)
-            if output_uri is not None:
-                expected_uri = self.blob_uri(output_sha256)
-                if output_uri != expected_uri:
-                    raise HashMismatchError(
-                        f"output {output_name!r} location does not match its hash"
-                    )
-        return self._save_record("parser_runs", parser_run.run_id, parser_run)
+        self.get_artifact(processing_run.artifact_id)
+        for product in processing_run.inputs:
+            self._verify_product(product)
+            producer = self.get_processing_run(product.producer_run_id)
+            if product not in producer.outputs:
+                raise RecordConflictError(
+                    f"input product {product.product_id!r} is not declared by "
+                    f"producer run {producer.run_id!r}"
+                )
+        for product in processing_run.outputs:
+            self._verify_product(product)
+        return self._save_record(
+            "processing_runs", processing_run.run_id, processing_run
+        )
 
-    def get_parser_run(self, run_id: str) -> ParserRun:
-        """Load and validate one parser-run record."""
+    def data_product_ref(
+        self,
+        *,
+        name: str,
+        blob_sha256: str,
+        producer_run_id: str,
+        source_artifact_ids: tuple[str, ...],
+    ) -> DataProductRef:
+        """Build a registered product reference for an already stored blob."""
 
-        return self._get_record("parser_runs", run_id, ParserRun, id_field="run_id")
+        path = self.verify_blob(blob_sha256)
+        return build_data_product_ref(
+            name=name,
+            blob_sha256=blob_sha256,
+            uri=self.blob_uri(blob_sha256),
+            byte_size=path.stat().st_size,
+            producer_run_id=producer_run_id,
+            source_artifact_ids=source_artifact_ids,
+        )
 
-    def list_parser_runs(
+    def data_product_refs(
+        self,
+        outputs: Mapping[str, str],
+        *,
+        producer_run_id: str,
+        source_artifact_ids: tuple[str, ...],
+    ) -> tuple[DataProductRef, ...]:
+        """Build ordered registered references for a mapping of named digests."""
+
+        return tuple(
+            self.data_product_ref(
+                name=name,
+                blob_sha256=digest,
+                producer_run_id=producer_run_id,
+                source_artifact_ids=source_artifact_ids,
+            )
+            for name, digest in outputs.items()
+        )
+
+    def get_processing_run(self, run_id: str) -> ProcessingRun:
+        """Load and validate one processing-run record."""
+
+        return self._get_record(
+            "processing_runs", run_id, ProcessingRun, id_field="run_id"
+        )
+
+    def list_processing_runs(
         self,
         *,
         artifact_id: str | None = None,
-        parser_name: str | None = None,
-        status: ParserRunStatus | None = None,
+        component_id: str | None = None,
+        status: ProcessingRunStatus | None = None,
         configuration_sha256: str | None = None,
         output_policy_sha256: str | None = None,
-    ) -> tuple[ParserRun, ...]:
+    ) -> tuple[ProcessingRun, ...]:
         """Query persisted run state for deterministic resume decisions."""
 
         if configuration_sha256 is not None:
             _validate_sha256(configuration_sha256)
         if output_policy_sha256 is not None:
             _validate_sha256(output_policy_sha256)
-        records = self._read_record_directory("parser_runs", ParserRun)
+        records = self._read_record_directory("processing_runs", ProcessingRun)
         selected = (
             record
             for record in records
             if (artifact_id is None or record.artifact_id == artifact_id)
-            and (parser_name is None or record.parser_name == parser_name)
+            and (component_id is None or record.component_id == component_id)
             and (status is None or record.status is status)
             and (
                 configuration_sha256 is None
@@ -376,19 +434,19 @@ class ContentAddressedStore:
             sorted(selected, key=lambda record: (record.started_at, record.run_id))
         )
 
-    def latest_parser_run(
+    def latest_processing_run(
         self,
         artifact_id: str,
-        parser_name: str,
+        component_id: str,
         *,
         configuration_sha256: str | None = None,
         output_policy_sha256: str | None = None,
-    ) -> ParserRun | None:
+    ) -> ProcessingRun | None:
         """Return the most recent matching persisted attempt, if any."""
 
-        runs = self.list_parser_runs(
+        runs = self.list_processing_runs(
             artifact_id=artifact_id,
-            parser_name=parser_name,
+            component_id=component_id,
             configuration_sha256=configuration_sha256,
             output_policy_sha256=output_policy_sha256,
         )
@@ -397,7 +455,7 @@ class ContentAddressedStore:
     def has_complete_run(
         self,
         artifact_id: str,
-        parser_name: str,
+        component_id: str,
         *,
         configuration_sha256: str | None = None,
         output_policy_sha256: str | None = None,
@@ -405,32 +463,34 @@ class ContentAddressedStore:
         """Whether a complete run also has its required diagnostics indexed."""
 
         return any(
-            self.parser_run_diagnostics_reconciled(run)
-            for run in self.list_parser_runs(
+            self.processing_run_diagnostics_reconciled(run)
+            for run in self.list_processing_runs(
                 artifact_id=artifact_id,
-                parser_name=parser_name,
-                status=ParserRunStatus.COMPLETE,
+                component_id=component_id,
+                status=ProcessingRunStatus.COMPLETE,
                 configuration_sha256=configuration_sha256,
                 output_policy_sha256=output_policy_sha256,
             )
         )
 
-    def parser_run_diagnostics_reconciled(self, parser_run: ParserRun) -> bool:
+    def processing_run_diagnostics_reconciled(
+        self, processing_run: ProcessingRun
+    ) -> bool:
         """Whether every diagnostic in a run's durable manifest is indexed."""
 
-        manifest_sha256 = parser_run.output_hashes.get("diagnostics_manifest")
-        if manifest_sha256 is None:
-            # Records created before the manifest protocol remain queryable, while
-            # the processing pipeline deliberately does not reuse them.
+        manifest_product = processing_run.output("diagnostics_manifest")
+        if manifest_product is None:
             return True
-        manifest = ParserRunDiagnosticManifest.model_validate_json(
-            self.read_blob(manifest_sha256)
+        manifest = ProcessingRunDiagnosticManifest.model_validate_json(
+            self.read_blob(manifest_product.blob_sha256)
         )
         if (
-            manifest.artifact_id != parser_run.artifact_id
-            or manifest.parser_run_id != parser_run.run_id
+            manifest.artifact_id != processing_run.artifact_id
+            or manifest.processing_run_id != processing_run.run_id
         ):
-            raise RecordConflictError("diagnostics manifest does not match parser run")
+            raise RecordConflictError(
+                "diagnostics manifest does not match processing run"
+            )
         for expected in manifest.diagnostics:
             try:
                 actual = self.get_diagnostic(expected.diagnostic_id)
@@ -444,7 +504,7 @@ class ContentAddressedStore:
 
     def list_resume_candidates(
         self,
-        parser_name: str,
+        component_id: str,
         *,
         configuration_sha256: str | None = None,
         output_policy_sha256: str | None = None,
@@ -460,9 +520,9 @@ class ContentAddressedStore:
             _validate_sha256(output_policy_sha256)
         candidates: list[DocumentArtifact] = []
         for artifact in self.list_artifacts():
-            latest = self.latest_parser_run(
+            latest = self.latest_processing_run(
                 artifact.artifact_id,
-                parser_name,
+                component_id,
                 configuration_sha256=configuration_sha256,
                 output_policy_sha256=output_policy_sha256,
             )
@@ -470,62 +530,62 @@ class ContentAddressedStore:
                 latest is None
                 or latest.status
                 in {
-                    ParserRunStatus.PARTIAL,
-                    ParserRunStatus.FAILED,
+                    ProcessingRunStatus.PARTIAL,
+                    ProcessingRunStatus.FAILED,
                 }
                 or (
-                    latest.status is ParserRunStatus.COMPLETE
-                    and not self.parser_run_diagnostics_reconciled(latest)
+                    latest.status is ProcessingRunStatus.COMPLETE
+                    and not self.processing_run_diagnostics_reconciled(latest)
                 )
             ):
                 candidates.append(artifact)
         return tuple(candidates)
 
-    def save_diagnostic(self, diagnostic: ParseDiagnostic) -> Path:
+    def save_diagnostic(self, diagnostic: ProcessingDiagnostic) -> Path:
         """Persist a diagnostic with validated artifact/run references."""
 
         self.get_artifact(diagnostic.artifact_id)
-        if diagnostic.parser_run_id is not None:
-            parser_run = self.get_parser_run(diagnostic.parser_run_id)
-            if parser_run.artifact_id != diagnostic.artifact_id:
+        if diagnostic.processing_run_id is not None:
+            processing_run = self.get_processing_run(diagnostic.processing_run_id)
+            if processing_run.artifact_id != diagnostic.artifact_id:
                 raise RecordConflictError(
-                    "diagnostic artifact does not match its parser run"
+                    "diagnostic artifact does not match its processing run"
                 )
         return self._save_record("diagnostics", diagnostic.diagnostic_id, diagnostic)
 
-    def save_external_task_checkpoint(self, checkpoint: ExternalTaskCheckpoint) -> Path:
+    def save_execution_checkpoint(self, checkpoint: ExecutionCheckpoint) -> Path:
         """Persist a remote task ID before polling so restarts can resume it."""
 
         self.get_artifact(checkpoint.artifact_id)
-        return self._save_record("external_tasks", checkpoint.checkpoint_id, checkpoint)
+        return self._save_record(
+            "execution_checkpoints", checkpoint.checkpoint_id, checkpoint
+        )
 
-    def get_external_task_checkpoint(
-        self, checkpoint_id: str
-    ) -> ExternalTaskCheckpoint:
+    def get_execution_checkpoint(self, checkpoint_id: str) -> ExecutionCheckpoint:
         return self._get_record(
-            "external_tasks",
+            "execution_checkpoints",
             checkpoint_id,
-            ExternalTaskCheckpoint,
+            ExecutionCheckpoint,
             id_field="checkpoint_id",
         )
 
-    def delete_external_task_checkpoint(self, checkpoint_id: str) -> None:
-        """Clear staging state only after a terminal parser run is durable."""
+    def delete_execution_checkpoint(self, checkpoint_id: str) -> None:
+        """Clear staging state only after a terminal processing run is durable."""
 
-        path = self._record_path("external_tasks", checkpoint_id)
+        path = self._record_path("execution_checkpoints", checkpoint_id)
         try:
             path.unlink()
         except FileNotFoundError:
             return
         _fsync_directory(path.parent)
 
-    def get_diagnostic(self, diagnostic_id: str) -> ParseDiagnostic:
+    def get_diagnostic(self, diagnostic_id: str) -> ProcessingDiagnostic:
         """Load and validate one diagnostic record."""
 
         return self._get_record(
             "diagnostics",
             diagnostic_id,
-            ParseDiagnostic,
+            ProcessingDiagnostic,
             id_field="diagnostic_id",
         )
 
@@ -533,16 +593,19 @@ class ContentAddressedStore:
         self,
         *,
         artifact_id: str | None = None,
-        parser_run_id: str | None = None,
-    ) -> tuple[ParseDiagnostic, ...]:
+        processing_run_id: str | None = None,
+    ) -> tuple[ProcessingDiagnostic, ...]:
         """Return diagnostics filtered by evidence lineage."""
 
-        records = self._read_record_directory("diagnostics", ParseDiagnostic)
+        records = self._read_record_directory("diagnostics", ProcessingDiagnostic)
         selected = (
             record
             for record in records
             if (artifact_id is None or record.artifact_id == artifact_id)
-            and (parser_run_id is None or record.parser_run_id == parser_run_id)
+            and (
+                processing_run_id is None
+                or record.processing_run_id == processing_run_id
+            )
         )
         return tuple(
             sorted(
@@ -561,6 +624,24 @@ class ContentAddressedStore:
             raise HashMismatchError(
                 f"location size for {location.sha256} does not match stored blob"
             )
+
+    def _verify_product(self, product: DataProductRef) -> None:
+        try:
+            validate_product_contract(product)
+        except ValueError as exc:
+            raise RecordConflictError(str(exc)) from exc
+        expected_uri = self.blob_uri(product.blob_sha256)
+        if product.uri != expected_uri:
+            raise HashMismatchError(
+                f"data product {product.name!r} URI does not match its hash"
+            )
+        path = self.verify_blob(product.blob_sha256)
+        if path.stat().st_size != product.byte_size:
+            raise HashMismatchError(
+                f"data product {product.name!r} size does not match stored blob"
+            )
+        for artifact_id in product.source_artifact_ids:
+            self.get_artifact(artifact_id)
 
     def _save_record(
         self, category: str, record_id: str, record: _RECORD_MODEL
@@ -625,8 +706,22 @@ class ContentAddressedStore:
 
     def _decode_record(self, path: Path, model: type[_RECORD_MODEL]) -> _RECORD_MODEL:
         try:
-            return model.model_validate_json(path.read_bytes())
-        except (OSError, ValidationError, ValueError) as exc:
+            payload = json.loads(path.read_bytes())
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise CorruptRecordError(f"invalid record at {path}") from exc
+        if not isinstance(payload, dict):
+            raise CorruptRecordError(f"record at {path} must be a JSON object")
+        schema_field = model.model_fields.get("schema_version")
+        expected_version = schema_field.default if schema_field is not None else None
+        actual_version = payload.get("schema_version")
+        if not isinstance(expected_version, str) or actual_version != expected_version:
+            raise UnsupportedSchemaVersionError(
+                f"unsupported schema_version {actual_version!r} at {path}; "
+                f"expected {expected_version!r}"
+            )
+        try:
+            return model.model_validate(payload)
+        except (ValidationError, ValueError) as exc:
             raise CorruptRecordError(f"invalid record at {path}") from exc
 
     def _record_path(self, category: str, record_id: str) -> Path:
@@ -726,4 +821,5 @@ __all__ = [
     "RecordNotFoundError",
     "StorageError",
     "StoredBlob",
+    "UnsupportedSchemaVersionError",
 ]

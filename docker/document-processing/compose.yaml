@@ -22,7 +22,7 @@ x-docling-environment: &docling-environment
   DOCLING_SERVE_CORS_METHODS: '["GET","POST"]'
   DOCLING_SERVE_CORS_HEADERS: '["Accept","Content-Type","X-Api-Key","X-Docling-Log-RequestID"]'
   # The application deletes its remote-task checkpoint only after the result and
-  # ParserRun are durable in CAS. Keep results re-readable across that crash window.
+  # ProcessingRun are durable in CAS. Keep results re-readable across that crash window.
   DOCLING_SERVE_SINGLE_USE_RESULTS: "false"
   DOCLING_SERVE_MAX_DOCUMENT_TIMEOUT: "1800"
   DOCLING_SERVE_MAX_NUM_PAGES: "1000"
@@ -126,9 +126,10 @@ services:
         - python
         - -c
         - >-
-          import os, urllib.request;
+          import json, os, urllib.request;
           request = urllib.request.Request("http://127.0.0.1:5001/ready", headers={"X-Api-Key": os.environ["DOCLING_SERVE_API_KEY"]});
-          urllib.request.urlopen(request, timeout=5).read()
+          payload = json.load(urllib.request.urlopen(request, timeout=5));
+          assert payload.get("ready") is True
       interval: 15s
       timeout: 8s
       retries: 20

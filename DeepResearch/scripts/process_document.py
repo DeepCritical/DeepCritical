@@ -90,11 +90,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--benchmark-repetition-group",
         help=(
             "Group independent forced benchmark attempts for deterministic pairing; "
-            "requires --force-reprocess and --workflow-attempt-id"
+            "requires --force-reprocess and --pipeline-attempt-id"
         ),
     )
     parser.add_argument(
-        "--workflow-attempt-id",
+        "--pipeline-attempt-id",
         help=(
             "Stable identity for one forced attempt. Reuse it after interruption to "
             "resume the persisted Docling task; use a new value for an independent "
@@ -107,11 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
 async def run(args: argparse.Namespace) -> int:
     if (args.source is None) == (args.artifact_id is None):
         raise ValueError("provide exactly one of source or --artifact-id")
-    if args.workflow_attempt_id and not args.force_reprocess:
-        raise ValueError("--workflow-attempt-id requires --force-reprocess")
-    if args.benchmark_repetition_group and not args.workflow_attempt_id:
+    if args.pipeline_attempt_id and not args.force_reprocess:
+        raise ValueError("--pipeline-attempt-id requires --force-reprocess")
+    if args.benchmark_repetition_group and not args.pipeline_attempt_id:
         raise ValueError(
-            "--benchmark-repetition-group requires --workflow-attempt-id so one "
+            "--benchmark-repetition-group requires --pipeline-attempt-id so one "
             "interrupted attempt can resume without colliding with independent runs"
         )
     raw_config = OmegaConf.load(args.config)
@@ -241,14 +241,14 @@ async def run(args: argparse.Namespace) -> int:
                 args.source,
                 force_reprocess=args.force_reprocess,
                 repetition_group_id=args.benchmark_repetition_group,
-                workflow_attempt_id=args.workflow_attempt_id,
+                pipeline_attempt_id=args.pipeline_attempt_id,
             )
             if args.source is not None
             else await processor.process_artifact(
                 args.artifact_id,
                 force_reprocess=args.force_reprocess,
                 repetition_group_id=args.benchmark_repetition_group,
-                workflow_attempt_id=args.workflow_attempt_id,
+                pipeline_attempt_id=args.pipeline_attempt_id,
             )
         )
     except SourcePreflightError as exc:
@@ -301,8 +301,9 @@ async def _check_parser_services(
     memory_reporters: tuple[Any | None, Any | None] = (None, None),
     runtime_reporters: tuple[Any | None, Any | None] = (None, None),
 ) -> dict[str, object]:
-    health: dict[str, object] = {"docling": await docling.health()}
-    if not health["docling"]:
+    docling_health = await docling.health()
+    health: dict[str, object] = {"docling": docling_health}
+    if not docling_health.ready:
         raise RuntimeError("Docling is not healthy")
     if grobid_enabled:
         health["grobid"] = await grobid.health()
@@ -312,16 +313,18 @@ async def _check_parser_services(
         ("memory", memory_reporters),
         ("runtime attestation", runtime_reporters),
     ):
-        for parser_name, reporter in zip(("docling", "grobid"), reporters, strict=True):
-            if reporter is None or (parser_name == "grobid" and not grobid_enabled):
+        for component_id, reporter in zip(
+            ("docling", "grobid"), reporters, strict=True
+        ):
+            if reporter is None or (component_id == "grobid" and not grobid_enabled):
                 continue
             healthy = await reporter.health()
-            health[f"{parser_name}_{reporter_kind.replace(' ', '_')}_reporter"] = (
+            health[f"{component_id}_{reporter_kind.replace(' ', '_')}_reporter"] = (
                 healthy
             )
             if not healthy:
                 raise RuntimeError(
-                    f"{parser_name} {reporter_kind} reporter is not healthy"
+                    f"{component_id} {reporter_kind} reporter is not healthy"
                 )
     return health
 
@@ -331,21 +334,21 @@ def _result_payload(result: Any) -> dict[str, Any]:
         "artifact_id": result.artifact.artifact_id,
         "status": result.status.value,
         "route": list(result.route),
-        "canonical_document_sha256": result.canonical_document_sha256,
+        "docling_document_sha256": result.docling_document_sha256,
         "grobid_tei_sha256": result.grobid_tei_sha256,
         "alignment_sha256": result.alignment_sha256,
         "content_integrity_sha256": result.content_integrity_sha256,
         "content_span_count": result.content_span_count,
         "derivative_artifact_ids": list(result.derivative_artifact_ids),
-        "parser_runs": [
+        "processing_runs": [
             {
                 "run_id": run.run_id,
-                "parser": run.parser_name,
-                "version": run.parser_version,
+                "component_id": run.component_id,
+                "component_version": run.component_version,
                 "status": run.status.value,
-                "output_hashes": run.output_hashes,
+                "outputs": [product.model_dump(mode="json") for product in run.outputs],
             }
-            for run in result.parser_runs
+            for run in result.processing_runs
         ],
         "diagnostics": [
             {
@@ -373,7 +376,7 @@ def _processing_config(raw_config: DictConfig) -> DocumentProcessingConfig:
         )
     ocr_mode = cast("Literal['container_cli', 'local_cli']", ocr_mode_value)
     config = DocumentProcessingConfig(
-        docling_version=str(services.docling.parser_version),
+        docling_version=str(services.docling.component_version),
         docling_serve_version=str(services.docling.serve_version),
         docling_container_image=str(services.docling.container_image),
         docling_container_digest=_optional_text(services.docling.container_digest),
@@ -383,7 +386,7 @@ def _processing_config(raw_config: DictConfig) -> DocumentProcessingConfig:
             services.docling.max_response_bytes,
             path="services.docling.max_response_bytes",
         ),
-        grobid_version=str(services.grobid.parser_version),
+        grobid_version=str(services.grobid.component_version),
         grobid_enabled=bool(services.grobid.enabled),
         grobid_container_image=str(services.grobid.container_image),
         grobid_container_digest=_optional_text(services.grobid.container_digest),
@@ -393,7 +396,7 @@ def _processing_config(raw_config: DictConfig) -> DocumentProcessingConfig:
             services.grobid.max_response_bytes,
             path="services.grobid.max_response_bytes",
         ),
-        ocrmypdf_version=str(ocr_config.parser_version),
+        ocrmypdf_version=str(ocr_config.component_version),
         ocr_enabled=bool(ocr_config.enabled),
         ocr_mode=ocr_mode,
         ocr_container_image=str(ocr_config.container_image),
@@ -449,6 +452,14 @@ def _processing_config(raw_config: DictConfig) -> DocumentProcessingConfig:
 def _validate_static_policy(raw_config: DictConfig) -> None:
     """Reject configuration values the P0 implementation cannot honor."""
 
+    if (
+        str(raw_config.get("schema_version", ""))
+        != "deepcritical-document-processing-config-v1"
+    ):
+        raise ValueError(
+            "schema_version must be 'deepcritical-document-processing-config-v1'"
+        )
+
     required_true = {
         "enabled": raw_config.enabled,
         "services.docling.enabled": raw_config.services.docling.enabled,
@@ -482,8 +493,8 @@ def _validate_static_policy(raw_config: DictConfig) -> None:
         "routing.pdf.create_searchable_derivative": (
             raw_config.routing.pdf.create_searchable_derivative
         ),
-        "routing.fallback.each_fallback_creates_parser_run": (
-            raw_config.routing.fallback.each_fallback_creates_parser_run
+        "routing.fallback.each_fallback_creates_processing_run": (
+            raw_config.routing.fallback.each_fallback_creates_processing_run
         ),
         "routing.fallback.quarantine_on_exhaustion": (
             raw_config.routing.fallback.quarantine_on_exhaustion

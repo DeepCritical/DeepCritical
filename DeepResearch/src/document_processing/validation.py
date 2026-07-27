@@ -18,6 +18,7 @@ from .models import (
     JatsLocator,
     PdfBoundingBox,
     PdfLocator,
+    RepresentationAnchor,
     sha256_bytes,
 )
 
@@ -370,7 +371,7 @@ class DoclingQualityValidator:
                 )
             )
         try:
-            content_sha256 = canonical_document_sha256(document)
+            content_sha256 = docling_document_sha256(document)
         except ValueError:
             issues.append(
                 QualityIssue(
@@ -402,7 +403,7 @@ class DoclingQualityValidator:
         )
 
 
-def canonical_document_sha256(document: dict[str, Any]) -> str:
+def docling_document_sha256(document: dict[str, Any]) -> str:
     """Hash a serialized DoclingDocument using canonical JSON encoding."""
 
     encoded = json.dumps(
@@ -481,7 +482,7 @@ def validate_content_integrity(
         if record.status is ContentIntegrityStatus.UNALIGNED
     )
     return ContentIntegrityReport(
-        document_sha256=canonical_document_sha256(document),
+        document_sha256=docling_document_sha256(document),
         records=tuple(records),
         issues=(*collection_issues, *record_issues),
         scholarly_overlay_present=scholarly_overlay is not None,
@@ -802,7 +803,7 @@ def _unique(values: list[str]) -> tuple[str, ...]:
 def _content_span_id(
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
     canonical_item_ref: str,
     declared_item_ref: str,
     start: int,
@@ -821,7 +822,7 @@ def _content_span_id(
 
     identity = {
         "artifact_id": artifact_id,
-        "parser_run_id": parser_run_id,
+        "processing_run_id": processing_run_id,
         "canonical_item_ref": canonical_item_ref,
         "declared_item_ref": declared_item_ref,
         "start": start,
@@ -845,7 +846,8 @@ def build_pdf_content_spans(
     document: dict[str, Any],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
+    representation_product_id: str,
 ) -> tuple[ContentSpan, ...]:
     """Build stable item-local spans for every unambiguous PDF text region."""
 
@@ -887,7 +889,7 @@ def build_pdf_content_spans(
                 ContentSpan(
                     span_id=_content_span_id(
                         artifact_id=artifact_id,
-                        parser_run_id=parser_run_id,
+                        processing_run_id=processing_run_id,
                         canonical_item_ref=f"#/texts/{index}",
                         declared_item_ref=item_ref,
                         start=start,
@@ -896,10 +898,13 @@ def build_pdf_content_spans(
                         source_locator=locator.model_dump(mode="json"),
                     ),
                     artifact_id=artifact_id,
-                    parser_run_id=parser_run_id,
-                    docling_item_ref=item_ref,
-                    item_char_start=start,
-                    item_char_end=end,
+                    processing_run_id=processing_run_id,
+                    representation_anchor=RepresentationAnchor(
+                        product_id=representation_product_id,
+                        node_id=item_ref,
+                        char_start=start,
+                        char_end=end,
+                    ),
                     content_sha256=content_sha256,
                     source_locator=locator,
                 )
@@ -911,8 +916,9 @@ def build_docling_content_spans(
     document: dict[str, Any],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
     input_format: DoclingInputFormat,
+    representation_product_id: str,
 ) -> tuple[ContentSpan, ...]:
     """Build full-item spans using an explicit parser-native Docling locator.
 
@@ -940,7 +946,7 @@ def build_docling_content_spans(
             ContentSpan(
                 span_id=_content_span_id(
                     artifact_id=artifact_id,
-                    parser_run_id=parser_run_id,
+                    processing_run_id=processing_run_id,
                     canonical_item_ref=f"#/texts/{index}",
                     declared_item_ref=item_ref,
                     start=0,
@@ -949,10 +955,13 @@ def build_docling_content_spans(
                     source_locator=locator_payload,
                 ),
                 artifact_id=artifact_id,
-                parser_run_id=parser_run_id,
-                docling_item_ref=item_ref,
-                item_char_start=0,
-                item_char_end=len(content),
+                processing_run_id=processing_run_id,
+                representation_anchor=RepresentationAnchor(
+                    product_id=representation_product_id,
+                    node_id=item_ref,
+                    char_start=0,
+                    char_end=len(content),
+                ),
                 content_sha256=content_sha256,
                 source_locator=locator,
             )
@@ -965,7 +974,8 @@ def build_jats_content_spans(
     locators: tuple[NativeTextLocator, ...],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
+    representation_product_id: str,
 ) -> tuple[ContentSpan, ...]:
     """Align exact/native JATS text to Docling items and retain XPath/xml:id."""
 
@@ -973,7 +983,8 @@ def build_jats_content_spans(
         document,
         locators,
         artifact_id=artifact_id,
-        parser_run_id=parser_run_id,
+        processing_run_id=processing_run_id,
+        representation_product_id=representation_product_id,
     ).spans
 
 
@@ -982,7 +993,8 @@ def build_bioc_content_spans(
     locators: tuple[NativeTextLocator, ...],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
+    representation_product_id: str,
 ) -> tuple[ContentSpan, ...]:
     """Build evidence spans for normalized-exact BioC passage matches."""
 
@@ -990,7 +1002,8 @@ def build_bioc_content_spans(
         document,
         locators,
         artifact_id=artifact_id,
-        parser_run_id=parser_run_id,
+        processing_run_id=processing_run_id,
+        representation_product_id=representation_product_id,
     ).spans
 
 
@@ -999,7 +1012,8 @@ def align_bioc_content_spans(
     locators: tuple[NativeTextLocator, ...],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
+    representation_product_id: str,
 ) -> BioCContentSpanAlignment:
     """Align BioC passages without dropping duplicate or unmatched locators.
 
@@ -1096,7 +1110,7 @@ def align_bioc_content_spans(
         span = ContentSpan(
             span_id=_content_span_id(
                 artifact_id=artifact_id,
-                parser_run_id=parser_run_id,
+                processing_run_id=processing_run_id,
                 canonical_item_ref=best.canonical_ref,
                 declared_item_ref=item_ref,
                 start=0,
@@ -1106,10 +1120,13 @@ def align_bioc_content_spans(
                 alignment_locator_id=locator_id,
             ),
             artifact_id=artifact_id,
-            parser_run_id=parser_run_id,
-            docling_item_ref=item_ref,
-            item_char_start=0,
-            item_char_end=len(item_text),
+            processing_run_id=processing_run_id,
+            representation_anchor=RepresentationAnchor(
+                product_id=representation_product_id,
+                node_id=item_ref,
+                char_start=0,
+                char_end=len(item_text),
+            ),
             content_sha256=content_sha256,
             source_locator=source_locator,
         )
@@ -1164,7 +1181,8 @@ def align_jats_content_spans(
     locators: tuple[NativeTextLocator, ...],
     *,
     artifact_id: str,
-    parser_run_id: str,
+    processing_run_id: str,
+    representation_product_id: str,
 ) -> JatsContentSpanAlignment:
     """Return both evidence spans and an explicit outcome for every locator."""
 
@@ -1229,7 +1247,7 @@ def align_jats_content_spans(
         span = ContentSpan(
             span_id=_content_span_id(
                 artifact_id=artifact_id,
-                parser_run_id=parser_run_id,
+                processing_run_id=processing_run_id,
                 canonical_item_ref=best.canonical_ref,
                 declared_item_ref=item_ref,
                 start=0,
@@ -1239,10 +1257,13 @@ def align_jats_content_spans(
                 alignment_locator_id=locator_id,
             ),
             artifact_id=artifact_id,
-            parser_run_id=parser_run_id,
-            docling_item_ref=item_ref,
-            item_char_start=0,
-            item_char_end=len(item_text),
+            processing_run_id=processing_run_id,
+            representation_anchor=RepresentationAnchor(
+                product_id=representation_product_id,
+                node_id=item_ref,
+                char_start=0,
+                char_end=len(item_text),
+            ),
             content_sha256=content_sha256,
             source_locator=locator,
         )
@@ -1907,7 +1928,7 @@ __all__ = [
     "build_docling_content_spans",
     "build_jats_content_spans",
     "build_pdf_content_spans",
-    "canonical_document_sha256",
+    "docling_document_sha256",
     "probably_image_only",
     "validate_content_integrity",
 ]

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from omegaconf import DictConfig, OmegaConf
@@ -12,6 +14,7 @@ from DeepResearch.scripts.process_document import (
     _ocr_memory_meter,
     _processing_config,
     _required_service_api_key,
+    _result_payload,
     _runtime_attestation_reporter,
     _service_precheck_required,
     _validate_parser_endpoint,
@@ -21,6 +24,13 @@ from DeepResearch.scripts.process_document import (
 from DeepResearch.src.document_processing.clients import (
     HttpRemoteMemoryMeasurementReporter,
     HttpRemoteRuntimeAttestationReporter,
+    ServiceHealth,
+)
+from DeepResearch.src.document_processing.models import (
+    ComponentDescriptor,
+    ProcessingRun,
+    ProcessingRunStatus,
+    configuration_sha256,
 )
 from DeepResearch.src.document_processing.pipeline import DocumentProcessingConfig
 from DeepResearch.src.document_processing.storage import ContentAddressedStore
@@ -59,6 +69,18 @@ def test_default_config_maps_to_runtime_contract() -> None:
     assert config.reject_extension_only_detection is True
     assert config.quarantine_on_fallback_exhaustion is True
     assert config.require_runtime_identity is False
+
+
+def test_config_schema_version_is_required_and_recognized() -> None:
+    raw = _default_config()
+    del raw["schema_version"]
+    with pytest.raises(ValueError, match="schema_version"):
+        _processing_config(raw)
+
+    raw = _default_config()
+    raw.schema_version = "deepcritical-document-processing-config-v2"
+    with pytest.raises(ValueError, match="schema_version"):
+        _processing_config(raw)
 
 
 @pytest.mark.parametrize(
@@ -300,14 +322,55 @@ def test_cli_exposes_explicit_benchmark_repeat_controls() -> None:
             "--force-reprocess",
             "--benchmark-repetition-group",
             "pmc-p0-v1",
-            "--workflow-attempt-id",
+            "--pipeline-attempt-id",
             "attempt-001",
         ]
     )
 
     assert args.force_reprocess is True
     assert args.benchmark_repetition_group == "pmc-p0-v1"
-    assert args.workflow_attempt_id == "attempt-001"
+    assert args.pipeline_attempt_id == "attempt-001"
+
+
+def test_result_payload_uses_component_generic_run_contract() -> None:
+    configuration = {"fixture": True}
+    now = datetime(2026, 7, 27, tzinfo=UTC)
+    processing_run = ProcessingRun(
+        run_id="run-1",
+        artifact_id="artifact-1",
+        stage_id="docling",
+        component=ComponentDescriptor(
+            component_id="docling",
+            component_version="2.113.0",
+            capability="document.parse",
+        ),
+        configuration=configuration,
+        configuration_sha256=configuration_sha256(configuration),
+        started_at=now,
+        finished_at=now,
+        status=ProcessingRunStatus.COMPLETE,
+    )
+    result = SimpleNamespace(
+        artifact=SimpleNamespace(artifact_id="artifact-1"),
+        status=ProcessingRunStatus.COMPLETE,
+        route=("docling",),
+        docling_document_sha256=None,
+        grobid_tei_sha256=None,
+        alignment_sha256=None,
+        content_integrity_sha256=None,
+        content_span_count=0,
+        derivative_artifact_ids=(),
+        processing_runs=(processing_run,),
+        diagnostics=(),
+    )
+
+    payload = _result_payload(result)
+
+    serialized_run = payload["processing_runs"][0]
+    assert serialized_run["component_id"] == "docling"
+    assert serialized_run["component_version"] == "2.113.0"
+    assert "parser" not in serialized_run
+    assert "output_hashes" not in serialized_run
 
 
 class _HealthClient:
@@ -322,7 +385,7 @@ class _HealthClient:
 
 @pytest.mark.asyncio
 async def test_service_precheck_rejects_unhealthy_docling_before_grobid() -> None:
-    docling = _HealthClient(False)
+    docling = _HealthClient(ServiceHealth(False, {"ready": False}, {}))
     grobid = _HealthClient(True)
 
     with pytest.raises(RuntimeError, match="Docling is not healthy"):
@@ -334,7 +397,7 @@ async def test_service_precheck_rejects_unhealthy_docling_before_grobid() -> Non
 
 @pytest.mark.asyncio
 async def test_service_precheck_checks_configured_reporters() -> None:
-    docling = _HealthClient(True)
+    docling = _HealthClient(ServiceHealth(True, {"ready": True}, {}))
     grobid = _HealthClient(True)
     docling_memory = _HealthClient(True)
     docling_runtime = _HealthClient(True)

@@ -31,13 +31,16 @@ from DeepResearch.src.document_processing.clients import (
 from DeepResearch.src.document_processing.models import (
     ArtifactLocationRole,
     ArtifactRelationship,
+    ComponentDescriptor,
     ContentSpan,
+    ContentSpanSet,
     DocumentArtifact,
     JatsLocator,
-    ParserRun,
-    ParserRunStatus,
     PdfBoundingBox,
     PdfLocator,
+    ProcessingRun,
+    ProcessingRunStatus,
+    RepresentationAnchor,
     ResourceUsage,
     RuntimeAttestation,
     RuntimeAttestationSource,
@@ -48,6 +51,7 @@ from DeepResearch.src.document_processing.pipeline import (
     DocumentProcessingConfig,
     DocumentProcessor,
 )
+from DeepResearch.src.document_processing.products import product_id_for
 from DeepResearch.src.document_processing.storage import ContentAddressedStore
 
 HASH_A = "a" * 64
@@ -90,8 +94,8 @@ def test_baseline_memory_requires_isolated_cgroup_provenance() -> None:
                 "memory_required_run_ids": ["docling-run"],
                 "memory_measurements": [
                     {
-                        "parser_run_id": "docling-run",
-                        "parser_name": "docling",
+                        "processing_run_id": "docling-run",
+                        "component_id": "docling",
                         "measurement": {
                             "status": "measured",
                             "method": "cgroup-v2-memory.peak",
@@ -253,13 +257,13 @@ def _persist_docling_run(
     document: dict[str, Any],
     peak_memory_bytes: int | None = 4096,
     source_artifact: str = "pdf",
-    status: ParserRunStatus = ParserRunStatus.COMPLETE,
+    status: ProcessingRunStatus = ProcessingRunStatus.COMPLETE,
     locator_offset: float = 0.0,
     extra_span_page: int | None = None,
-    workflow_run_id: str | None = None,
+    pipeline_run_id: str | None = None,
     repetition_group_id: str | None = None,
     output_policy_snapshot: dict[str, Any] | None = None,
-) -> ParserRun:
+) -> ProcessingRun:
     document_blob = store.put_blob(
         json.dumps(
             document,
@@ -267,6 +271,11 @@ def _persist_docling_run(
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
+    )
+    representation_product_id = product_id_for(
+        name="docling_document",
+        blob_sha256=document_blob.sha256,
+        producer_run_id=run_id,
     )
     spans = []
     for index, item in enumerate(document["texts"]):
@@ -293,10 +302,13 @@ def _persist_docling_run(
             ContentSpan(
                 span_id=f"{run_id}-span-{index}",
                 artifact_id=artifact.artifact_id,
-                parser_run_id=run_id,
-                docling_item_ref=f"#/texts/{index}",
-                item_char_start=0,
-                item_char_end=len(text),
+                processing_run_id=run_id,
+                representation_anchor=RepresentationAnchor(
+                    product_id=representation_product_id,
+                    node_id=f"#/texts/{index}",
+                    char_start=0,
+                    char_end=len(text),
+                ),
                 content_sha256=sha256_bytes(text.encode("utf-8")),
                 source_locator=source_locator,
             ).model_dump(mode="json")
@@ -308,10 +320,13 @@ def _persist_docling_run(
             ContentSpan(
                 span_id=f"{run_id}-extra-span",
                 artifact_id=artifact.artifact_id,
-                parser_run_id=run_id,
-                docling_item_ref="#/texts/0",
-                item_char_start=1,
-                item_char_end=5,
+                processing_run_id=run_id,
+                representation_anchor=RepresentationAnchor(
+                    product_id=representation_product_id,
+                    node_id="#/texts/0",
+                    char_start=1,
+                    char_end=5,
+                ),
                 content_sha256=sha256_bytes(first_text[1:5].encode("utf-8")),
                 source_locator=PdfLocator(
                     page_number=extra_span_page,
@@ -324,18 +339,32 @@ def _persist_docling_run(
                 ),
             ).model_dump(mode="json")
         )
+    span_set = ContentSpanSet(
+        artifact_id=artifact.artifact_id,
+        processing_run_id=run_id,
+        representation_product_id=representation_product_id,
+        spans=tuple(ContentSpan.model_validate(span) for span in spans),
+    )
     spans_blob = store.put_blob(
-        json.dumps(spans, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        json.dumps(
+            span_set.model_dump(mode="json"),
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
     )
     configuration = {"input_format": source_artifact, "pipeline": "fixture"}
-    resolved_workflow_run_id = workflow_run_id or f"workflow-{run_id}"
-    run = ParserRun(
+    resolved_pipeline_run_id = pipeline_run_id or f"workflow-{run_id}"
+    run = ProcessingRun(
         run_id=run_id,
         artifact_id=artifact.artifact_id,
-        workflow_run_id=resolved_workflow_run_id,
+        pipeline_run_id=resolved_pipeline_run_id,
         repetition_group_id=repetition_group_id,
-        parser_name="docling",
-        parser_version="2.113.0",
+        stage_id="docling",
+        component=ComponentDescriptor(
+            component_id="docling",
+            component_version="2.113.0",
+            capability="document-conversion",
+        ),
         configuration=configuration,
         configuration_sha256=configuration_sha256(configuration),
         output_policy_snapshot=output_policy_snapshot or {},
@@ -351,17 +380,17 @@ def _persist_docling_run(
             wall_time_seconds=2.0,
             peak_memory_bytes=peak_memory_bytes,
         ),
-        output_hashes={
-            "docling_document": document_blob.sha256,
-            "content_spans": spans_blob.sha256,
-        },
-        output_locations={
-            "docling_document": document_blob.uri,
-            "content_spans": spans_blob.uri,
-        },
+        outputs=store.data_product_refs(
+            {
+                "docling_document": document_blob.sha256,
+                "content_spans": spans_blob.sha256,
+            },
+            producer_run_id=run_id,
+            source_artifact_ids=(artifact.artifact_id,),
+        ),
         completed_stages=("conversion", "validation", "span_generation"),
     )
-    store.save_parser_run(run)
+    store.save_processing_run(run)
     return run
 
 
@@ -384,9 +413,9 @@ def _persist_ocr_run(
     artifact: DocumentArtifact,
     *,
     run_id: str,
-    workflow_run_id: str,
+    pipeline_run_id: str,
     policy: dict[str, Any],
-) -> ParserRun:
+) -> ProcessingRun:
     config = policy["document_processing_config"]
     assert isinstance(config, dict)
     started_at = datetime(2025, 1, 1, tzinfo=UTC)
@@ -395,8 +424,8 @@ def _persist_ocr_run(
     digest = str(config["ocr_container_digest"])
     image = str(config["ocr_container_image"]).split("@", maxsplit=1)[0]
     attestation = RuntimeAttestation(
-        parser_name="ocrmypdf",
-        parser_version=str(config["ocrmypdf_version"]),
+        component_id="ocrmypdf",
+        component_version=str(config["ocrmypdf_version"]),
         invocation_id=invocation_id,
         source=RuntimeAttestationSource.DIGEST_ADDRESSED_OCI_INVOCATION,
         reporter_id="deepcritical-container-ocr-runner-v1",
@@ -419,13 +448,17 @@ def _persist_ocr_run(
             sort_keys=True,
         ).encode("utf-8")
     )
-    run = ParserRun(
+    run = ProcessingRun(
         run_id=run_id,
         artifact_id=artifact.artifact_id,
-        workflow_run_id=workflow_run_id,
-        parser_name="ocrmypdf",
-        parser_version=str(config["ocrmypdf_version"]),
-        parser_invocation_id=invocation_id,
+        pipeline_run_id=pipeline_run_id,
+        stage_id="ocr",
+        component=ComponentDescriptor(
+            component_id="ocrmypdf",
+            component_version=str(config["ocrmypdf_version"]),
+            capability="ocr",
+        ),
+        component_invocation_id=invocation_id,
         runtime_identity_required=True,
         component_versions=dict(attestation.component_versions),
         container_image=attestation.container_reference,
@@ -440,13 +473,16 @@ def _persist_ocr_run(
         output_policy_sha256=configuration_sha256(policy),
         started_at=started_at,
         finished_at=finished_at,
-        status=ParserRunStatus.COMPLETE,
+        status=ProcessingRunStatus.COMPLETE,
         resource_usage=ResourceUsage(wall_time_seconds=1.0, peak_memory_bytes=2048),
-        output_hashes={"runtime_attestation": attestation_blob.sha256},
-        output_locations={"runtime_attestation": attestation_blob.uri},
+        outputs=store.data_product_refs(
+            {"runtime_attestation": attestation_blob.sha256},
+            producer_run_id=run_id,
+            source_artifact_ids=(artifact.artifact_id,),
+        ),
         completed_stages=("ocr_conversion",),
     )
-    store.save_parser_run(run)
+    store.save_processing_run(run)
     return run
 
 
@@ -463,7 +499,7 @@ def test_persisted_policy_is_shared_when_conditional_ocr_stages_differ(
         run_id="born-digital",
         started_at=datetime(2025, 1, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="born-workflow",
+        pipeline_run_id="born-workflow",
         output_policy_snapshot=policy,
     )
     scanned = _persist_docling_run(
@@ -472,26 +508,26 @@ def test_persisted_policy_is_shared_when_conditional_ocr_stages_differ(
         run_id="scanned",
         started_at=datetime(2025, 1, 1, 0, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="scanned-workflow",
+        pipeline_run_id="scanned-workflow",
         output_policy_snapshot=policy,
     )
     _persist_ocr_run(
         store,
         artifact,
         run_id="scanned-ocr",
-        workflow_run_id="scanned-workflow",
+        pipeline_run_id="scanned-workflow",
         policy=policy,
     )
 
     assert (
         benchmark_module._workflow_pipeline_recipe(
-            store, artifact.artifact_id, born_digital.workflow_run_id, None
+            store, artifact.artifact_id, born_digital.pipeline_run_id, None
         )
         == policy
     )
     assert (
         benchmark_module._workflow_pipeline_recipe(
-            store, artifact.artifact_id, scanned.workflow_run_id, None
+            store, artifact.artifact_id, scanned.pipeline_run_id, None
         )
         == policy
     )
@@ -584,14 +620,14 @@ def test_baseline_runtime_provenance_rejects_missing_or_mismatched_identity(
         run_id="runtime-mismatch",
         started_at=datetime(2025, 1, 1, tzinfo=UTC),
         document=_docling_candidate_document(),
-        workflow_run_id="runtime-workflow",
+        pipeline_run_id="runtime-workflow",
         output_policy_snapshot=policy,
     )
 
     provenance = benchmark_module._workflow_runtime_provenance(
         store,
         artifact.artifact_id,
-        run.workflow_run_id,
+        run.pipeline_run_id,
         None,
         policy,
     )
@@ -615,13 +651,13 @@ def test_candidate_runtime_validation_recomputes_attestation_trust(
         store,
         artifact,
         run_id="candidate-runtime-ocr",
-        workflow_run_id="candidate-runtime-workflow",
+        pipeline_run_id="candidate-runtime-workflow",
         policy=policy,
     )
     provenance = benchmark_module._workflow_runtime_provenance(
         store,
         artifact.artifact_id,
-        run.workflow_run_id,
+        run.pipeline_run_id,
         None,
         policy,
     )
@@ -685,24 +721,33 @@ def test_candidate_runtime_validation_never_trusts_verified_flag(
     )
 
     assert issues
-    assert any("parser_run_id is missing" in issue for issue in issues)
-    assert any("parser_name is unsupported" in issue for issue in issues)
+    assert any("processing_run_id is missing" in issue for issue in issues)
+    assert any("component_id is unsupported" in issue for issue in issues)
 
 
 def _projected_content_spans_hash(
     store: ContentAddressedStore,
-    run: ParserRun,
+    run: ProcessingRun,
 ) -> str:
-    spans = json.loads(store.read_blob(run.output_hashes["content_spans"]))
+    span_set = json.loads(
+        store.read_blob(run.require_output("content_spans").blob_sha256)
+    )
+    spans = span_set["spans"]
     normalized_spans = [
         {
-            "docling_item_ref": span["docling_item_ref"],
-            "item_char_start": span["item_char_start"],
-            "item_char_end": span["item_char_end"],
+            "representation_node_id": span["representation_anchor"]["node_id"],
+            "representation_char_start": span["representation_anchor"]["char_start"],
+            "representation_char_end": span["representation_anchor"]["char_end"],
             "content_sha256": span["content_sha256"],
             "source_locator": span["source_locator"],
         }
-        for span in sorted(spans, key=lambda value: value["docling_item_ref"])
+        for span in sorted(
+            spans,
+            key=lambda value: (
+                value["representation_anchor"]["node_id"],
+                value["representation_anchor"]["char_start"],
+            ),
+        )
     ]
     return configuration_sha256(
         {
@@ -715,7 +760,7 @@ def _projected_content_spans_hash(
 def _persist_scholarly_overlay(
     store: ContentAddressedStore,
     artifact: DocumentArtifact,
-    docling_run: ParserRun,
+    docling_run: ProcessingRun,
     *,
     run_id: str = "alignment-run",
     reference_text: str = "Persisted scholarly bibliography entry",
@@ -724,7 +769,7 @@ def _persist_scholarly_overlay(
     grobid_peak_memory_bytes: int | None = 8192,
     alignment_peak_memory_bytes: int | None = 2048,
     grobid_artifact: DocumentArtifact | None = None,
-) -> ParserRun:
+) -> ProcessingRun:
     overlay = {
         "algorithm_version": "token-sequence-v2",
         "aligned_count": 1,
@@ -755,56 +800,72 @@ def _persist_scholarly_overlay(
         "coordinates": ["persName", "biblStruct"],
     }
     grobid_started_at = resolved_started_at - timedelta(seconds=30)
-    grobid_run = ParserRun(
+    grobid_run = ProcessingRun(
         run_id=f"grobid-{run_id}",
         artifact_id=resolved_grobid_artifact.artifact_id,
-        workflow_run_id=docling_run.workflow_run_id,
+        pipeline_run_id=docling_run.pipeline_run_id,
         repetition_group_id=docling_run.repetition_group_id,
-        parser_name="grobid",
-        parser_version="0.9.0",
+        stage_id="grobid",
+        component=ComponentDescriptor(
+            component_id="grobid",
+            component_version="0.9.0",
+            capability="scholarly-metadata-extraction",
+        ),
         configuration=grobid_configuration,
         configuration_sha256=configuration_sha256(grobid_configuration),
         started_at=grobid_started_at,
         finished_at=grobid_started_at + timedelta(seconds=3),
-        status=ParserRunStatus.COMPLETE,
+        status=ProcessingRunStatus.COMPLETE,
         resource_usage=ResourceUsage(
             wall_time_seconds=3.0,
             peak_memory_bytes=grobid_peak_memory_bytes,
         ),
-        output_hashes={"grobid_tei": tei_blob.sha256},
-        output_locations={"grobid_tei": tei_blob.uri},
+        outputs=store.data_product_refs(
+            {"grobid_tei": tei_blob.sha256},
+            producer_run_id=f"grobid-{run_id}",
+            source_artifact_ids=(resolved_grobid_artifact.artifact_id,),
+        ),
         completed_stages=("fulltext_tei", "usability_validation"),
     )
-    store.save_parser_run(grobid_run)
+    store.save_processing_run(grobid_run)
 
     configuration: dict[str, Any] = {
         "algorithm": "token-sequence-v2",
-        "docling_document_sha256": docling_run.output_hashes["docling_document"],
+        "docling_document_sha256": docling_run.require_output(
+            "docling_document"
+        ).blob_sha256,
         "grobid_tei_sha256": tei_blob.sha256,
     }
     if minimum_score is not None:
         configuration["minimum_score"] = minimum_score
-    run = ParserRun(
+    run = ProcessingRun(
         run_id=run_id,
         artifact_id=artifact.artifact_id,
-        workflow_run_id=docling_run.workflow_run_id,
+        pipeline_run_id=docling_run.pipeline_run_id,
         repetition_group_id=docling_run.repetition_group_id,
-        parser_name="docling-grobid-aligner",
-        parser_version="2",
+        stage_id="scholarly-alignment",
+        component=ComponentDescriptor(
+            component_id="docling-grobid-aligner",
+            component_version="2",
+            capability="scholarly-alignment",
+        ),
         configuration=configuration,
         configuration_sha256=configuration_sha256(configuration),
         started_at=resolved_started_at,
         finished_at=resolved_started_at + timedelta(seconds=1),
-        status=ParserRunStatus.COMPLETE,
+        status=ProcessingRunStatus.COMPLETE,
         resource_usage=ResourceUsage(
             wall_time_seconds=1.0,
             peak_memory_bytes=alignment_peak_memory_bytes,
         ),
-        output_hashes={"alignment_overlay": overlay_blob.sha256},
-        output_locations={"alignment_overlay": overlay_blob.uri},
+        outputs=store.data_product_refs(
+            {"alignment_overlay": overlay_blob.sha256},
+            producer_run_id=run_id,
+            source_artifact_ids=(artifact.artifact_id,),
+        ),
         completed_stages=("tei_extraction", "alignment", "unaligned_marking"),
     )
-    store.save_parser_run(run)
+    store.save_processing_run(run)
     return run
 
 
@@ -974,7 +1035,7 @@ def test_baseline_benchmark_recomputes_runtime_identity_instead_of_verified_flag
 
     document_violations = report["documents"][0]["violations"]
     assert any(
-        "parser_run_id is missing" in violation for violation in document_violations
+        "processing_run_id is missing" in violation for violation in document_violations
     )
 
 
@@ -1214,7 +1275,10 @@ def test_observation_generation_selects_static_output_policy_hash(
 
     assert payload["selection"]["output_policy_hash"] == first_policy_hash
     assert payload["selection"]["configuration_hash"] is None
-    assert payload["observations"][0]["provenance"]["parser_run_id"] == first_run.run_id
+    assert (
+        payload["observations"][0]["provenance"]["processing_run_id"]
+        == first_run.run_id
+    )
     with pytest.raises(BenchmarkError, match="mutually exclusive"):
         generate_candidate_observations(
             manifest_path,
@@ -1222,7 +1286,7 @@ def test_observation_generation_selects_static_output_policy_hash(
             configuration_hash=first_run.configuration_sha256,
             output_policy_hash=first_policy_hash,
         )
-    with pytest.raises(BenchmarkError, match="has no 'docling' parser run"):
+    with pytest.raises(BenchmarkError, match="has no 'docling' processing run"):
         generate_candidate_observations(
             manifest_path,
             store.root,
@@ -1259,7 +1323,7 @@ def test_enforced_generation_rejects_unmeasured_parser_resources(
         lambda *args, **kwargs: {
             "schema": "deepcritical-benchmark-runtime-provenance-v1",
             "verified": True,
-            "stages": [{"parser_name": "docling"}],
+            "stages": [{"component_id": "docling"}],
             "issues": [],
         },
     )
@@ -1285,7 +1349,7 @@ def test_generates_deterministic_observations_from_persisted_cas(
         run_id="docling-run-1",
         started_at=first_started,
         document=document,
-        workflow_run_id="workflow-repeat-1",
+        pipeline_run_id="workflow-repeat-1",
         repetition_group_id="repeat-group",
     )
     latest_run = _persist_docling_run(
@@ -1294,7 +1358,7 @@ def test_generates_deterministic_observations_from_persisted_cas(
         run_id="docling-run-2",
         started_at=first_started + timedelta(minutes=1),
         document=document,
-        workflow_run_id="workflow-repeat-2",
+        pipeline_run_id="workflow-repeat-2",
         repetition_group_id="repeat-group",
     )
 
@@ -1349,7 +1413,9 @@ def test_generates_deterministic_observations_from_persisted_cas(
     expected_content_hash = configuration_sha256(
         {
             "schema": "deepcritical-benchmark-projected-content-v1",
-            "docling_document_sha256": latest_run.output_hashes["docling_document"],
+            "docling_document_sha256": latest_run.require_output(
+                "docling_document"
+            ).blob_sha256,
             "projected_content_spans_sha256": _projected_content_spans_hash(
                 store,
                 latest_run,
@@ -1376,7 +1442,7 @@ def test_repeat_hashes_include_all_locator_spans_not_only_representative(
         run_id="docling-run-1",
         started_at=datetime(2025, 1, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="workflow-repeat-1",
+        pipeline_run_id="workflow-repeat-1",
         repetition_group_id="repeat-group",
         extra_span_page=2,
     )
@@ -1387,7 +1453,7 @@ def test_repeat_hashes_include_all_locator_spans_not_only_representative(
         started_at=datetime(2025, 1, 1, 0, 1, tzinfo=UTC),
         document=document,
         extra_span_page=3,
-        workflow_run_id="workflow-repeat-2",
+        pipeline_run_id="workflow-repeat-2",
         repetition_group_id="repeat-group",
     )
 
@@ -1399,7 +1465,7 @@ def test_repeat_hashes_include_all_locator_spans_not_only_representative(
     assert len(set(observation["output_hashes"])) == 2
     assert observation["provenance"]["determinism"] == {
         "status": "measured",
-        "workflow_run_ids": ["workflow-repeat-2", "workflow-repeat-1"],
+        "pipeline_run_ids": ["workflow-repeat-2", "workflow-repeat-1"],
         "repetition_group_id": "repeat-group",
     }
 
@@ -1414,7 +1480,7 @@ def test_repeat_hashes_reject_a_corrupt_persisted_component(tmp_path: Path) -> N
         run_id="docling-run-1",
         started_at=datetime(2025, 1, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="workflow-repeat-1",
+        pipeline_run_id="workflow-repeat-1",
         repetition_group_id="repeat-group",
     )
     _persist_docling_run(
@@ -1423,10 +1489,12 @@ def test_repeat_hashes_reject_a_corrupt_persisted_component(tmp_path: Path) -> N
         run_id="docling-run-2",
         started_at=datetime(2025, 1, 1, 0, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="workflow-repeat-2",
+        pipeline_run_id="workflow-repeat-2",
         repetition_group_id="repeat-group",
     )
-    store.blob_path(first_run.output_hashes["content_spans"]).write_bytes(b"corrupt")
+    store.blob_path(first_run.require_output("content_spans").blob_sha256).write_bytes(
+        b"corrupt"
+    )
 
     with pytest.raises(BenchmarkError, match=r"stored blob .* hashes to"):
         generate_candidate_observations(manifest_path, store.root)
@@ -1458,7 +1526,7 @@ def test_generation_uses_persisted_grobid_bibliography_without_inference(
     assert "doi" not in observation["references"][0]
     assert "pmid" not in observation["references"][0]
     assert observation["provenance"]["reference_source"] == ("grobid_alignment_overlay")
-    assert observation["provenance"]["scholarly_overlay"]["parser_run_id"] == (
+    assert observation["provenance"]["scholarly_overlay"]["processing_run_id"] == (
         "alignment-run"
     )
 
@@ -1503,7 +1571,7 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
         minimum_score=0.72,
         alignment_peak_memory_bytes=32768,
     )
-    selected_grobid = store.get_parser_run("grobid-alignment-repeat-2")
+    selected_grobid = store.get_processing_run("grobid-alignment-repeat-2")
 
     payload = generate_candidate_observations(manifest_path, store.root)
     observation = payload["observations"][0]
@@ -1511,14 +1579,14 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
     _legacy_identity_components = {
         "schema": "deepcritical-benchmark-parser-composition-v1",
         "primary": {
-            "parser_name": docling_run.parser_name,
-            "parser_version": docling_run.parser_version,
+            "component_id": docling_run.component_id,
+            "component_version": docling_run.component_version,
             "configuration_sha256": docling_run.configuration_sha256,
         },
         "derivations": [],
         "grobid": {
-            "parser_name": selected_grobid.parser_name,
-            "parser_version": selected_grobid.parser_version,
+            "component_id": selected_grobid.component_id,
+            "component_version": selected_grobid.component_version,
             "configuration_sha256": configuration_sha256(
                 {
                     "expected_grobid_version": "0.9.0",
@@ -1527,8 +1595,8 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
             ),
         },
         "scholarly_alignment": {
-            "parser_name": selected_alignment.parser_name,
-            "parser_version": selected_alignment.parser_version,
+            "component_id": selected_alignment.component_id,
+            "component_version": selected_alignment.component_version,
             "configuration_sha256": configuration_sha256(
                 {
                     "algorithm": "token-sequence-v1",
@@ -1540,27 +1608,31 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
     expected_content_hash = configuration_sha256(
         {
             "schema": "deepcritical-benchmark-projected-content-v1",
-            "docling_document_sha256": docling_run.output_hashes["docling_document"],
+            "docling_document_sha256": docling_run.require_output(
+                "docling_document"
+            ).blob_sha256,
             "projected_content_spans_sha256": _projected_content_spans_hash(
                 store,
                 docling_run,
             ),
-            "scholarly_alignment_sha256": selected_alignment.output_hashes[
+            "scholarly_alignment_sha256": selected_alignment.require_output(
                 "alignment_overlay"
-            ],
+            ).blob_sha256,
         }
     )
     excluded_configuration_hash = configuration_sha256(
         {
             "schema": "deepcritical-benchmark-projected-content-v1",
-            "docling_document_sha256": docling_run.output_hashes["docling_document"],
+            "docling_document_sha256": docling_run.require_output(
+                "docling_document"
+            ).blob_sha256,
             "projected_content_spans_sha256": _projected_content_spans_hash(
                 store,
                 docling_run,
             ),
-            "scholarly_alignment_sha256": different_configuration.output_hashes[
+            "scholarly_alignment_sha256": different_configuration.require_output(
                 "alignment_overlay"
-            ],
+            ).blob_sha256,
         }
     )
 
@@ -1579,9 +1651,9 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
     assert observation["output_hashes"] == [expected_content_hash]
     assert excluded_configuration_hash not in observation["output_hashes"]
     scholarly_provenance = observation["provenance"]["scholarly_overlay"]
-    assert scholarly_provenance["parser_run_id"] == selected_alignment.run_id
-    assert scholarly_provenance["workflow_run_id"] == docling_run.workflow_run_id
-    assert scholarly_provenance["grobid_parser_run"]["parser_run_id"] == (
+    assert scholarly_provenance["processing_run_id"] == selected_alignment.run_id
+    assert scholarly_provenance["pipeline_run_id"] == docling_run.pipeline_run_id
+    assert scholarly_provenance["grobid_processing_run"]["processing_run_id"] == (
         selected_grobid.run_id
     )
     assert observation["provenance"]["candidate_parser_composition"]["schema"] == (
@@ -1594,13 +1666,13 @@ def test_generation_pins_composite_alignment_identity_and_repeat_hashes(
     assert (
         accounting["peak_memory_bytes_method"] == "max_heavy_parser_stage_peak_memory"
     )
-    assert accounting["parser_run_ids"][0] == docling_run.run_id
-    assert accounting["parser_run_ids"][-1] == selected_alignment.run_id
+    assert accounting["processing_run_ids"][0] == docling_run.run_id
+    assert accounting["processing_run_ids"][-1] == selected_alignment.run_id
     assert selected_alignment.run_id not in accounting["memory_required_run_ids"]
     assert accounting["memory_excluded_runs"] == [
         {
-            "parser_run_id": selected_alignment.run_id,
-            "parser_name": "docling-grobid-aligner",
+            "processing_run_id": selected_alignment.run_id,
+            "component_id": "docling-grobid-aligner",
             "reason": "not_an_isolated_heavy_parser_invocation",
         }
     ]
@@ -1653,23 +1725,27 @@ def test_composite_resolves_ocr_derivative_grobid_lineage(tmp_path: Path) -> Non
         "expected_grobid_version": "0.9.0",
         "coordinates": ["persName", "biblStruct"],
     }
-    original_grobid_run = ParserRun(
+    original_grobid_run = ProcessingRun(
         run_id="grobid-original-failed",
         artifact_id=artifact.artifact_id,
-        workflow_run_id=docling_run.workflow_run_id,
+        pipeline_run_id=docling_run.pipeline_run_id,
         repetition_group_id=docling_run.repetition_group_id,
-        parser_name="grobid",
-        parser_version="0.9.0",
+        stage_id="grobid-original",
+        component=ComponentDescriptor(
+            component_id="grobid",
+            component_version="0.9.0",
+            capability="scholarly-metadata-extraction",
+        ),
         configuration=original_grobid_configuration,
         configuration_sha256=configuration_sha256(original_grobid_configuration),
         started_at=datetime(2025, 1, 1, 0, 1, tzinfo=UTC),
         finished_at=datetime(2025, 1, 1, 0, 1, 2, tzinfo=UTC),
-        status=ParserRunStatus.FAILED,
+        status=ProcessingRunStatus.FAILED,
         resource_usage=ResourceUsage(wall_time_seconds=2.0, peak_memory_bytes=12288),
         warnings=("GROBID input has insufficient text",),
         completed_stages=("fulltext_tei",),
     )
-    store.save_parser_run(original_grobid_run)
+    store.save_processing_run(original_grobid_run)
     ocr_pdf = store.put_blob(b"%PDF searchable OCR derivative")
     ocr_configuration = {
         "input_sha256": artifact.source_sha256,
@@ -1677,27 +1753,34 @@ def test_composite_resolves_ocr_derivative_grobid_lineage(tmp_path: Path) -> Non
         "languages": ["eng"],
     }
     ocr_started_at = datetime(2025, 1, 1, 0, 2, tzinfo=UTC)
-    ocr_run = ParserRun(
+    ocr_run = ProcessingRun(
         run_id="ocr-run",
         artifact_id=artifact.artifact_id,
-        workflow_run_id=docling_run.workflow_run_id,
+        pipeline_run_id=docling_run.pipeline_run_id,
         repetition_group_id=docling_run.repetition_group_id,
-        parser_name="ocrmypdf",
-        parser_version="17.4.1",
+        stage_id="ocr",
+        component=ComponentDescriptor(
+            component_id="ocrmypdf",
+            component_version="17.4.1",
+            capability="ocr",
+        ),
         configuration=ocr_configuration,
         configuration_sha256=configuration_sha256(ocr_configuration),
         started_at=ocr_started_at,
         finished_at=ocr_started_at + timedelta(seconds=4),
-        status=ParserRunStatus.COMPLETE,
+        status=ProcessingRunStatus.COMPLETE,
         resource_usage=ResourceUsage(
             wall_time_seconds=4.0,
             peak_memory_bytes=16384,
         ),
-        output_hashes={"ocr_pdf": ocr_pdf.sha256},
-        output_locations={"ocr_pdf": ocr_pdf.uri},
+        outputs=store.data_product_refs(
+            {"searchable_pdf": ocr_pdf.sha256},
+            producer_run_id="ocr-run",
+            source_artifact_ids=(artifact.artifact_id,),
+        ),
         completed_stages=("ocr", "searchable_pdf_validation"),
     )
-    store.save_parser_run(ocr_run)
+    store.save_processing_run(ocr_run)
     derivative = DocumentArtifact(
         artifact_id="artifact-PMC1-ocr-derivative",
         source_sha256=ocr_pdf.sha256,
@@ -1721,7 +1804,7 @@ def test_composite_resolves_ocr_derivative_grobid_lineage(tmp_path: Path) -> Non
         started_at=datetime(2025, 1, 1, 0, 3, tzinfo=UTC),
         grobid_artifact=derivative,
     )
-    grobid_run = store.get_parser_run("grobid-alignment-ocr")
+    grobid_run = store.get_processing_run("grobid-alignment-ocr")
 
     payload = generate_candidate_observations(manifest_path, store.root)
     observation = payload["observations"][0]
@@ -1734,18 +1817,18 @@ def test_composite_resolves_ocr_derivative_grobid_lineage(tmp_path: Path) -> Non
     assert observation["elapsed_seconds"] == 12.0
     assert observation["peak_memory_bytes"] == 16384
     scholarly = observation["provenance"]["scholarly_overlay"]
-    assert scholarly["grobid_parser_run"]["artifact_id"] == derivative.artifact_id
-    assert scholarly["derivation_parser_runs"] == [
+    assert scholarly["grobid_processing_run"]["artifact_id"] == derivative.artifact_id
+    assert scholarly["derivation_processing_runs"] == [
         {
-            "parser_run_id": ocr_run.run_id,
-            "workflow_run_id": ocr_run.workflow_run_id,
+            "processing_run_id": ocr_run.run_id,
+            "pipeline_run_id": ocr_run.pipeline_run_id,
             "repetition_group_id": ocr_run.repetition_group_id,
-            "parser_name": ocr_run.parser_name,
-            "parser_version": ocr_run.parser_version,
+            "component_id": ocr_run.component_id,
+            "component_version": ocr_run.component_version,
             "configuration_sha256": ocr_run.configuration_sha256,
         }
     ]
-    assert observation["provenance"]["resource_accounting"]["parser_run_ids"] == [
+    assert observation["provenance"]["resource_accounting"]["processing_run_ids"] == [
         docling_run.run_id,
         original_grobid_run.run_id,
         ocr_run.run_id,
@@ -1771,9 +1854,9 @@ def test_generation_preserves_partial_items_with_unresolved_captions(
         run_id="partial-docling-run",
         started_at=datetime(2025, 1, 1, tzinfo=UTC),
         document=document,
-        workflow_run_id="workflow-repeat-2",
+        pipeline_run_id="workflow-repeat-2",
         repetition_group_id="repeat-group",
-        status=ParserRunStatus.PARTIAL,
+        status=ProcessingRunStatus.PARTIAL,
     )
 
     payload = generate_candidate_observations(manifest_path, store.root)
@@ -1842,20 +1925,24 @@ def test_generation_preserves_explicit_quarantine_without_empty_success(
     store, artifact = _persist_artifact(tmp_path, manifest_path)
     started_at = datetime(2025, 1, 1, tzinfo=UTC)
     configuration = {"policy": "bounded-input-v1"}
-    run = ParserRun(
+    run = ProcessingRun(
         run_id="preflight-quarantine",
         artifact_id=artifact.artifact_id,
-        parser_name="document-preflight",
-        parser_version="1",
+        stage_id="preflight",
+        component=ComponentDescriptor(
+            component_id="document-preflight",
+            component_version="1",
+            capability="document-preflight",
+        ),
         configuration=configuration,
         configuration_sha256=configuration_sha256(configuration),
         started_at=started_at,
         finished_at=started_at,
-        status=ParserRunStatus.QUARANTINED,
+        status=ProcessingRunStatus.QUARANTINED,
         warnings=("encrypted source",),
         completed_stages=("bounded_input_inspection", "policy_decision"),
     )
-    store.save_parser_run(run)
+    store.save_processing_run(run)
 
     payload = generate_candidate_observations(manifest_path, store.root)
     observation = payload["observations"][0]

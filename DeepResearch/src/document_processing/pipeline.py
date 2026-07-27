@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import mimetypes
-import os
-import stat
 import time
 import uuid
 from contextvars import ContextVar
@@ -36,18 +34,21 @@ from .clients import (
 from .models import (
     ArtifactLocationRole,
     ArtifactRelationship,
+    ComponentDescriptor,
+    ContentSpanSet,
+    DataProductRef,
     DiagnosticSeverity,
     DocumentArtifact,
-    ExternalTaskCheckpoint,
+    ExecutionCheckpoint,
     IntakeQuarantineRecord,
     LicenseMetadata,
     MemoryMeasurement,
     MemoryMeasurementStatus,
     OciDigest,
-    ParseDiagnostic,
-    ParserRun,
-    ParserRunDiagnosticManifest,
-    ParserRunStatus,
+    ProcessingDiagnostic,
+    ProcessingRun,
+    ProcessingRunDiagnosticManifest,
+    ProcessingRunStatus,
     RemediationStatus,
     ResourceUsage,
     RuntimeAttestation,
@@ -63,10 +64,13 @@ from .preflight import (
     PreflightDiagnosticCode,
     PreflightLimits,
     PreflightResult,
+    SourceSnapshotError,
     preflight_bytes,
     preflight_stream,
     too_large_result,
+    verified_open_path,
 )
+from .products import product_id_for
 from .routing import DocumentRouter, InputFormat, ProcessingStage
 from .storage import (
     BlobTooLargeError,
@@ -96,6 +100,31 @@ def _default_docling_options() -> dict[str, Any]:
         "do_ocr": True,
         "table_mode": "accurate",
     }
+
+
+_COMPONENT_CAPABILITIES = {
+    "document-preflight": "document.preflight",
+    "document-router": "document.route",
+    "document-fallback-policy": "document.route",
+    "jats-locator-adapter": "document.adapt",
+    "bioc-adapter": "document.adapt",
+    "docling": "document.parse",
+    "grobid": "document.parse.scholarly",
+    "ocrmypdf": "document.ocr",
+    "docling-grobid-aligner": "document.align",
+    "docling-content-integrity": "document.validate",
+}
+
+
+def _component_descriptor(
+    component_id: str,
+    component_version: str,
+) -> ComponentDescriptor:
+    return ComponentDescriptor(
+        component_id=component_id,
+        component_version=component_version,
+        capability=_COMPONENT_CAPABILITIES.get(component_id, "document.process"),
+    )
 
 
 class DocumentProcessingConfig(BaseModel):
@@ -185,40 +214,6 @@ class ArtifactMetadataConflictError(ValueError):
     """An immutable artifact identity was reused with conflicting metadata."""
 
 
-class _SourceSnapshotError(RuntimeError):
-    """An intake path could not yield one stable descriptor snapshot."""
-
-    def __init__(self, result: PreflightResult) -> None:
-        super().__init__(result.diagnostics[0].message)
-        self.result = result
-
-
-def _source_snapshot_signature(value: os.stat_result) -> tuple[int, ...]:
-    return (
-        value.st_dev,
-        value.st_ino,
-        value.st_mode,
-        value.st_size,
-        value.st_mtime_ns,
-        value.st_ctime_ns,
-    )
-
-
-def _source_path_descriptor_signature(value: os.stat_result) -> tuple[int, ...]:
-    """Return metadata comparable between a path stat and descriptor stat.
-
-    Windows can report creation time through ``lstat().st_ctime_ns`` while
-    ``fstat().st_ctime_ns`` reflects the most recent metadata change for the same
-    file. That API-level disagreement is reproducible after an existing file is
-    rewritten and is not evidence of a path swap. File identity, type, size, and
-    modification time remain compared here; descriptor-to-descriptor validation
-    below retains the full signature, including change time.
-    """
-
-    signature = _source_snapshot_signature(value)
-    return signature[:-1] if os.name == "nt" else signature
-
-
 def _source_snapshot_failure(
     code: PreflightDiagnosticCode,
     message: str,
@@ -259,12 +254,12 @@ class SourcePreflightError(ValueError):
         self.quarantine_record = quarantine_record
 
 
-class ParserRunCommitIncompleteError(RuntimeError):
-    """A durable parser run still needs its diagnostic manifest reconciled."""
+class ProcessingRunCommitIncompleteError(RuntimeError):
+    """A durable processing run still needs its diagnostic manifest reconciled."""
 
     def __init__(self, run_id: str) -> None:
         super().__init__(
-            f"parser run {run_id} is durable but diagnostic reconciliation is incomplete"
+            f"processing run {run_id} is durable but diagnostic reconciliation is incomplete"
         )
         self.run_id = run_id
 
@@ -272,11 +267,11 @@ class ParserRunCommitIncompleteError(RuntimeError):
 @dataclass(frozen=True, slots=True)
 class DocumentProcessingResult:
     artifact: DocumentArtifact
-    status: ParserRunStatus
+    status: ProcessingRunStatus
     route: tuple[str, ...]
-    parser_runs: tuple[ParserRun, ...]
-    diagnostics: tuple[ParseDiagnostic, ...]
-    canonical_document_sha256: str | None = None
+    processing_runs: tuple[ProcessingRun, ...]
+    diagnostics: tuple[ProcessingDiagnostic, ...]
+    docling_document_sha256: str | None = None
     grobid_tei_sha256: str | None = None
     alignment_sha256: str | None = None
     content_integrity_sha256: str | None = None
@@ -286,7 +281,7 @@ class DocumentProcessingResult:
 
 @dataclass(frozen=True, slots=True)
 class _DoclingStage:
-    run: ParserRun
+    run: ProcessingRun
     document: dict[str, Any]
     report: DoclingQualityReport
     content_span_count: int
@@ -294,32 +289,32 @@ class _DoclingStage:
 
 @dataclass(frozen=True, slots=True)
 class _GrobidStage:
-    run: ParserRun
+    run: ProcessingRun
     tei_xml: bytes | None
     usable: bool
 
 
 @dataclass(frozen=True, slots=True)
 class _OCRStage:
-    run: ParserRun
+    run: ProcessingRun
     derivative: DocumentArtifact | None
 
 
 @dataclass(frozen=True, slots=True)
-class _WorkflowContext:
-    workflow_run_id: str
+class _PipelineContext:
+    pipeline_run_id: str
     repetition_group_id: str | None
-    workflow_attempt_id: str | None
+    pipeline_attempt_id: str | None
     force_reprocess: bool
 
 
-_WORKFLOW_CONTEXT: ContextVar[_WorkflowContext | None] = ContextVar(
-    "document_processing_workflow_context",
+_PIPELINE_CONTEXT: ContextVar[_PipelineContext | None] = ContextVar(
+    "document_processing_pipeline_context",
     default=None,
 )
 
 
-# This contract is intentionally broader than an individual ParserRun's
+# This contract is intentionally broader than an individual ProcessingRun's
 # ``configuration``. Individual configurations contain immutable input hashes
 # and explain which conditional branch actually ran. The policy snapshot is the
 # static contract used to judge whether two workflows were comparable.
@@ -419,47 +414,12 @@ class DocumentProcessor:
             PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
         }
         try:
-            path_stat = source.lstat()
-            if stat.S_ISLNK(path_stat.st_mode):
-                if not self.config.allow_source_symlinks:
-                    raise _SourceSnapshotError(
-                        _source_snapshot_failure(
-                            PreflightDiagnosticCode.SOURCE_SYMLINK_NOT_ALLOWED,
-                            "Symbolic-link sources are disabled by preflight policy.",
-                            source,
-                            byte_size=path_stat.st_size,
-                        )
-                    )
-                path_stat = source.stat()
-            if not stat.S_ISREG(path_stat.st_mode):
-                raise _SourceSnapshotError(
-                    _source_snapshot_failure(
-                        PreflightDiagnosticCode.SOURCE_NOT_REGULAR_FILE,
-                        "Source is not a regular file.",
-                        source,
-                        byte_size=path_stat.st_size,
-                    )
-                )
-            flags = os.O_RDONLY | getattr(os, "O_BINARY", 0)
-            if not self.config.allow_source_symlinks:
-                flags |= getattr(os, "O_NOFOLLOW", 0)
-            descriptor = os.open(source, flags)
-            with os.fdopen(descriptor, "rb") as source_stream:
-                opened_stat = os.fstat(source_stream.fileno())
-                if (
-                    not stat.S_ISREG(opened_stat.st_mode)
-                    or not os.path.samestat(path_stat, opened_stat)
-                    or _source_path_descriptor_signature(path_stat)
-                    != _source_path_descriptor_signature(opened_stat)
-                ):
-                    raise _SourceSnapshotError(
-                        _source_snapshot_failure(
-                            PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
-                            "Source identity changed while opening the intake snapshot.",
-                            source,
-                            byte_size=opened_stat.st_size,
-                        )
-                    )
+            with verified_open_path(
+                source,
+                limits=self._preflight_limits(),
+            ) as verified:
+                source_stream = verified.stream
+                opened_stat = verified.opened_stat
                 preflight = (
                     preflight_stream(
                         source_stream,
@@ -478,7 +438,7 @@ class DocumentProcessor:
                         for item in preflight.diagnostics
                     )
                 ):
-                    raise _SourceSnapshotError(preflight)
+                    raise SourceSnapshotError(preflight)
                 source_stream.seek(0)
                 read_limit = (
                     self.config.max_source_bytes + 1
@@ -493,18 +453,6 @@ class DocumentProcessor:
                     raise BlobTooLargeError(
                         max_bytes=self.config.max_source_bytes,
                         observed_bytes=len(content),
-                    )
-                final_stat = os.fstat(source_stream.fileno())
-                if _source_snapshot_signature(
-                    opened_stat
-                ) != _source_snapshot_signature(final_stat):
-                    raise _SourceSnapshotError(
-                        _source_snapshot_failure(
-                            PreflightDiagnosticCode.SOURCE_SNAPSHOT_CHANGED,
-                            "Source changed while its intake snapshot was being read.",
-                            source,
-                            byte_size=final_stat.st_size,
-                        )
                     )
             blob = self.store.put_blob(
                 content,
@@ -528,7 +476,7 @@ class DocumentProcessor:
                 result=result,
             )
             raise SourcePreflightError(result, quarantine) from exc
-        except _SourceSnapshotError as exc:
+        except SourceSnapshotError as exc:
             quarantine = self._record_intake_quarantine(
                 source,
                 acquisition_uri=resolved_acquisition_uri,
@@ -751,50 +699,99 @@ class DocumentProcessor:
             "limits": self._preflight_limits().model_dump(mode="json"),
         }
 
+    def _source_data_products(
+        self, artifact: DocumentArtifact
+    ) -> tuple[DataProductRef, ...]:
+        """Resolve the exact product that created a derivative source blob."""
+
+        producer_run_id = artifact.raw_location.created_by_run_id
+        if producer_run_id is None:
+            return ()
+        producer = self.store.get_processing_run(producer_run_id)
+        products = tuple(
+            product
+            for product in producer.outputs
+            if product.blob_sha256 == artifact.source_sha256
+        )
+        if len(products) != 1:
+            raise ValueError(
+                f"derivative artifact {artifact.artifact_id!r} must resolve to "
+                "exactly one producer output"
+            )
+        return products
+
+    @staticmethod
+    def _source_artifact_ids(
+        artifact: DocumentArtifact,
+        inputs: tuple[DataProductRef, ...],
+    ) -> tuple[str, ...]:
+        """Preserve direct and inherited artifact lineage in stable order."""
+
+        return tuple(
+            dict.fromkeys(
+                (
+                    artifact.artifact_id,
+                    *(
+                        source_artifact_id
+                        for product in inputs
+                        for source_artifact_id in product.source_artifact_ids
+                    ),
+                )
+            )
+        )
+
     def _record_preflight(
         self, artifact: DocumentArtifact, result: PreflightResult
-    ) -> tuple[ParserRun, PreflightResult]:
+    ) -> tuple[ProcessingRun, PreflightResult]:
         configuration = self._preflight_configuration(artifact)
         config_hash = configuration_sha256(configuration)
-        previous = self.store.list_parser_runs(
+        previous = self.store.list_processing_runs(
             artifact_id=artifact.artifact_id,
-            parser_name="document-preflight",
+            component_id="document-preflight",
             configuration_sha256=config_hash,
         )
         reusable = self._select_reusable_run(
             previous,
-            statuses=frozenset({ParserRunStatus.COMPLETE, ParserRunStatus.QUARANTINED}),
+            statuses=frozenset(
+                {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.QUARANTINED}
+            ),
             required_outputs=("preflight_result",),
         )
         if reusable is not None:
             run = reusable
             self._reconcile_run_diagnostics(artifact, run)
             persisted = PreflightResult.model_validate_json(
-                self.store.read_blob(run.output_hashes["preflight_result"])
+                self.store.read_blob(run.require_output("preflight_result").blob_sha256)
             )
             return run, persisted
 
         payload = _canonical_json_bytes(result.model_dump(mode="json"))
         output = self.store.put_blob(payload)
         now = utc_now()
-        run = ParserRun(
-            run_id=_run_id(),
+        run_id = _run_id()
+        inputs = self._source_data_products(artifact)
+        run = ProcessingRun(
+            run_id=run_id,
             artifact_id=artifact.artifact_id,
-            parser_name="document-preflight",
-            parser_version="1",
+            stage_id="document-preflight",
+            component=_component_descriptor("document-preflight", "1"),
             configuration=configuration,
             configuration_sha256=config_hash,
             started_at=now,
             finished_at=now,
             status=(
-                ParserRunStatus.COMPLETE
+                ProcessingRunStatus.COMPLETE
                 if result.may_proceed
-                else ParserRunStatus.QUARANTINED
+                else ProcessingRunStatus.QUARANTINED
             ),
             resource_usage=ResourceUsage(input_bytes=result.byte_size),
             warnings=tuple(item.message for item in result.diagnostics),
-            output_hashes={"preflight_result": output.sha256},
-            output_locations={"preflight_result": output.uri},
+            inputs=inputs,
+            outputs=self.store.data_product_refs(
+                {"preflight_result": output.sha256},
+                producer_run_id=run_id,
+                source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+            ),
             completed_stages=("bounded_input_inspection", "policy_decision"),
         )
         diagnostics = tuple(
@@ -809,27 +806,29 @@ class DocumentProcessor:
             )
             for item in result.diagnostics
         )
-        return self._commit_parser_run(artifact, run, diagnostics), result
+        return self._commit_processing_run(artifact, run, diagnostics), result
 
     def _load_or_run_preflight(
         self, artifact: DocumentArtifact
-    ) -> tuple[ParserRun, PreflightResult]:
+    ) -> tuple[ProcessingRun, PreflightResult]:
         configuration = self._preflight_configuration(artifact)
-        runs = self.store.list_parser_runs(
+        runs = self.store.list_processing_runs(
             artifact_id=artifact.artifact_id,
-            parser_name="document-preflight",
+            component_id="document-preflight",
             configuration_sha256=configuration_sha256(configuration),
         )
         reusable = self._select_reusable_run(
             runs,
-            statuses=frozenset({ParserRunStatus.COMPLETE, ParserRunStatus.QUARANTINED}),
+            statuses=frozenset(
+                {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.QUARANTINED}
+            ),
             required_outputs=("preflight_result",),
         )
         if reusable is not None:
             run = reusable
             self._reconcile_run_diagnostics(artifact, run)
             result = PreflightResult.model_validate_json(
-                self.store.read_blob(run.output_hashes["preflight_result"])
+                self.store.read_blob(run.require_output("preflight_result").blob_sha256)
             )
             return run, result
 
@@ -864,7 +863,7 @@ class DocumentProcessor:
         *,
         force_reprocess: bool = False,
         repetition_group_id: str | None = None,
-        workflow_attempt_id: str | None = None,
+        pipeline_attempt_id: str | None = None,
         **ingest_kwargs: Any,
     ) -> DocumentProcessingResult:
         artifact = self.ingest_path(path, **ingest_kwargs)
@@ -872,7 +871,7 @@ class DocumentProcessor:
             artifact.artifact_id,
             force_reprocess=force_reprocess,
             repetition_group_id=repetition_group_id,
-            workflow_attempt_id=workflow_attempt_id,
+            pipeline_attempt_id=pipeline_attempt_id,
         )
 
     async def process_artifact(
@@ -881,62 +880,62 @@ class DocumentProcessor:
         *,
         force_reprocess: bool = False,
         repetition_group_id: str | None = None,
-        workflow_attempt_id: str | None = None,
+        pipeline_attempt_id: str | None = None,
     ) -> DocumentProcessingResult:
         normalized_repetition_group_id = _optional_workflow_identifier(
             repetition_group_id, "repetition_group_id"
         )
         normalized_attempt_id = _optional_workflow_identifier(
-            workflow_attempt_id, "workflow_attempt_id"
+            pipeline_attempt_id, "pipeline_attempt_id"
         )
         if repetition_group_id is not None and not force_reprocess:
             raise ValueError(
                 "repetition_group_id requires force_reprocess so benchmark attempts are independent"
             )
         if normalized_attempt_id is not None and not force_reprocess:
-            raise ValueError("workflow_attempt_id requires force_reprocess")
+            raise ValueError("pipeline_attempt_id requires force_reprocess")
         if normalized_repetition_group_id is not None and normalized_attempt_id is None:
             raise ValueError(
-                "benchmark repetition groups require workflow_attempt_id so retries "
+                "benchmark repetition groups require pipeline_attempt_id so retries "
                 "resume one attempt and independent attempts remain isolated"
             )
         output_policy_sha256 = self._current_output_policy_sha256()
-        workflow_run_id = (
-            _forced_workflow_run_id(
+        pipeline_run_id = (
+            _forced_pipeline_run_id(
                 artifact_id,
                 output_policy_sha256=output_policy_sha256,
                 repetition_group_id=normalized_repetition_group_id,
-                workflow_attempt_id=normalized_attempt_id,
+                pipeline_attempt_id=normalized_attempt_id,
             )
             if force_reprocess and normalized_attempt_id is not None
             else f"workflow-{uuid.uuid4()}"
         )
-        context = _WorkflowContext(
-            workflow_run_id=workflow_run_id,
+        context = _PipelineContext(
+            pipeline_run_id=pipeline_run_id,
             repetition_group_id=normalized_repetition_group_id,
-            workflow_attempt_id=normalized_attempt_id,
+            pipeline_attempt_id=normalized_attempt_id,
             force_reprocess=force_reprocess,
         )
-        token = _WORKFLOW_CONTEXT.set(context)
+        token = _PIPELINE_CONTEXT.set(context)
         try:
             return await self._process_artifact_once(artifact_id)
         finally:
-            _WORKFLOW_CONTEXT.reset(token)
+            _PIPELINE_CONTEXT.reset(token)
 
     async def _process_artifact_once(
         self,
         artifact_id: str,
     ) -> DocumentProcessingResult:
         artifact = self.store.get_artifact(artifact_id)
-        preflight_run: ParserRun | None = None
+        preflight_run: ProcessingRun | None = None
         if self.config.preflight_enabled:
             preflight_run, preflight = self._load_or_run_preflight(artifact)
             if preflight.decision is PreflightDecision.QUARANTINE:
                 return DocumentProcessingResult(
                     artifact=artifact,
-                    status=ParserRunStatus.QUARANTINED,
+                    status=ProcessingRunStatus.QUARANTINED,
                     route=("preflight", "quarantine"),
-                    parser_runs=(preflight_run,),
+                    processing_runs=(preflight_run,),
                     diagnostics=self.store.list_diagnostics(
                         artifact_id=artifact.artifact_id
                     ),
@@ -953,7 +952,8 @@ class DocumentProcessor:
             grobid_enabled=self.config.grobid_enabled,
         )
         run_ids_before = {
-            run.run_id for run in self.store.list_parser_runs(artifact_id=artifact_id)
+            run.run_id
+            for run in self.store.list_processing_runs(artifact_id=artifact_id)
         }
 
         if route.required_stages == (ProcessingStage.QUARANTINE,):
@@ -961,9 +961,9 @@ class DocumentProcessor:
             diagnostics = self.store.list_diagnostics(artifact_id=artifact_id)
             return DocumentProcessingResult(
                 artifact=artifact,
-                status=ParserRunStatus.QUARANTINED,
+                status=ProcessingRunStatus.QUARANTINED,
                 route=tuple(stage.value for stage in route.required_stages),
-                parser_runs=(run,),
+                processing_runs=(run,),
                 diagnostics=diagnostics,
             )
 
@@ -971,7 +971,8 @@ class DocumentProcessor:
         parse_filename = filename
         parse_media_type = artifact.media_type
         native_locators: tuple[NativeTextLocator, ...] = ()
-        preprocessing_runs: list[ParserRun] = (
+        docling_inputs = self._source_data_products(artifact)
+        preprocessing_runs: list[ProcessingRun] = (
             [preflight_run] if preflight_run is not None else []
         )
         native_locator_incomplete = False
@@ -983,22 +984,29 @@ class DocumentProcessor:
             preprocessing_runs.append(adapter_run)
             if adapted is None:
                 return self._result_after_failure(
-                    artifact, route, run_ids_before, ParserRunStatus.FAILED
+                    artifact, route, run_ids_before, ProcessingRunStatus.FAILED
                 )
             parse_content = adapted.content
             parse_filename = adapted.filename
             parse_media_type = adapted.media_type
             native_locators = adapted.locator_overlay
+            docling_inputs = (
+                adapter_run.require_output("html_projection"),
+                adapter_run.require_output("native_locator_overlay"),
+            )
             native_locator_incomplete = (
-                adapter_run.status is not ParserRunStatus.COMPLETE
+                adapter_run.status is not ProcessingRunStatus.COMPLETE
             )
         elif route.input_format is InputFormat.JATS:
             native_locators, adapter_run = self._run_jats_locator_adapter(
                 artifact, content
             )
             preprocessing_runs.append(adapter_run)
+            native_locator_product = adapter_run.output("native_locator_overlay")
+            if native_locator_product is not None:
+                docling_inputs += (native_locator_product,)
             native_locator_incomplete = (
-                adapter_run.status is not ParserRunStatus.COMPLETE
+                adapter_run.status is not ProcessingRunStatus.COMPLETE
             )
 
         docling_stage = await self._run_docling(
@@ -1008,10 +1016,11 @@ class DocumentProcessor:
             media_type=parse_media_type,
             input_format=route.input_format,
             native_locators=native_locators,
+            inputs=docling_inputs,
         )
         if docling_stage is None:
             return self._result_after_failure(
-                artifact, route, run_ids_before, ParserRunStatus.FAILED
+                artifact, route, run_ids_before, ProcessingRunStatus.FAILED
             )
 
         grobid_stage: _GrobidStage | None = None
@@ -1020,7 +1029,7 @@ class DocumentProcessor:
         ocr_derivative_quarantined = False
         derivative_artifacts: list[DocumentArtifact] = []
         selected_tei: bytes | None = None
-        selected_grobid_run: ParserRun | None = None
+        selected_grobid_run: ProcessingRun | None = None
         stage_runs = preprocessing_runs + [docling_stage.run]
         pdf_probably_image_only = (
             route.input_format is InputFormat.PDF
@@ -1103,28 +1112,37 @@ class DocumentProcessor:
                 selected_grobid_run = grobid_stage.run
 
         alignment_sha256: str | None = None
-        alignment_run: ParserRun | None = None
+        alignment_run: ProcessingRun | None = None
         scholarly_overlay: ScholarlyAlignmentOverlay | None = None
         if selected_tei is not None:
+            if selected_grobid_run is None:
+                raise RuntimeError("selected GROBID TEI has no producing run")
             alignment_run, scholarly_overlay = self._run_alignment(
-                artifact, docling_stage, selected_tei
+                artifact,
+                docling_stage,
+                selected_grobid_run,
+                selected_tei,
             )
             stage_runs.append(alignment_run)
             if scholarly_overlay is not None:
-                alignment_sha256 = alignment_run.output_hashes.get("alignment_overlay")
+                alignment_sha256 = alignment_run.output_sha256("alignment_overlay")
 
         integrity_run = self._run_content_integrity(
             artifact,
             docling_stage,
             scholarly_overlay=scholarly_overlay,
-            scholarly_alignment_sha256=alignment_sha256,
+            scholarly_alignment_product=(
+                alignment_run.output("alignment_overlay")
+                if scholarly_overlay is not None and alignment_run is not None
+                else None
+            ),
         )
         stage_runs.append(integrity_run)
-        content_integrity_sha256 = integrity_run.output_hashes.get(
+        content_integrity_sha256 = integrity_run.output_sha256(
             "content_integrity_overlay"
         )
 
-        fallback_exhaustion_run: ParserRun | None = None
+        fallback_exhaustion_run: ProcessingRun | None = None
         fallback_exhausted = route.input_format is InputFormat.PDF and (
             selected_tei is None or ocr_fallback_unusable or ocr_derivative_quarantined
         )
@@ -1138,9 +1156,9 @@ class DocumentProcessor:
                 reason_codes.append("ocr_derivative_quarantined")
             fallback_exhaustion_run = self._record_fallback_exhaustion_run(
                 artifact,
-                docling_document_sha256=docling_stage.run.output_hashes[
+                docling_document_sha256=docling_stage.run.require_output(
                     "docling_document"
-                ],
+                ).blob_sha256,
                 reason_codes=tuple(reason_codes),
                 upstream_runs=tuple(stage_runs),
             )
@@ -1149,39 +1167,39 @@ class DocumentProcessor:
         all_runs = tuple(stage_runs)
 
         if fallback_exhaustion_run is not None:
-            overall_status = ParserRunStatus.QUARANTINED
+            overall_status = ProcessingRunStatus.QUARANTINED
         else:
             overall_status = docling_stage.run.status
             if native_locator_incomplete:
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if route.input_format is InputFormat.PDF and selected_tei is None:
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if (
                 selected_grobid_run is not None
-                and selected_grobid_run.status is not ParserRunStatus.COMPLETE
+                and selected_grobid_run.status is not ProcessingRunStatus.COMPLETE
             ):
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if (
                 ocr_stage is not None
-                and ocr_stage.run.status is not ParserRunStatus.COMPLETE
+                and ocr_stage.run.status is not ProcessingRunStatus.COMPLETE
             ):
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if ocr_fallback_unusable:
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if ocr_derivative_quarantined:
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
             if (
                 alignment_run is not None
-                and alignment_run.status is ParserRunStatus.FAILED
+                and alignment_run.status is ProcessingRunStatus.FAILED
             ):
-                overall_status = ParserRunStatus.PARTIAL
-            if integrity_run.status is not ParserRunStatus.COMPLETE:
-                overall_status = ParserRunStatus.PARTIAL
+                overall_status = ProcessingRunStatus.PARTIAL
+            if integrity_run.status is not ProcessingRunStatus.COMPLETE:
+                overall_status = ProcessingRunStatus.PARTIAL
             if overall_status not in {
-                ParserRunStatus.COMPLETE,
-                ParserRunStatus.PARTIAL,
+                ProcessingRunStatus.COMPLETE,
+                ProcessingRunStatus.PARTIAL,
             }:
-                overall_status = ParserRunStatus.FAILED
+                overall_status = ProcessingRunStatus.FAILED
 
         diagnostics = tuple(
             diagnostic
@@ -1195,11 +1213,9 @@ class DocumentProcessor:
             status=overall_status,
             route=tuple(stage.value for stage in route.required_stages)
             + tuple(stage.value for stage in route.conditional_stages),
-            parser_runs=all_runs,
+            processing_runs=all_runs,
             diagnostics=diagnostics,
-            canonical_document_sha256=docling_stage.run.output_hashes.get(
-                "docling_document"
-            ),
+            docling_document_sha256=docling_stage.run.output_sha256("docling_document"),
             grobid_tei_sha256=(
                 sha256_bytes(selected_tei) if selected_tei is not None else None
             ),
@@ -1215,7 +1231,7 @@ class DocumentProcessor:
         self,
         artifact: DocumentArtifact,
         content: bytes,
-    ) -> tuple[tuple[NativeTextLocator, ...], ParserRun]:
+    ) -> tuple[tuple[NativeTextLocator, ...], ProcessingRun]:
         configuration = {
             "adapter_version": "1",
             "input_format": InputFormat.JATS.value,
@@ -1229,7 +1245,9 @@ class DocumentProcessor:
                     NativeTextLocator(**item)
                     for item in json.loads(
                         self.store.read_blob(
-                            reusable.output_hashes["native_locator_overlay"]
+                            reusable.require_output(
+                                "native_locator_overlay"
+                            ).blob_sha256
                         )
                     )
                 ),
@@ -1244,29 +1262,37 @@ class DocumentProcessor:
             overlay = self.store.put_blob(overlay_bytes)
             warning_message = "JATS parsing produced no native textual locators"
             warnings = () if locators else (warning_message,)
-            run = ParserRun(
-                run_id=_run_id(),
+            run_id = _run_id()
+            inputs = self._source_data_products(artifact)
+            run = ProcessingRun(
+                run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="jats-locator-adapter",
-                parser_version="1",
+                stage_id="jats-locator-adapter",
+                component=_component_descriptor("jats-locator-adapter", "1"),
                 configuration=configuration,
                 configuration_sha256=configuration_sha256(configuration),
                 started_at=started,
                 finished_at=utc_now(),
                 status=(
-                    ParserRunStatus.COMPLETE if locators else ParserRunStatus.PARTIAL
+                    ProcessingRunStatus.COMPLETE
+                    if locators
+                    else ProcessingRunStatus.PARTIAL
                 ),
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
                     input_bytes=len(content),
                     output_bytes=len(overlay_bytes),
                 ),
-                output_hashes={"native_locator_overlay": overlay.sha256},
-                output_locations={"native_locator_overlay": overlay.uri},
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    {"native_locator_overlay": overlay.sha256},
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 warnings=warnings,
                 completed_stages=("parse_jats", "preserve_native_locators"),
             )
-            diagnostics: tuple[ParseDiagnostic, ...] = ()
+            diagnostics: tuple[ProcessingDiagnostic, ...] = ()
             if not locators:
                 diagnostics = (
                     self._build_diagnostic(
@@ -1278,15 +1304,15 @@ class DocumentProcessor:
                         message=warning_message,
                     ),
                 )
-            run = self._commit_parser_run(artifact, run, diagnostics)
+            run = self._commit_processing_run(artifact, run, diagnostics)
             return locators, run
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             run = self._save_failed_run(
                 artifact,
-                parser_name="jats-locator-adapter",
-                parser_version="1",
+                component_id="jats-locator-adapter",
+                component_version="1",
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
@@ -1299,7 +1325,7 @@ class DocumentProcessor:
         artifact: DocumentArtifact,
         content: bytes,
         input_format: InputFormat,
-    ) -> tuple[AdaptedDocument | None, ParserRun]:
+    ) -> tuple[AdaptedDocument | None, ProcessingRun]:
         configuration = {
             "adapter_version": "1",
             "input_format": input_format.value,
@@ -1309,7 +1335,9 @@ class DocumentProcessor:
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
             adapted = AdaptedDocument(
-                content=self.store.read_blob(reusable.output_hashes["html_projection"]),
+                content=self.store.read_blob(
+                    reusable.require_output("html_projection").blob_sha256
+                ),
                 filename="bioc-document.html",
                 media_type="text/html",
                 native_format=input_format,
@@ -1317,7 +1345,9 @@ class DocumentProcessor:
                     NativeTextLocator(**item)
                     for item in json.loads(
                         self.store.read_blob(
-                            reusable.output_hashes["native_locator_overlay"]
+                            reusable.require_output(
+                                "native_locator_overlay"
+                            ).blob_sha256
                         )
                     )
                 ),
@@ -1334,37 +1364,40 @@ class DocumentProcessor:
             warning_message = "BioC parsing produced no native textual locators"
             warnings = () if adapted.locator_overlay else (warning_message,)
             finished = utc_now()
-            run = ParserRun(
-                run_id=_run_id(),
+            run_id = _run_id()
+            inputs = self._source_data_products(artifact)
+            run = ProcessingRun(
+                run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="bioc-adapter",
-                parser_version="1",
+                stage_id="bioc-adapter",
+                component=_component_descriptor("bioc-adapter", "1"),
                 configuration=configuration,
                 configuration_sha256=configuration_sha256(configuration),
                 started_at=started,
                 finished_at=finished,
                 status=(
-                    ParserRunStatus.COMPLETE
+                    ProcessingRunStatus.COMPLETE
                     if adapted.locator_overlay
-                    else ParserRunStatus.PARTIAL
+                    else ProcessingRunStatus.PARTIAL
                 ),
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
                     input_bytes=len(content),
                     output_bytes=len(adapted.content) + len(overlay_bytes),
                 ),
-                output_hashes={
-                    "html_projection": projection.sha256,
-                    "native_locator_overlay": overlay.sha256,
-                },
-                output_locations={
-                    "html_projection": projection.uri,
-                    "native_locator_overlay": overlay.uri,
-                },
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    {
+                        "html_projection": projection.sha256,
+                        "native_locator_overlay": overlay.sha256,
+                    },
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 warnings=warnings,
                 completed_stages=("parse_bioc", "project_html", "preserve_offsets"),
             )
-            diagnostics: tuple[ParseDiagnostic, ...] = ()
+            diagnostics: tuple[ProcessingDiagnostic, ...] = ()
             if not adapted.locator_overlay:
                 diagnostics = (
                     self._build_diagnostic(
@@ -1376,15 +1409,15 @@ class DocumentProcessor:
                         message=warning_message,
                     ),
                 )
-            run = self._commit_parser_run(artifact, run, diagnostics)
+            run = self._commit_processing_run(artifact, run, diagnostics)
             return adapted, run
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             run = self._save_failed_run(
                 artifact,
-                parser_name="bioc-adapter",
-                parser_version="1",
+                component_id="bioc-adapter",
+                component_version="1",
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
@@ -1397,7 +1430,7 @@ class DocumentProcessor:
 
         Reporter endpoints and credentials are deliberately excluded. A reporter
         identity is part of the output contract because changing the trusted
-        observer must invalidate parser-run reuse just like changing a model or
+        observer must invalidate processing-run reuse just like changing a model or
         parser image does.
         """
 
@@ -1435,20 +1468,20 @@ class DocumentProcessor:
         }
 
     def _expected_component_versions(
-        self, parser_name: Literal["docling", "grobid", "ocrmypdf"]
+        self, component_id: Literal["docling", "grobid", "ocrmypdf"]
     ) -> dict[str, str]:
         """Return exact versions under the canonical attestation component keys."""
 
-        if parser_name == "docling":
+        if component_id == "docling":
             values = (self.config.docling_version, self.config.docling_serve_version)
             return dict(zip(_DOCLING_COMPONENT_KEYS, values, strict=True))
-        if parser_name == "grobid":
+        if component_id == "grobid":
             return {_GROBID_COMPONENT_KEYS[0]: self.config.grobid_version}
         return {_OCR_COMPONENT_KEYS[0]: self.config.ocrmypdf_version}
 
     def _runtime_attestation_warnings(
         self,
-        parser_name: Literal["docling", "grobid", "ocrmypdf"],
+        component_id: Literal["docling", "grobid", "ocrmypdf"],
         attestation: RuntimeAttestation | None,
         resolution_error: str | None,
     ) -> tuple[str, ...]:
@@ -1459,13 +1492,13 @@ class DocumentProcessor:
         warnings: list[str] = []
         if attestation is None:
             detail = resolution_error or "runtime_attestation_unavailable"
-            return (f"{parser_name} task-bound runtime attestation missing: {detail}",)
+            return (f"{component_id} task-bound runtime attestation missing: {detail}",)
 
-        if parser_name == "docling":
+        if component_id == "docling":
             expected_digest = self.config.docling_container_digest
             expected_versions = self.config.docling_model_versions
             expected_hashes = self.config.docling_model_hashes
-        elif parser_name == "grobid":
+        elif component_id == "grobid":
             expected_digest = self.config.grobid_container_digest
             expected_versions = self.config.grobid_model_versions
             expected_hashes = self.config.grobid_model_hashes
@@ -1478,34 +1511,34 @@ class DocumentProcessor:
             expected_versions = {}
             expected_hashes = {}
 
-        trust_policy = self._runtime_trust_policy()[parser_name]
+        trust_policy = self._runtime_trust_policy()[component_id]
         expected_reporter_id = trust_policy["expected_reporter_id"]
         if trust_policy["reporter_configured"] is not True:
             warnings.append(
-                f"{parser_name} runtime attestation reporter is not configured"
+                f"{component_id} runtime attestation reporter is not configured"
             )
         if expected_reporter_id is None:
             warnings.append(
-                f"{parser_name} expected runtime reporter ID is not configured"
+                f"{component_id} expected runtime reporter ID is not configured"
             )
         elif attestation.reporter_id != expected_reporter_id:
             warnings.append(
-                f"{parser_name} attested reporter differs from current trust policy"
+                f"{component_id} attested reporter differs from current trust policy"
             )
         if attestation.source.value != trust_policy["expected_source"]:
             warnings.append(
-                f"{parser_name} attested source differs from current trust policy"
+                f"{component_id} attested source differs from current trust policy"
             )
         if attestation.schema_version != trust_policy["attestation_schema_version"]:
             warnings.append(
-                f"{parser_name} attestation schema differs from current trust policy"
+                f"{component_id} attestation schema differs from current trust policy"
             )
 
-        if attestation.parser_name != parser_name:
+        if attestation.component_id != component_id:
             warnings.append("runtime attestation parser identity does not match")
-        if parser_name == "docling":
+        if component_id == "docling":
             expected_image = self.config.docling_container_image
-        elif parser_name == "grobid":
+        elif component_id == "grobid":
             expected_image = self.config.grobid_container_image
         else:
             expected_image = self.config.ocr_container_image
@@ -1514,33 +1547,33 @@ class DocumentProcessor:
             != (expected_image.split("@", maxsplit=1)[0])
         ):
             warnings.append(
-                f"{parser_name} attested container reference differs from expectation"
+                f"{component_id} attested container reference differs from expectation"
             )
         if expected_digest is None:
             warnings.append(
-                f"{parser_name} expected container digest is not configured"
+                f"{component_id} expected container digest is not configured"
             )
         elif attestation.container_digest != expected_digest:
             warnings.append(
-                f"{parser_name} attested container digest differs from expectation"
+                f"{component_id} attested container digest differs from expectation"
             )
         for component, expected in self._expected_component_versions(
-            parser_name
+            component_id
         ).items():
             if attestation.component_versions.get(component) != expected:
                 warnings.append(
-                    f"{parser_name} expected component {component!r} version "
+                    f"{component_id} expected component {component!r} version "
                     f"{expected!r} was not attested exactly"
                 )
-        if parser_name in {"docling", "grobid"} and not expected_hashes:
-            warnings.append(f"{parser_name} expected model hash inventory is empty")
+        if component_id in {"docling", "grobid"} and not expected_hashes:
+            warnings.append(f"{component_id} expected model hash inventory is empty")
         if attestation.model_versions != expected_versions:
             warnings.append(
-                f"{parser_name} attested model versions differ from expectation"
+                f"{component_id} attested model versions differ from expectation"
             )
         if attestation.model_hashes != expected_hashes:
             warnings.append(
-                f"{parser_name} attested model hashes differ from expectation"
+                f"{component_id} attested model hashes differ from expectation"
             )
         return tuple(dict.fromkeys(warnings))
 
@@ -1553,6 +1586,7 @@ class DocumentProcessor:
         media_type: str,
         input_format: InputFormat,
         native_locators: tuple[NativeTextLocator, ...],
+        inputs: tuple[DataProductRef, ...],
     ) -> _DoclingStage | None:
         configuration = {
             "serve_version": self.config.docling_serve_version,
@@ -1595,22 +1629,22 @@ class DocumentProcessor:
             configuration["pdf_span_algorithm"] = _PDF_CONTENT_SPAN_ALGORITHM
         config_hash = configuration_sha256(configuration)
         output_policy_sha256 = self._current_output_policy_sha256()
-        workflow_context = _WORKFLOW_CONTEXT.get()
+        pipeline_context = _PIPELINE_CONTEXT.get()
         force_attempt_id = (
             configuration_sha256(
                 {
                     "schema": "deepcritical-forced-checkpoint-attempt-v1",
-                    "repetition_group_id": workflow_context.repetition_group_id,
-                    "workflow_attempt_id": (
-                        workflow_context.workflow_attempt_id
-                        or workflow_context.workflow_run_id
+                    "repetition_group_id": pipeline_context.repetition_group_id,
+                    "pipeline_attempt_id": (
+                        pipeline_context.pipeline_attempt_id
+                        or pipeline_context.pipeline_run_id
                     ),
                 }
             )
-            if workflow_context is not None and workflow_context.force_reprocess
+            if pipeline_context is not None and pipeline_context.force_reprocess
             else None
         )
-        checkpoint_id = _external_task_checkpoint_id(
+        checkpoint_id = _execution_checkpoint_id(
             artifact.artifact_id,
             "docling",
             config_hash,
@@ -1620,33 +1654,37 @@ class DocumentProcessor:
         reusable = self._reusable_run(artifact, "docling", configuration)
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
-            self.store.delete_external_task_checkpoint(checkpoint_id)
+            self.store.delete_execution_checkpoint(checkpoint_id)
             document = json.loads(
-                self.store.read_blob(reusable.output_hashes["docling_document"])
+                self.store.read_blob(
+                    reusable.require_output("docling_document").blob_sha256
+                )
             )
             report = self.validator.validate(
                 document, require_pdf_geometry=input_format is InputFormat.PDF
             )
-            spans = json.loads(
-                self.store.read_blob(reusable.output_hashes["content_spans"])
+            span_set = ContentSpanSet.model_validate_json(
+                self.store.read_blob(
+                    reusable.require_output("content_spans").blob_sha256
+                )
             )
-            return _DoclingStage(reusable, document, report, len(spans))
+            return _DoclingStage(reusable, document, report, len(span_set.spans))
 
         started = utc_now()
         started_clock = time.perf_counter()
-        checkpoint: ExternalTaskCheckpoint | None = None
+        checkpoint: ExecutionCheckpoint | None = None
         try:
             try:
-                checkpoint = self.store.get_external_task_checkpoint(checkpoint_id)
+                checkpoint = self.store.get_execution_checkpoint(checkpoint_id)
             except RecordNotFoundError:
                 checkpoint = None
             if checkpoint is not None and not _checkpoint_matches_invocation(
                 checkpoint,
                 artifact_id=artifact.artifact_id,
-                parser_name="docling",
+                component_id="docling",
                 configuration_sha256=config_hash,
                 output_policy_sha256=output_policy_sha256,
-                workflow_context=workflow_context,
+                pipeline_context=pipeline_context,
             ):
                 raise RuntimeError(
                     "persisted Docling checkpoint does not match the current "
@@ -1654,26 +1692,26 @@ class DocumentProcessor:
                 )
 
             def persist_remote_task(task_id: str) -> None:
-                self.store.save_external_task_checkpoint(
-                    ExternalTaskCheckpoint(
+                self.store.save_execution_checkpoint(
+                    ExecutionCheckpoint(
                         checkpoint_id=checkpoint_id,
                         artifact_id=artifact.artifact_id,
-                        parser_name="docling",
+                        component_id="docling",
                         configuration_sha256=config_hash,
                         output_policy_sha256=output_policy_sha256,
-                        workflow_run_id=(
-                            workflow_context.workflow_run_id
-                            if workflow_context is not None
+                        pipeline_run_id=(
+                            pipeline_context.pipeline_run_id
+                            if pipeline_context is not None
                             else None
                         ),
                         repetition_group_id=(
-                            workflow_context.repetition_group_id
-                            if workflow_context is not None
+                            pipeline_context.repetition_group_id
+                            if pipeline_context is not None
                             else None
                         ),
-                        workflow_attempt_id=(
-                            workflow_context.workflow_attempt_id
-                            if workflow_context is not None
+                        pipeline_attempt_id=(
+                            pipeline_context.pipeline_attempt_id
+                            if pipeline_context is not None
                             else None
                         ),
                         remote_task_id=task_id,
@@ -1702,20 +1740,31 @@ class DocumentProcessor:
                 document, require_pdf_geometry=input_format is InputFormat.PDF
             )
             run_id = _run_id()
+            raw_bytes = _canonical_json_bytes(result.raw_response)
+            document_bytes = _canonical_json_bytes(document)
+            raw_blob = self.store.put_blob(raw_bytes)
+            document_blob = self.store.put_blob(document_bytes)
+            representation_product_id = product_id_for(
+                name="docling_document",
+                blob_sha256=document_blob.sha256,
+                producer_run_id=run_id,
+            )
             jats_alignment = None
             bioc_alignment = None
             if input_format is InputFormat.PDF:
                 spans = build_pdf_content_spans(
                     document,
                     artifact_id=artifact.artifact_id,
-                    parser_run_id=run_id,
+                    processing_run_id=run_id,
+                    representation_product_id=representation_product_id,
                 )
             elif input_format is InputFormat.JATS:
                 jats_alignment = align_jats_content_spans(
                     document,
                     native_locators,
                     artifact_id=artifact.artifact_id,
-                    parser_run_id=run_id,
+                    processing_run_id=run_id,
+                    representation_product_id=representation_product_id,
                 )
                 spans = jats_alignment.spans
             elif input_format in {InputFormat.BIOC_JSON, InputFormat.BIOC_XML}:
@@ -1723,34 +1772,31 @@ class DocumentProcessor:
                     document,
                     native_locators,
                     artifact_id=artifact.artifact_id,
-                    parser_run_id=run_id,
+                    processing_run_id=run_id,
+                    representation_product_id=representation_product_id,
                 )
                 spans = bioc_alignment.spans
             else:
                 spans = build_docling_content_spans(
                     document,
                     artifact_id=artifact.artifact_id,
-                    parser_run_id=run_id,
+                    processing_run_id=run_id,
                     input_format=input_format.value,
+                    representation_product_id=representation_product_id,
                 )
 
-            raw_bytes = _canonical_json_bytes(result.raw_response)
-            document_bytes = _canonical_json_bytes(document)
-            spans_bytes = _canonical_json_bytes(
-                [span.model_dump(mode="json") for span in spans]
+            span_set = ContentSpanSet(
+                artifact_id=artifact.artifact_id,
+                processing_run_id=run_id,
+                representation_product_id=representation_product_id,
+                spans=spans,
             )
-            raw_blob = self.store.put_blob(raw_bytes)
-            document_blob = self.store.put_blob(document_bytes)
+            spans_bytes = _canonical_json_bytes(span_set.model_dump(mode="json"))
             spans_blob = self.store.put_blob(spans_bytes)
-            output_hashes = {
+            output_digests = {
                 "docling_response": raw_blob.sha256,
                 "docling_document": document_blob.sha256,
                 "content_spans": spans_blob.sha256,
-            }
-            output_locations = {
-                "docling_response": raw_blob.uri,
-                "docling_document": document_blob.uri,
-                "content_spans": spans_blob.uri,
             }
             additional_output_bytes = 0
             attestation_sha256 = None
@@ -1760,13 +1806,11 @@ class DocumentProcessor:
                 )
                 attestation_blob = self.store.put_blob(attestation_bytes)
                 attestation_sha256 = attestation_blob.sha256
-                output_hashes["runtime_attestation"] = attestation_blob.sha256
-                output_locations["runtime_attestation"] = attestation_blob.uri
+                output_digests["runtime_attestation"] = attestation_blob.sha256
                 additional_output_bytes += len(attestation_bytes)
             if native_locator_bytes is not None:
                 locator_blob = self.store.put_blob(native_locator_bytes)
-                output_hashes["native_locator_overlay"] = locator_blob.sha256
-                output_locations["native_locator_overlay"] = locator_blob.uri
+                output_digests["native_locator_overlay"] = locator_blob.sha256
                 additional_output_bytes += len(native_locator_bytes)
             if jats_alignment is not None:
                 alignment_bytes = _canonical_json_bytes(
@@ -1780,8 +1824,7 @@ class DocumentProcessor:
                     }
                 )
                 alignment_blob = self.store.put_blob(alignment_bytes)
-                output_hashes["jats_locator_alignment"] = alignment_blob.sha256
-                output_locations["jats_locator_alignment"] = alignment_blob.uri
+                output_digests["jats_locator_alignment"] = alignment_blob.sha256
                 additional_output_bytes += len(alignment_bytes)
             if bioc_alignment is not None:
                 alignment_bytes = _canonical_json_bytes(
@@ -1795,8 +1838,7 @@ class DocumentProcessor:
                     }
                 )
                 alignment_blob = self.store.put_blob(alignment_bytes)
-                output_hashes["bioc_locator_alignment"] = alignment_blob.sha256
-                output_locations["bioc_locator_alignment"] = alignment_blob.uri
+                output_digests["bioc_locator_alignment"] = alignment_blob.sha256
                 additional_output_bytes += len(alignment_bytes)
 
             empty_output = any(
@@ -1842,16 +1884,19 @@ class DocumentProcessor:
                 )
             )
             finished = utc_now()
-            run = ParserRun(
+            run = ProcessingRun(
                 run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="docling",
-                parser_version=(
-                    attestation.parser_version
-                    if attestation is not None
-                    else self.config.docling_version
+                stage_id="docling",
+                component=_component_descriptor(
+                    "docling",
+                    (
+                        attestation.component_version
+                        if attestation is not None
+                        else self.config.docling_version
+                    ),
                 ),
-                parser_invocation_id=(
+                component_invocation_id=(
                     attestation.invocation_id if attestation is not None else None
                 ),
                 runtime_identity_required=self.config.require_runtime_identity,
@@ -1875,12 +1920,12 @@ class DocumentProcessor:
                 started_at=started,
                 finished_at=finished,
                 status=(
-                    ParserRunStatus.FAILED
+                    ProcessingRunStatus.FAILED
                     if empty_output
                     else (
-                        ParserRunStatus.PARTIAL
+                        ProcessingRunStatus.PARTIAL
                         if is_partial
-                        else ParserRunStatus.COMPLETE
+                        else ProcessingRunStatus.COMPLETE
                     )
                 ),
                 resource_usage=ResourceUsage(
@@ -1898,11 +1943,15 @@ class DocumentProcessor:
                     memory_measurement=result.memory_measurement,
                 ),
                 warnings=warnings,
-                output_hashes=output_hashes,
-                output_locations=output_locations,
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    output_digests,
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 completed_stages=("conversion", "validation", "span_generation"),
             )
-            diagnostics: list[ParseDiagnostic] = []
+            diagnostics: list[ProcessingDiagnostic] = []
             memory_diagnostic = self._memory_measurement_diagnostic(
                 artifact, run, result.memory_measurement, stage="docling"
             )
@@ -1979,23 +2028,24 @@ class DocumentProcessor:
                         },
                     )
                 )
-            run = self._commit_parser_run(artifact, run, tuple(diagnostics))
-            self.store.delete_external_task_checkpoint(checkpoint_id)
+            run = self._commit_processing_run(artifact, run, tuple(diagnostics))
+            self.store.delete_execution_checkpoint(checkpoint_id)
             return _DoclingStage(run, document, report, len(spans))
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             if _docling_checkpoint_is_terminal(exc):
-                self.store.delete_external_task_checkpoint(checkpoint_id)
+                self.store.delete_execution_checkpoint(checkpoint_id)
             self._save_failed_run(
                 artifact,
-                parser_name="docling",
-                parser_version=self.config.docling_version,
+                component_id="docling",
+                component_version=self.config.docling_version,
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
                 error=exc,
                 runtime_identity_required=self.config.require_runtime_identity,
+                inputs=inputs,
             )
             return None
 
@@ -2006,6 +2056,7 @@ class DocumentProcessor:
         *,
         filename: str,
     ) -> _GrobidStage | None:
+        inputs = self._source_data_products(artifact)
         configuration = {
             "input_sha256": sha256_bytes(content),
             "expected_grobid_version": self.config.grobid_version,
@@ -2022,7 +2073,9 @@ class DocumentProcessor:
         reusable = self._reusable_run(artifact, "grobid", configuration)
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
-            tei = self.store.read_blob(reusable.output_hashes["grobid_tei"])
+            tei = self.store.read_blob(
+                reusable.require_output("grobid_tei").blob_sha256
+            )
             return _GrobidStage(
                 reusable,
                 tei,
@@ -2041,8 +2094,7 @@ class DocumentProcessor:
                 dict(attestation.component_versions) if attestation is not None else {}
             )
             tei_blob = self.store.put_blob(result.tei_xml)
-            output_hashes = {"grobid_tei": tei_blob.sha256}
-            output_locations = {"grobid_tei": tei_blob.uri}
+            output_digests = {"grobid_tei": tei_blob.sha256}
             attestation_sha256 = None
             attestation_output_bytes = 0
             if attestation is not None:
@@ -2052,8 +2104,7 @@ class DocumentProcessor:
                 attestation_blob = self.store.put_blob(attestation_bytes)
                 attestation_sha256 = attestation_blob.sha256
                 attestation_output_bytes = len(attestation_bytes)
-                output_hashes["runtime_attestation"] = attestation_blob.sha256
-                output_locations["runtime_attestation"] = attestation_blob.uri
+                output_digests["runtime_attestation"] = attestation_blob.sha256
             usable = (
                 _tei_text_length(result.tei_xml)
                 >= self.config.grobid_minimum_text_characters
@@ -2063,16 +2114,20 @@ class DocumentProcessor:
             )
             warnings = (() if usable else (warning_message,)) + provenance_warnings
             finished = utc_now()
-            run = ParserRun(
-                run_id=_run_id(),
+            run_id = _run_id()
+            run = ProcessingRun(
+                run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="grobid",
-                parser_version=(
-                    attestation.parser_version
-                    if attestation is not None
-                    else self.config.grobid_version
+                stage_id="grobid",
+                component=_component_descriptor(
+                    "grobid",
+                    (
+                        attestation.component_version
+                        if attestation is not None
+                        else self.config.grobid_version
+                    ),
                 ),
-                parser_invocation_id=(
+                component_invocation_id=(
                     attestation.invocation_id if attestation is not None else None
                 ),
                 runtime_identity_required=self.config.require_runtime_identity,
@@ -2096,7 +2151,7 @@ class DocumentProcessor:
                 started_at=started,
                 finished_at=finished,
                 status=(
-                    ParserRunStatus.COMPLETE
+                    ProcessingRunStatus.COMPLETE
                     if (
                         usable
                         and not provenance_warnings
@@ -2108,7 +2163,7 @@ class DocumentProcessor:
                             )
                         )
                     )
-                    else ParserRunStatus.PARTIAL
+                    else ProcessingRunStatus.PARTIAL
                 ),
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
@@ -2122,11 +2177,15 @@ class DocumentProcessor:
                     memory_measurement=result.memory_measurement,
                 ),
                 warnings=warnings,
-                output_hashes=output_hashes,
-                output_locations=output_locations,
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    output_digests,
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 completed_stages=("fulltext_tei", "usability_validation"),
             )
-            diagnostics: list[ParseDiagnostic] = []
+            diagnostics: list[ProcessingDiagnostic] = []
             memory_diagnostic = self._memory_measurement_diagnostic(
                 artifact, run, result.memory_measurement, stage="grobid"
             )
@@ -2159,20 +2218,21 @@ class DocumentProcessor:
                         message=warning_message,
                     )
                 )
-            run = self._commit_parser_run(artifact, run, tuple(diagnostics))
+            run = self._commit_processing_run(artifact, run, tuple(diagnostics))
             return _GrobidStage(run, result.tei_xml, usable)
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             run = self._save_failed_run(
                 artifact,
-                parser_name="grobid",
-                parser_version=self.config.grobid_version,
+                component_id="grobid",
+                component_version=self.config.grobid_version,
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
                 error=exc,
                 runtime_identity_required=self.config.require_runtime_identity,
+                inputs=inputs,
             )
             return _GrobidStage(run, None, False)
 
@@ -2183,6 +2243,7 @@ class DocumentProcessor:
         *,
         fallback_reason: str,
     ) -> _OCRStage | None:
+        inputs = self._source_data_products(artifact)
         configuration = {
             "input_sha256": sha256_bytes(content),
             "fallback_reason": fallback_reason,
@@ -2232,15 +2293,10 @@ class DocumentProcessor:
                 {"stdout": result.stdout, "stderr": result.stderr, "exit_code": 0}
             )
             log_blob = self.store.put_blob(log_bytes)
-            output_hashes = {
+            output_digests = {
                 "searchable_pdf": pdf_blob.sha256,
                 "ocr_sidecar": sidecar_blob.sha256,
                 "ocr_log": log_blob.sha256,
-            }
-            output_locations = {
-                "searchable_pdf": pdf_blob.uri,
-                "ocr_sidecar": sidecar_blob.uri,
-                "ocr_log": log_blob.uri,
             }
             attestation_sha256 = None
             attestation_output_bytes = 0
@@ -2251,24 +2307,26 @@ class DocumentProcessor:
                 attestation_blob = self.store.put_blob(attestation_bytes)
                 attestation_sha256 = attestation_blob.sha256
                 attestation_output_bytes = len(attestation_bytes)
-                output_hashes["runtime_attestation"] = attestation_blob.sha256
-                output_locations["runtime_attestation"] = attestation_blob.uri
+                output_digests["runtime_attestation"] = attestation_blob.sha256
             output_warnings = (
                 ()
                 if result.sidecar_text.strip()
                 else ("OCRmyPDF produced an empty OCR sidecar",)
             )
             warnings = output_warnings + provenance_warnings
-            run = ParserRun(
+            run = ProcessingRun(
                 run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="ocrmypdf",
-                parser_version=(
-                    attestation.parser_version
-                    if attestation is not None
-                    else self.config.ocrmypdf_version
+                stage_id="ocrmypdf",
+                component=_component_descriptor(
+                    "ocrmypdf",
+                    (
+                        attestation.component_version
+                        if attestation is not None
+                        else self.config.ocrmypdf_version
+                    ),
                 ),
-                parser_invocation_id=(
+                component_invocation_id=(
                     attestation.invocation_id if attestation is not None else None
                 ),
                 runtime_identity_required=self.config.require_runtime_identity,
@@ -2286,7 +2344,7 @@ class DocumentProcessor:
                 started_at=started,
                 finished_at=utc_now(),
                 status=(
-                    ParserRunStatus.COMPLETE
+                    ProcessingRunStatus.COMPLETE
                     if (
                         not warnings
                         and (
@@ -2297,7 +2355,7 @@ class DocumentProcessor:
                             )
                         )
                     )
-                    else ParserRunStatus.PARTIAL
+                    else ProcessingRunStatus.PARTIAL
                 ),
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
@@ -2314,15 +2372,19 @@ class DocumentProcessor:
                     memory_measurement=result.memory_measurement,
                 ),
                 warnings=warnings,
-                output_hashes=output_hashes,
-                output_locations=output_locations,
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    output_digests,
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 completed_stages=(
                     "ocr_conversion",
                     "sidecar",
                     "reconstructable_derivative",
                 ),
             )
-            diagnostics: tuple[ParseDiagnostic, ...] = ()
+            diagnostics: tuple[ProcessingDiagnostic, ...] = ()
             memory_diagnostic = self._memory_measurement_diagnostic(
                 artifact, run, result.memory_measurement, stage="ocrmypdf"
             )
@@ -2344,22 +2406,23 @@ class DocumentProcessor:
                         },
                     ),
                 )
-            run = self._commit_parser_run(artifact, run, diagnostics)
+            run = self._commit_processing_run(artifact, run, diagnostics)
             derivative = self._ensure_ocr_derivative(artifact, run)
             return _OCRStage(run, derivative)
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             run = self._save_failed_run(
                 artifact,
-                parser_name="ocrmypdf",
-                parser_version=self.config.ocrmypdf_version,
+                component_id="ocrmypdf",
+                component_version=self.config.ocrmypdf_version,
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
                 error=exc,
                 run_id=run_id,
                 runtime_identity_required=self.config.require_runtime_identity,
+                inputs=inputs,
             )
             return _OCRStage(run, None)
 
@@ -2367,21 +2430,24 @@ class DocumentProcessor:
         self,
         artifact: DocumentArtifact,
         docling_stage: _DoclingStage,
+        grobid_run: ProcessingRun,
         tei_xml: bytes,
-    ) -> tuple[ParserRun, ScholarlyAlignmentOverlay | None]:
+    ) -> tuple[ProcessingRun, ScholarlyAlignmentOverlay | None]:
         configuration = {
             "algorithm": "token-sequence-v2",
             "minimum_score": self.config.alignment_minimum_score,
-            "docling_document_sha256": docling_stage.run.output_hashes[
+            "docling_document_sha256": docling_stage.run.require_output(
                 "docling_document"
-            ],
+            ).blob_sha256,
             "grobid_tei_sha256": sha256_bytes(tei_xml),
         }
         reusable = self._reusable_run(artifact, "docling-grobid-aligner", configuration)
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
             payload = json.loads(
-                self.store.read_blob(reusable.output_hashes["alignment_overlay"])
+                self.store.read_blob(
+                    reusable.require_output("alignment_overlay").blob_sha256
+                )
             )
             if not isinstance(payload, dict):
                 raise ValueError(
@@ -2397,27 +2463,36 @@ class DocumentProcessor:
             overlay_blob = self.store.put_blob(overlay_bytes)
             warning_message = f"{overlay.unaligned_count} scholarly annotations are explicitly unaligned"
             warnings = (warning_message,) if overlay.unaligned_count else ()
-            run = ParserRun(
-                run_id=_run_id(),
+            run_id = _run_id()
+            inputs = (
+                docling_stage.run.require_output("docling_document"),
+                grobid_run.require_output("grobid_tei"),
+            )
+            run = ProcessingRun(
+                run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="docling-grobid-aligner",
-                parser_version="2",
+                stage_id="docling-grobid-aligner",
+                component=_component_descriptor("docling-grobid-aligner", "2"),
                 configuration=configuration,
                 configuration_sha256=configuration_sha256(configuration),
                 started_at=started,
                 finished_at=utc_now(),
-                status=ParserRunStatus.COMPLETE,
+                status=ProcessingRunStatus.COMPLETE,
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
                     input_bytes=len(tei_xml),
                     output_bytes=len(overlay_bytes),
                 ),
                 warnings=warnings,
-                output_hashes={"alignment_overlay": overlay_blob.sha256},
-                output_locations={"alignment_overlay": overlay_blob.uri},
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    {"alignment_overlay": overlay_blob.sha256},
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 completed_stages=("tei_extraction", "alignment", "unaligned_marking"),
             )
-            diagnostics: tuple[ParseDiagnostic, ...] = ()
+            diagnostics: tuple[ProcessingDiagnostic, ...] = ()
             if overlay.unaligned_count:
                 diagnostics = (
                     self._build_diagnostic(
@@ -2433,19 +2508,23 @@ class DocumentProcessor:
                         },
                     ),
                 )
-            run = self._commit_parser_run(artifact, run, diagnostics)
+            run = self._commit_processing_run(artifact, run, diagnostics)
             return run, overlay
-        except ParserRunCommitIncompleteError:
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             run = self._save_failed_run(
                 artifact,
-                parser_name="docling-grobid-aligner",
-                parser_version="2",
+                component_id="docling-grobid-aligner",
+                component_version="2",
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
                 error=exc,
+                inputs=(
+                    docling_stage.run.require_output("docling_document"),
+                    grobid_run.require_output("grobid_tei"),
+                ),
             )
             return run, None
 
@@ -2455,31 +2534,37 @@ class DocumentProcessor:
         docling_stage: _DoclingStage,
         *,
         scholarly_overlay: ScholarlyAlignmentOverlay | None,
-        scholarly_alignment_sha256: str | None,
-    ) -> ParserRun:
+        scholarly_alignment_product: DataProductRef | None,
+    ) -> ProcessingRun:
         """Persist explicit table, figure, and citation relationship outcomes."""
 
         configuration = {
             "algorithm": "explicit-content-integrity-v1",
-            "docling_document_sha256": docling_stage.run.output_hashes[
+            "docling_document_sha256": docling_stage.run.require_output(
                 "docling_document"
-            ],
-            "scholarly_alignment_sha256": scholarly_alignment_sha256,
+            ).blob_sha256,
+            "scholarly_alignment_sha256": (
+                scholarly_alignment_product.blob_sha256
+                if scholarly_alignment_product is not None
+                else None
+            ),
         }
         reusable = self._reusable_run(
             artifact, "docling-content-integrity", configuration
         )
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
-            self.store.read_blob(reusable.output_hashes["content_integrity_overlay"])
+            self.store.read_blob(
+                reusable.require_output("content_integrity_overlay").blob_sha256
+            )
             return reusable
 
         started = utc_now()
         started_clock = time.perf_counter()
         try:
-            if scholarly_overlay is not None and scholarly_alignment_sha256 is None:
+            if scholarly_overlay is not None and scholarly_alignment_product is None:
                 raise ValueError(
-                    "a scholarly overlay requires its persisted alignment hash"
+                    "a scholarly overlay requires its persisted alignment product"
                 )
             report = validate_content_integrity(
                 docling_stage.document,
@@ -2488,19 +2573,25 @@ class DocumentProcessor:
             overlay_bytes = _canonical_json_bytes(report.to_dict())
             overlay_blob = self.store.put_blob(overlay_bytes)
             warnings = tuple(dict.fromkeys(issue.message for issue in report.issues))
-            run = ParserRun(
-                run_id=_run_id(),
+            run_id = _run_id()
+            inputs = (docling_stage.run.require_output("docling_document"),) + (
+                (scholarly_alignment_product,)
+                if scholarly_alignment_product is not None
+                else ()
+            )
+            run = ProcessingRun(
+                run_id=run_id,
                 artifact_id=artifact.artifact_id,
-                parser_name="docling-content-integrity",
-                parser_version="1",
+                stage_id="docling-content-integrity",
+                component=_component_descriptor("docling-content-integrity", "1"),
                 configuration=configuration,
                 configuration_sha256=configuration_sha256(configuration),
                 started_at=started,
                 finished_at=utc_now(),
                 status=(
-                    ParserRunStatus.PARTIAL
+                    ProcessingRunStatus.PARTIAL
                     if report.issues
-                    else ParserRunStatus.COMPLETE
+                    else ProcessingRunStatus.COMPLETE
                 ),
                 resource_usage=ResourceUsage(
                     wall_time_seconds=time.perf_counter() - started_clock,
@@ -2508,8 +2599,12 @@ class DocumentProcessor:
                     output_bytes=len(overlay_bytes),
                 ),
                 warnings=warnings,
-                output_hashes={"content_integrity_overlay": overlay_blob.sha256},
-                output_locations={"content_integrity_overlay": overlay_blob.uri},
+                inputs=inputs,
+                outputs=self.store.data_product_refs(
+                    {"content_integrity_overlay": overlay_blob.sha256},
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(artifact, inputs),
+                ),
                 completed_stages=(
                     "enumerate_relationships",
                     "resolve_relationships",
@@ -2533,35 +2628,43 @@ class DocumentProcessor:
                 )
                 for issue in report.issues
             )
-            return self._commit_parser_run(artifact, run, diagnostics)
-        except ParserRunCommitIncompleteError:
+            return self._commit_processing_run(artifact, run, diagnostics)
+        except ProcessingRunCommitIncompleteError:
             raise
         except Exception as exc:
             return self._save_failed_run(
                 artifact,
-                parser_name="docling-content-integrity",
-                parser_version="1",
+                component_id="docling-content-integrity",
+                component_version="1",
                 configuration=configuration,
                 started_at=started,
                 started_clock=started_clock,
                 error=exc,
+                inputs=(docling_stage.run.require_output("docling_document"),)
+                + (
+                    (scholarly_alignment_product,)
+                    if scholarly_alignment_product is not None
+                    else ()
+                ),
             )
 
     def _reusable_run(
         self,
         artifact: DocumentArtifact,
-        parser_name: str,
+        component_id: str,
         configuration: dict[str, Any],
-    ) -> ParserRun | None:
+    ) -> ProcessingRun | None:
         config_hash = configuration_sha256(configuration)
-        runs = self.store.list_parser_runs(
+        runs = self.store.list_processing_runs(
             artifact_id=artifact.artifact_id,
-            parser_name=parser_name,
+            component_id=component_id,
             configuration_sha256=config_hash,
         )
         return self._select_reusable_run(
             runs,
-            statuses=frozenset({ParserRunStatus.COMPLETE, ParserRunStatus.PARTIAL}),
+            statuses=frozenset(
+                {ProcessingRunStatus.COMPLETE, ProcessingRunStatus.PARTIAL}
+            ),
         )
 
     def _current_output_policy_sha256(self) -> str:
@@ -2569,33 +2672,33 @@ class DocumentProcessor:
 
     def _select_reusable_run(
         self,
-        runs: tuple[ParserRun, ...],
+        runs: tuple[ProcessingRun, ...],
         *,
-        statuses: frozenset[ParserRunStatus],
+        statuses: frozenset[ProcessingRunStatus],
         required_outputs: tuple[str, ...] = (),
-    ) -> ParserRun | None:
+    ) -> ProcessingRun | None:
         """Select only a terminal run produced under the exact current policy."""
 
-        workflow_context = _WORKFLOW_CONTEXT.get()
+        pipeline_context = _PIPELINE_CONTEXT.get()
         resume_named_forced_attempt = (
-            workflow_context is not None
-            and workflow_context.force_reprocess
-            and workflow_context.workflow_attempt_id is not None
+            pipeline_context is not None
+            and pipeline_context.force_reprocess
+            and pipeline_context.pipeline_attempt_id is not None
         )
         if (
-            workflow_context is not None
-            and workflow_context.force_reprocess
+            pipeline_context is not None
+            and pipeline_context.force_reprocess
             and not resume_named_forced_attempt
         ):
             return None
-        named_workflow_run_id = (
-            workflow_context.workflow_run_id
-            if resume_named_forced_attempt and workflow_context is not None
+        named_pipeline_run_id = (
+            pipeline_context.pipeline_run_id
+            if resume_named_forced_attempt and pipeline_context is not None
             else None
         )
         named_repetition_group_id = (
-            workflow_context.repetition_group_id
-            if resume_named_forced_attempt and workflow_context is not None
+            pipeline_context.repetition_group_id
+            if resume_named_forced_attempt and pipeline_context is not None
             else None
         )
         output_policy_sha256 = self._current_output_policy_sha256()
@@ -2604,47 +2707,49 @@ class DocumentProcessor:
                 run
                 for run in reversed(runs)
                 if run.status in statuses
-                and "diagnostics_manifest" in run.output_hashes
+                and run.output("diagnostics_manifest") is not None
                 and run.output_policy_sha256 == output_policy_sha256
                 and (
                     not resume_named_forced_attempt
                     or (
-                        run.workflow_run_id == named_workflow_run_id
+                        run.pipeline_run_id == named_pipeline_run_id
                         and run.repetition_group_id == named_repetition_group_id
                     )
                 )
-                and all(name in run.output_hashes for name in required_outputs)
+                and all(run.output(name) is not None for name in required_outputs)
             ),
             None,
         )
 
-    def _commit_parser_run(
+    def _commit_processing_run(
         self,
         artifact: DocumentArtifact,
-        run: ParserRun,
-        diagnostics: tuple[ParseDiagnostic, ...] = (),
-    ) -> ParserRun:
+        run: ProcessingRun,
+        diagnostics: tuple[ProcessingDiagnostic, ...] = (),
+    ) -> ProcessingRun:
         """Publish a run with a durable manifest, then idempotently index it."""
 
-        if "diagnostics_manifest" in run.output_hashes:
-            raise ValueError("parser run already contains a diagnostics manifest")
+        if run.output("diagnostics_manifest") is not None:
+            raise ValueError("processing run already contains a diagnostics manifest")
         output_policy_snapshot = self._output_policy_snapshot()
         output_policy_sha256 = configuration_sha256(output_policy_snapshot)
         if (
             run.output_policy_snapshot
             and run.output_policy_snapshot != output_policy_snapshot
         ):
-            raise ValueError("parser run output policy conflicts with processor policy")
+            raise ValueError(
+                "processing run output policy conflicts with processor policy"
+            )
         if (
             run.output_policy_sha256 is not None
             and run.output_policy_sha256 != output_policy_sha256
         ):
             raise ValueError(
-                "parser run output policy hash conflicts with processor policy"
+                "processing run output policy hash conflicts with processor policy"
             )
-        manifest = ParserRunDiagnosticManifest(
+        manifest = ProcessingRunDiagnosticManifest(
             artifact_id=artifact.artifact_id,
-            parser_run_id=run.run_id,
+            processing_run_id=run.run_id,
             diagnostics=diagnostics,
         )
         manifest_bytes = _canonical_json_bytes(manifest.model_dump(mode="json"))
@@ -2652,23 +2757,23 @@ class DocumentProcessor:
         output_bytes = run.resource_usage.output_bytes
         run_payload = run.model_dump(mode="python")
         committed_status = run.status
-        if committed_status is ParserRunStatus.COMPLETE and any(
+        if committed_status is ProcessingRunStatus.COMPLETE and any(
             diagnostic.code == "MEMORY_MEASUREMENT_UNAVAILABLE"
             for diagnostic in diagnostics
         ):
-            committed_status = ParserRunStatus.PARTIAL
-        workflow_context = _WORKFLOW_CONTEXT.get()
+            committed_status = ProcessingRunStatus.PARTIAL
+        pipeline_context = _PIPELINE_CONTEXT.get()
         run_payload.update(
             {
                 "status": committed_status,
-                "workflow_run_id": (
-                    workflow_context.workflow_run_id
-                    if workflow_context is not None
-                    else run.workflow_run_id
+                "pipeline_run_id": (
+                    pipeline_context.pipeline_run_id
+                    if pipeline_context is not None
+                    else run.pipeline_run_id
                 ),
                 "repetition_group_id": (
-                    workflow_context.repetition_group_id
-                    if workflow_context is not None
+                    pipeline_context.repetition_group_id
+                    if pipeline_context is not None
                     else run.repetition_group_id
                 ),
                 "output_policy_snapshot": output_policy_snapshot,
@@ -2676,18 +2781,21 @@ class DocumentProcessor:
                 "resource_usage": run.resource_usage.model_copy(
                     update={"output_bytes": (output_bytes or 0) + len(manifest_bytes)}
                 ),
-                "output_hashes": {
-                    **run.output_hashes,
-                    "diagnostics_manifest": manifest_blob.sha256,
-                },
-                "output_locations": {
-                    **run.output_locations,
-                    "diagnostics_manifest": manifest_blob.uri,
-                },
+                "outputs": (
+                    *run.outputs,
+                    self.store.data_product_ref(
+                        name="diagnostics_manifest",
+                        blob_sha256=manifest_blob.sha256,
+                        producer_run_id=run.run_id,
+                        source_artifact_ids=self._source_artifact_ids(
+                            artifact, run.inputs
+                        ),
+                    ),
+                ),
             }
         )
-        committed_run = ParserRun.model_validate(run_payload)
-        self.store.save_parser_run(committed_run)
+        committed_run = ProcessingRun.model_validate(run_payload)
+        self.store.save_processing_run(committed_run)
         self._reconcile_run_diagnostics(artifact, committed_run)
         return committed_run
 
@@ -2785,34 +2893,34 @@ class DocumentProcessor:
         }
 
     def _reconcile_run_diagnostics(
-        self, artifact: DocumentArtifact, run: ParserRun
-    ) -> tuple[ParseDiagnostic, ...]:
-        manifest_sha256 = run.output_hashes.get("diagnostics_manifest")
+        self, artifact: DocumentArtifact, run: ProcessingRun
+    ) -> tuple[ProcessingDiagnostic, ...]:
+        manifest_sha256 = run.output_sha256("diagnostics_manifest")
         if manifest_sha256 is None:
-            raise ValueError(f"parser run {run.run_id} has no diagnostics manifest")
-        manifest = ParserRunDiagnosticManifest.model_validate_json(
+            raise ValueError(f"processing run {run.run_id} has no diagnostics manifest")
+        manifest = ProcessingRunDiagnosticManifest.model_validate_json(
             self.store.read_blob(manifest_sha256)
         )
         if (
             manifest.artifact_id != artifact.artifact_id
-            or manifest.parser_run_id != run.run_id
+            or manifest.processing_run_id != run.run_id
         ):
-            raise ValueError("diagnostics manifest does not match its parser run")
+            raise ValueError("diagnostics manifest does not match its processing run")
         try:
             for diagnostic in manifest.diagnostics:
                 self.store.save_diagnostic(diagnostic)
         except Exception as exc:
-            raise ParserRunCommitIncompleteError(run.run_id) from exc
+            raise ProcessingRunCommitIncompleteError(run.run_id) from exc
         return manifest.diagnostics
 
     def _memory_measurement_diagnostic(
         self,
         artifact: DocumentArtifact,
-        run: ParserRun,
+        run: ProcessingRun,
         measurement: MemoryMeasurement | None,
         *,
         stage: str,
-    ) -> ParseDiagnostic | None:
+    ) -> ProcessingDiagnostic | None:
         """Make missing/failed accounting explicit when policy requires it."""
 
         if measurement is None and not self.config.memory_measurement_required:
@@ -2856,8 +2964,8 @@ class DocumentProcessor:
         self,
         artifact: DocumentArtifact,
         *,
-        parser_name: str,
-        parser_version: str,
+        component_id: str,
+        component_version: str,
         configuration: dict[str, Any],
         started_at: datetime,
         started_clock: float,
@@ -2869,13 +2977,15 @@ class DocumentProcessor:
         model_hashes: dict[str, str] | None = None,
         runtime_identity_required: bool = False,
         run_id: str | None = None,
-    ) -> ParserRun:
+        inputs: tuple[DataProductRef, ...] = (),
+    ) -> ProcessingRun:
         memory_measurement = getattr(error, "memory_measurement", None)
-        run = ParserRun(
-            run_id=run_id or _run_id(),
+        resolved_run_id = run_id or _run_id()
+        run = ProcessingRun(
+            run_id=resolved_run_id,
             artifact_id=artifact.artifact_id,
-            parser_name=parser_name,
-            parser_version=parser_version,
+            stage_id=component_id,
+            component=_component_descriptor(component_id, component_version),
             runtime_identity_required=runtime_identity_required,
             component_versions=component_versions or {},
             model_versions=model_versions or {},
@@ -2886,7 +2996,7 @@ class DocumentProcessor:
             configuration_sha256=configuration_sha256(configuration),
             started_at=started_at,
             finished_at=utc_now(),
-            status=ParserRunStatus.FAILED,
+            status=ProcessingRunStatus.FAILED,
             resource_usage=ResourceUsage(
                 wall_time_seconds=time.perf_counter() - started_clock,
                 peak_memory_bytes=(
@@ -2898,17 +3008,18 @@ class DocumentProcessor:
                 memory_measurement=memory_measurement,
             ),
             warnings=(str(error) or error.__class__.__name__,),
+            inputs=inputs,
         )
         code = (
             error.code
             if isinstance(error, ParserServiceError)
-            else f"{parser_name}_failed"
+            else f"{component_id}_failed"
         )
         diagnostic = self._build_diagnostic(
             artifact,
             run.run_id,
             severity=DiagnosticSeverity.FATAL,
-            stage=parser_name,
+            stage=component_id,
             code=code,
             message=str(error) or error.__class__.__name__,
             details={
@@ -2918,9 +3029,9 @@ class DocumentProcessor:
             },
         )
         memory_diagnostic = self._memory_measurement_diagnostic(
-            artifact, run, memory_measurement, stage=parser_name
+            artifact, run, memory_measurement, stage=component_id
         )
-        return self._commit_parser_run(
+        return self._commit_processing_run(
             artifact,
             run,
             (diagnostic,)
@@ -2931,7 +3042,7 @@ class DocumentProcessor:
     def _save_diagnostic(
         self,
         artifact: DocumentArtifact,
-        run: ParserRun,
+        run: ProcessingRun,
         *,
         severity: DiagnosticSeverity,
         stage: str,
@@ -2940,7 +3051,7 @@ class DocumentProcessor:
         item_ref: str | None = None,
         page_number: int | None = None,
         details: dict[str, Any] | None = None,
-    ) -> ParseDiagnostic:
+    ) -> ProcessingDiagnostic:
         diagnostic = self._build_diagnostic(
             artifact,
             run.run_id,
@@ -2958,7 +3069,7 @@ class DocumentProcessor:
     def _build_diagnostic(
         self,
         artifact: DocumentArtifact,
-        parser_run_id: str,
+        processing_run_id: str,
         *,
         severity: DiagnosticSeverity,
         stage: str,
@@ -2967,17 +3078,17 @@ class DocumentProcessor:
         item_ref: str | None = None,
         page_number: int | None = None,
         details: dict[str, Any] | None = None,
-    ) -> ParseDiagnostic:
+    ) -> ProcessingDiagnostic:
         normalized_code = _diagnostic_code(code)
         diagnostic_id = sha256_bytes(
             "\x1f".join(
-                (parser_run_id, normalized_code, item_ref or "", message)
+                (processing_run_id, normalized_code, item_ref or "", message)
             ).encode("utf-8")
         )
-        return ParseDiagnostic(
+        return ProcessingDiagnostic(
             diagnostic_id=diagnostic_id,
             artifact_id=artifact.artifact_id,
-            parser_run_id=parser_run_id,
+            processing_run_id=processing_run_id,
             severity=severity,
             stage=stage,
             code=normalized_code,
@@ -2990,31 +3101,32 @@ class DocumentProcessor:
 
     def _record_terminal_router_run(
         self, artifact: DocumentArtifact, reason: str
-    ) -> ParserRun:
+    ) -> ProcessingRun:
         configuration = {"media_type": artifact.media_type, "router_version": "1"}
-        runs = self.store.list_parser_runs(
+        runs = self.store.list_processing_runs(
             artifact_id=artifact.artifact_id,
-            parser_name="document-router",
+            component_id="document-router",
             configuration_sha256=configuration_sha256(configuration),
         )
         reusable = self._select_reusable_run(
             runs,
-            statuses=frozenset({ParserRunStatus.QUARANTINED}),
+            statuses=frozenset({ProcessingRunStatus.QUARANTINED}),
         )
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
             return reusable
         now = utc_now()
-        run = ParserRun(
-            run_id=_run_id(),
+        run_id = _run_id()
+        run = ProcessingRun(
+            run_id=run_id,
             artifact_id=artifact.artifact_id,
-            parser_name="document-router",
-            parser_version="1",
+            stage_id="document-router",
+            component=_component_descriptor("document-router", "1"),
             configuration=configuration,
             configuration_sha256=configuration_sha256(configuration),
             started_at=now,
             finished_at=now,
-            status=ParserRunStatus.QUARANTINED,
+            status=ProcessingRunStatus.QUARANTINED,
             warnings=(reason,),
             completed_stages=("format_detection", "quarantine"),
         )
@@ -3026,7 +3138,7 @@ class DocumentProcessor:
             code="UNSUPPORTED_INPUT_FORMAT",
             message=reason,
         )
-        return self._commit_parser_run(artifact, run, (diagnostic,))
+        return self._commit_processing_run(artifact, run, (diagnostic,))
 
     def _record_fallback_exhaustion_run(
         self,
@@ -3034,8 +3146,8 @@ class DocumentProcessor:
         *,
         docling_document_sha256: str,
         reason_codes: tuple[str, ...],
-        upstream_runs: tuple[ParserRun, ...],
-    ) -> ParserRun:
+        upstream_runs: tuple[ProcessingRun, ...],
+    ) -> ProcessingRun:
         """Persist an explicit terminal quarantine after all PDF fallbacks fail."""
 
         configuration = {
@@ -3045,22 +3157,24 @@ class DocumentProcessor:
             "reason_codes": list(reason_codes),
             "upstream_runs": [
                 {
-                    "parser_name": run.parser_name,
+                    "component_id": run.component_id,
                     "configuration_sha256": run.configuration_sha256,
                     "status": run.status.value,
-                    "output_hashes": run.output_hashes,
+                    "outputs": [
+                        product.model_dump(mode="json") for product in run.outputs
+                    ],
                 }
                 for run in upstream_runs
             ],
         }
         config_hash = configuration_sha256(configuration)
         reusable = self._select_reusable_run(
-            self.store.list_parser_runs(
+            self.store.list_processing_runs(
                 artifact_id=artifact.artifact_id,
-                parser_name="document-fallback-policy",
+                component_id="document-fallback-policy",
                 configuration_sha256=config_hash,
             ),
-            statuses=frozenset({ParserRunStatus.QUARANTINED}),
+            statuses=frozenset({ProcessingRunStatus.QUARANTINED}),
         )
         if reusable is not None:
             self._reconcile_run_diagnostics(artifact, reusable)
@@ -3068,17 +3182,23 @@ class DocumentProcessor:
 
         reason_summary = ", ".join(reason_codes)
         now = utc_now()
-        run = ParserRun(
-            run_id=_run_id(),
+        run_id = _run_id()
+        run = ProcessingRun(
+            run_id=run_id,
             artifact_id=artifact.artifact_id,
-            parser_name="document-fallback-policy",
-            parser_version="1",
+            stage_id="document-fallback-policy",
+            component=_component_descriptor("document-fallback-policy", "1"),
             configuration=configuration,
             configuration_sha256=config_hash,
             started_at=now,
             finished_at=now,
-            status=ParserRunStatus.QUARANTINED,
+            status=ProcessingRunStatus.QUARANTINED,
             warnings=(f"PDF parser fallbacks exhausted: {reason_summary}",),
+            inputs=tuple(
+                product
+                for upstream_run in upstream_runs
+                for product in upstream_run.outputs
+            ),
             completed_stages=("fallback_evaluation", "quarantine"),
         )
         diagnostic = self._build_diagnostic(
@@ -3093,7 +3213,7 @@ class DocumentProcessor:
             ),
             details={"reason_codes": list(reason_codes)},
         )
-        return self._commit_parser_run(artifact, run, (diagnostic,))
+        return self._commit_processing_run(artifact, run, (diagnostic,))
 
     def _find_derivative(
         self, parent_artifact_id: str, source_sha256: str
@@ -3110,16 +3230,16 @@ class DocumentProcessor:
     def _ensure_ocr_derivative(
         self,
         parent: DocumentArtifact,
-        ocr_run: ParserRun,
+        ocr_run: ProcessingRun,
     ) -> DocumentArtifact:
         """Reconcile a derivative only after its creator run is durable."""
 
-        source_sha256 = ocr_run.output_hashes["searchable_pdf"]
+        source_sha256 = ocr_run.require_output("searchable_pdf").blob_sha256
         existing = self._find_derivative(parent.artifact_id, source_sha256)
         if existing is not None:
             if existing.raw_location.created_by_run_id != ocr_run.run_id:
-                workflow_context = _WORKFLOW_CONTEXT.get()
-                if workflow_context is None or not workflow_context.force_reprocess:
+                pipeline_context = _PIPELINE_CONTEXT.get()
+                if pipeline_context is None or not pipeline_context.force_reprocess:
                     raise ArtifactMetadataConflictError(
                         "OCR derivative exists with different immutable creator lineage"
                     )
@@ -3137,18 +3257,18 @@ class DocumentProcessor:
                 created_by_run_id=ocr_run.run_id,
             )
         except Exception as exc:
-            raise ParserRunCommitIncompleteError(ocr_run.run_id) from exc
+            raise ProcessingRunCommitIncompleteError(ocr_run.run_id) from exc
 
     def _result_after_failure(
         self,
         artifact: DocumentArtifact,
         route: Any,
         previous_run_ids: set[str],
-        status: ParserRunStatus,
+        status: ProcessingRunStatus,
     ) -> DocumentProcessingResult:
         runs = tuple(
             run
-            for run in self.store.list_parser_runs(artifact_id=artifact.artifact_id)
+            for run in self.store.list_processing_runs(artifact_id=artifact.artifact_id)
             if run.run_id not in previous_run_ids
         )
         return DocumentProcessingResult(
@@ -3156,7 +3276,7 @@ class DocumentProcessor:
             status=status,
             route=tuple(stage.value for stage in route.required_stages)
             + tuple(stage.value for stage in route.conditional_stages),
-            parser_runs=runs,
+            processing_runs=runs,
             diagnostics=self.store.list_diagnostics(artifact_id=artifact.artifact_id),
         )
 
@@ -3258,30 +3378,30 @@ def _optional_workflow_identifier(value: str | None, field_name: str) -> str | N
     return normalized
 
 
-def _forced_workflow_run_id(
+def _forced_pipeline_run_id(
     artifact_id: str,
     *,
     output_policy_sha256: str,
     repetition_group_id: str | None,
-    workflow_attempt_id: str,
+    pipeline_attempt_id: str,
 ) -> str:
     """Return the stable identity of one explicitly named forced attempt."""
 
     identity = configuration_sha256(
         {
-            "schema": "deepcritical-forced-workflow-attempt-v1",
+            "schema": "deepcritical-forced-pipeline-attempt-v1",
             "artifact_id": artifact_id,
             "output_policy_sha256": output_policy_sha256,
             "repetition_group_id": repetition_group_id,
-            "workflow_attempt_id": workflow_attempt_id,
+            "pipeline_attempt_id": pipeline_attempt_id,
         }
     )
     return f"workflow-{identity}"
 
 
-def _external_task_checkpoint_id(
+def _execution_checkpoint_id(
     artifact_id: str,
-    parser_name: str,
+    component_id: str,
     config_hash: str,
     *,
     output_policy_sha256: str,
@@ -3290,7 +3410,7 @@ def _external_task_checkpoint_id(
     value = "\x1f".join(
         (
             artifact_id,
-            parser_name,
+            component_id,
             config_hash,
             output_policy_sha256,
             attempt_id or "shared-recovery",
@@ -3300,32 +3420,32 @@ def _external_task_checkpoint_id(
 
 
 def _checkpoint_matches_invocation(
-    checkpoint: ExternalTaskCheckpoint,
+    checkpoint: ExecutionCheckpoint,
     *,
     artifact_id: str,
-    parser_name: str,
+    component_id: str,
     configuration_sha256: str,
     output_policy_sha256: str,
-    workflow_context: _WorkflowContext | None,
+    pipeline_context: _PipelineContext | None,
 ) -> bool:
     """Reject a checkpoint unless every immutable invocation scope agrees."""
 
     if (
         checkpoint.artifact_id != artifact_id
-        or checkpoint.parser_name != parser_name
+        or checkpoint.component_id != component_id
         or checkpoint.configuration_sha256 != configuration_sha256
         or checkpoint.output_policy_sha256 != output_policy_sha256
     ):
         return False
-    if workflow_context is None or not workflow_context.force_reprocess:
+    if pipeline_context is None or not pipeline_context.force_reprocess:
         return (
             checkpoint.repetition_group_id is None
-            and checkpoint.workflow_attempt_id is None
+            and checkpoint.pipeline_attempt_id is None
         )
     return (
-        checkpoint.workflow_run_id == workflow_context.workflow_run_id
-        and checkpoint.repetition_group_id == workflow_context.repetition_group_id
-        and checkpoint.workflow_attempt_id == workflow_context.workflow_attempt_id
+        checkpoint.pipeline_run_id == pipeline_context.pipeline_run_id
+        and checkpoint.repetition_group_id == pipeline_context.repetition_group_id
+        and checkpoint.pipeline_attempt_id == pipeline_context.pipeline_attempt_id
     )
 
 
@@ -3375,5 +3495,5 @@ __all__ = [
     "DocumentProcessingConfig",
     "DocumentProcessingResult",
     "DocumentProcessor",
-    "ParserRunCommitIncompleteError",
+    "ProcessingRunCommitIncompleteError",
 ]

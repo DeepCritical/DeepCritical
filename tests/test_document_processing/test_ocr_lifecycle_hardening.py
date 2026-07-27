@@ -31,7 +31,7 @@ class _LifecycleLease:
     def __init__(self, *, finish_raises: bool = False) -> None:
         self.request = MemoryMeasurementRequest(
             measurement_id="ocr-lifecycle-test",
-            parser_name="ocrmypdf",
+            component_id="ocrmypdf",
             boundary="ocr-test",
         )
         self.finish_raises = finish_raises
@@ -441,7 +441,7 @@ def test_cgroup_abort_prefers_recursive_cgroup_kill(tmp_path: Path) -> None:
     lease = CgroupV2MemoryLease(
         request=MemoryMeasurementRequest(
             measurement_id="run-1",
-            parser_name="ocrmypdf",
+            component_id="ocrmypdf",
             boundary="fixture",
         ),
         path=cgroup,
@@ -473,7 +473,7 @@ def test_cgroup_abort_fallback_kills_only_invocation_descendants(
     lease = CgroupV2MemoryLease(
         request=MemoryMeasurementRequest(
             measurement_id="run-2",
-            parser_name="ocrmypdf",
+            component_id="ocrmypdf",
             boundary="fixture",
         ),
         path=cgroup,
