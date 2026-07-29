@@ -17,6 +17,9 @@ from DeepResearch.src.document_processing.clients import (
     OCRResult,
     ParserServiceError,
 )
+from DeepResearch.src.document_processing.document_pipeline import (
+    default_document_pipeline_spec,
+)
 from DeepResearch.src.document_processing.models import (
     ArtifactRelationship,
     DocumentArtifact,
@@ -28,6 +31,12 @@ from DeepResearch.src.document_processing.models import (
     RuntimeAttestationSource,
     sha256_bytes,
     utc_now,
+)
+from DeepResearch.src.document_processing.orchestration import (
+    CompiledStage,
+    LocalStageExecutor,
+    StageContext,
+    StageResult,
 )
 from DeepResearch.src.document_processing.pipeline import (
     ArtifactMetadataConflictError,
@@ -502,6 +511,109 @@ def _config() -> DocumentProcessingConfig:
         minimum_pdf_locator_coverage=0.95,
         preflight_enabled=False,
         require_runtime_identity=False,
+    )
+
+
+class _RecordingExecutor:
+    def __init__(self) -> None:
+        self.stage_ids: list[str] = []
+        self.local = LocalStageExecutor()
+
+    async def execute(
+        self,
+        stage: CompiledStage,
+        context: StageContext,
+    ) -> StageResult:
+        self.stage_ids.append(stage.spec.stage_id)
+        return await self.local.execute(stage, context)
+
+
+@pytest.mark.asyncio
+async def test_reference_flow_executes_through_the_compiled_local_dag(tmp_path) -> None:
+    executor = _RecordingExecutor()
+    processor = DocumentProcessor(
+        ContentAddressedStore(tmp_path / "store"),
+        docling=FakeDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+        stage_executor=executor,
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>compiled local pipeline</body></html>",
+        acquisition_uri="https://example.test/compiled.html",
+        media_type="text/html",
+        identifiers={"filename": "compiled.html"},
+    )
+
+    result = await processor.process_artifact(artifact.artifact_id)
+
+    assert result.status is ProcessingRunStatus.COMPLETE
+    assert executor.stage_ids == [
+        "preflight",
+        "route",
+        "prepare",
+        "docling",
+        "select-scholarly",
+        "integrity",
+        "fallback-policy",
+        "finalize",
+    ]
+    assert processor.component_registry.component_ids == (
+        "document-preflight",
+        "document-router",
+        "document-native-adapter",
+        "docling",
+        "grobid-primary",
+        "ocrmypdf-fallback",
+        "grobid-fallback",
+        "scholarly-output-selector",
+        "docling-grobid-aligner",
+        "docling-content-integrity",
+        "document-fallback-policy",
+        "document-result",
+    )
+    assert not hasattr(processor, "_process_artifact_once_legacy")
+
+
+@pytest.mark.asyncio
+async def test_pipeline_specification_is_part_of_reuse_identity(tmp_path) -> None:
+    store = ContentAddressedStore(tmp_path / "store")
+    first_docling = FakeDocling()
+    first = DocumentProcessor(
+        store,
+        docling=first_docling,
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+    )
+    content = b"<html><body>pipeline identity</body></html>"
+    artifact = first.ingest_bytes(
+        content,
+        acquisition_uri="https://example.test/pipeline-identity.html",
+        media_type="text/html",
+        identifiers={"filename": "pipeline-identity.html"},
+    )
+    first_result = await first.process_artifact(artifact.artifact_id)
+
+    changed_docling = FakeDocling()
+    changed = DocumentProcessor(
+        store,
+        docling=changed_docling,
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+        pipeline_spec=default_document_pipeline_spec().model_copy(
+            update={"pipeline_version": "2"}
+        ),
+    )
+    second_result = await changed.process_artifact(artifact.artifact_id)
+
+    assert first_docling.calls == 1
+    assert changed_docling.calls == 1
+    assert (
+        first_result.processing_runs[0].output_policy_sha256
+        != second_result.processing_runs[0].output_policy_sha256
     )
 
 
@@ -1191,7 +1303,12 @@ async def test_pipeline_persists_outputs_and_resumes_completed_stages(tmp_path) 
     assert len(policy_hashes) == 1
     assert None not in policy_hashes
     assert all(
-        run.output_policy_snapshot["schema"] == "deepcritical-document-output-policy-v1"
+        run.output_policy_snapshot["schema"] == "deepcritical-document-output-policy-v2"
+        for run in first.processing_runs
+    )
+    assert all(
+        run.output_policy_snapshot["local_pipeline"]["specification"]
+        == processor.pipeline_spec.model_dump(mode="json", by_alias=True)
         for run in first.processing_runs
     )
     assert docling.calls == 1

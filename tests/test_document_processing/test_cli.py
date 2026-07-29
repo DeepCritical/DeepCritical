@@ -12,6 +12,7 @@ from DeepResearch.scripts.process_document import (
     _check_parser_services,
     _memory_reporter,
     _ocr_memory_meter,
+    _pipeline_spec,
     _processing_config,
     _required_service_api_key,
     _result_payload,
@@ -50,7 +51,9 @@ def _default_config() -> DictConfig:
 
 
 def test_default_config_maps_to_runtime_contract() -> None:
-    config = _processing_config(_default_config())
+    raw = _default_config()
+    config = _processing_config(raw)
+    pipeline = _pipeline_spec(raw)
 
     assert config.ocr_mode == "container_cli"
     assert config.ocr_languages == ("eng",)
@@ -69,6 +72,21 @@ def test_default_config_maps_to_runtime_contract() -> None:
     assert config.reject_extension_only_detection is True
     assert config.quarantine_on_fallback_exhaustion is True
     assert config.require_runtime_identity is False
+    assert pipeline.pipeline_id == "deepcritical-document-processing"
+    assert tuple(stage.stage_id for stage in pipeline.stages) == (
+        "preflight",
+        "route",
+        "prepare",
+        "docling",
+        "primary-grobid",
+        "ocr",
+        "fallback-grobid",
+        "select-scholarly",
+        "alignment",
+        "integrity",
+        "fallback-policy",
+        "finalize",
+    )
 
 
 def test_config_schema_version_is_required_and_recognized() -> None:
@@ -78,7 +96,7 @@ def test_config_schema_version_is_required_and_recognized() -> None:
         _processing_config(raw)
 
     raw = _default_config()
-    raw.schema_version = "deepcritical-document-processing-config-v2"
+    raw.schema_version = "deepcritical-document-processing-config-v1"
     with pytest.raises(ValueError, match="schema_version"):
         _processing_config(raw)
 

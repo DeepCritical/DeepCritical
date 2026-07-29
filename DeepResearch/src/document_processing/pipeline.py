@@ -10,7 +10,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import unquote, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -38,6 +38,7 @@ from .models import (
     ContentSpanSet,
     DataProductRef,
     DiagnosticSeverity,
+    DoclingInputFormat,
     DocumentArtifact,
     ExecutionCheckpoint,
     IntakeQuarantineRecord,
@@ -89,6 +90,12 @@ from .validation import (
     probably_image_only,
     validate_content_integrity,
 )
+
+if TYPE_CHECKING:
+    from .orchestration import (
+        PipelineSpec,
+        StageExecutor,
+    )
 
 
 def _default_docling_options() -> dict[str, Any]:
@@ -318,7 +325,7 @@ _PIPELINE_CONTEXT: ContextVar[_PipelineContext | None] = ContextVar(
 # ``configuration``. Individual configurations contain immutable input hashes
 # and explain which conditional branch actually ran. The policy snapshot is the
 # static contract used to judge whether two workflows were comparable.
-_OUTPUT_POLICY_SCHEMA_VERSION = "deepcritical-document-output-policy-v1"
+_OUTPUT_POLICY_SCHEMA_VERSION = "deepcritical-document-output-policy-v2"
 _OUTPUT_POLICY_ROUTING_VERSION = "deterministic-document-router-v1"
 _PDF_CONTENT_SPAN_ALGORITHM = "provenance-charspan-v2"
 _OUTPUT_POLICY_ALGORITHM_VERSIONS: dict[str, str] = {
@@ -360,6 +367,8 @@ class DocumentProcessor:
         grobid: GrobidClient | None = None,
         ocrmypdf: OCRmyPDFRunner | ContainerOCRmyPDFRunner | None = None,
         config: DocumentProcessingConfig | None = None,
+        pipeline_spec: PipelineSpec | None = None,
+        stage_executor: StageExecutor | None = None,
     ) -> None:
         self.store = store
         self.config = config or DocumentProcessingConfig()
@@ -385,6 +394,18 @@ class DocumentProcessor:
             self.config.minimum_pdf_locator_coverage
         )
         self.aligner = DoclingGrobidAligner(self.config.alignment_minimum_score)
+        from .document_pipeline import build_document_pipeline
+
+        (
+            self.component_registry,
+            self.compiled_pipeline,
+            self.pipeline_orchestrator,
+        ) = build_document_pipeline(
+            self,
+            pipeline_spec=pipeline_spec,
+            executor=stage_executor,
+        )
+        self.pipeline_spec = self.compiled_pipeline.spec
 
     def ingest_path(
         self,
@@ -926,306 +947,19 @@ class DocumentProcessor:
         self,
         artifact_id: str,
     ) -> DocumentProcessingResult:
-        artifact = self.store.get_artifact(artifact_id)
-        preflight_run: ProcessingRun | None = None
-        if self.config.preflight_enabled:
-            preflight_run, preflight = self._load_or_run_preflight(artifact)
-            if preflight.decision is PreflightDecision.QUARANTINE:
-                return DocumentProcessingResult(
-                    artifact=artifact,
-                    status=ProcessingRunStatus.QUARANTINED,
-                    route=("preflight", "quarantine"),
-                    processing_runs=(preflight_run,),
-                    diagnostics=self.store.list_diagnostics(
-                        artifact_id=artifact.artifact_id
-                    ),
-                )
-        content = self.store.read_blob(artifact.source_sha256)
-        filename = artifact.identifiers.get("filename") or _filename_from_uri(
-            artifact.acquisition_uri
+        context = _PIPELINE_CONTEXT.get()
+        if context is None:
+            raise RuntimeError("document pipeline execution context is missing")
+        execution = await self.pipeline_orchestrator.execute(
+            self.compiled_pipeline,
+            {"artifact_id": artifact_id},
+            pipeline_run_id=context.pipeline_run_id,
         )
-        route = self.router.route(
-            content,
-            filename=filename,
-            media_type=artifact.media_type,
-            ocr_enabled=self.config.ocr_enabled,
-            grobid_enabled=self.config.grobid_enabled,
-        )
-        run_ids_before = {
-            run.run_id
-            for run in self.store.list_processing_runs(artifact_id=artifact_id)
-        }
-
-        if route.required_stages == (ProcessingStage.QUARANTINE,):
-            run = self._record_terminal_router_run(artifact, route.reason)
-            diagnostics = self.store.list_diagnostics(artifact_id=artifact_id)
-            return DocumentProcessingResult(
-                artifact=artifact,
-                status=ProcessingRunStatus.QUARANTINED,
-                route=tuple(stage.value for stage in route.required_stages),
-                processing_runs=(run,),
-                diagnostics=diagnostics,
-            )
-
-        parse_content = content
-        parse_filename = filename
-        parse_media_type = artifact.media_type
-        native_locators: tuple[NativeTextLocator, ...] = ()
-        docling_inputs = self._source_data_products(artifact)
-        preprocessing_runs: list[ProcessingRun] = (
-            [preflight_run] if preflight_run is not None else []
-        )
-        native_locator_incomplete = False
-
-        if route.input_format in {InputFormat.BIOC_JSON, InputFormat.BIOC_XML}:
-            adapted, adapter_run = self._run_bioc_adapter(
-                artifact, content, route.input_format
-            )
-            preprocessing_runs.append(adapter_run)
-            if adapted is None:
-                return self._result_after_failure(
-                    artifact, route, run_ids_before, ProcessingRunStatus.FAILED
-                )
-            parse_content = adapted.content
-            parse_filename = adapted.filename
-            parse_media_type = adapted.media_type
-            native_locators = adapted.locator_overlay
-            docling_inputs = (
-                adapter_run.require_output("html_projection"),
-                adapter_run.require_output("native_locator_overlay"),
-            )
-            native_locator_incomplete = (
-                adapter_run.status is not ProcessingRunStatus.COMPLETE
-            )
-        elif route.input_format is InputFormat.JATS:
-            native_locators, adapter_run = self._run_jats_locator_adapter(
-                artifact, content
-            )
-            preprocessing_runs.append(adapter_run)
-            native_locator_product = adapter_run.output("native_locator_overlay")
-            if native_locator_product is not None:
-                docling_inputs += (native_locator_product,)
-            native_locator_incomplete = (
-                adapter_run.status is not ProcessingRunStatus.COMPLETE
-            )
-
-        docling_stage = await self._run_docling(
-            artifact,
-            parse_content,
-            filename=parse_filename,
-            media_type=parse_media_type,
-            input_format=route.input_format,
-            native_locators=native_locators,
-            inputs=docling_inputs,
-        )
-        if docling_stage is None:
-            return self._result_after_failure(
-                artifact, route, run_ids_before, ProcessingRunStatus.FAILED
-            )
-
-        grobid_stage: _GrobidStage | None = None
-        fallback_grobid_stage: _GrobidStage | None = None
-        ocr_stage: _OCRStage | None = None
-        ocr_derivative_quarantined = False
-        derivative_artifacts: list[DocumentArtifact] = []
-        selected_tei: bytes | None = None
-        selected_grobid_run: ProcessingRun | None = None
-        stage_runs = preprocessing_runs + [docling_stage.run]
-        pdf_probably_image_only = (
-            route.input_format is InputFormat.PDF
-            and self.config.detect_image_only_pdfs
-            and probably_image_only(
-                docling_stage.document,
-                minimum_characters_per_page=(
-                    self.config.minimum_text_characters_per_page
-                ),
-                image_only_page_ratio=self.config.image_only_page_ratio,
-            )
-        )
-        ocr_fallback_unusable = False
-
-        if route.input_format is InputFormat.PDF and self.config.grobid_enabled:
-            grobid_stage = await self._run_grobid(artifact, content, filename=filename)
-            if grobid_stage is not None:
-                stage_runs.append(grobid_stage.run)
-            if (
-                grobid_stage is not None
-                and grobid_stage.usable
-                and not pdf_probably_image_only
-            ):
-                selected_tei = grobid_stage.tei_xml
-                selected_grobid_run = grobid_stage.run
-            needs_ocr = self.config.ocr_enabled and (
-                pdf_probably_image_only
-                or grobid_stage is None
-                or not grobid_stage.usable
-            )
-            if needs_ocr:
-                fallback_reasons = []
-                if pdf_probably_image_only:
-                    fallback_reasons.append("image_only_pages")
-                if grobid_stage is None or not grobid_stage.usable:
-                    fallback_reasons.append("grobid_text_insufficient")
-                ocr_stage = await self._run_ocr(
-                    artifact,
-                    content,
-                    fallback_reason="+".join(fallback_reasons),
-                )
-                if ocr_stage is not None:
-                    stage_runs.append(ocr_stage.run)
-                if ocr_stage is not None and ocr_stage.derivative is not None:
-                    derivative_artifacts.append(ocr_stage.derivative)
-                    if self.config.preflight_enabled:
-                        derivative_preflight_run, derivative_preflight = (
-                            self._load_or_run_preflight(ocr_stage.derivative)
-                        )
-                        stage_runs.append(derivative_preflight_run)
-                        ocr_derivative_quarantined = (
-                            not derivative_preflight.may_proceed
-                        )
-                    if not ocr_derivative_quarantined:
-                        searchable_pdf = self.store.read_blob(
-                            ocr_stage.derivative.source_sha256
-                        )
-                        fallback_grobid_stage = await self._run_grobid(
-                            ocr_stage.derivative,
-                            searchable_pdf,
-                            filename=f"ocr-{filename}",
-                        )
-                        if fallback_grobid_stage is not None:
-                            stage_runs.append(fallback_grobid_stage.run)
-                        if (
-                            fallback_grobid_stage is not None
-                            and fallback_grobid_stage.usable
-                        ):
-                            selected_tei = fallback_grobid_stage.tei_xml
-                            selected_grobid_run = fallback_grobid_stage.run
-                if selected_tei is None:
-                    ocr_fallback_unusable = True
-
-            if (
-                selected_tei is None
-                and grobid_stage is not None
-                and grobid_stage.usable
-            ):
-                selected_tei = grobid_stage.tei_xml
-                selected_grobid_run = grobid_stage.run
-
-        alignment_sha256: str | None = None
-        alignment_run: ProcessingRun | None = None
-        scholarly_overlay: ScholarlyAlignmentOverlay | None = None
-        if selected_tei is not None:
-            if selected_grobid_run is None:
-                raise RuntimeError("selected GROBID TEI has no producing run")
-            alignment_run, scholarly_overlay = self._run_alignment(
-                artifact,
-                docling_stage,
-                selected_grobid_run,
-                selected_tei,
-            )
-            stage_runs.append(alignment_run)
-            if scholarly_overlay is not None:
-                alignment_sha256 = alignment_run.output_sha256("alignment_overlay")
-
-        integrity_run = self._run_content_integrity(
-            artifact,
-            docling_stage,
-            scholarly_overlay=scholarly_overlay,
-            scholarly_alignment_product=(
-                alignment_run.output("alignment_overlay")
-                if scholarly_overlay is not None and alignment_run is not None
-                else None
-            ),
-        )
-        stage_runs.append(integrity_run)
-        content_integrity_sha256 = integrity_run.output_sha256(
-            "content_integrity_overlay"
-        )
-
-        fallback_exhaustion_run: ProcessingRun | None = None
-        fallback_exhausted = route.input_format is InputFormat.PDF and (
-            selected_tei is None or ocr_fallback_unusable or ocr_derivative_quarantined
-        )
-        if self.config.quarantine_on_fallback_exhaustion and fallback_exhausted:
-            reason_codes: list[str] = []
-            if selected_tei is None:
-                reason_codes.append("no_usable_scholarly_tei")
-            if ocr_fallback_unusable:
-                reason_codes.append("ocr_grobid_fallback_unusable")
-            if ocr_derivative_quarantined:
-                reason_codes.append("ocr_derivative_quarantined")
-            fallback_exhaustion_run = self._record_fallback_exhaustion_run(
-                artifact,
-                docling_document_sha256=docling_stage.run.require_output(
-                    "docling_document"
-                ).blob_sha256,
-                reason_codes=tuple(reason_codes),
-                upstream_runs=tuple(stage_runs),
-            )
-            stage_runs.append(fallback_exhaustion_run)
-
-        all_runs = tuple(stage_runs)
-
-        if fallback_exhaustion_run is not None:
-            overall_status = ProcessingRunStatus.QUARANTINED
-        else:
-            overall_status = docling_stage.run.status
-            if native_locator_incomplete:
-                overall_status = ProcessingRunStatus.PARTIAL
-            if route.input_format is InputFormat.PDF and selected_tei is None:
-                overall_status = ProcessingRunStatus.PARTIAL
-            if (
-                selected_grobid_run is not None
-                and selected_grobid_run.status is not ProcessingRunStatus.COMPLETE
-            ):
-                overall_status = ProcessingRunStatus.PARTIAL
-            if (
-                ocr_stage is not None
-                and ocr_stage.run.status is not ProcessingRunStatus.COMPLETE
-            ):
-                overall_status = ProcessingRunStatus.PARTIAL
-            if ocr_fallback_unusable:
-                overall_status = ProcessingRunStatus.PARTIAL
-            if ocr_derivative_quarantined:
-                overall_status = ProcessingRunStatus.PARTIAL
-            if (
-                alignment_run is not None
-                and alignment_run.status is ProcessingRunStatus.FAILED
-            ):
-                overall_status = ProcessingRunStatus.PARTIAL
-            if integrity_run.status is not ProcessingRunStatus.COMPLETE:
-                overall_status = ProcessingRunStatus.PARTIAL
-            if overall_status not in {
-                ProcessingRunStatus.COMPLETE,
-                ProcessingRunStatus.PARTIAL,
-            }:
-                overall_status = ProcessingRunStatus.FAILED
-
-        diagnostics = tuple(
-            diagnostic
-            for diagnostic in self.store.list_diagnostics()
-            if diagnostic.artifact_id == artifact.artifact_id
-            or diagnostic.artifact_id
-            in {derivative.artifact_id for derivative in derivative_artifacts}
-        )
-        return DocumentProcessingResult(
-            artifact=artifact,
-            status=overall_status,
-            route=tuple(stage.value for stage in route.required_stages)
-            + tuple(stage.value for stage in route.conditional_stages),
-            processing_runs=all_runs,
-            diagnostics=diagnostics,
-            docling_document_sha256=docling_stage.run.output_sha256("docling_document"),
-            grobid_tei_sha256=(
-                sha256_bytes(selected_tei) if selected_tei is not None else None
-            ),
-            alignment_sha256=alignment_sha256,
-            content_integrity_sha256=content_integrity_sha256,
-            content_span_count=docling_stage.content_span_count,
-            derivative_artifact_ids=tuple(
-                derivative.artifact_id for derivative in derivative_artifacts
-            ),
-        )
+        for stage in self.compiled_pipeline.stages:
+            result = execution.results[stage.spec.stage_id].outputs.get("result")
+            if isinstance(result, DocumentProcessingResult):
+                return result
+        raise RuntimeError("document pipeline completed without a terminal result")
 
     def _run_jats_locator_adapter(
         self,
@@ -1777,11 +1511,24 @@ class DocumentProcessor:
                 )
                 spans = bioc_alignment.spans
             else:
+                docling_input_formats: dict[InputFormat, DoclingInputFormat] = {
+                    InputFormat.HTML: "html",
+                    InputFormat.DOCX: "docx",
+                    InputFormat.PPTX: "pptx",
+                    InputFormat.XLSX: "xlsx",
+                    InputFormat.IMAGE: "image",
+                }
+                try:
+                    docling_input_format = docling_input_formats[input_format]
+                except KeyError as exc:
+                    raise ValueError(
+                        f"unsupported Docling input format: {input_format.value}"
+                    ) from exc
                 spans = build_docling_content_spans(
                     document,
                     artifact_id=artifact.artifact_id,
                     processing_run_id=run_id,
-                    input_format=input_format.value,
+                    input_format=docling_input_format,
                     representation_product_id=representation_product_id,
                 )
 
@@ -2810,6 +2557,13 @@ class DocumentProcessor:
         return {
             "schema": _OUTPUT_POLICY_SCHEMA_VERSION,
             "document_processing_config": self.config.model_dump(mode="json"),
+            "local_pipeline": {
+                "specification": self.pipeline_spec.model_dump(
+                    mode="json",
+                    by_alias=True,
+                ),
+                "registry": self.component_registry.contract_snapshot(),
+            },
             "effective_parser_options": {
                 "docling": {
                     "conversion_options": self.config.docling_options,
