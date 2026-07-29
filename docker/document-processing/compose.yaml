@@ -66,6 +66,9 @@ x-docling-container: &docling-container
 
 services:
   redis:
+    # Start directly as the image service account so cap_drop: ALL never blocks
+    # a root-to-redis setuid transition in the official entrypoint.
+    user: redis
     image: "redis:7.2.14-alpine3.21@${REDIS_IMAGE_DIGEST:?Set an approved REDIS_IMAGE_DIGEST}"
     pull_policy: never
     platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
@@ -118,6 +121,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - parser-internal
+      - parser-edge
     ports:
       - "127.0.0.1:${DOCLING_PORT:-5001}:5001"
     healthcheck:
@@ -129,7 +135,7 @@ services:
           import json, os, urllib.request;
           request = urllib.request.Request("http://127.0.0.1:5001/ready", headers={"X-Api-Key": os.environ["DOCLING_SERVE_API_KEY"]});
           payload = json.load(urllib.request.urlopen(request, timeout=5));
-          assert payload.get("ready") is True
+          assert (payload["ready"] is True if "ready" in payload else payload.get("status") == "ok")
       interval: 15s
       timeout: 8s
       retries: 20
@@ -180,6 +186,10 @@ services:
       dockerfile: Dockerfile.grobid
       args:
         GROBID_BASE_DIGEST: "${GROBID_BASE_DIGEST:?Set an approved GROBID_BASE_DIGEST}"
+        # Ask BuildKit to normalize timestamps where supported. Cross-run
+        # identity is enforced by the base digest and Dockerfile Git blob because
+        # local image IDs may also encode builder metadata.
+        SOURCE_DATE_EPOCH: "${SOURCE_DATE_EPOCH:-0}"
     image: "${GROBID_IMAGE_REPOSITORY:-deepcritical/grobid}:0.9.0-full-p0-c2"
     pull_policy: build
     platform: "${DOCUMENT_PROCESSING_PLATFORM:-linux/amd64}"
@@ -222,12 +232,17 @@ services:
     read_only: true
     cap_drop:
       - ALL
+    cap_add:
+      # The official Caddy binary carries this file capability; keeping it in
+      # the bounding set is required even though the proxy listens on 8070.
+      - NET_BIND_SERVICE
     security_opt:
       - no-new-privileges:true
     environment:
       GROBID_API_KEY: "${GROBID_API_KEY:?Set a non-default GROBID_API_KEY}"
     networks:
       - parser-internal
+      - parser-edge
     ports:
       - "127.0.0.1:${GROBID_PORT:-8070}:8070"
     volumes:
@@ -277,6 +292,8 @@ services:
 networks:
   parser-internal:
     internal: true
+  parser-edge:
+    driver: bridge
 
 volumes:
   redis-data:

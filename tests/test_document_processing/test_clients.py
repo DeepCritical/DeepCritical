@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -151,13 +152,15 @@ class _MismatchedMemoryReporter:
     [
         ({"ready": True}, True),
         ({"ready": False}, False),
+        ({"ready": False, "status": "ok"}, False),
         ({}, False),
-        ({"status": "ok"}, False),
+        ({"status": "ok"}, True),
+        ({"status": "starting"}, False),
         ({"ready": 1}, False),
     ],
 )
 @pytest.mark.asyncio
-async def test_docling_health_requires_explicit_boolean_readiness(
+async def test_docling_health_requires_documented_explicit_readiness(
     readiness: dict[str, object],
     expected: bool,
 ) -> None:
@@ -165,7 +168,7 @@ async def test_docling_health_requires_explicit_boolean_readiness(
         return web.json_response(readiness)
 
     async def version(_: web.Request) -> web.Response:
-        return web.json_response({"docling": "2.113.0", "serve": "1.21.0"})
+        return web.json_response({"docling": "2.96.1", "docling-serve": "1.21.0"})
 
     app = web.Application()
     app.router.add_get("/ready", ready)
@@ -183,7 +186,7 @@ async def test_docling_health_requires_explicit_boolean_readiness(
     assert isinstance(health, ServiceHealth)
     assert health.ready is expected
     assert health.readiness == readiness
-    assert health.versions == {"docling": "2.113.0", "serve": "1.21.0"}
+    assert health.versions == {"docling": "2.96.1", "docling-serve": "1.21.0"}
 
 
 @pytest.mark.parametrize(
@@ -447,7 +450,7 @@ async def test_docling_client_version_and_async_conversion_contract() -> None:
 
     async def version(request: web.Request) -> web.Response:
         assert request.headers["X-API-Key"] == "docling-test-key-123"
-        return web.json_response({"docling": "2.113.0", "serve": "1.21.0"})
+        return web.json_response({"docling": "2.96.1", "docling-serve": "1.21.0"})
 
     async def submit(request: web.Request) -> web.Response:
         assert request.headers["X-API-Key"] == "docling-test-key-123"
@@ -491,7 +494,7 @@ async def test_docling_client_version_and_async_conversion_contract() -> None:
         await server.close()
 
     assert submitted.is_set()
-    assert versions == {"docling": "2.113.0", "serve": "1.21.0"}
+    assert versions == {"docling": "2.96.1", "docling-serve": "1.21.0"}
     assert conversion.document["schema_name"] == "DoclingDocument"
     assert conversion.remote_task_id == "task-123"
 
@@ -721,6 +724,62 @@ async def test_grobid_client_observes_version_and_preserves_tei() -> None:
 
 
 @pytest.mark.asyncio
+async def test_grobid_client_normalizes_structured_version_payload() -> None:
+    async def version(request: web.Request) -> web.Response:
+        assert request.headers["X-API-Key"] == "grobid-test-key-1234"
+        return web.json_response({"version": "0.9.0", "revision": "0.9.0"})
+
+    app = web.Application()
+    app.router.add_get("/api/version", version)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        client = GrobidClient(
+            str(server.make_url("/")).rstrip("/"),
+            api_key="grobid-test-key-1234",
+        )
+        observed = await client.version()
+    finally:
+        await server.close()
+
+    assert observed == "0.9.0"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("body", "expected_code"),
+    [
+        (b"", "grobid_version_empty"),
+        (b'{"version":', "grobid_version_invalid"),
+        (b'{"revision":"0.9.0"}', "grobid_version_invalid"),
+        (b'["0.9.0"]', "grobid_version_invalid"),
+    ],
+)
+async def test_grobid_client_rejects_invalid_version_payload(
+    body: bytes, expected_code: str
+) -> None:
+    async def version(request: web.Request) -> web.Response:
+        assert request.headers["X-API-Key"] == "grobid-test-key-1234"
+        return web.Response(body=body, content_type="application/json")
+
+    app = web.Application()
+    app.router.add_get("/api/version", version)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        client = GrobidClient(
+            str(server.make_url("/")).rstrip("/"),
+            api_key="grobid-test-key-1234",
+        )
+        with pytest.raises(ParserServiceError) as error:
+            await client.version()
+    finally:
+        await server.close()
+
+    assert error.value.code == expected_code
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("chunked", [False, True], ids=["declared", "chunked"])
 async def test_grobid_rejects_oversized_tei_response(chunked: bool) -> None:
     response_limit = 64
@@ -887,6 +946,8 @@ async def test_container_ocr_conversion_uses_hardened_runtime_flags(
     assert command[command.index("--pids-limit") + 1] == "256"
     assert command[command.index("--tmpfs") + 1] == "/tmp:size=2g,mode=1777"
     assert command[command.index("--network") + 1] == "none"
+    if os.name == "posix":
+        assert command[command.index("--user") + 1] == f"{os.getuid()}:{os.getgid()}"
 
 
 @pytest.mark.asyncio

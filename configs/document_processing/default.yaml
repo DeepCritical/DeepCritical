@@ -55,7 +55,7 @@ services:
     api_key_env: DOCLING_API_KEY
     container_image: quay.io/docling-project/docling-serve-cpu:v1.21.0
     container_digest: null
-    component_version: "2.113.0"
+    component_version: "2.96.1"
     serve_version: "1.21.0"
     model_versions: {}
     model_hashes: {}

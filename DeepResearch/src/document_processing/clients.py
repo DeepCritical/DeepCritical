@@ -485,6 +485,41 @@ def _stringify_form_value(value: Any) -> str:
     return str(value)
 
 
+def _docling_readiness_is_explicit(readiness: Mapping[str, Any]) -> bool:
+    """Interpret only a documented, explicit Docling readiness value."""
+
+    if "ready" in readiness:
+        return readiness["ready"] is True
+    return readiness.get("status") == "ok"
+
+
+def _normalize_grobid_version(body: bytes) -> str:
+    """Normalize GROBID's current JSON response and legacy plain-text response."""
+
+    raw_version = body.decode("utf-8", errors="replace").strip()
+    if not raw_version:
+        raise ParserServiceError(
+            "GROBID version endpoint returned an empty value",
+            code="grobid_version_empty",
+        )
+    if not raw_version.startswith(("{", "[")):
+        return raw_version
+    try:
+        payload = json.loads(raw_version)
+    except json.JSONDecodeError as exc:
+        raise ParserServiceError(
+            "GROBID version endpoint returned malformed JSON",
+            code="grobid_version_invalid",
+        ) from exc
+    version = payload.get("version") if isinstance(payload, Mapping) else None
+    if not isinstance(version, str) or not version.strip():
+        raise ParserServiceError(
+            "GROBID version endpoint returned no valid version",
+            code="grobid_version_invalid",
+        )
+    return version.strip()
+
+
 class DoclingServeClient:
     """Thin asynchronous client for Docling Serve's durable conversion API."""
 
@@ -574,7 +609,7 @@ class DoclingServeClient:
                         response, code="docling_version_failed"
                     )
         return ServiceHealth(
-            ready=readiness.get("ready") is True,
+            ready=_docling_readiness_is_explicit(readiness),
             readiness=readiness,
             versions=versions,
         )
@@ -1032,13 +1067,7 @@ class GrobidClient:
                     max_bytes=self.max_response_bytes,
                     too_large_code="grobid_response_too_large",
                 )
-                version = body.decode("utf-8", errors="replace").strip()
-        if not version:
-            raise ParserServiceError(
-                "GROBID version endpoint returned an empty value",
-                code="grobid_version_empty",
-            )
-        return version
+        return _normalize_grobid_version(body)
 
     async def process_fulltext(
         self, content: bytes, *, filename: str = "document.pdf"
@@ -1469,6 +1498,8 @@ class ContainerOCRmyPDFRunner(OCRmyPDFRunner):
             "--tmpfs",
             self.tmpfs,
         ]
+        if os.name == "posix":
+            arguments.extend(["--user", f"{os.getuid()}:{os.getgid()}"])
         if self.container_digest is not None:
             arguments.extend(["--pull", "never"])
         return arguments

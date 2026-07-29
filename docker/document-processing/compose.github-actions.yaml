@@ -1,0 +1,7 @@
+# Standard GitHub-hosted runners build the project-owned GROBID customization
+# locally from the digest-pinned upstream image. The built image ID is recorded
+# and checked by the workflow; no mutable or unapproved registry image is used.
+services:
+  grobid:
+    image: "${GROBID_IMAGE_REPOSITORY:-deepcritical/grobid}:0.9.0-full-p0-c2"
+    pull_policy: never

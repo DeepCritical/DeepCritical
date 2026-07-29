@@ -14,8 +14,10 @@ import shutil
 import zlib
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
+import yaml
 from defusedxml import ElementTree
 from pypdf import PdfReader
 
@@ -78,6 +80,22 @@ def _positive_environment_float(name: str, default: float) -> float:
     return value
 
 
+def _configured_service_version(component_id: str, field: str) -> str:
+    config_path = (
+        Path(__file__).resolve().parents[2]
+        / "configs"
+        / "document_processing"
+        / "default.yaml"
+    )
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    value = config["services"][component_id][field]
+    if not isinstance(value, str) or not value.strip():
+        raise RuntimeError(
+            f"configured {component_id}.{field} must be a non-empty string"
+        )
+    return value.strip()
+
+
 @pytest.fixture(scope="session")
 def live_stack_config() -> _LiveStackConfig:
     """Load only namespaced live credentials, never unit-test fixture keys."""
@@ -97,13 +115,16 @@ def live_stack_config() -> _LiveStackConfig:
             "DEEPCRITICAL_LIVE_TASK_TIMEOUT_SECONDS", 1800.0
         ),
         expected_docling_version=os.getenv(
-            "DEEPCRITICAL_LIVE_EXPECTED_DOCLING_VERSION", "2.113.0"
+            "DEEPCRITICAL_LIVE_EXPECTED_DOCLING_VERSION",
+            _configured_service_version("docling", "component_version"),
         ).strip(),
         expected_docling_serve_version=os.getenv(
-            "DEEPCRITICAL_LIVE_EXPECTED_DOCLING_SERVE_VERSION", "1.21.0"
+            "DEEPCRITICAL_LIVE_EXPECTED_DOCLING_SERVE_VERSION",
+            _configured_service_version("docling", "serve_version"),
         ).strip(),
         expected_grobid_version=os.getenv(
-            "DEEPCRITICAL_LIVE_EXPECTED_GROBID_VERSION", "0.9.0"
+            "DEEPCRITICAL_LIVE_EXPECTED_GROBID_VERSION",
+            _configured_service_version("grobid", "component_version"),
         ).strip(),
     )
 
@@ -261,7 +282,9 @@ async def test_live_docling_async_conversion_contract(
     assert isinstance(health.readiness, Mapping)
     assert isinstance(health.versions, Mapping)
     assert versions.get("docling") == live_stack_config.expected_docling_version
-    assert versions.get("serve") == live_stack_config.expected_docling_serve_version
+    assert versions.get("docling-serve") == (
+        live_stack_config.expected_docling_serve_version
+    )
     assert health.versions == versions
     assert result.status in {"success", "partial_success"}
     assert result.remote_task_id
