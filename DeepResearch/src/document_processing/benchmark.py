@@ -1118,7 +1118,7 @@ _CONTENT_CONFIGURATION_KEYS = frozenset(
 _PIPELINE_STAGE_NAMES = frozenset(
     {"docling", "grobid", "ocrmypdf", "docling-grobid-aligner"}
 )
-_OUTPUT_POLICY_SCHEMA = "deepcritical-document-output-policy-v1"
+_OUTPUT_POLICY_SCHEMA = "deepcritical-document-output-policy-v2"
 _RUNTIME_PROVENANCE_SCHEMA = "deepcritical-benchmark-runtime-provenance-v2"
 _RUNTIME_ATTESTATION_SCHEMA = "deepcritical-runtime-attestation-v1"
 _REMOTE_ATTESTATION_CONTRACT = (

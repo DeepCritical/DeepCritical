@@ -1,7 +1,7 @@
 # Reuse-first scientific document-processing defaults.
 # This configuration is intentionally self-hosted and offline by default.
 
-schema_version: deepcritical-document-processing-config-v1
+schema_version: deepcritical-document-processing-config-v2
 enabled: true
 
 storage:
@@ -182,3 +182,267 @@ managed_providers:
     enabled: false
   azure_document_intelligence:
     enabled: false
+
+# Allow-listed local DAG. Values name registry entries; no module or callable
+# imports are accepted by the pipeline schema.
+pipeline:
+  schema_version: deepcritical-pipeline-spec-v1
+  pipeline_id: deepcritical-document-processing
+  pipeline_version: '1'
+  inputs:
+    artifact_id:
+      schema_uri: urn:deepcritical:document-processing:artifact-id
+      schema_version: deepcritical-artifact-id-v1
+  components:
+  - instance_id: document-preflight
+    component_id: document-preflight
+    configuration: {}
+  - instance_id: document-router
+    component_id: document-router
+    configuration: {}
+  - instance_id: document-native-adapter
+    component_id: document-native-adapter
+    configuration: {}
+  - instance_id: docling
+    component_id: docling
+    configuration: {}
+  - instance_id: grobid-primary
+    component_id: grobid-primary
+    configuration: {}
+  - instance_id: ocrmypdf-fallback
+    component_id: ocrmypdf-fallback
+    configuration: {}
+  - instance_id: grobid-fallback
+    component_id: grobid-fallback
+    configuration: {}
+  - instance_id: scholarly-output-selector
+    component_id: scholarly-output-selector
+    configuration: {}
+  - instance_id: docling-grobid-aligner
+    component_id: docling-grobid-aligner
+    configuration: {}
+  - instance_id: docling-content-integrity
+    component_id: docling-content-integrity
+    configuration: {}
+  - instance_id: document-fallback-policy
+    component_id: document-fallback-policy
+    configuration: {}
+  - instance_id: document-result
+    component_id: document-result
+    configuration: {}
+  stages:
+  - stage_id: preflight
+    component: document-preflight
+    depends_on: []
+    inputs:
+      artifact_id:
+        source: pipeline
+        input_name: artifact_id
+    outputs:
+    - ready
+    - result
+    condition:
+      type: always
+  - stage_id: route
+    component: document-router
+    depends_on:
+    - preflight
+    inputs:
+      ready:
+        source: stage
+        stage_id: preflight
+        output_name: ready
+    outputs:
+    - processable
+    - pdf_scholarly
+    - result
+    condition:
+      type: output_present
+      stage_id: preflight
+      output_name: ready
+  - stage_id: prepare
+    component: document-native-adapter
+    depends_on:
+    - route
+    inputs:
+      routed:
+        source: stage
+        stage_id: route
+        output_name: processable
+    outputs:
+    - prepared
+    - result
+    condition:
+      type: output_present
+      stage_id: route
+      output_name: processable
+  - stage_id: docling
+    component: docling
+    depends_on:
+    - prepare
+    inputs:
+      prepared:
+        source: stage
+        stage_id: prepare
+        output_name: prepared
+    outputs:
+    - parsed
+    - pdf_image_only
+    - result
+    condition:
+      type: output_present
+      stage_id: prepare
+      output_name: prepared
+  - stage_id: primary-grobid
+    component: grobid-primary
+    depends_on:
+    - route
+    - docling
+    inputs:
+      parsed:
+        source: stage
+        stage_id: docling
+        output_name: parsed
+      pdf:
+        source: stage
+        stage_id: route
+        output_name: pdf_scholarly
+    outputs:
+    - outcome
+    - needs_ocr
+    condition:
+      type: all
+      conditions:
+      - type: output_present
+        stage_id: route
+        output_name: pdf_scholarly
+      - type: output_present
+        stage_id: docling
+        output_name: parsed
+  - stage_id: ocr
+    component: ocrmypdf-fallback
+    depends_on:
+    - primary-grobid
+    inputs:
+      primary:
+        source: stage
+        stage_id: primary-grobid
+        output_name: needs_ocr
+    outputs:
+    - outcome
+    - searchable
+    condition:
+      type: output_present
+      stage_id: primary-grobid
+      output_name: needs_ocr
+  - stage_id: fallback-grobid
+    component: grobid-fallback
+    depends_on:
+    - ocr
+    inputs:
+      ocr:
+        source: stage
+        stage_id: ocr
+        output_name: searchable
+    outputs:
+    - outcome
+    condition:
+      type: output_present
+      stage_id: ocr
+      output_name: searchable
+  - stage_id: select-scholarly
+    component: scholarly-output-selector
+    depends_on:
+    - docling
+    - primary-grobid
+    - ocr
+    - fallback-grobid
+    inputs:
+      parsed:
+        source: stage
+        stage_id: docling
+        output_name: parsed
+      primary:
+        source: stage
+        stage_id: primary-grobid
+        output_name: outcome
+      ocr:
+        source: stage
+        stage_id: ocr
+        output_name: outcome
+      fallback:
+        source: stage
+        stage_id: fallback-grobid
+        output_name: outcome
+    outputs:
+    - flow
+    - selected
+    condition:
+      type: output_present
+      stage_id: docling
+      output_name: parsed
+  - stage_id: alignment
+    component: docling-grobid-aligner
+    depends_on:
+    - select-scholarly
+    inputs:
+      scholarly:
+        source: stage
+        stage_id: select-scholarly
+        output_name: selected
+    outputs:
+    - outcome
+    condition:
+      type: output_present
+      stage_id: select-scholarly
+      output_name: selected
+  - stage_id: integrity
+    component: docling-content-integrity
+    depends_on:
+    - select-scholarly
+    - alignment
+    inputs:
+      scholarly:
+        source: stage
+        stage_id: select-scholarly
+        output_name: flow
+      alignment:
+        source: stage
+        stage_id: alignment
+        output_name: outcome
+    outputs:
+    - outcome
+    condition:
+      type: output_present
+      stage_id: select-scholarly
+      output_name: flow
+  - stage_id: fallback-policy
+    component: document-fallback-policy
+    depends_on:
+    - integrity
+    inputs:
+      integrity:
+        source: stage
+        stage_id: integrity
+        output_name: outcome
+    outputs:
+    - flow
+    condition:
+      type: output_present
+      stage_id: integrity
+      output_name: outcome
+  - stage_id: finalize
+    component: document-result
+    depends_on:
+    - fallback-policy
+    inputs:
+      flow:
+        source: stage
+        stage_id: fallback-policy
+        output_name: flow
+    outputs:
+    - result
+    condition:
+      type: output_present
+      stage_id: fallback-policy
+      output_name: flow

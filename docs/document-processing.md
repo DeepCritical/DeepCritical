@@ -89,9 +89,73 @@ validation. Stores containing the old unversioned `records/parser_runs`
 prototype layout are rejected explicitly rather than guessed into the new
 contract.
 
-The default configuration is in
-`configs/document_processing/default.yaml`. In particular, at least 95% of
-PDF-derived textual items must have valid page/bounding-box provenance.
+The default version-2 configuration is in
+`configs/document_processing/default.yaml`. Version 2 adds the required
+declarative pipeline graph; version-1 files are rejected instead of being
+silently assigned a graph. In particular, at least 95% of PDF-derived textual
+items must have valid page/bounding-box provenance.
+
+## Declarative local pipeline
+
+The reference flow above now runs through a compiled local DAG rather than a
+hard-coded orchestration method. The `pipeline` section of the default YAML
+contains only data:
+
+```yaml
+pipeline:
+  schema_version: deepcritical-pipeline-spec-v1
+  pipeline_id: deepcritical-document-processing
+  pipeline_version: "1"
+  components:
+    - instance_id: document-preflight
+      component_id: document-preflight
+      configuration: {}
+    - instance_id: document-router
+      component_id: document-router
+      configuration: {}
+  stages:
+    - stage_id: preflight
+      component: document-preflight
+      inputs:
+        artifact_id: {source: pipeline, input_name: artifact_id}
+      outputs: [ready, result]
+      condition: {type: always}
+    - stage_id: route
+      component: document-router
+      depends_on: [preflight]
+      inputs:
+        ready: {source: stage, stage_id: preflight, output_name: ready}
+      outputs: [processable, pdf_scholarly, result]
+      condition:
+        {type: output_present, stage_id: preflight, output_name: ready}
+```
+
+`ComponentRegistry` is the executable allow-list. Each registration binds a
+stable `ComponentDescriptor` to a Pydantic configuration model, declared input
+and output schemas, runtime value types, and a local `StagePlugin`
+implementation. YAML can select a registered component ID and supply validated
+configuration; it cannot name or import a Python module, class, callable, or
+expression.
+
+`PipelineCompiler` validates the whole `PipelineSpec` before processing starts.
+It rejects duplicate stage/component-instance IDs, unknown components,
+unknown or missing inputs, incompatible schema or runtime contracts, cycles,
+invalid component configuration, references outside `depends_on`, and use of
+an optional output as a required input without an explicit
+`output_present` guard. Conditions are a closed typed set (`always`,
+`output_present`, `output_absent`, `diagnostic_present`, `stage_status`,
+`all`, and `any`); arbitrary expressions are not part of the schema.
+
+`PipelineOrchestrator` evaluates those conditions and delegates each runnable
+node through the `StageExecutor` protocol. This release provides only
+`LocalStageExecutor`, which executes registered plugins in the current process
+and validates every returned `StageResult`. Queue transport, worker leases,
+remote task envelopes, and distributed result commits remain deferred until
+the local scientific pipeline is proven. Persisted `ProcessingRun` and
+`DataProductRef` provenance is unchanged by this execution-layer refactor. The
+version-2 output-policy snapshot hashes the complete pipeline specification and
+registry port/configuration contracts, so changing the DAG cannot accidentally
+reuse outputs produced under a different graph.
 
 Process or resume one artifact from the repository root:
 

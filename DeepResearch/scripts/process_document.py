@@ -25,6 +25,7 @@ from DeepResearch.src.document_processing import (
     HttpRemoteRuntimeAttestationReporter,
     LinuxCgroupV2InvocationMeter,
     OCRmyPDFRunner,
+    PipelineSpec,
     SourcePreflightError,
 )
 
@@ -142,6 +143,7 @@ async def run(args: argparse.Namespace) -> int:
     )
     grobid_api_key = _required_service_api_key(services.grobid, service_name="grobid")
     config = _processing_config(raw_config)
+    pipeline_spec = _pipeline_spec(raw_config)
     docling_memory_reporter = _memory_reporter(
         services.docling,
         service_name="docling.memory_reporter",
@@ -224,6 +226,7 @@ async def run(args: argparse.Namespace) -> int:
         grobid=grobid,
         ocrmypdf=ocrmypdf,
         config=config,
+        pipeline_spec=pipeline_spec,
     )
 
     if _service_precheck_required(args, config):
@@ -449,16 +452,24 @@ def _processing_config(raw_config: DictConfig) -> DocumentProcessingConfig:
     return config
 
 
+def _pipeline_spec(raw_config: DictConfig) -> PipelineSpec:
+    value = OmegaConf.to_container(raw_config.get("pipeline"), resolve=True)
+    if not isinstance(value, dict):
+        raise ValueError("pipeline must be a mapping")
+    return PipelineSpec.model_validate(value)
+
+
 def _validate_static_policy(raw_config: DictConfig) -> None:
     """Reject configuration values the P0 implementation cannot honor."""
 
     if (
         str(raw_config.get("schema_version", ""))
-        != "deepcritical-document-processing-config-v1"
+        != "deepcritical-document-processing-config-v2"
     ):
         raise ValueError(
-            "schema_version must be 'deepcritical-document-processing-config-v1'"
+            "schema_version must be 'deepcritical-document-processing-config-v2'"
         )
+    _pipeline_spec(raw_config)
 
     required_true = {
         "enabled": raw_config.enabled,

@@ -69,6 +69,8 @@ jobs:
             tests/test_document_processing/test_clients.py \
             tests/test_document_processing/test_deployment_config.py \
             tests/test_document_processing/test_live_validation_config.py \
+            tests/test_document_processing/test_orchestration.py \
+            tests/test_document_processing/test_pipeline.py \
             -q -p no:cacheprovider
 
       - name: Run Ruff lint
@@ -78,7 +80,9 @@ jobs:
             tests/test_document_processing/test_clients.py \
             tests/test_document_processing/test_deployment_config.py \
             tests/test_document_processing/test_live_stack_contract.py \
-            tests/test_document_processing/test_live_validation_config.py
+            tests/test_document_processing/test_live_validation_config.py \
+            tests/test_document_processing/test_orchestration.py \
+            tests/test_document_processing/test_pipeline.py
 
       - name: Check Ruff formatting
         run: |
@@ -87,7 +91,9 @@ jobs:
             tests/test_document_processing/test_clients.py \
             tests/test_document_processing/test_deployment_config.py \
             tests/test_document_processing/test_live_stack_contract.py \
-            tests/test_document_processing/test_live_validation_config.py
+            tests/test_document_processing/test_live_validation_config.py \
+            tests/test_document_processing/test_orchestration.py \
+            tests/test_document_processing/test_pipeline.py
 
       - name: Run document-processing type checks
         run: ty check DeepResearch/src/document_processing
