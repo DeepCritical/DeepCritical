@@ -173,6 +173,9 @@ nav:
     - Configuration: getting-started/configuration.md
   - User Guide:
     - Architecture Overview: architecture/overview.md
+    - Scientific Document Processing: document-processing.md
+    - ADR 0001 - Canonical Document View: adr/0001-project-owned-canonical-document-view.md
+    - ADR 0002 - Allow-listed Local Pipeline: adr/0002-allow-listed-local-pipeline.md
     - Configuration: user-guide/configuration.md
     - LLM Models: user-guide/llm-models.md
     - Flows:

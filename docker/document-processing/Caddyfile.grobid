@@ -1,0 +1,20 @@
+{
+	auto_https off
+	admin off
+}
+
+:8070 {
+	@authorized header X-API-Key "{$GROBID_API_KEY}"
+
+	handle @authorized {
+		reverse_proxy grobid:8070 {
+			header_up -X-API-Key
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 600s
+			}
+		}
+	}
+
+	respond "Unauthorized" 401
+}

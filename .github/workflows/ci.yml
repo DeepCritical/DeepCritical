@@ -20,13 +20,11 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pydantic omegaconf hydra-core
-        pip install -e .
-        pip install -e ".[dev]"
-        pip install pytest pytest-cov
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Install dependencies (locked)
+      run: uv sync --group dev --frozen
 
     - name: Run tests with coverage (branch-specific)
       run: |
@@ -35,16 +33,16 @@ jobs:
         # For dev branch: exclude optional tests (docker, llm, performance, pydantic_ai)
         if [ "${{ github.ref }}" = "refs/heads/main" ]; then
           echo "Running all tests including optional tests for main branch"
-          pytest tests/ -m "not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
+          uv run --frozen pytest tests/ -m "not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
         else
           echo "Running tests excluding optional tests for dev branch"
-          pytest tests/ -m "not optional and not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
+          uv run --frozen pytest tests/ -m "not optional and not containerized" --cov=DeepResearch --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
         fi
 
     - name: Run bioinformatics unit tests (all branches)
       run: |
         echo "Running bioinformatics unit tests..."
-        pytest tests/test_bioinformatics_tools/ -m "not containerized" --cov=DeepResearch --cov-append --cov-report=xml --cov-report=term-missing --junitxml=junit-bioinformatics.xml -o junit_family=legacy
+        uv run --frozen pytest tests/test_bioinformatics_tools/ -m "not containerized" --cov=DeepResearch --cov-append --cov-report=xml --cov-report=term-missing --junitxml=junit-bioinformatics.xml -o junit_family=legacy
 
     - name: Run bioinformatics containerized tests (main branch only)
       if: github.ref == 'refs/heads/docker'
@@ -90,8 +88,8 @@ jobs:
       run: |
         echo "📈 Local Coverage Summary:"
         echo "=========================="
-        if command -v coverage >/dev/null 2>&1; then
-          python -m coverage report --include="DeepResearch/*" --omit="*/tests/*,*/test_*" || echo "Coverage report generation failed"
+        if uv run --frozen python -c "import coverage" >/dev/null 2>&1; then
+          uv run --frozen python -m coverage report --include="DeepResearch/*" --omit="*/tests/*,*/test_*" || echo "Coverage report generation failed"
         else
           echo "Coverage.py not available for summary"
         fi
