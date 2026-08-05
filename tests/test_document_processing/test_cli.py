@@ -84,6 +84,7 @@ def test_default_config_maps_to_runtime_contract() -> None:
         "select-scholarly",
         "alignment",
         "integrity",
+        "canonicalize",
         "fallback-policy",
         "finalize",
     )

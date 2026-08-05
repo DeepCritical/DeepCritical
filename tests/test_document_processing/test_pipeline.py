@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import time
 from io import BytesIO
 from typing import Any
 
@@ -229,6 +230,13 @@ class BrokenIntegrityDocling(FakeDocling):
                 "captions": [],
             }
         ]
+        return result
+
+
+class BrokenHierarchyDocling(FakeDocling):
+    async def convert(self, *args: Any, **kwargs: Any) -> DoclingConversionResult:
+        result = await super().convert(*args, **kwargs)
+        result.document["body"]["children"].append({"$ref": "#/texts/404"})
         return result
 
 
@@ -528,6 +536,22 @@ class _RecordingExecutor:
         return await self.local.execute(stage, context)
 
 
+class _RaiseAfterStageExecutor:
+    def __init__(self, stage_id: str) -> None:
+        self.stage_id = stage_id
+        self.local = LocalStageExecutor()
+
+    async def execute(
+        self,
+        stage: CompiledStage,
+        context: StageContext,
+    ) -> StageResult:
+        result = await self.local.execute(stage, context)
+        if stage.spec.stage_id == self.stage_id:
+            raise RuntimeError(f"unexpected failure after {self.stage_id}")
+        return result
+
+
 @pytest.mark.asyncio
 async def test_reference_flow_executes_through_the_compiled_local_dag(tmp_path) -> None:
     executor = _RecordingExecutor()
@@ -556,6 +580,7 @@ async def test_reference_flow_executes_through_the_compiled_local_dag(tmp_path) 
         "docling",
         "select-scholarly",
         "integrity",
+        "canonicalize",
         "fallback-policy",
         "finalize",
     ]
@@ -570,10 +595,260 @@ async def test_reference_flow_executes_through_the_compiled_local_dag(tmp_path) 
         "scholarly-output-selector",
         "docling-grobid-aligner",
         "docling-content-integrity",
+        "canonical-document-view",
         "document-fallback-policy",
         "document-result",
     )
+    canonical_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "canonical-document-view"
+    )
+    canonical_product = canonical_run.require_output("canonical_document_view")
+    canonical_view = processor.store.read_canonical_document(canonical_product)
+    assert result.canonical_document_sha256 == canonical_product.blob_sha256
+    assert canonical_view.artifact_id == artifact.artifact_id
+    assert canonical_view.blocks
+    assert {product.name for product in canonical_view.source_products} >= {
+        "docling_document",
+        "content_spans",
+        "content_integrity_overlay",
+    }
+    component_spec = next(
+        component
+        for component in processor.pipeline_spec.components
+        if component.instance_id == "canonical-document-view"
+    )
+    assert component_spec.configuration == {
+        "anchoring_policy": "source-spans-and-native-nodes-v1",
+        "text_normalization": "unicode-nfc-collapse-whitespace-v1",
+    }
     assert not hasattr(processor, "_process_artifact_once_legacy")
+
+
+@pytest.mark.asyncio
+async def test_canonical_stage_persists_invalid_integrity_payload_as_failure(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executor = _RecordingExecutor()
+    processor = DocumentProcessor(
+        ContentAddressedStore(tmp_path / "store"),
+        docling=FakeDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+        stage_executor=executor,
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>invalid integrity payload</body></html>",
+        acquisition_uri="https://example.test/invalid-integrity.html",
+        media_type="text/html",
+        identifiers={"filename": "invalid-integrity.html"},
+    )
+    original_canonicalize = processor._run_canonicalization
+
+    def corrupt_integrity_payload(*args: Any, **kwargs: Any):
+        integrity_run = kwargs["integrity_run"]
+        integrity_sha256 = integrity_run.require_output(
+            "content_integrity_overlay"
+        ).blob_sha256
+        original_read = processor.store.read_blob
+
+        def read_blob(sha256: str) -> bytes:
+            if sha256 == integrity_sha256:
+                return b"[]"
+            return original_read(sha256)
+
+        monkeypatch.setattr(processor.store, "read_blob", read_blob)
+        try:
+            return original_canonicalize(*args, **kwargs)
+        finally:
+            monkeypatch.setattr(processor.store, "read_blob", original_read)
+
+    monkeypatch.setattr(
+        processor,
+        "_run_canonicalization",
+        corrupt_integrity_payload,
+    )
+
+    result = await processor.process_artifact(artifact.artifact_id)
+
+    assert result.status is ProcessingRunStatus.FAILED
+    assert result.canonical_document_sha256 is None
+    canonical_runs = [
+        run
+        for run in result.processing_runs
+        if run.component_id == "canonical-document-view"
+    ]
+    assert len(canonical_runs) == 1
+    assert canonical_runs[0].status is ProcessingRunStatus.FAILED
+    assert canonical_runs[0].output("canonical_document_view") is None
+    assert executor.stage_ids[-1] == "canonicalize"
+    assert "fallback-policy" not in executor.stage_ids
+    assert "finalize" not in executor.stage_ids
+
+
+@pytest.mark.asyncio
+async def test_canonical_mapping_error_is_persisted_as_partial(
+    tmp_path,
+) -> None:
+    processor = DocumentProcessor(
+        ContentAddressedStore(tmp_path / "store"),
+        docling=BrokenHierarchyDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>broken native hierarchy</body></html>",
+        acquisition_uri="https://example.test/broken-hierarchy.html",
+        media_type="text/html",
+        identifiers={"filename": "broken-hierarchy.html"},
+    )
+
+    result = await processor.process_artifact(artifact.artifact_id)
+
+    canonical_run = next(
+        run
+        for run in result.processing_runs
+        if run.component_id == "canonical-document-view"
+    )
+    view = processor.store.read_canonical_document(
+        canonical_run.require_output("canonical_document_view")
+    )
+    assert result.status is ProcessingRunStatus.PARTIAL
+    assert canonical_run.status is ProcessingRunStatus.PARTIAL
+    assert "UNRESOLVED_NATIVE_REFERENCE" in canonical_run.warnings
+    assert any(
+        diagnostic.code == "UNRESOLVED_NATIVE_REFERENCE"
+        for diagnostic in view.diagnostics
+    )
+
+
+@pytest.mark.asyncio
+async def test_unexpected_stage_failure_persists_one_failed_run(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ContentAddressedStore(tmp_path / "store")
+    docling = FakeDocling()
+    processor = DocumentProcessor(
+        store,
+        docling=docling,
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>unexpected route failure</body></html>",
+        acquisition_uri="https://example.test/unexpected.html",
+        media_type="text/html",
+        identifiers={"filename": "unexpected.html"},
+    )
+
+    def unexpected_route(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("unexpected route failure")
+
+    monkeypatch.setattr(processor.router, "route", unexpected_route)
+
+    with pytest.raises(RuntimeError, match="unexpected route failure"):
+        await processor.process_artifact(artifact.artifact_id)
+
+    runs = store.list_processing_runs(artifact_id=artifact.artifact_id)
+    assert len(runs) == 1
+    failed = runs[0]
+    assert failed.status is ProcessingRunStatus.FAILED
+    assert failed.stage_id == "route"
+    assert (
+        failed.component
+        == processor.component_registry.require("document-router").descriptor
+    )
+    assert failed.configuration == {}
+    assert failed.configuration_sha256 == sha256_bytes(b"{}")
+    assert failed.pipeline_run_id is not None
+    assert failed.output("diagnostics_manifest") is not None
+    assert docling.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_failure_observer_does_not_duplicate_a_terminal_component_run(
+    tmp_path,
+) -> None:
+    store = ContentAddressedStore(tmp_path / "store")
+    processor = DocumentProcessor(
+        store,
+        docling=FakeDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+        stage_executor=_RaiseAfterStageExecutor("docling"),
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>persist then fail</body></html>",
+        acquisition_uri="https://example.test/persisted.html",
+        media_type="text/html",
+        identifiers={"filename": "persisted.html"},
+    )
+
+    with pytest.raises(RuntimeError, match="unexpected failure after docling"):
+        await processor.process_artifact(artifact.artifact_id)
+
+    runs = store.list_processing_runs(artifact_id=artifact.artifact_id)
+    assert len(runs) == 1
+    assert runs[0].component_id == "docling"
+    assert runs[0].status is ProcessingRunStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_unrelated_terminal_run_does_not_hide_stage_failure(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ContentAddressedStore(tmp_path / "store")
+    processor = DocumentProcessor(
+        store,
+        docling=FakeDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>unrelated run then route failure</body></html>",
+        acquisition_uri="https://example.test/unrelated-run.html",
+        media_type="text/html",
+        identifiers={"filename": "unrelated-run.html"},
+    )
+
+    def persist_unrelated_then_fail(*args: Any, **kwargs: Any) -> None:
+        unrelated_error = RuntimeError("unrelated terminal failure")
+        processor._save_failed_run(
+            artifact,
+            component_id="unrelated-component",
+            component_version="1",
+            stage_id="unrelated-stage",
+            configuration={},
+            started_at=utc_now(),
+            started_clock=time.perf_counter(),
+            error=unrelated_error,
+        )
+        raise RuntimeError("unexpected route failure")
+
+    monkeypatch.setattr(processor.router, "route", persist_unrelated_then_fail)
+
+    with pytest.raises(RuntimeError, match="unexpected route failure"):
+        await processor.process_artifact(artifact.artifact_id)
+
+    runs = store.list_processing_runs(artifact_id=artifact.artifact_id)
+    assert len(runs) == 2
+    by_stage = {run.stage_id: run for run in runs}
+    assert by_stage["unrelated-stage"].component_id == "unrelated-component"
+    assert by_stage["unrelated-stage"].status is ProcessingRunStatus.FAILED
+    assert by_stage["route"].component_id == "document-router"
+    assert by_stage["route"].status is ProcessingRunStatus.FAILED
+    assert (
+        by_stage["route"].pipeline_run_id == by_stage["unrelated-stage"].pipeline_run_id
+    )
 
 
 @pytest.mark.asyncio
@@ -604,7 +879,7 @@ async def test_pipeline_specification_is_part_of_reuse_identity(tmp_path) -> Non
         ocrmypdf=FakeOCR(),
         config=_config(),
         pipeline_spec=default_document_pipeline_spec().model_copy(
-            update={"pipeline_version": "2"}
+            update={"pipeline_version": "3"}
         ),
     )
     second_result = await changed.process_artifact(artifact.artifact_id)
@@ -1292,12 +1567,14 @@ async def test_pipeline_persists_outputs_and_resumes_completed_stages(tmp_path) 
     assert first.grobid_tei_sha256
     assert first.alignment_sha256
     assert first.content_integrity_sha256
+    assert first.canonical_document_sha256
     assert first.content_span_count == 2
     assert {run.component_id for run in first.processing_runs} >= {
         "docling",
         "grobid",
         "docling-grobid-aligner",
         "docling-content-integrity",
+        "canonical-document-view",
     }
     policy_hashes = {run.output_policy_sha256 for run in first.processing_runs}
     assert len(policy_hashes) == 1
@@ -1321,11 +1598,13 @@ async def test_pipeline_persists_outputs_and_resumes_completed_stages(tmp_path) 
     assert second.docling_document_sha256 == first.docling_document_sha256
     assert second.alignment_sha256 == first.alignment_sha256
     assert second.content_integrity_sha256 == first.content_integrity_sha256
+    assert second.canonical_document_sha256 == first.canonical_document_sha256
     assert {run.component_id for run in second.processing_runs} >= {
         "docling",
         "grobid",
         "docling-grobid-aligner",
         "docling-content-integrity",
+        "canonical-document-view",
     }
     assert docling.calls == 1
     assert grobid.calls == 1

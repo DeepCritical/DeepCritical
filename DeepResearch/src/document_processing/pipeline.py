@@ -22,6 +22,12 @@ from .adapters import (
     NativeTextLocator,
 )
 from .alignment import DoclingGrobidAligner, ScholarlyAlignmentOverlay
+from .canonical import (
+    CanonicalDiagnosticSeverity,
+    CanonicalDocumentView,
+    CanonicalizationConfig,
+    build_canonical_document_view,
+)
 from .clients import (
     DEFAULT_DOCLING_MAX_RESPONSE_BYTES,
     DEFAULT_GROBID_MAX_RESPONSE_BYTES,
@@ -120,6 +126,7 @@ _COMPONENT_CAPABILITIES = {
     "ocrmypdf": "document.ocr",
     "docling-grobid-aligner": "document.align",
     "docling-content-integrity": "document.validate",
+    "canonical-document-view": "document.canonicalize",
 }
 
 
@@ -282,6 +289,7 @@ class DocumentProcessingResult:
     grobid_tei_sha256: str | None = None
     alignment_sha256: str | None = None
     content_integrity_sha256: str | None = None
+    canonical_document_sha256: str | None = None
     content_span_count: int = 0
     derivative_artifact_ids: tuple[str, ...] = ()
 
@@ -331,6 +339,7 @@ _PDF_CONTENT_SPAN_ALGORITHM = "provenance-charspan-v2"
 _OUTPUT_POLICY_ALGORITHM_VERSIONS: dict[str, str] = {
     "bioc_locator_alignment": "normalized-exact-v1",
     "content_integrity": "explicit-content-integrity-v1",
+    "canonical_document": "project-owned-canonical-view-v1",
     "docling_quality_validation": "docling-quality-v2",
     "grobid_docling_alignment": "token-sequence-v2",
     "jats_locator_alignment": "normalized-exact-v1",
@@ -338,6 +347,7 @@ _OUTPUT_POLICY_ALGORITHM_VERSIONS: dict[str, str] = {
     "preflight": "bounded-input-inspection-v1",
 }
 _OUTPUT_POLICY_CONTRACT_SCHEMAS: dict[str, str] = {
+    "canonical_document": "deepcritical-canonical-document-view-v1",
     "content_span": "1",
     "diagnostic_manifest": "1",
     "docling_document": "DoclingDocument",
@@ -954,6 +964,7 @@ class DocumentProcessor:
             self.compiled_pipeline,
             {"artifact_id": artifact_id},
             pipeline_run_id=context.pipeline_run_id,
+            input_identity={"artifact_id": artifact_id},
         )
         for stage in self.compiled_pipeline.stages:
             result = execution.results[stage.spec.stage_id].outputs.get("result")
@@ -2395,6 +2406,149 @@ class DocumentProcessor:
                 ),
             )
 
+    def _run_canonicalization(
+        self,
+        artifact: DocumentArtifact,
+        docling_stage: _DoclingStage,
+        *,
+        selected_grobid_run: ProcessingRun | None,
+        scholarly_overlay: ScholarlyAlignmentOverlay | None,
+        scholarly_alignment_product: DataProductRef | None,
+        integrity_run: ProcessingRun,
+        configuration: CanonicalizationConfig,
+    ) -> tuple[ProcessingRun, CanonicalDocumentView] | None:
+        """Persist a project-owned view without mutating parser-native products."""
+
+        docling_product = docling_stage.run.require_output("docling_document")
+        content_spans_product = docling_stage.run.require_output("content_spans")
+        integrity_product = integrity_run.require_output("content_integrity_overlay")
+        inputs: list[DataProductRef] = [docling_product, content_spans_product]
+        for name in (
+            "native_locator_overlay",
+            "jats_locator_alignment",
+            "bioc_locator_alignment",
+        ):
+            product = docling_stage.run.output(name)
+            if product is not None:
+                inputs.append(product)
+        if selected_grobid_run is not None:
+            grobid_product = selected_grobid_run.output("grobid_tei")
+            if grobid_product is not None:
+                inputs.append(grobid_product)
+        if scholarly_alignment_product is not None:
+            inputs.append(scholarly_alignment_product)
+        inputs.append(integrity_product)
+        unique_inputs = tuple(
+            {product.product_id: product for product in inputs}.values()
+        )
+        invocation_configuration = {
+            "adapter_version": "1",
+            "policy": configuration.model_dump(mode="json"),
+            "input_products": [
+                {
+                    "name": product.name,
+                    "product_id": product.product_id,
+                    "blob_sha256": product.blob_sha256,
+                    "payload_schema_version": product.payload_schema_version,
+                }
+                for product in unique_inputs
+            ],
+        }
+        reusable = self._reusable_run(
+            artifact,
+            "canonical-document-view",
+            invocation_configuration,
+        )
+        if (
+            reusable is not None
+            and reusable.output("canonical_document_view") is not None
+        ):
+            self._reconcile_run_diagnostics(artifact, reusable)
+            view = self.store.read_canonical_document(
+                reusable.require_output("canonical_document_view")
+            )
+            return reusable, view
+
+        started = utc_now()
+        started_clock = time.perf_counter()
+        try:
+            span_set = ContentSpanSet.model_validate_json(
+                self.store.read_blob(content_spans_product.blob_sha256)
+            )
+            integrity_payload = json.loads(
+                self.store.read_blob(integrity_product.blob_sha256)
+            )
+            if not isinstance(integrity_payload, dict):
+                raise ValueError("content-integrity product must contain an object")
+            view = build_canonical_document_view(
+                artifact=artifact,
+                docling_document=docling_stage.document,
+                docling_product=docling_product,
+                content_span_set=span_set,
+                source_products=unique_inputs,
+                configuration=configuration,
+                scholarly_overlay=scholarly_overlay,
+                integrity_report=integrity_payload,
+            )
+            view_blob = self.store.put_canonical_document(view)
+            run_id = _run_id()
+            has_errors = any(
+                diagnostic.severity is CanonicalDiagnosticSeverity.ERROR
+                for diagnostic in view.diagnostics
+            )
+            run = ProcessingRun(
+                run_id=run_id,
+                artifact_id=artifact.artifact_id,
+                stage_id="canonical-document-view",
+                component=_component_descriptor("canonical-document-view", "1"),
+                configuration=invocation_configuration,
+                configuration_sha256=configuration_sha256(invocation_configuration),
+                started_at=started,
+                finished_at=utc_now(),
+                status=(
+                    ProcessingRunStatus.PARTIAL
+                    if has_errors
+                    else ProcessingRunStatus.COMPLETE
+                ),
+                resource_usage=ResourceUsage(
+                    wall_time_seconds=time.perf_counter() - started_clock,
+                    input_bytes=sum(product.byte_size for product in unique_inputs),
+                    output_bytes=view_blob.byte_size,
+                ),
+                warnings=tuple(
+                    dict.fromkeys(diagnostic.code for diagnostic in view.diagnostics)
+                ),
+                inputs=unique_inputs,
+                outputs=self.store.data_product_refs(
+                    {"canonical_document_view": view_blob.sha256},
+                    producer_run_id=run_id,
+                    source_artifact_ids=self._source_artifact_ids(
+                        artifact, unique_inputs
+                    ),
+                ),
+                completed_stages=(
+                    "normalize_structure",
+                    "bind_native_anchors",
+                    "resolve_relationships",
+                    "validate_canonical_view",
+                ),
+            )
+            return self._commit_processing_run(artifact, run), view
+        except ProcessingRunCommitIncompleteError:
+            raise
+        except Exception as exc:
+            self._save_failed_run(
+                artifact,
+                component_id="canonical-document-view",
+                component_version="1",
+                configuration=invocation_configuration,
+                started_at=started,
+                started_clock=started_clock,
+                error=exc,
+                inputs=unique_inputs,
+            )
+            return None
+
     def _reusable_run(
         self,
         artifact: DocumentArtifact,
@@ -2724,6 +2878,8 @@ class DocumentProcessor:
         started_at: datetime,
         started_clock: float,
         error: Exception,
+        component_descriptor: ComponentDescriptor | None = None,
+        stage_id: str | None = None,
         container_image: str | None = None,
         container_digest: OciDigest | None = None,
         component_versions: dict[str, str] | None = None,
@@ -2738,8 +2894,9 @@ class DocumentProcessor:
         run = ProcessingRun(
             run_id=resolved_run_id,
             artifact_id=artifact.artifact_id,
-            stage_id=component_id,
-            component=_component_descriptor(component_id, component_version),
+            stage_id=stage_id or component_id,
+            component=component_descriptor
+            or _component_descriptor(component_id, component_version),
             runtime_identity_required=runtime_identity_required,
             component_versions=component_versions or {},
             model_versions=model_versions or {},

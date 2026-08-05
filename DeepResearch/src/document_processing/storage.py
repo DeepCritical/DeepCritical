@@ -12,6 +12,11 @@ from typing import BinaryIO, Mapping, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from .canonical import (
+    CanonicalDocumentView,
+    canonical_document_bytes,
+    load_canonical_document,
+)
 from .models import (
     ArtifactLocation,
     ArtifactLocationRole,
@@ -229,6 +234,20 @@ class ContentAddressedStore:
 
         path = self.verify_blob(sha256)
         return path.read_bytes()
+
+    def put_canonical_document(self, view: CanonicalDocumentView) -> StoredBlob:
+        """Persist one validated canonical view as deterministic CAS bytes."""
+
+        return self.put_blob(canonical_document_bytes(view))
+
+    def read_canonical_document(self, product: DataProductRef) -> CanonicalDocumentView:
+        """Load a canonical product with schema dispatch before validation."""
+
+        validate_product_contract(product)
+        if product.name != "canonical_document_view":
+            raise ValueError("data product is not a canonical document view")
+        self._verify_product(product)
+        return load_canonical_document(self.read_blob(product.blob_sha256))
 
     def verify_blob(self, sha256: str) -> Path:
         """Verify that a blob exists and matches its content address."""

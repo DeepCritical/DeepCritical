@@ -95,6 +95,11 @@ _PRODUCT_DEFINITIONS = {
         "urn:deepcritical:document-processing:content-integrity-overlay",
         "deepcritical-content-integrity-overlay-v1",
     ),
+    "canonical_document_view": ProductDefinition(
+        _JSON,
+        "urn:deepcritical:document-processing:canonical-document-view",
+        "deepcritical-canonical-document-view-v1",
+    ),
     "diagnostics_manifest": ProductDefinition(
         _JSON,
         "urn:deepcritical:document-processing:diagnostic-manifest",

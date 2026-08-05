@@ -41,6 +41,7 @@ EXPECTED_PRODUCTS = {
     "ocr_log",
     "alignment_overlay",
     "content_integrity_overlay",
+    "canonical_document_view",
     "diagnostics_manifest",
 }
 

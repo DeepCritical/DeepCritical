@@ -188,7 +188,7 @@ managed_providers:
 pipeline:
   schema_version: deepcritical-pipeline-spec-v1
   pipeline_id: deepcritical-document-processing
-  pipeline_version: '1'
+  pipeline_version: '2'
   inputs:
     artifact_id:
       schema_uri: urn:deepcritical:document-processing:artifact-id
@@ -224,6 +224,11 @@ pipeline:
   - instance_id: docling-content-integrity
     component_id: docling-content-integrity
     configuration: {}
+  - instance_id: canonical-document-view
+    component_id: canonical-document-view
+    configuration:
+      text_normalization: unicode-nfc-collapse-whitespace-v1
+      anchoring_policy: source-spans-and-native-nodes-v1
   - instance_id: document-fallback-policy
     component_id: document-fallback-policy
     configuration: {}
@@ -416,8 +421,8 @@ pipeline:
       type: output_present
       stage_id: select-scholarly
       output_name: flow
-  - stage_id: fallback-policy
-    component: document-fallback-policy
+  - stage_id: canonicalize
+    component: canonical-document-view
     depends_on:
     - integrity
     inputs:
@@ -426,10 +431,26 @@ pipeline:
         stage_id: integrity
         output_name: outcome
     outputs:
-    - flow
+    - outcome
+    - result
     condition:
       type: output_present
       stage_id: integrity
+      output_name: outcome
+  - stage_id: fallback-policy
+    component: document-fallback-policy
+    depends_on:
+    - canonicalize
+    inputs:
+      canonical:
+        source: stage
+        stage_id: canonicalize
+        output_name: outcome
+    outputs:
+    - flow
+    condition:
+      type: output_present
+      stage_id: canonicalize
       output_name: outcome
   - stage_id: finalize
     component: document-result
