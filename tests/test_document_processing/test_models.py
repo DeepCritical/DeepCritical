@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 from pydantic import ValidationError
 
+from DeepResearch.src.document_processing.canonical import CanonicalDocumentView
 from DeepResearch.src.document_processing.models import (
     ArtifactLocation,
     ArtifactLocationRole,
@@ -57,6 +58,7 @@ def test_all_persisted_contracts_have_descriptive_schema_versions() -> None:
         IntakeQuarantineRecord: "deepcritical-intake-quarantine-v1",
         ComponentDescriptor: "deepcritical-component-descriptor-v1",
         DataProductRef: "deepcritical-data-product-ref-v1",
+        CanonicalDocumentView: "deepcritical-canonical-document-view-v1",
     }
 
     assert {

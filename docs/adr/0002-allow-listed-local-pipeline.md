@@ -82,9 +82,11 @@ envelope and content-addressed handoff contract rather than serializing those
 private local values or adding queue-specific nullable fields to
 `DocumentArtifact`.
 
-This decision does not introduce the project-owned `CanonicalDocumentView`,
-OCR-correction or study-type components, a queue executor, remote workers, or a
-general-purpose plugin import system. Those remain separate follow-ups;
-scientific claim extraction, evidence appraisal, Alzheimer’s-specific
-reasoning, hypothesis generation, and experiment design are also outside this
+This decision does not define OCR-correction or study-type components, a queue
+executor, remote workers, or a general-purpose plugin import system. Those
+remain separate follow-ups; scientific claim extraction, evidence appraisal,
+Alzheimer’s-specific reasoning, hypothesis generation, and experiment design
+are also outside this decision. The project-owned `CanonicalDocumentView` was
+subsequently implemented under ADR 0001 as another allow-listed local stage;
+its representation contract remains independent of this execution-layer
 decision.

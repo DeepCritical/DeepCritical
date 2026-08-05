@@ -21,6 +21,7 @@ on:
       - "DeepResearch/src/document_processing/**"
       - "configs/document_processing/**"
       - "docker/document-processing/**"
+      - "tests/fixtures/document_processing/**"
       - "tests/test_document_processing/**"
       - "pyproject.toml"
       - "uv.lock"
@@ -89,6 +90,15 @@ jobs:
             tests/test_document_processing/test_orchestration.py \
             tests/test_document_processing/test_pipeline.py \
             -q -p no:cacheprovider
+
+      - name: Enforce canonical document contract coverage
+        run: |
+          uv run --frozen pytest \
+            tests/test_document_processing/test_canonical.py \
+            -q -p no:cacheprovider \
+            --cov=DeepResearch.src.document_processing.canonical \
+            --cov-report=term-missing \
+            --cov-fail-under=100
 
       - name: Run the complete document-processing suite
         run: |

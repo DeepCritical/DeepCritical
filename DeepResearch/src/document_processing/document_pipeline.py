@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 from .alignment import ScholarlyAlignmentOverlay
+from .canonical import CanonicalDocumentView, CanonicalizationConfig
 from .models import (
     ComponentDescriptor,
     DataProductRef,
@@ -104,6 +105,10 @@ _INTEGRITY_OUTCOME_SCHEMA = (
     "urn:deepcritical:document-processing:local-integrity-outcome",
     "deepcritical-local-integrity-outcome-v1",
 )
+_CANONICAL_OUTCOME_SCHEMA = (
+    "urn:deepcritical:document-processing:local-canonical-outcome",
+    "deepcritical-local-canonical-outcome-v1",
+)
 _FINALIZABLE_FLOW_SCHEMA = (
     "urn:deepcritical:document-processing:local-finalizable-flow",
     "deepcritical-local-finalizable-flow-v1",
@@ -199,8 +204,17 @@ class _IntegrityOutcome:
 
 
 @dataclass(frozen=True, slots=True)
-class _FinalizableFlow:
+class _CanonicalOutcome:
     integrity: _IntegrityOutcome
+    run: ProcessingRun
+    view: CanonicalDocumentView
+    canonical_document_sha256: str
+    stage_runs: tuple[ProcessingRun, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _FinalizableFlow:
+    canonical: _CanonicalOutcome
     fallback_exhaustion_run: ProcessingRun | None
     stage_runs: tuple[ProcessingRun, ...]
 
@@ -280,10 +294,11 @@ def _registration(
     inputs: dict[str, PortContract],
     outputs: dict[str, PortContract],
     handler: Any,
+    configuration_model: type[BaseModel] = EmptyComponentConfig,
 ) -> ComponentRegistration:
     return ComponentRegistration(
         descriptor=descriptor,
-        configuration_model=EmptyComponentConfig,
+        configuration_model=configuration_model,
         input_ports=inputs,
         output_ports=outputs,
         plugin=FunctionStagePlugin(handler),
@@ -757,12 +772,66 @@ class _DocumentStagePlugins:
             },
         )
 
+    async def canonicalize(
+        self,
+        context: StageContext,
+        configuration: BaseModel,
+    ) -> StageResult:
+        integrity = context.require_input("integrity", _IntegrityOutcome)
+        if not isinstance(configuration, CanonicalizationConfig):
+            raise TypeError("canonical stage received an invalid configuration model")
+        scholarly = integrity.scholarly
+        routed = scholarly.parsed.prepared.routed
+        canonicalized = self.processor._run_canonicalization(
+            routed.artifact,
+            scholarly.parsed.docling_stage,
+            selected_grobid_run=scholarly.selected_grobid_run,
+            scholarly_overlay=(
+                integrity.alignment.overlay if integrity.alignment is not None else None
+            ),
+            scholarly_alignment_product=(
+                integrity.alignment.run.output("alignment_overlay")
+                if integrity.alignment is not None
+                else None
+            ),
+            integrity_run=integrity.run,
+            configuration=configuration,
+        )
+        if canonicalized is None:
+            return StageResult(
+                status=StageExecutionStatus.FAILED,
+                outputs={
+                    "result": self.processor._result_after_failure(
+                        routed.artifact,
+                        routed.route,
+                        set(routed.run_ids_before),
+                        ProcessingRunStatus.FAILED,
+                    )
+                },
+            )
+        run, view = canonicalized
+        return StageResult(
+            status=StageExecutionStatus.COMPLETE,
+            outputs={
+                "outcome": _CanonicalOutcome(
+                    integrity=integrity,
+                    run=run,
+                    view=view,
+                    canonical_document_sha256=run.require_output(
+                        "canonical_document_view"
+                    ).blob_sha256,
+                    stage_runs=(*integrity.stage_runs, run),
+                )
+            },
+        )
+
     async def fallback_policy(
         self,
         context: StageContext,
         _: BaseModel,
     ) -> StageResult:
-        integrity = context.require_input("integrity", _IntegrityOutcome)
+        canonical = context.require_input("canonical", _CanonicalOutcome)
+        integrity = canonical.integrity
         scholarly = integrity.scholarly
         routed = scholarly.parsed.prepared.routed
         fallback_exhausted = routed.route.input_format is InputFormat.PDF and (
@@ -771,7 +840,7 @@ class _DocumentStagePlugins:
             or scholarly.ocr_derivative_quarantined
         )
         fallback_run: ProcessingRun | None = None
-        stage_runs = list(integrity.stage_runs)
+        stage_runs = list(canonical.stage_runs)
         if (
             self.processor.config.quarantine_on_fallback_exhaustion
             and fallback_exhausted
@@ -798,7 +867,7 @@ class _DocumentStagePlugins:
             status=StageExecutionStatus.COMPLETE,
             outputs={
                 "flow": _FinalizableFlow(
-                    integrity=integrity,
+                    canonical=canonical,
                     fallback_exhaustion_run=fallback_run,
                     stage_runs=tuple(stage_runs),
                 )
@@ -813,7 +882,8 @@ class _DocumentStagePlugins:
         from .pipeline import DocumentProcessingResult
 
         finalizable = context.require_input("flow", _FinalizableFlow)
-        integrity = finalizable.integrity
+        canonical = finalizable.canonical
+        integrity = canonical.integrity
         scholarly = integrity.scholarly
         parsed = scholarly.parsed
         prepared = parsed.prepared
@@ -853,6 +923,8 @@ class _DocumentStagePlugins:
                 overall_status = ProcessingRunStatus.PARTIAL
             if integrity.run.status is not ProcessingRunStatus.COMPLETE:
                 overall_status = ProcessingRunStatus.PARTIAL
+            if canonical.run.status is not ProcessingRunStatus.COMPLETE:
+                overall_status = ProcessingRunStatus.PARTIAL
             if overall_status not in {
                 ProcessingRunStatus.COMPLETE,
                 ProcessingRunStatus.PARTIAL,
@@ -887,6 +959,7 @@ class _DocumentStagePlugins:
                 alignment.alignment_sha256 if alignment is not None else None
             ),
             content_integrity_sha256=integrity.content_integrity_sha256,
+            canonical_document_sha256=canonical.canonical_document_sha256,
             content_span_count=parsed.docling_stage.content_span_count,
             derivative_artifact_ids=tuple(
                 derivative.artifact_id for derivative in scholarly.derivative_artifacts
@@ -950,6 +1023,11 @@ def build_document_component_registry(
     integrity = _port(
         _INTEGRITY_OUTCOME_SCHEMA,
         _IntegrityOutcome,
+        required=False,
+    )
+    canonical = _port(
+        _CANONICAL_OUTCOME_SCHEMA,
+        _CanonicalOutcome,
         required=False,
     )
     finalizable = _port(
@@ -1092,14 +1170,30 @@ def build_document_component_registry(
         ),
         _registration(
             descriptor=_descriptor(
-                "document-fallback-policy",
+                "canonical-document-view",
                 "1",
-                "document.route",
+                "document.canonicalize",
             ),
             inputs={
                 "integrity": _port(
                     _INTEGRITY_OUTCOME_SCHEMA,
                     _IntegrityOutcome,
+                )
+            },
+            outputs={"outcome": canonical, "result": result},
+            handler=plugins.canonicalize,
+            configuration_model=CanonicalizationConfig,
+        ),
+        _registration(
+            descriptor=_descriptor(
+                "document-fallback-policy",
+                "1",
+                "document.route",
+            ),
+            inputs={
+                "canonical": _port(
+                    _CANONICAL_OUTCOME_SCHEMA,
+                    _CanonicalOutcome,
                 )
             },
             outputs={"flow": finalizable},
@@ -1140,17 +1234,23 @@ def default_document_pipeline_spec() -> PipelineSpec:
         "scholarly-output-selector",
         "docling-grobid-aligner",
         "docling-content-integrity",
+        "canonical-document-view",
         "document-fallback-policy",
         "document-result",
     )
     return PipelineSpec(
         pipeline_id="deepcritical-document-processing",
-        pipeline_version="1",
+        pipeline_version="2",
         inputs={"artifact_id": _ARTIFACT_ID_SCHEMA},
         components=tuple(
             ComponentInstanceSpec(
                 instance_id=component_id,
                 component_id=component_id,
+                configuration=(
+                    CanonicalizationConfig().model_dump(mode="json")
+                    if component_id == "canonical-document-view"
+                    else {}
+                ),
             )
             for component_id in component_ids
         ),
@@ -1336,8 +1436,8 @@ def default_document_pipeline_spec() -> PipelineSpec:
                 ),
             ),
             StageSpec(
-                stage_id="fallback-policy",
-                component="document-fallback-policy",
+                stage_id="canonicalize",
+                component="canonical-document-view",
                 depends_on=("integrity",),
                 inputs={
                     "integrity": StageOutputRef(
@@ -1345,9 +1445,25 @@ def default_document_pipeline_spec() -> PipelineSpec:
                         output_name="outcome",
                     )
                 },
-                outputs=("flow",),
+                outputs=("outcome", "result"),
                 condition=OutputPresentCondition(
                     stage_id="integrity",
+                    output_name="outcome",
+                ),
+            ),
+            StageSpec(
+                stage_id="fallback-policy",
+                component="document-fallback-policy",
+                depends_on=("canonicalize",),
+                inputs={
+                    "canonical": StageOutputRef(
+                        stage_id="canonicalize",
+                        output_name="outcome",
+                    )
+                },
+                outputs=("flow",),
+                condition=OutputPresentCondition(
+                    stage_id="canonicalize",
                     output_name="outcome",
                 ),
             ),

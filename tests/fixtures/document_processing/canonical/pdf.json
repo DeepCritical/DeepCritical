@@ -1,0 +1,13 @@
+{
+  "schema_version": "deepcritical-canonical-document-view-v1",
+  "metadata_title": "APOE4 pathway",
+  "block_kinds": ["group", "title", "section", "paragraph", "citation", "reference", "table", "figure", "formula", "caption", "caption"],
+  "root_kinds": ["group", "table", "figure", "formula", "caption", "caption"],
+  "relationship_kinds": ["has_caption", "has_caption", "cites"],
+  "relationship_statuses": ["resolved", "resolved", "resolved"],
+  "source_locator_kinds": ["pdf"],
+  "source_product_names": ["docling_document", "content_spans", "grobid_tei", "alignment_overlay", "content_integrity_overlay"],
+  "diagnostic_codes": [],
+  "text_blocks": 8,
+  "located_text_blocks": 8
+}

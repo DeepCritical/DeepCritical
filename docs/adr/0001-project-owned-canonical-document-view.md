@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-07-27
+- Implemented: 2026-08-05
 
 ## Context
 
@@ -14,31 +15,54 @@ audit.
 
 ## Decision
 
-DeepCritical will introduce a versioned, project-owned
-`CanonicalDocumentView` in a separate change.
+DeepCritical provides the versioned, project-owned
+`CanonicalDocumentView` contract
+`deepcritical-canonical-document-view-v1`.
 
 Each processor will preserve its native output unchanged as a typed
-`DataProductRef`. An adapter may then create a canonical view with ordered
-blocks, immutable content hashes, source anchors, native-product references,
-document metadata, and explicit figure, table, caption, citation, and reference
-relationships.
+`DataProductRef`. The allow-listed `canonical-document-view` component runs
+after native alignment and integrity validation. Its deterministic adapter
+creates an immutable `canonical_document_view` product containing:
 
-Until that view exists:
+- document-order blocks and an explicit parent/child hierarchy;
+- closed block kinds for titles, sections, paragraphs, lists, tables, figures,
+  captions, formulas, citations, references, groups, and unclassified content;
+- stable block IDs derived from native node identity, block kind, and normalized
+  content hash;
+- exact anchors to immutable parser-native products, including character ranges
+  and PDF, JATS, or BioC source locators where available;
+- normalized tables and source-level metadata;
+- resolved, partial, or unresolved caption and citation relationships; and
+- stable mapping diagnostics whenever native structure cannot be represented
+  without ambiguity.
 
-- `docling_document` is a native Docling product, not a canonical product;
-- `ContentSpan.representation_anchor` identifies the exact product ID, native
-  node ID, and character range it targets;
-- `DoclingItemLocator` remains a valid native locator for formats without a
-  stable source-coordinate contract; and
-- annotations must not claim processor-independent identity.
+Version 1 accepts only the persisted normalization policy
+`unicode-nfc-collapse-whitespace-v1` and anchoring policy
+`source-spans-and-native-nodes-v1`. Unknown fields and policy names fail
+configuration validation. Loaders dispatch on `schema_version` before model
+validation, and every block, relationship, diagnostic, and complete view
+revalidates its content-derived identity.
 
 Native products remain immutable after the canonical view is introduced.
-Annotations will identify the exact canonical-view product they target so that
-reprocessing cannot silently move labels between blocks.
+`docling_document` remains a native Docling product rather than being relabelled
+as canonical. `ContentSpan.representation_anchor` still identifies the exact
+product, native node, and character range it targets, and
+`DoclingItemLocator` remains valid where a source format has no stable source
+coordinate contract.
+
+Scientific annotations are deliberately excluded from the canonical document.
+When introduced, they must be separate immutable `AnnotationSet` products that
+identify the exact canonical-view product and block/span IDs they target. This
+prevents reprocessing from silently moving labels and prevents scientific
+interpretation from changing document identity.
 
 ## Consequences
 
 Downstream code must use adapters when it needs a processor-independent view,
 while audit and debugging code can retain full access to native representations.
-This adds an explicit conversion stage, but avoids a repository-wide migration
-whenever Docling or another processor changes its native schema.
+The compiled reference pipeline now includes this explicit conversion stage and
+records its non-empty normalization and anchoring configuration in pipeline and
+output-policy provenance. A mapping gap produces inspectable diagnostics rather
+than an invented coordinate. This adds one durable product and processing run,
+but avoids a repository-wide migration whenever Docling or another processor
+changes its native schema.

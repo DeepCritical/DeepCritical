@@ -66,7 +66,11 @@ count as observed runtime identity.
 8. Persist a second integrity overlay with one outcome for every Docling table
    and figure and every GROBID bibliographic citation. Caption/citation targets
    must resolve to existing Docling items or remain explicitly unaligned.
-9. Treat every supplement as its own artifact, linked to its parent and routed
+9. Build and persist a versioned project-owned `CanonicalDocumentView` from the
+   immutable native products, spans, alignment, and integrity report. Every
+   canonical block retains exact native anchors; mapping gaps remain explicit
+   diagnostics.
+10. Treat every supplement as its own artifact, linked to its parent and routed
    according to its detected media type.
 
 Every transformation creates a new `ProcessingRun`. `complete`, `partial`,
@@ -78,8 +82,23 @@ Docling output is an immutable native product, not DeepCritical's permanent
 canonical representation. Every evidence span uses a `RepresentationAnchor`
 that identifies the exact representation product, native node, and character
 range. The project-owned `CanonicalDocumentView` described in
-[ADR 0001](adr/0001-project-owned-canonical-document-view.md) will be introduced
-separately through native-output adapters.
+[ADR 0001](adr/0001-project-owned-canonical-document-view.md) is a separate
+immutable `canonical_document_view` product derived by a deterministic native
+adapter.
+
+Canonical schema v1 preserves document order and hierarchy, normalized text and
+tables, stable content-derived block IDs, source-level metadata, and explicit
+caption/citation relationships. Anchors target immutable native product IDs and
+nodes, with character ranges and PDF, JATS, or BioC locators where available.
+Relationships may be `resolved`, `partial`, or `unresolved`; ambiguous or
+missing mappings are retained as stable diagnostics. The loader dispatches on
+the descriptive schema version before validating hashes, identities, graph
+links, and product references.
+
+The canonical view contains document structure only. Scientific labels must be
+stored in separate immutable `AnnotationSet` products targeting an exact
+canonical-view product and block/span IDs; annotations never mutate or become
+part of canonical document identity.
 
 Durable records use descriptive `schema_version` values and every stage output
 is a typed `DataProductRef`. A product reference carries its content hash, CAS
@@ -106,7 +125,7 @@ contains only data:
 pipeline:
   schema_version: deepcritical-pipeline-spec-v1
   pipeline_id: deepcritical-document-processing
-  pipeline_version: "1"
+  pipeline_version: "2"
   components:
     - instance_id: document-preflight
       component_id: document-preflight
@@ -114,6 +133,11 @@ pipeline:
     - instance_id: document-router
       component_id: document-router
       configuration: {}
+    - instance_id: canonical-document-view
+      component_id: canonical-document-view
+      configuration:
+        text_normalization: unicode-nfc-collapse-whitespace-v1
+        anchoring_policy: source-spans-and-native-nodes-v1
   stages:
     - stage_id: preflight
       component: document-preflight
@@ -171,13 +195,14 @@ Cancellation is re-raised and is never converted into an ordinary failure.
 The generic orchestration module has no dependency on the content-addressed
 store or document-specific models.
 
-This completes Follow-up 1’s allow-listed local execution layer. Its current
-boundary is intentionally local: several private stage values are ordinary
-in-memory Python objects and are neither durable products nor serializable task
-envelopes. The canonical document view, OCR correction/classification, and
-distributed execution remain separate Follow-ups 2–4. Biomedical extraction,
-evidence appraisal, hypothesis generation, experiment design, and
-Alzheimer’s-specific research functionality remain outside this change.
+This completes Follow-up 1’s allow-listed local execution layer and Follow-up
+2’s project-owned canonical document view. The execution boundary remains
+intentionally local: several private stage values are ordinary in-memory Python
+objects and are neither durable products nor serializable task envelopes. OCR
+correction/classification and distributed execution remain separate Follow-ups
+3–4. Biomedical extraction, evidence appraisal, hypothesis generation,
+experiment design, and Alzheimer’s-specific research functionality remain
+outside this change.
 
 Process or resume one artifact from the repository root:
 

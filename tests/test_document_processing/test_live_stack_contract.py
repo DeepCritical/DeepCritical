@@ -378,6 +378,20 @@ def _assert_compiled_pipeline_result(
         for product in run.inputs:
             producer = store.get_processing_run(product.producer_run_id)
             assert product in producer.outputs
+    canonical_run = _run_for_component(
+        result.processing_runs, "canonical-document-view"
+    )
+    canonical_product = canonical_run.require_output("canonical_document_view")
+    canonical_view = store.read_canonical_document(canonical_product)
+    assert result.canonical_document_sha256 == canonical_product.blob_sha256
+    assert canonical_view.artifact_id == result.artifact.artifact_id
+    assert canonical_view.blocks
+    assert all(block.source_anchors for block in canonical_view.blocks)
+    assert {product.name for product in canonical_view.source_products} >= {
+        "docling_document",
+        "content_spans",
+        "content_integrity_overlay",
+    }
 
 
 def _run_for_component(
