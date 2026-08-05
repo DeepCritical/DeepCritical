@@ -15,7 +15,7 @@ on:
           - ocr
   pull_request:
     branches:
-      - document-processing
+      - dev
     paths:
       - ".github/workflows/document-processing-live.yml"
       - "DeepResearch/src/document_processing/**"
