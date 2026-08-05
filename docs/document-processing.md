@@ -89,7 +89,8 @@ validation. Stores containing the old unversioned `records/parser_runs`
 prototype layout are rejected explicitly rather than guessed into the new
 contract.
 
-The default version-2 configuration is in
+The current configuration schema is
+`deepcritical-document-processing-config-v2`, and its default is in
 `configs/document_processing/default.yaml`. Version 2 adds the required
 declarative pipeline graph; version-1 files are rejected instead of being
 silently assigned a graph. In particular, at least 95% of PDF-derived textual
@@ -141,8 +142,11 @@ expression.
 It rejects duplicate stage/component-instance IDs, unknown components,
 unknown or missing inputs, incompatible schema or runtime contracts, cycles,
 invalid component configuration, references outside `depends_on`, and use of
-an optional output as a required input without an explicit
-`output_present` guard. Conditions are a closed typed set (`always`,
+any potentially absent output as a required input without an exact
+`output_present` guard. An output is potentially absent when its registered
+port is optional or its producer has a non-`always` condition. `all` proves
+presence when one conjunct does; `any` proves presence only when every
+alternative does. Conditions are a closed typed set (`always`,
 `output_present`, `output_absent`, `diagnostic_present`, `stage_status`,
 `all`, and `any`); arbitrary expressions are not part of the schema.
 
@@ -156,6 +160,24 @@ the local scientific pipeline is proven. Persisted `ProcessingRun` and
 version-2 output-policy snapshot hashes the complete pipeline specification and
 registry port/configuration contracts, so changing the DAG cannot accidentally
 reuse outputs produced under a different graph.
+
+Expected component failures remain the component’s responsibility: it commits
+its terminal run and returns a typed outcome. The orchestrator reports an
+unexpected ordinary exception through the optional `StageFailureObserver`.
+The document pipeline supplies `DocumentProcessingFailureRecorder`, which
+commits one failed run only when the stage did not already commit a terminal
+run, stops downstream execution, and re-raises the original exception.
+Cancellation is re-raised and is never converted into an ordinary failure.
+The generic orchestration module has no dependency on the content-addressed
+store or document-specific models.
+
+This completes Follow-up 1’s allow-listed local execution layer. Its current
+boundary is intentionally local: several private stage values are ordinary
+in-memory Python objects and are neither durable products nor serializable task
+envelopes. The canonical document view, OCR correction/classification, and
+distributed execution remain separate Follow-ups 2–4. Biomedical extraction,
+evidence appraisal, hypothesis generation, experiment design, and
+Alzheimer’s-specific research functionality remain outside this change.
 
 Process or resume one artifact from the repository root:
 
@@ -265,7 +287,7 @@ defaults are 256 MiB (`services.docling.max_response_bytes`) and 128 MiB
 ceiling becomes an explicit `*_RESPONSE_TOO_LARGE` failed processing run; operators
 may raise the limit in a reviewed deployment override for unusually large papers.
 
-## Opt-in live compatibility contracts
+## Opt-in live compatibility and compiled-pipeline contracts
 
 The normal pytest suite never contacts parser services or starts containers.
 `test_live_stack_contract.py` is marked `document_processing_live` and is
@@ -273,8 +295,27 @@ skipped unless `DEEPCRITICAL_RUN_LIVE_DOCUMENT_PROCESSING=1` is present before
 pytest starts. It generates small synthetic PDFs in memory; no PMC, licensed,
 or benchmark document is uploaded.
 
-With the digest-pinned compose stack already healthy, run the Docling and
-GROBID contracts explicitly:
+The live suite contains two different kinds of checks:
+
+- direct client contracts exercise readiness, version, request, response, and
+  container invocation adapters in isolation;
+- compiled-pipeline smokes instantiate `DocumentProcessor`, compile the
+  checked-in `PipelineSpec`, and traverse the registry, compiler,
+  `PipelineOrchestrator`, and `LocalStageExecutor`.
+
+The free GitHub Actions workflow uses three isolated standard-runner jobs. The
+Docling job runs real Docling on a non-scholarly HTML route and never calls real
+GROBID. The GROBID job uses deterministic fixture-backed Docling output before
+the real GROBID boundary. The OCR job uses deterministic upstream stages that
+force the real digest-addressed OCR branch. Each smoke checks executed and
+skipped stages, a terminal `DocumentProcessingResult`, persisted
+`ProcessingRun` records, `DataProductRef` lineage, the exact pipeline and
+registry snapshot in output-policy provenance, and the service/image identity
+observed by the CI host. These jobs do not constitute an all-real end-to-end
+stack execution.
+
+With the digest-pinned compose stack already healthy, run the direct and
+compiled Docling and GROBID contracts explicitly:
 
 ```bash
 export DEEPCRITICAL_RUN_LIVE_DOCUMENT_PROCESSING=1
@@ -284,7 +325,7 @@ export DEEPCRITICAL_LIVE_GROBID_API_KEY="${GROBID_API_KEY}"
 export DEEPCRITICAL_LIVE_DOCLING_URL="http://127.0.0.1:5001"
 export DEEPCRITICAL_LIVE_GROBID_URL="http://127.0.0.1:8070"
 # Version expectations default to the checked-in pins and may be set explicitly:
-export DEEPCRITICAL_LIVE_EXPECTED_DOCLING_VERSION="2.113.0"
+export DEEPCRITICAL_LIVE_EXPECTED_DOCLING_VERSION="2.96.1"
 export DEEPCRITICAL_LIVE_EXPECTED_DOCLING_SERVE_VERSION="1.21.0"
 export DEEPCRITICAL_LIVE_EXPECTED_GROBID_VERSION="0.9.0"
 
@@ -294,8 +335,11 @@ uv run pytest tests/test_document_processing/test_live_stack_contract.py \
 
 This calls Docling readiness/version endpoints, submits and polls a real async
 conversion, validates the returned serialized `DoclingDocument`, calls GROBID
-alive/version endpoints, and validates a real `processFulltextDocument` TEI
-response. Missing credentials, unreachable services, incompatible response
+alive/version endpoints, validates a real `processFulltextDocument` TEI
+response, and executes the two corresponding compiled-pipeline smokes. The
+compiled tests additionally require the running container IDs and exact image
+references supplied by the workflow’s Docker inspection step. Missing
+credentials, identity evidence, unreachable services, incompatible response
 shapes, and service errors fail the opted-in lane rather than becoming skips.
 
 OCR is a separate opt-in because it requires a local Linux-container runtime
@@ -311,12 +355,14 @@ uv run pytest tests/test_document_processing/test_live_stack_contract.py \
   -m document_processing_live -q
 ```
 
-When requested, the OCR contract fails closed if the runtime or exact
-`image@sha256:...` reference is missing. The runner uses `--pull=never`, probes
-the OCRmyPDF and Tesseract versions inside the pinned image, processes a
-generated raster-only PDF, and validates the searchable derivative and local
-runtime attestation. Until this OCR opt-in passes on the approved Linux target,
-container/OCR compatibility remains an explicit deployment acceptance gate.
+When requested, the direct and compiled OCR contracts fail closed if the
+runtime or exact `image@sha256:...` reference is missing. The runner uses
+`--pull=never`, probes the OCRmyPDF and Tesseract versions inside the pinned
+image, processes a generated raster-only PDF, validates the searchable
+derivative and local runtime attestation, and then repeats that real boundary
+inside the compiled pipeline. Until this OCR opt-in passes on the approved
+Linux target, container/OCR compatibility remains an explicit deployment
+acceptance gate.
 
 These are compatibility contracts, not the 50–75-document quality bake-off;
 they do not replace corpus accuracy, resource-accounting, or task-bound service

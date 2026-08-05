@@ -954,6 +954,7 @@ class DocumentProcessor:
             self.compiled_pipeline,
             {"artifact_id": artifact_id},
             pipeline_run_id=context.pipeline_run_id,
+            input_identity={"artifact_id": artifact_id},
         )
         for stage in self.compiled_pipeline.stages:
             result = execution.results[stage.spec.stage_id].outputs.get("result")
@@ -2724,6 +2725,8 @@ class DocumentProcessor:
         started_at: datetime,
         started_clock: float,
         error: Exception,
+        component_descriptor: ComponentDescriptor | None = None,
+        stage_id: str | None = None,
         container_image: str | None = None,
         container_digest: OciDigest | None = None,
         component_versions: dict[str, str] | None = None,
@@ -2738,8 +2741,9 @@ class DocumentProcessor:
         run = ProcessingRun(
             run_id=resolved_run_id,
             artifact_id=artifact.artifact_id,
-            stage_id=component_id,
-            component=_component_descriptor(component_id, component_version),
+            stage_id=stage_id or component_id,
+            component=component_descriptor
+            or _component_descriptor(component_id, component_version),
             runtime_identity_required=runtime_identity_required,
             component_versions=component_versions or {},
             model_versions=model_versions or {},

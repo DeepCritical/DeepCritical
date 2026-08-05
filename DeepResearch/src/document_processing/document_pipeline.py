@@ -14,6 +14,7 @@ from .models import (
     DocumentArtifact,
     ProcessingRun,
     ProcessingRunStatus,
+    configuration_sha256,
     sha256_bytes,
 )
 from .orchestration import (
@@ -35,6 +36,7 @@ from .orchestration import (
     StageContext,
     StageExecutionStatus,
     StageExecutor,
+    StageFailure,
     StageOutputRef,
     StageResult,
     StageSpec,
@@ -201,6 +203,47 @@ class _FinalizableFlow:
     integrity: _IntegrityOutcome
     fallback_exhaustion_run: ProcessingRun | None
     stage_runs: tuple[ProcessingRun, ...]
+
+
+class DocumentProcessingFailureRecorder:
+    """Persist unexpected local-stage failures without duplicating domain runs."""
+
+    def __init__(self, processor: DocumentProcessor) -> None:
+        self.processor = processor
+
+    async def record_failure(self, failure: StageFailure) -> None:
+        artifact_id = failure.input_identity.get("artifact_id")
+        if artifact_id is None:
+            raise ValueError(
+                "document-processing failure identity requires artifact_id"
+            )
+        artifact = self.processor.store.get_artifact(artifact_id)
+        terminal_during_stage = tuple(
+            run
+            for run in self.processor.store.list_processing_runs(
+                artifact_id=artifact_id
+            )
+            if run.pipeline_run_id == failure.pipeline_run_id
+            and run.started_at >= failure.started_at
+        )
+        if terminal_during_stage:
+            return
+        configuration = dict(failure.configuration)
+        if configuration_sha256(configuration) != failure.configuration_sha256:
+            raise ValueError(
+                "observed stage configuration does not match its validated hash"
+            )
+        self.processor._save_failed_run(
+            artifact,
+            component_id=failure.component.component_id,
+            component_version=failure.component.component_version,
+            component_descriptor=failure.component,
+            stage_id=failure.stage_id,
+            configuration=configuration,
+            started_at=failure.started_at,
+            started_clock=failure.started_clock,
+            error=failure.exception,
+        )
 
 
 def _port(
@@ -1343,7 +1386,10 @@ def build_document_pipeline(
     return (
         registry,
         compiled,
-        PipelineOrchestrator(executor or LocalStageExecutor()),
+        PipelineOrchestrator(
+            executor or LocalStageExecutor(),
+            failure_observer=DocumentProcessingFailureRecorder(processor),
+        ),
     )
 
 

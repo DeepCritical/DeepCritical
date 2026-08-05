@@ -33,6 +33,7 @@ from .clients import (
     ServiceHealth,
 )
 from .document_pipeline import (
+    DocumentProcessingFailureRecorder,
     build_document_component_registry,
     default_document_pipeline_spec,
 )
@@ -100,6 +101,8 @@ from .orchestration import (
     StageDiagnostic,
     StageExecutionStatus,
     StageExecutor,
+    StageFailure,
+    StageFailureObserver,
     StageOutputRef,
     StagePlugin,
     StageResult,
@@ -225,6 +228,7 @@ __all__ = [
     "DoclingServeClient",
     "DocumentArtifact",
     "DocumentProcessingConfig",
+    "DocumentProcessingFailureRecorder",
     "DocumentProcessingResult",
     "DocumentProcessor",
     "DocumentRouter",
@@ -301,6 +305,8 @@ __all__ = [
     "StageDiagnostic",
     "StageExecutionStatus",
     "StageExecutor",
+    "StageFailure",
+    "StageFailureObserver",
     "StageOutputRef",
     "StagePlugin",
     "StageResult",
