@@ -179,7 +179,7 @@ def test_hardening_pull_requests_run_every_isolated_live_job() -> None:
         Loader=yaml.BaseLoader,
     )
     pull_request = workflow["on"]["pull_request"]
-    assert pull_request["branches"] == ["document-processing"]
+    assert pull_request["branches"] == ["dev"]
     assert set(pull_request["paths"]) == {
         ".github/workflows/document-processing-live.yml",
         "DeepResearch/src/document_processing/**",
