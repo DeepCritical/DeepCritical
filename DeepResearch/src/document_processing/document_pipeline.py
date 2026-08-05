@@ -225,6 +225,8 @@ class DocumentProcessingFailureRecorder:
             )
             if run.pipeline_run_id == failure.pipeline_run_id
             and run.started_at >= failure.started_at
+            and run.stage_id == failure.stage_id
+            and run.component == failure.component
         )
         if terminal_during_stage:
             return

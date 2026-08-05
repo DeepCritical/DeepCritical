@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import time
 from io import BytesIO
 from typing import Any
 
@@ -664,6 +665,57 @@ async def test_failure_observer_does_not_duplicate_a_terminal_component_run(
     assert len(runs) == 1
     assert runs[0].component_id == "docling"
     assert runs[0].status is ProcessingRunStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_unrelated_terminal_run_does_not_hide_stage_failure(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = ContentAddressedStore(tmp_path / "store")
+    processor = DocumentProcessor(
+        store,
+        docling=FakeDocling(),
+        grobid=FakeGrobid(),
+        ocrmypdf=FakeOCR(),
+        config=_config(),
+    )
+    artifact = processor.ingest_bytes(
+        b"<html><body>unrelated run then route failure</body></html>",
+        acquisition_uri="https://example.test/unrelated-run.html",
+        media_type="text/html",
+        identifiers={"filename": "unrelated-run.html"},
+    )
+
+    def persist_unrelated_then_fail(*args: Any, **kwargs: Any) -> None:
+        unrelated_error = RuntimeError("unrelated terminal failure")
+        processor._save_failed_run(
+            artifact,
+            component_id="unrelated-component",
+            component_version="1",
+            stage_id="unrelated-stage",
+            configuration={},
+            started_at=utc_now(),
+            started_clock=time.perf_counter(),
+            error=unrelated_error,
+        )
+        raise RuntimeError("unexpected route failure")
+
+    monkeypatch.setattr(processor.router, "route", persist_unrelated_then_fail)
+
+    with pytest.raises(RuntimeError, match="unexpected route failure"):
+        await processor.process_artifact(artifact.artifact_id)
+
+    runs = store.list_processing_runs(artifact_id=artifact.artifact_id)
+    assert len(runs) == 2
+    by_stage = {run.stage_id: run for run in runs}
+    assert by_stage["unrelated-stage"].component_id == "unrelated-component"
+    assert by_stage["unrelated-stage"].status is ProcessingRunStatus.FAILED
+    assert by_stage["route"].component_id == "document-router"
+    assert by_stage["route"].status is ProcessingRunStatus.FAILED
+    assert (
+        by_stage["route"].pipeline_run_id == by_stage["unrelated-stage"].pipeline_run_id
+    )
 
 
 @pytest.mark.asyncio
