@@ -13,6 +13,17 @@ on:
           - docling
           - grobid
           - ocr
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - ".github/workflows/document-processing-live.yml"
+      - "DeepResearch/src/document_processing/**"
+      - "configs/document_processing/**"
+      - "docker/document-processing/**"
+      - "tests/test_document_processing/**"
+      - "pyproject.toml"
+      - "uv.lock"
 permissions:
   contents: read
 
@@ -22,7 +33,8 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.11"
-  TESTED_REVISION: ${{ github.sha }}
+  UV_VERSION: "0.11.29"
+  TESTED_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
   DOCLING_IMAGE_TAG: quay.io/docling-project/docling-serve-cpu:v1.21.0
   REDIS_IMAGE_TAG: redis:7.2.14-alpine3.21
   GROBID_BASE_IMAGE_TAG: grobid/grobid:0.9.0-full
@@ -42,66 +54,95 @@ env:
 
 jobs:
   quality:
-    name: Configuration, tests, lint, and types
+    name: Tests, static checks, lockfile, and docs
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Check out the tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TESTED_REVISION }}
+
+      - name: Verify the checked-out revision
+        run: |
+          actual_revision="$(git rev-parse HEAD)"
+          test "$actual_revision" = "$TESTED_REVISION"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install validation dependencies
+      - name: Install uv
         run: |
           python -m pip install --disable-pip-version-check --no-cache-dir \
-            --requirement docker/document-processing/requirements-live.txt \
-            pyyaml==6.0.3 \
-            ruff==0.14.6 \
-            ty==0.0.34
+            "uv==$UV_VERSION"
 
-      - name: Run focused unit and configuration tests
+      - name: Install the locked development environment
+        run: uv sync --group dev --frozen
+
+      - name: Run focused orchestration and pipeline tests
         run: |
-          python -m pytest \
-            tests/test_document_processing/test_clients.py \
-            tests/test_document_processing/test_deployment_config.py \
+          uv run --frozen pytest \
             tests/test_document_processing/test_live_validation_config.py \
             tests/test_document_processing/test_orchestration.py \
             tests/test_document_processing/test_pipeline.py \
             -q -p no:cacheprovider
 
-      - name: Run Ruff lint
+      - name: Run the complete document-processing suite
         run: |
-          ruff check \
-            DeepResearch/src/document_processing \
-            tests/test_document_processing/test_clients.py \
-            tests/test_document_processing/test_deployment_config.py \
-            tests/test_document_processing/test_live_stack_contract.py \
-            tests/test_document_processing/test_live_validation_config.py \
-            tests/test_document_processing/test_orchestration.py \
-            tests/test_document_processing/test_pipeline.py
+          uv run --frozen pytest \
+            tests/test_document_processing \
+            -q -p no:cacheprovider
 
-      - name: Check Ruff formatting
+      - name: Run the repository CI marker selection
         run: |
-          ruff format --check \
-            DeepResearch/src/document_processing \
-            tests/test_document_processing/test_clients.py \
-            tests/test_document_processing/test_deployment_config.py \
-            tests/test_document_processing/test_live_stack_contract.py \
-            tests/test_document_processing/test_live_validation_config.py \
-            tests/test_document_processing/test_orchestration.py \
-            tests/test_document_processing/test_pipeline.py
+          uv run --frozen pytest \
+            tests/ \
+            -m "not optional and not containerized" \
+            --cov=DeepResearch \
+            --cov-report=term-missing \
+            --junitxml=junit.xml \
+            -o junit_family=legacy
 
-      - name: Run document-processing type checks
-        run: ty check DeepResearch/src/document_processing
+      - name: Run the dedicated bioinformatics lane
+        run: |
+          uv run --frozen pytest \
+            tests/test_bioinformatics_tools/ \
+            -m "not containerized" \
+            --cov=DeepResearch \
+            --cov-append \
+            --cov-report=term-missing \
+            --junitxml=junit-bioinformatics.xml \
+            -o junit_family=legacy
+
+      - name: Run full Ruff lint
+        run: |
+          uv run --frozen ruff check \
+            DeepResearch/ tests/ \
+            --extend-ignore=EXE001,PLR0913,PLR0912,PLR0915,PLR0911
+
+      - name: Check full Ruff formatting
+        run: |
+          uv run --frozen ruff format --check DeepResearch/ tests/
+
+      - name: Run full type checks
+        run: uv run --frozen ty check DeepResearch
+
+      - name: Check lockfile and whitespace
+        run: |
+          uv lock --check
+          git diff --check
+
+      - name: Build documentation
+        run: uv run --frozen mkdocs build
 
   docling:
     name: Docling contract (standard runner)
     needs: quality
     if: >-
+      github.event_name == 'pull_request' ||
       inputs.component == 'all' ||
       inputs.component == 'docling'
     runs-on: ubuntu-24.04
@@ -110,6 +151,13 @@ jobs:
     steps:
       - name: Check out the tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TESTED_REVISION }}
+
+      - name: Verify the checked-out revision
+        run: |
+          actual_revision="$(git rev-parse HEAD)"
+          test "$actual_revision" = "$TESTED_REVISION"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -159,6 +207,13 @@ jobs:
           redis_ref="$(resolve_image "$REDIS_IMAGE_TAG" "$REDIS_IMAGE_DIGEST")"
           docling_digest="${docling_ref##*@}"
           redis_digest="${redis_ref##*@}"
+          docling_image_id="$(
+            docker image inspect "$docling_ref" --format '{{.Id}}'
+          )"
+          if [[ ! "$docling_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Docling image has no immutable local image ID" >&2
+            exit 1
+          fi
 
           {
             echo "DOCLING_IMAGE_DIGEST=$docling_digest"
@@ -172,6 +227,8 @@ jobs:
             echo "DEEPCRITICAL_LIVE_DOCLING_API_KEY=dc-docling-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
             echo "DEEPCRITICAL_LIVE_GROBID_API_KEY=dc-grobid-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
             echo "REDIS_PASSWORD=dc-redis-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            echo "DEEPCRITICAL_LIVE_DOCLING_IMAGE_REF=$docling_ref"
+            echo "DEEPCRITICAL_LIVE_DOCLING_IMAGE_ID=$docling_image_id"
           } >> "$GITHUB_ENV"
 
           {
@@ -195,8 +252,16 @@ jobs:
           DEEPCRITICAL_LIVE_TASK_TIMEOUT_SECONDS: "1800"
         run: |
           set -o pipefail
+          docling_container_id="$(
+            docker compose \
+              --file docker/document-processing/compose.yaml \
+              ps --quiet docling-worker
+          )"
+          test -n "$docling_container_id"
+          export DEEPCRITICAL_LIVE_DOCLING_CONTAINER_ID="$docling_container_id"
           python -m pytest \
             tests/test_document_processing/test_live_stack_contract.py::test_live_docling_async_conversion_contract \
+            tests/test_document_processing/test_live_stack_contract.py::test_live_compiled_docling_pipeline \
             -vv --tb=short -p no:cacheprovider \
             2>&1 | tee live-evidence/pytest.txt
 
@@ -228,6 +293,7 @@ jobs:
     name: GROBID contract (standard runner)
     needs: quality
     if: >-
+      github.event_name == 'pull_request' ||
       inputs.component == 'all' ||
       inputs.component == 'grobid'
     runs-on: ubuntu-24.04
@@ -236,6 +302,13 @@ jobs:
     steps:
       - name: Check out the tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TESTED_REVISION }}
+
+      - name: Verify the checked-out revision
+        run: |
+          actual_revision="$(git rev-parse HEAD)"
+          test "$actual_revision" = "$TESTED_REVISION"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -330,6 +403,10 @@ jobs:
             exit 1
           fi
           echo "GROBID_IMAGE_DIGEST=$grobid_image_id" >> "$GITHUB_ENV"
+          echo "DEEPCRITICAL_LIVE_GROBID_IMAGE_REF=$GROBID_CI_IMAGE_TAG@$grobid_image_id" \
+            >> "$GITHUB_ENV"
+          echo "DEEPCRITICAL_LIVE_GROBID_IMAGE_ID=$grobid_image_id" \
+            >> "$GITHUB_ENV"
           {
             echo "grobid_dockerfile_blob=$grobid_dockerfile_blob"
             echo "grobid_built_image=$GROBID_CI_IMAGE_TAG@$grobid_image_id"
@@ -354,8 +431,17 @@ jobs:
           DEEPCRITICAL_LIVE_REQUEST_TIMEOUT_SECONDS: "900"
         run: |
           set -o pipefail
+          grobid_container_id="$(
+            docker compose \
+              --file docker/document-processing/compose.yaml \
+              --file docker/document-processing/compose.github-actions.yaml \
+              ps --quiet grobid
+          )"
+          test -n "$grobid_container_id"
+          export DEEPCRITICAL_LIVE_GROBID_CONTAINER_ID="$grobid_container_id"
           python -m pytest \
             tests/test_document_processing/test_live_stack_contract.py::test_live_grobid_tei_contract \
+            tests/test_document_processing/test_live_stack_contract.py::test_live_compiled_grobid_pipeline \
             -vv --tb=short -p no:cacheprovider \
             2>&1 | tee live-evidence/pytest.txt
 
@@ -397,6 +483,7 @@ jobs:
     name: OCRmyPDF contract (standard runner)
     needs: quality
     if: >-
+      github.event_name == 'pull_request' ||
       inputs.component == 'all' ||
       inputs.component == 'ocr'
     runs-on: ubuntu-24.04
@@ -405,6 +492,13 @@ jobs:
     steps:
       - name: Check out the tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TESTED_REVISION }}
+
+      - name: Verify the checked-out revision
+        run: |
+          actual_revision="$(git rev-parse HEAD)"
+          test "$actual_revision" = "$TESTED_REVISION"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -453,6 +547,7 @@ jobs:
           set -o pipefail
           DEEPCRITICAL_LIVE_OCR_IMAGE="$OCR_IMAGE_REF" python -m pytest \
             tests/test_document_processing/test_live_stack_contract.py::test_live_digest_addressed_ocr_derivative_contract \
+            tests/test_document_processing/test_live_stack_contract.py::test_live_compiled_ocr_pipeline \
             -vv --tb=short -p no:cacheprovider \
             2>&1 | tee live-evidence/pytest.txt
 
